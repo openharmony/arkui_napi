@@ -138,12 +138,12 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
 
     NativeModule* nativeModule = FindNativeModuleByCache(moduleName);
 
-    #ifndef IOS_PLATFORM
+#ifndef IOS_PLATFORM
         if (nativeModule == nullptr) {
             HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
             nativeModule = FindNativeModuleByDisk(moduleName, internal, isAppModule, isArk);
         }
-    #endif
+#endif
 
     if (pthread_mutex_unlock(&mutex_) != 0) {
         HILOG_ERROR("pthread_mutex_unlock is failed");
