@@ -939,20 +939,20 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 }
 
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-void ArkNativeEngine::DumpHeapSnapShot(const std::string &path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat)
 {
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapShot(vm_, 0, path, isVmMode);
+        DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode);
     }
     if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpHeapSnapShot(vm_, 1, path, isVmMode);
+        DFXJSNApi::DumpHeapSnapshot(vm_, 1, path, isVmMode);
     }
     if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpHeapSnapShot(vm_, 2, path, isVmMode); // 2:enum is 2
+        DFXJSNApi::DumpHeapSnapshot(vm_, 2, path, isVmMode); // 2:enum is 2
     }
 }
 #else
-void ArkNativeEngine::DumpHeapSnapShot(const std::string &path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat)
 {
     HILOG_WARN("ARK does not support snapshot on windows");
 }

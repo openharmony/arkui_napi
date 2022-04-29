@@ -207,7 +207,7 @@ public:
     virtual bool IsSuspended() = 0;
     virtual bool CheckSafepoint() = 0;
 
-    virtual void DumpHeapSnapShot(const std::string &path, bool isVmMode = true,
+    virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
     virtual bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
