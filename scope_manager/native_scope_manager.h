@@ -17,9 +17,16 @@
 #define FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H
 
 #include <stddef.h>
+#include <string>
+#include <vector>
 
 class NativeValue;
 struct NativeScope;
+struct StructVma {
+    uint64_t begin = 0;
+    uint64_t end = 0;
+    std::string path;
+};
 
 class NativeScopeManager {
 public:
@@ -38,9 +45,13 @@ public:
     NativeScopeManager(NativeScopeManager&) = delete;
     virtual NativeScopeManager& operator=(NativeScopeManager&) = delete;
 
+    static const int MAPINFO_SIZE = 256;
+    static const int NAME_LEN = 128;
+
 private:
     NativeScope* root_;
     NativeScope* current_;
+    std::vector<struct StructVma> vmas_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H */

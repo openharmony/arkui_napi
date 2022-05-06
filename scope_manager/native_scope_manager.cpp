@@ -15,8 +15,19 @@
 
 #include "native_scope_manager.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <securec.h>
+#include <thread>
+#include <unistd.h>
+#define UNW_EMPTY_STRUCT uint8_t unused;
+#include <libunwind.h>
+
 #include "native_engine/native_value.h"
+#include "parameters.h"
 #include "utils/log.h"
+
+using OHOS::system::GetIntParameter;
 
 struct NativeHandle {
     NativeValue* value = nullptr;
@@ -33,10 +44,88 @@ struct NativeScope {
     NativeScope* parent = nullptr;
 };
 
+namespace {
+    static const int DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>("persist.napi.memleak.debug", 0);
+    // 100 for the default depth.
+    static const int BACKTRACE_DEPTH = OHOS::system::GetIntParameter<int>("persist.napi.memleak.depth", 100);
+}
+
+static void TrimAndDupStr(const std::string &source, std::string &str)
+{
+    auto const firstPos = source.find_first_not_of(' ');
+    if (firstPos == std::string::npos) {
+        return;
+    }
+    auto len = source.find_last_not_of(' ') - firstPos + 1;
+    if (len > NativeScopeManager::MAPINFO_SIZE) {
+        len = NativeScopeManager::MAPINFO_SIZE;
+    }
+    str = source.substr(firstPos, len);
+}
+
+static bool CreateVma(struct StructVma &vma, const std::string &mapInfo)
+{
+    int pos = 0;
+    uint64_t begin = 0;
+    uint64_t end = 0;
+    uint64_t offset = 0;
+    char perms[5] = {0}; // 5:rwxp
+
+    if (sscanf_s(mapInfo.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
+        &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+        return false;
+    }
+    vma.begin = begin;
+    vma.end = end;
+    TrimAndDupStr(mapInfo.substr(pos), vma.path);
+    return true;
+}
+
+static void CreateMm(int pid, std::vector<struct StructVma> &vmas)
+{
+    if (pid <= 0) {
+        return;
+    }
+    char path[NativeScopeManager::NAME_LEN] = {0};
+    if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
+        return;
+    }
+    char realPath[PATH_MAX] = {0};
+    if (realpath(path, realPath) == nullptr) {
+        return;
+    }
+    FILE *fp = fopen(realPath, "r");
+    if (fp == nullptr) {
+        return;
+    }
+    char mapInfo[NativeScopeManager::MAPINFO_SIZE] = {0};
+    while (fgets(mapInfo, sizeof(mapInfo), fp) != nullptr) {
+        struct StructVma vma;
+        std::string info(mapInfo);
+        if (CreateVma(vma, info)) {
+            vmas.push_back(vma);
+        }
+    }
+    fclose(fp);
+}
+
+static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vector<struct StructVma> vmas)
+{
+    for (auto iter = vmas.begin(); iter != vmas.end(); iter++) {
+        if (((*iter).begin <= address) && ((*iter).end > address)) {
+            return &(*iter);
+        }
+    }
+    return nullptr;
+}
+
 NativeScopeManager::NativeScopeManager()
 {
     root_ = NativeScope::CreateNewInstance();
     current_ = root_;
+    if (DEBUG_MEMLEAK != 0) {
+        CreateMm(getpid(), vmas_);
+    }
 }
 
 NativeScopeManager::~NativeScopeManager()
@@ -148,6 +237,36 @@ NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
     return result;
 }
 
+static bool BackTrace(const std:vector<struct StructVma> vmas)
+{
+    bool hasUnknowMap = false;
+    int depth = 0;
+    unw_cursor_t cursor;
+    unw_context_t context;
+    unw_getcontext(&context);
+    unw_init_local(&cursor, &context);
+    while (unw_step(&cursor) > 0) {
+        unw_word_t offset, pc;
+        unw_get_reg(&cursor, UNW_REG_IP, &pc);
+        if (pc == 0 || ++depth > BACKTRACE_DEPTH) {
+            break;
+        }
+        char sym[512]; // 512:max length of a symbol.
+        const struct StructVma* vma = FindMapByAddr(pc, vmas);
+        if (vma == nullptr) {
+            hasUnknowMap = true;
+        }
+        if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+            HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}x, %{public}s\n", sym, offset,
+                        (vma != nullptr) ? vma->path.c_str() : "unknow_path");
+        } else {
+            HILOG_ERROR("MEMLEAK: unknow pc=0x%{public}x, %{public}s\n", pc,
+                        (vma != nullptr) ? vma->path.c_str() : "unknow_path");
+        }
+    }
+    return hasUnknowMap;
+}
+
 void NativeScopeManager::CreateHandle(NativeValue* value)
 {
     if (current_ == nullptr) {
@@ -169,4 +288,12 @@ void NativeScopeManager::CreateHandle(NativeValue* value)
         current_->handlePtr = handlePtr;
     }
     current_->handleCount++;
+    if (DEBUG_MEMLEAK != 0 && current_ == root_) {
+        HILOG_ERROR("MEMLEAK: size=%{public}d, total=%{public}d\n", sizeof(*value), current_->handleCount);
+        if (BackTrace(vmas_)) {
+            HILOG_ERROR("MEMLEAK: recreate vmas!!!");
+            vmas_.clear();
+            CreateMm(getpid(), vmas_);
+        }
+    }
 }
