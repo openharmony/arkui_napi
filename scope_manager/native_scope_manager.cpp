@@ -237,7 +237,7 @@ NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
     return result;
 }
 
-static bool BackTrace(const std:vector<struct StructVma> vmas)
+static bool BackTrace(const std::vector<struct StructVma> vmas)
 {
     bool hasUnknowMap = false;
     int depth = 0;
