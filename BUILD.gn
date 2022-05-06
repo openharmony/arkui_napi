@@ -215,7 +215,10 @@ if (defined(ohos_lite)) {
             }
           }
         } else {
-          external_deps = [ "hilog:libhilog", "startup_l2:syspara" ]
+          external_deps = [
+            "hilog:libhilog",
+            "startup_l2:syspara",
+          ]
         }
       }
 
