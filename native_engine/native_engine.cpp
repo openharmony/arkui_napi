@@ -249,30 +249,37 @@ void NativeEngine::EncodeToUtf8(NativeValue* nativeValue,
     *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
 }
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void NativeEngine::CheckUVLoop()
 {
+#ifndef IOS_PLATFORM
     checkUVLoop_ = true;
     uv_thread_create(&uvThread_, NativeEngine::UVThreadRunner, this);
+#endif
 }
 
 void NativeEngine::CancelCheckUVLoop()
 {
+#ifndef IOS_PLATFORM
     checkUVLoop_ = false;
     RunCleanup();
     uv_async_send(&uvAsync_);
     uv_sem_post(&uvSem_);
     uv_thread_join(&uvThread_);
+#endif
 }
 
 void NativeEngine::PostLoopTask()
 {
+#ifndef IOS_PLATFORM
     postTask_(true);
     uv_sem_wait(&uvSem_);
+#endif
 }
 
 void NativeEngine::UVThreadRunner(void* nativeEngine)
 {
+#ifndef IOS_PLATFORM
     auto engine = static_cast<NativeEngine*>(nativeEngine);
     engine->PostLoopTask();
     while (engine->checkUVLoop_) {
@@ -294,13 +301,8 @@ void NativeEngine::UVThreadRunner(void* nativeEngine)
             break;
         }
     }
+#endif
 }
-
-#else
-void NativeEngine::CheckUVLoop() {}
-void NativeEngine::CancelCheckUVLoop() {}
-void NativeEngine::PostLoopTask() {}
-void NativeEngine::UVThreadRunner(void* nativeEngine) {}
 #endif
 
 void NativeEngine::SetPostTask(PostTask postTask)
