@@ -109,7 +109,7 @@ static void CreateMm(int pid, std::vector<struct StructVma> &vmas)
     fclose(fp);
 }
 
-static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vector<struct StructVma> vmas)
+static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vector<struct StructVma> &vmas)
 {
     for (auto iter = vmas.begin(); iter != vmas.end(); iter++) {
         if (((*iter).begin <= address) && ((*iter).end > address)) {
@@ -245,7 +245,7 @@ NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
     return result;
 }
 
-static bool BackTrace(const std::vector<struct StructVma> vmas)
+static bool BackTrace(const std::vector<struct StructVma> &vmas)
 {
     bool hasUnknowMap = false;
     int depth = 0;
