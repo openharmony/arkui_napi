@@ -55,7 +55,6 @@ private:
     static std::atomic<std::vector<struct StructVma>*> vmas;
     NativeScope* root_;
     NativeScope* current_;
-    std::vector<struct StructVma> vmas_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H */
