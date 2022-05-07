@@ -139,10 +139,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     NativeModule* nativeModule = FindNativeModuleByCache(moduleName);
 
 #ifndef IOS_PLATFORM
-        if (nativeModule == nullptr) {
-            HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
-            nativeModule = FindNativeModuleByDisk(moduleName, internal, isAppModule, isArk);
-        }
+    if (nativeModule == nullptr) {
+        HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
+        nativeModule = FindNativeModuleByDisk(moduleName, internal, isAppModule, isArk);
+    }
 #endif
 
     if (pthread_mutex_unlock(&mutex_) != 0) {
