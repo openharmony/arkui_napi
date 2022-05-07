@@ -590,7 +590,7 @@ bool ArkNativeEngine::Throw(NativeErrorType type, const char* code, const char* 
 NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine)
 {
     panda::RuntimeOption option;
-#ifndef WINDOWS_PLATFORM
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     option.SetArkProperties(arkProperties);
     HILOG_INFO("ArkNativeEngine::CreateRuntime ark properties = %{public}d", arkProperties);
@@ -598,7 +598,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
     option.SetGcPoolSize(poolSize);
-#ifndef WINDOWS_PLATFORM
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
 #endif
     option.SetDebuggerLibraryPath("");
@@ -958,7 +958,7 @@ void ArkNativeEngine::DumpHeapSnapShot(const std::string &path, bool isVmMode, D
 }
 #endif
 
-#ifndef WINDOWS_PLATFORM
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 bool ArkNativeEngine::BuildNativeAndJsBackStackTrace(std::string &stackTraceStr)
 {
     return DFXJSNApi::BuildNativeAndJsBackStackTrace(vm_, stackTraceStr);
@@ -997,7 +997,7 @@ bool ArkNativeEngine::StopHeapTracking(const std::string &filePath)
 }
 #endif
 
-#ifndef WINDOWS_PLATFORM
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void ArkNativeEngine::PrintStatisticResult()
 {
     DFXJSNApi::PrintStatisticResult(vm_);
