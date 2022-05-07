@@ -15,6 +15,7 @@
 
 #include "native_scope_manager.h"
 
+#include <atomic>
 #include <cstdio>
 #include <cstdlib>
 #include <securec.h>
@@ -44,11 +45,10 @@ struct NativeScope {
     NativeScope* parent = nullptr;
 };
 
-namespace {
-    static const int DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>("persist.napi.memleak.debug", 0);
-    // 100 for the default depth.
-    static const int BACKTRACE_DEPTH = OHOS::system::GetIntParameter<int>("persist.napi.memleak.depth", 100);
-}
+const int NativeScopeManager::DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>("persist.napi.memleak.debug", 0);
+// 100 for the default depth.
+const int NativeScopeManager::BACKTRACE_DEPTH = OHOS::system::GetIntParameter<int>("persist.napi.memleak.depth", 100);
+std::atomic<std::vector<struct StructVma>*> NativeScopeManager::vmas(nullptr);
 
 static void TrimAndDupStr(const std::string &source, std::string &str)
 {
@@ -123,8 +123,16 @@ NativeScopeManager::NativeScopeManager()
 {
     root_ = NativeScope::CreateNewInstance();
     current_ = root_;
-    if (DEBUG_MEMLEAK != 0) {
-        CreateMm(getpid(), vmas_);
+    if (NativeScopeManager::DEBUG_MEMLEAK != 0 && NativeScopeManager::vmas == nullptr) {
+        std::vector<struct StructVma> *new_vmas = new std::vector<struct StructVma>();
+        if (new_vmas == nullptr) {
+            return;
+        }
+        CreateMm(getpid(), *new_vmas);
+        new_vmas = NativeScopeManager::vmas.exchange(new_vmas);
+	if (new_vmas != nullptr) {
+            delete new_vmas;
+        }
     }
 }
 
@@ -248,7 +256,7 @@ static bool BackTrace(const std::vector<struct StructVma> vmas)
     while (unw_step(&cursor) > 0) {
         unw_word_t offset, pc;
         unw_get_reg(&cursor, UNW_REG_IP, &pc);
-        if (pc == 0 || ++depth > BACKTRACE_DEPTH) {
+        if (pc == 0 || ++depth > NativeScopeManager::BACKTRACE_DEPTH) {
             break;
         }
         char sym[512]; // 512:max length of a symbol.
@@ -288,12 +296,22 @@ void NativeScopeManager::CreateHandle(NativeValue* value)
         current_->handlePtr = handlePtr;
     }
     current_->handleCount++;
-    if (DEBUG_MEMLEAK != 0 && current_ == root_) {
+    if (NativeScopeManager::DEBUG_MEMLEAK != 0 && current_ == root_) {
         HILOG_ERROR("MEMLEAK: size=%{public}d, total=%{public}d\n", sizeof(*value), current_->handleCount);
-        if (BackTrace(vmas_)) {
-            HILOG_ERROR("MEMLEAK: recreate vmas!!!");
-            vmas_.clear();
-            CreateMm(getpid(), vmas_);
+        if (NativeScopeManager::vmas != nullptr) {
+            if (!BackTrace(*NativeScopeManager::vmas)) {
+                return;
+            }
+        }
+        std::vector<struct StructVma> *new_vmas = new std::vector<struct StructVma>();
+        if (new_vmas == nullptr) {
+            return;
+        }
+        HILOG_ERROR("MEMLEAK: recreate vmas!!!");
+        CreateMm(getpid(), *new_vmas);
+        new_vmas = NativeScopeManager::vmas.exchange(new_vmas);
+	if (new_vmas != nullptr) {
+            delete new_vmas;
         }
     }
 }

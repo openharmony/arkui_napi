@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H
 #define FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H
 
+#include <atomic>
 #include <stddef.h>
 #include <string>
 #include <vector>
@@ -47,8 +48,11 @@ public:
 
     static const int MAPINFO_SIZE = 256;
     static const int NAME_LEN = 128;
+    static const int DEBUG_MEMLEAK;
+    static const int BACKTRACE_DEPTH;
 
 private:
+    static std::atomic<std::vector<struct StructVma>*> vmas;
     NativeScope* root_;
     NativeScope* current_;
     std::vector<struct StructVma> vmas_;
