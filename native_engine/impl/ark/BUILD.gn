@@ -28,6 +28,8 @@ config("ace_napi_ark_config") {
   if (is_mingw) {
     defines += [ "WINDOWS_PLATFORM" ]
     cflags_cc += [ "-std=c++17" ]
+  } else if (is_mac) {
+    defines += [ "MAC_PLATFORM" ]
   }
 }
 
