@@ -50,6 +50,7 @@ struct NativeModule {
     NativeModule* next = nullptr;
     const char* jsCode = nullptr;
     int32_t jsCodeLen = 0;
+    bool moduleLoaded = false;
 };
 
 class NAPI_EXPORT NativeModuleManager {
@@ -69,15 +70,15 @@ private:
     bool GetNativeModulePath(const char* moduleName, bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX],
         int32_t pathLength) const;
     NativeModule* FindNativeModuleByDisk(const char* moduleName, bool internal, const bool isAppModule, bool isArk);
-    NativeModule* FindNativeModuleByCache(const char* moduleName) const;
+    NativeModule* FindNativeModuleByCache(const char* moduleName);
     LIBHANDLE LoadModuleLibrary(const char* path, const bool isAppModule);
     void CreateLdNamespace(const char* lib_ld_path);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
     Dl_namespace ns_;
 #endif
-    NativeModule* firstNativeModule_;
-    NativeModule* lastNativeModule_;
-    char* appLibPath_;
+    NativeModule* firstNativeModule_ = nullptr;
+    NativeModule* lastNativeModule_ = nullptr;
+    char* appLibPath_ = nullptr;
 
     static NativeModuleManager instance_;
     pthread_mutex_t mutex_;

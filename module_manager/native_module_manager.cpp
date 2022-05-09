@@ -33,10 +33,6 @@ NativeModuleManager NativeModuleManager::instance_;
 
 NativeModuleManager::NativeModuleManager()
 {
-    firstNativeModule_ = nullptr;
-    lastNativeModule_ = nullptr;
-    appLibPath_ = nullptr;
-
     pthread_mutex_init(&mutex_, nullptr);
 }
 
@@ -48,7 +44,8 @@ NativeModuleManager::~NativeModuleManager()
         delete firstNativeModule_;
         firstNativeModule_ = nativeModule;
     }
-    firstNativeModule_ = lastNativeModule_ = nullptr;
+    firstNativeModule_ = nullptr;
+    lastNativeModule_ = nullptr;
     if (appLibPath_) {
         delete[] appLibPath_;
     }
@@ -310,7 +307,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         }
     }
 
-    if (strcmp(lastNativeModule_->name, moduleName)) {
+    if (lastNativeModule_ && strcmp(lastNativeModule_->name, moduleName)) {
         HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'",
             moduleName, lastNativeModule_->name);
     }
@@ -350,12 +347,14 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         }
     }
 
+    lastNativeModule_->moduleLoaded = true;
     return lastNativeModule_;
 }
 
-NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName) const
+NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName)
 {
     NativeModule* result = nullptr;
+    NativeModule* preNativeModule = nullptr;
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if (!strcasecmp(temp->name, moduleName)) {
             if (strcmp(temp->name, moduleName)) {
@@ -365,6 +364,19 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
             result = temp;
             break;
         }
+        preNativeModule = temp;
+    }
+
+    if (result && !result->moduleLoaded) {
+        if (preNativeModule) {
+            preNativeModule->next = result->next;
+        } else {
+            firstNativeModule_ = firstNativeModule_->next;
+        }
+        result->next = nullptr;
+        lastNativeModule_->next = result;
+        lastNativeModule_ = result;
+        return nullptr;
     }
     return result;
 }
