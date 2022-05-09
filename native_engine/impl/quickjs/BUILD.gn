@@ -20,7 +20,7 @@ config("ace_napi_quickjs_config") {
     "//foundation/arkui/napi/native_engine",
     "//third_party/libuv/include",
     "//third_party/quickjs",
-    "//utils/native/base/include",
+    "//third_party/bounds_checking_function/include",
   ]
 }
 
@@ -67,7 +67,7 @@ template("ace_napi_impl") {
 
     deps = [
       "//foundation/arkui/napi:ace_napi",
-      "//utils/native/base:utilsecurec",
+      "//third_party/bounds_checking_function:libsec_static",
     ]
 
     if (invoker.use_js_debug) {

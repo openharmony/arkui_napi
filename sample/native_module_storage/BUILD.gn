@@ -18,7 +18,7 @@ ohos_shared_library("storage") {
     "//third_party/libuv/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
-    "//utils/native/base/include",
+    "//third_party/bounds_checking_function/include",
   ]
 
   cflags = [
@@ -30,7 +30,7 @@ ohos_shared_library("storage") {
 
   deps = [
     "//foundation/arkui/napi/:ace_napi",
-    "//utils/native/base:utilsecurec",
+    "//third_party/bounds_checking_function:libsec_static",
   ]
 
   relative_install_dir = "module"
