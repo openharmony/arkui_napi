@@ -155,13 +155,14 @@ static bool BackTrace(const std::vector<struct StructVma> &vmas)
         const struct StructVma* vma = FindMapByAddr(pc, vmas);
         if (vma == nullptr) {
             hasUnknowMap = true;
-        }
-        if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+	}
+        unw_error_t ret = unw_get_proc_name(&cursor, sym, sizeof(sym), &offset);
+        if (ret == 0) {
             HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}" SCNxPTR ", %{public}s\n", sym, offset,
                         (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         } else {
-            HILOG_ERROR("MEMLEAK: unknow pc=0x%{public}" SCNxPTR ", %{public}s\n", pc,
-                        (vma != nullptr) ? vma->path.c_str() : "unknow_path");
+            HILOG_ERROR("MEMLEAK: unknow(%{public}" SCNdPTR ") pc=0x%{public}" SCNxPTR ", %{public}s\n",
+                        ret, pc, (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         }
     }
     return hasUnknowMap;
