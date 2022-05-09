@@ -24,7 +24,7 @@
 
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined (IOS_PLATFORM)
 constexpr static char DL_NAMESPACE[] = "ace";
 #endif
 } // namespace
@@ -137,10 +137,13 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     }
 
     NativeModule* nativeModule = FindNativeModuleByCache(moduleName);
+
+#ifndef IOS_PLATFORM
     if (nativeModule == nullptr) {
         HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, internal, isAppModule, isArk);
     }
+#endif
 
     if (pthread_mutex_unlock(&mutex_) != 0) {
         HILOG_ERROR("pthread_mutex_unlock is failed");
