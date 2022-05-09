@@ -16,18 +16,24 @@
 #ifndef FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H
 #define FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H
 
+#ifdef ENABLE_MEMLEAK_DEBUG
 #include <atomic>
+#endif
 #include <stddef.h>
+#ifdef ENABLE_MEMLEAK_DEBUG
 #include <string>
 #include <vector>
+#endif
 
 class NativeValue;
 struct NativeScope;
+#ifdef ENABLE_MEMLEAK_DEBUG
 struct StructVma {
     uint64_t begin = 0;
     uint64_t end = 0;
     std::string path;
 };
+#endif
 
 class NativeScopeManager {
 public:
@@ -46,13 +52,17 @@ public:
     NativeScopeManager(NativeScopeManager&) = delete;
     virtual NativeScopeManager& operator=(NativeScopeManager&) = delete;
 
+#ifdef ENABLE_MEMLEAK_DEBUG
     static const int MAPINFO_SIZE = 256;
     static const int NAME_LEN = 128;
     static const int DEBUG_MEMLEAK;
     static const int BACKTRACE_DEPTH;
+#endif
 
 private:
+#ifdef ENABLE_MEMLEAK_DEBUG
     static std::atomic<std::vector<struct StructVma>*> vmas;
+#endif
     NativeScope* root_;
     NativeScope* current_;
 };

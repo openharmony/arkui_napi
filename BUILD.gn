@@ -181,7 +181,6 @@ if (defined(ohos_lite)) {
         "//third_party/libuv/include",
         "//third_party/node/src",
         "//utils/native/base/include",
-        "//third_party/libunwind/include",
       ]
 
       sources = napi_sources
@@ -204,21 +203,22 @@ if (defined(ohos_lite)) {
           external_deps = [
             "hitrace_native:libhitrace",
             "hiviewdfx_hilog_native:libhilog",
-            "startup_l2:syspara",
           ]
           defines += [ "ENABLE_HITRACE" ]
           if (product_name != "ohos-sdk") {
             if (napi_enable_container_scope) {
               deps += [ ":ace_container_scope" ]
-              deps += [ "//third_party/libunwind:libunwind" ]
               defines += [ "ENABLE_CONTAINER_SCOPE" ]
             }
           }
         } else {
-          external_deps = [
-            "hilog:libhilog",
-            "startup_l2:syspara",
-          ]
+          external_deps = [ "hilog:libhilog" ]
+        }
+        if (napi_enable_container_scope) {
+            defines += [ "ENABLE_MEMLEAK_DEBUG" ]
+            deps += [ "//third_party/libunwind:libunwind" ]
+            external_deps += [ "startup_l2:syspara" ]
+            include_dirs += [ "//third_party/libunwind/include" ]
         }
       }
 
