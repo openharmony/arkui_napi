@@ -161,7 +161,7 @@ static bool BackTrace(const std::vector<struct StructVma> &vmas)
             HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}" SCNxPTR ", %{public}s\n", sym, offset,
                         (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         } else {
-            HILOG_ERROR("MEMLEAK: unknow(%{public}" SCNdPTR ") pc=0x%{public}" SCNxPTR ", %{public}s\n",
+            HILOG_ERROR("MEMLEAK: unknow(%{public}d) pc=0x%{public}" SCNxPTR ", %{public}s\n",
                         ret, pc, (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         }
     }
