@@ -215,10 +215,10 @@ if (defined(ohos_lite)) {
           external_deps = [ "hilog:libhilog" ]
         }
         if (napi_enable_container_scope) {
-            defines += [ "ENABLE_MEMLEAK_DEBUG" ]
-            deps += [ "//third_party/libunwind:libunwind" ]
-            external_deps += [ "startup_l2:syspara" ]
-            include_dirs += [ "//third_party/libunwind/include" ]
+          defines += [ "ENABLE_MEMLEAK_DEBUG" ]
+          deps += [ "//third_party/libunwind:libunwind" ]
+          external_deps += [ "startup_l2:syspara" ]
+          include_dirs += [ "//third_party/libunwind/include" ]
         }
       }
 

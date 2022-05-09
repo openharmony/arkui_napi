@@ -33,8 +33,6 @@
 #endif
 #include "utils/log.h"
 
-using OHOS::system::GetIntParameter;
-
 struct NativeHandle {
     NativeValue* value = nullptr;
     NativeHandle* sibling = nullptr;
@@ -51,6 +49,7 @@ struct NativeScope {
 };
 
 #ifdef ENABLE_MEMLEAK_DEBUG
+using OHOS::system::GetIntParameter;
 const int NativeScopeManager::DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>("persist.napi.memleak.debug", 0);
 // 100 for the default depth.
 const int NativeScopeManager::BACKTRACE_DEPTH = OHOS::system::GetIntParameter<int>("persist.napi.memleak.depth", 100);
@@ -115,14 +114,14 @@ static void CreateVmas(int pid, std::vector<struct StructVma> &vmas)
     (void)fclose(fp);
 }
 
-static void ResetVmas(void)
+static void ResetVmas(std::atomic<std::vector<struct StructVma>*> &vmas)
 {
     std::vector<struct StructVma> *new_vmas = new std::vector<struct StructVma>();
     if (new_vmas == nullptr) {
         return;
     }
     CreateVmas(getpid(), *new_vmas);
-    new_vmas = NativeScopeManager::vmas.exchange(new_vmas);
+    new_vmas = vmas.exchange(new_vmas);
     if (new_vmas != nullptr) {
         delete new_vmas;
     }
@@ -158,10 +157,10 @@ static bool BackTrace(const std::vector<struct StructVma> &vmas)
             hasUnknowMap = true;
         }
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
-            HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}x, %{public}s\n", sym, offset,
+            HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}" SCNxPTR ", %{public}s\n", sym, offset,
                         (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         } else {
-            HILOG_ERROR("MEMLEAK: unknow pc=0x%{public}x, %{public}s\n", pc,
+            HILOG_ERROR("MEMLEAK: unknow pc=0x%{public}" SCNxPTR ", %{public}s\n", pc,
                         (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         }
     }
@@ -175,7 +174,7 @@ NativeScopeManager::NativeScopeManager()
     current_ = root_;
 #ifdef ENABLE_MEMLEAK_DEBUG
     if (NativeScopeManager::DEBUG_MEMLEAK != 0 && NativeScopeManager::vmas == nullptr) {
-        ResetVmas();
+        ResetVmas(NativeScopeManager::vmas);
     }
 #endif
 }
@@ -312,11 +311,12 @@ void NativeScopeManager::CreateHandle(NativeValue* value)
     current_->handleCount++;
 #ifdef ENABLE_MEMLEAK_DEBUG
     if (NativeScopeManager::DEBUG_MEMLEAK != 0 && current_ == root_) {
-        HILOG_ERROR("MEMLEAK: size=%{public}d, total=%{public}d\n", sizeof(*value), current_->handleCount);
+        HILOG_ERROR("MEMLEAK: size=%{public}" SCNdPTR ", total=%{public}" SCNdPTR,
+                    sizeof(*value), current_->handleCount);
         if (NativeScopeManager::vmas != nullptr && !BackTrace(*NativeScopeManager::vmas)) {
             return;
         }
-        ResetVmas();
+        ResetVmas(NativeScopeManager::vmas);
     }
 #endif
 }
