@@ -55,7 +55,7 @@ void JerryScriptNativeString::GetCString16(char16_t* buffer, size_t size, size_t
 {
     constexpr int maxStringLength = 1024;
     size_t utf8Length = GetLength();
-    if (utf8Length <= 0 || utf8Length > maxStringLength) {
+    if (size == 0 || utf8Length == 0 || utf8Length > maxStringLength) {
         return;
     }
     char *str = new char[utf8Length];

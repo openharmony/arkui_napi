@@ -63,7 +63,10 @@ if (defined(ohos_lite)) {
       "//third_party/libuv:uv",
     ]
 
-    cflags = [ "-fPIC" ]
+    cflags = [
+      "-fPIC",
+      "-DNAPI_TEST",
+    ]
   }
 
   shared_library("ace_napi_jerryscript") {

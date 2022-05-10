@@ -50,6 +50,7 @@ template("ace_napi_impl") {
       "quickjs_ext.cpp",
       "quickjs_native_deferred.cpp",
       "quickjs_native_engine.cpp",
+      "quickjs_native_engine_impl.cpp",
       "quickjs_native_reference.cpp",
     ]
 
