@@ -18,7 +18,7 @@ ohos_shared_library("netserver") {
     "//third_party/libuv/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
-    "//utils/native/base/include",
+    "//third_party/bounds_checking_function/include",
   ]
 
   sources = [
@@ -30,8 +30,8 @@ ohos_shared_library("netserver") {
 
   deps = [
     "//foundation/arkui/napi:ace_napi",
+    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/libuv:uv",
-    "//utils/native/base:utilsecurec",
   ]
 
   if (is_standard_system) {

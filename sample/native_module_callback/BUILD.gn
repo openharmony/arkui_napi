@@ -18,15 +18,15 @@ ohos_shared_library("callback") {
     "//foundation/arkui/napi/interfaces/kits",
     "//third_party/libuv/include",
     "//third_party/node/src",
-    "//utils/native/base/include",
+    "//third_party/bounds_checking_function/include",
   ]
 
   sources = [ "js_callback.cpp" ]
 
   deps = [
     "//foundation/arkui/napi/:ace_napi",
+    "//third_party/bounds_checking_function:libsec_static",
     "//third_party/libuv:uv",
-    "//utils/native/base:utilsecurec",
   ]
 
   relative_install_dir = "module"

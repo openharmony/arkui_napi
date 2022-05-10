@@ -139,7 +139,7 @@ if (defined(ohos_lite)) {
         "//foundation/arkui/napi/interfaces/kits",
         "//third_party/libuv/include",
         "//third_party/node/src",
-        "//utils/native/base/include",
+        "//third_party/bounds_checking_function/include",
       ]
 
       sources = napi_sources
@@ -151,8 +151,8 @@ if (defined(ohos_lite)) {
       defines += [ "IOS_PLATFORM" ]
 
       deps += [
+        "//third_party/bounds_checking_function:libsec_static",
         "//third_party/libuv:uv",
-        "//utils/native/base:utilsecurec",
       ]
 
       # Use static libuv for cross build
@@ -180,7 +180,7 @@ if (defined(ohos_lite)) {
         "//foundation/arkui/napi/interfaces/kits",
         "//third_party/libuv/include",
         "//third_party/node/src",
-        "//utils/native/base/include",
+        "//third_party/bounds_checking_function/include",
       ]
 
       sources = napi_sources
@@ -217,8 +217,8 @@ if (defined(ohos_lite)) {
       }
 
       deps += [
+        "//third_party/bounds_checking_function:libsec_static",
         "//third_party/libuv:uv",
-        "//utils/native/base:utilsecurec",
       ]
 
       # Use static libuv for cross build
