@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -820,4 +820,133 @@ HWTEST_F(NapiExtTest, AddFinalizerTest001, testing::ext::TestSize.Level1)
     napi_delete_reference(env, ref);
     ASSERT_TRUE(testValue);
     HILOG_INFO("add_finalizer_test_0100 end");
+}
+
+#if (defined(FOR_JERRYSCRIPT_TEST))
+HWTEST_F(NapiExtTest, ApiGetModuleFileName_001, testing::ext::TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript start";
+
+    napi_env env = (napi_env)engine_;
+    const char* result = nullptr;
+    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript node_api_get_module_file_name 1 execute";
+    ASSERT_CHECK_CALL(node_api_get_module_file_name(env, &result));
+    ASSERT_EQ(std::string(result), "/usr/lib/liblauncher.so");
+
+    napi_env abilityEnv = (napi_env)moduleNameEngine_;
+    const char* result2 = nullptr;
+    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript node_api_get_module_file_name 2 execute";
+    ASSERT_CHECK_CALL(node_api_get_module_file_name(abilityEnv, &result2));
+    ASSERT_EQ(std::string(result2), "/usr/lib/libability.so");
+    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript end";
+}
+#else
+// quickjs
+HWTEST_F(NapiExtTest, ApiGetModuleFileName_001, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ApiGetModuleFileName_001 start");
+    napi_env env = (napi_env)engine_;
+    const char* result = nullptr;
+    GTEST_LOG_(INFO) << "node_api_get_module_file_name 1 execute";
+    ASSERT_CHECK_CALL(node_api_get_module_file_name(env, &result));
+    ASSERT_EQ(std::string(result), "/system/lib/module/ability/libfeatureability.z.so");
+
+    napi_env windowEnv = (napi_env)moduleNameEngine_;
+    const char* result2 = nullptr;
+    GTEST_LOG_(INFO) << "node_api_get_module_file_name 2 execute";
+    ASSERT_CHECK_CALL(node_api_get_module_file_name(windowEnv, &result2));
+    ASSERT_EQ(std::string(result2), "/system/lib/module/libwindow.z.so");
+    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001 result2" << result2;
+    HILOG_INFO("ApiGetModuleFileName_001 end");
+}
+#endif
+
+typedef struct {
+    size_t value;
+    bool print;
+    napi_ref js_cb_ref;
+} AddonData;
+
+static void DeleteAddonData(napi_env env, void* raw_data, void* hint)
+{
+    AddonData* data = (AddonData*)raw_data;
+    if (data->print) {
+        printf("deleting addon data\n");
+    }
+    if (data->js_cb_ref != NULL) {
+        NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->js_cb_ref));
+    }
+    free(data);
+}
+
+static napi_value SetPrintOnDelete(napi_env env, napi_callback_info info)
+{
+    AddonData* data;
+    NAPI_CALL(env, napi_get_instance_data(env, (void**)&data));
+    data->print = true;
+    return NULL;
+}
+
+static void TestFinalizer(napi_env env, void* raw_data, void* hint)
+{
+    (void)raw_data;
+    (void)hint;
+
+    AddonData* data;
+    napi_value jsResult;
+    NAPI_CALL_RETURN_VOID(env, napi_get_instance_data(env, (void**)&data));
+    napi_value js_cb, undefined;
+    NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, data->js_cb_ref, &js_cb));
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &undefined));
+    NAPI_CALL_RETURN_VOID(env, napi_call_function(env, undefined, js_cb, 0, NULL, &jsResult));
+
+    NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->js_cb_ref));
+    data->js_cb_ref = NULL;
+}
+
+static napi_value ObjectWithFinalizer(napi_env env, napi_callback_info info)
+{
+    HILOG_INFO("%{public}s", "start.");
+    AddonData* data;
+
+    napi_value result, js_cb;
+    size_t argc = 1;
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        HILOG_INFO("%{public}s", "function called");
+        return nullptr;
+    };
+
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &js_cb);
+
+    NAPI_CALL(env, napi_get_instance_data(env, (void**)&data));
+    NAPI_ASSERT(env, data->js_cb_ref == NULL, "reference must be NULL");
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &js_cb, NULL, NULL));
+    NAPI_CALL(env, napi_create_object(env, &result));
+    NAPI_CALL(env, napi_add_finalizer(env, result, NULL, TestFinalizer, NULL, NULL));
+    NAPI_CALL(env, napi_create_reference(env, js_cb, 1, &data->js_cb_ref));
+    HILOG_INFO("%{public}s", "end.");
+    return nullptr;
+}
+
+HWTEST_F(NapiExtTest, InstanceDataTest_001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    // Set instance data
+    AddonData* data = (AddonData*)malloc(sizeof(*data));
+    data->value = 41;
+    data->print = false;
+    data->js_cb_ref = NULL;
+    ASSERT_CHECK_CALL(napi_set_instance_data(env, data, DeleteAddonData, NULL));
+
+    // Test get instance data
+    AddonData* get_data = nullptr;
+    ASSERT_CHECK_CALL(napi_get_instance_data(env, (void**)&get_data));
+    ++get_data->value;
+    const size_t expectValue = 42;
+    ASSERT_EQ(get_data->value, expectValue);
+
+    // Test finalizer
+    SetPrintOnDelete(env, nullptr);
+    ObjectWithFinalizer(env, nullptr);
 }

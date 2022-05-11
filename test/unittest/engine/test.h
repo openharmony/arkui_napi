@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,7 @@ public:
     static void *Run(void *arg);
 protected:
     NativeEngine* engine_;
+    NativeEngine* moduleNameEngine_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */

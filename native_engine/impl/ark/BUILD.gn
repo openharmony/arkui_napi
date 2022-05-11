@@ -44,6 +44,7 @@ template("ace_napi_impl") {
     sources = [
       "ark_native_deferred.cpp",
       "ark_native_engine.cpp",
+      "ark_native_engine_impl.cpp",
       "ark_native_reference.cpp",
       "native_value/ark_native_array.cpp",
       "native_value/ark_native_array_buffer.cpp",

@@ -197,7 +197,7 @@ public:
     v8::Local<v8::Object> LoadModuleByName(
         const std::string& moduleName, bool isAppModule, const std::string& param,
         const std::string& instanceName, void* instance);
-    void StartCpuProfiler(const std::string fileName = "") override {}
+    void StartCpuProfiler(const std::string& fileName = "") override {}
     void StopCpuProfiler() override {}
 
     void ResumeVM() override {}
@@ -214,9 +214,9 @@ public:
         return false;
     }
 
-    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
+    void DumpHeapSnapShot(const std::string& path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) override {}
-    bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) override
+    bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override
     {
         return false;
     }
@@ -224,7 +224,7 @@ public:
     {
         return false;
     }
-    bool StopHeapTracking(const std::string &filePath) override
+    bool StopHeapTracking(const std::string& filePath) override
     {
         return false;
     }
