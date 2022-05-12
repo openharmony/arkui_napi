@@ -56,10 +56,13 @@ size_t JerryScriptNativeArrayBuffer::GetLength()
 
 bool JerryScriptNativeArrayBuffer::IsDetachedArrayBuffer()
 {
-    jerry_value_t res = jerry_is_arraybuffer_detachable(value_);
-    bool is_detachable = jerry_get_boolean_value(res);
-    jerry_release_value(res);
-    return !is_detachable;
+    int testResult = 40;
+    int result = jerry_is_arraybuffer_detachable(value_);
+    if (result == testResult) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool JerryScriptNativeArrayBuffer::DetachArrayBuffer()

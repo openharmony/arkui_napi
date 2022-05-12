@@ -18,7 +18,7 @@
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
 
-static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
+static constexpr int32_t MAX_THEAD_SAFE_COUNT = 128;
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
 {
@@ -174,13 +174,13 @@ using CleanupHook = void (*)(void* arg);
 using AsyncCleanupHook = void (*)(void* arg, void (*)(void*), void*);
 
 struct AsyncCleanupHookInfo final {
-    napi_env env_;
-    AsyncCleanupHook fun_;
-    void* arg_;
-    bool started_ = false;
+    napi_env env;
+    AsyncCleanupHook fun;
+    void* arg;
+    bool started = false;
     // Use a self-reference to make sure the storage is kept alive while the
     // cleanup hook is registered but not yet finished.
-    std::shared_ptr<AsyncCleanupHookInfo> self_;
+    std::shared_ptr<AsyncCleanupHookInfo> self;
 };
 
 // Opaque type that is basically an alias for `shared_ptr<AsyncCleanupHookInfo>`
@@ -188,7 +188,7 @@ struct AsyncCleanupHookInfo final {
 // std::shared_ptr does not generally maintain a consistent ABI even on a
 // specific platform.
 struct ACHHandle final {
-    std::shared_ptr<AsyncCleanupHookInfo> info_;
+    std::shared_ptr<AsyncCleanupHookInfo> info;
 };
 
 struct DeleteACHHandle {
@@ -203,10 +203,10 @@ static void FinishAsyncCleanupHook(void* arg)
 {
     HILOG_INFO("%{public}s, start.", __func__);
     AsyncCleanupHookInfo* info = static_cast<AsyncCleanupHookInfo*>(arg);
-    std::shared_ptr<AsyncCleanupHookInfo> keep_alive = info->self_;
-    auto engine = reinterpret_cast<NativeEngine*>(info->env_);
+    std::shared_ptr<AsyncCleanupHookInfo> keep_alive = info->self;
+    auto engine = reinterpret_cast<NativeEngine*>(info->env);
     engine->DecreaseWaitingRequestCounter();
-    info->self_.reset();
+    info->self.reset();
     HILOG_INFO("%{public}s, end.", __func__);
 }
 
@@ -214,10 +214,10 @@ static void RunAsyncCleanupHook(void* arg)
 {
     HILOG_INFO("%{public}s, start.", __func__);
     AsyncCleanupHookInfo* info = static_cast<AsyncCleanupHookInfo*>(arg);
-    auto engine = reinterpret_cast<NativeEngine*>(info->env_);
+    auto engine = reinterpret_cast<NativeEngine*>(info->env);
     engine->IncreaseWaitingRequestCounter();
-    info->started_ = true;
-    info->fun_(info->arg_, FinishAsyncCleanupHook, info);
+    info->started = true;
+    info->fun(info->arg, FinishAsyncCleanupHook, info);
     HILOG_INFO("%{public}s, end.", __func__);
 }
 
@@ -225,10 +225,10 @@ static AsyncCleanupHookHandle AddEnvironmentCleanupHook(napi_env env, AsyncClean
 {
     HILOG_INFO("%{public}s, start.", __func__);
     auto info = std::make_shared<AsyncCleanupHookInfo>();
-    info->env_ = env;
-    info->fun_ = fun;
-    info->arg_ = arg;
-    info->self_ = info;
+    info->env = env;
+    info->fun = fun;
+    info->arg = arg;
+    info->self = info;
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->AddCleanupHook(RunAsyncCleanupHook, info.get());
     HILOG_INFO("%{public}s, end.", __func__);
@@ -238,12 +238,11 @@ static AsyncCleanupHookHandle AddEnvironmentCleanupHook(napi_env env, AsyncClean
 static void RemoveEnvironmentCleanupHook(AsyncCleanupHookHandle handle)
 {
     HILOG_INFO("%{public}s, start.", __func__);
-    if (handle->info_->started_) {
+    if (handle->info->started)
         return;
-    }
-    handle->info_->self_.reset();
-    auto engine = reinterpret_cast<NativeEngine*>(handle->info_->env_);
-    engine->RemoveCleanupHook(RunAsyncCleanupHook, handle->info_.get());
+    handle->info->self.reset();
+    auto engine = reinterpret_cast<NativeEngine*>(handle->info->env);
+    engine->RemoveCleanupHook(RunAsyncCleanupHook, handle->info.get());
     HILOG_INFO("%{public}s, end.", __func__);
 }
 
@@ -318,7 +317,7 @@ NAPI_INNER_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi
     CHECK_ARG(env, async_resource_name);
     RETURN_STATUS_IF_FALSE(env, max_queue_size >= 0, napi_invalid_arg);
     RETURN_STATUS_IF_FALSE(
-        env, initial_thread_count > 0 && initial_thread_count <= MAX_THREAD_SAFE_COUNT, napi_invalid_arg);
+        env, initial_thread_count > 0 && initial_thread_count <= MAX_THEAD_SAFE_COUNT, napi_invalid_arg);
     CHECK_ARG(env, result);
     if (func == nullptr) {
         CHECK_ARG(env, call_js_cb);
@@ -510,37 +509,5 @@ NAPI_INNER_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callb
     auto callbackScope = reinterpret_cast<NativeCallbackScope*>(scope);
     callbackScopeManager->Close(callbackScope);
 
-    return napi_clear_last_error(env);
-}
-
-NAPI_INNER_EXTERN napi_status napi_set_instance_data(
-    napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint)
-{
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
-    CHECK_ENV(env);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
-    engine->SetInstanceData(data, callback, finalize_hint);
-    return napi_clear_last_error(env);
-}
-
-NAPI_INNER_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
-{
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
-    CHECK_ENV(env);
-    CHECK_ARG(env, data);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    engine->GetInstanceData(data);
-    return napi_clear_last_error(env);
-}
-
-NAPI_INNER_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result)
-{
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
-    CHECK_ENV(env);
-    CHECK_ARG(env, result);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->GetModuleFileName();
-    HILOG_INFO("%{public}s, napi called fileName : %{public}s", __func__, *result);
     return napi_clear_last_error(env);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,8 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H
 
 #include <functional>
+#include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -31,7 +33,64 @@
 #include "reference_manager/native_reference_manager.h"
 #include "scope_manager/native_scope_manager.h"
 #include "utils/macros.h"
-#include "native_engine_interface.h"
+
+typedef struct uv_loop_s uv_loop_t;
+
+struct NativeErrorExtendedInfo {
+    const char* message = nullptr;
+    void* reserved = nullptr;
+    uint32_t engineErrorCode = 0;
+    int errorCode = 0;
+};
+
+struct ExceptionInfo {
+    const char* message_ = nullptr;
+    int32_t lineno_ = 0;
+    int32_t colno_ = 0;
+
+    ~ExceptionInfo()
+    {
+        if (message_ != nullptr) {
+            delete[] message_;
+        }
+    }
+};
+
+enum LoopMode {
+    LOOP_DEFAULT, LOOP_ONCE, LOOP_NOWAIT
+};
+
+enum DumpFormat {
+    JSON, BINARY, OTHER
+};
+
+class CleanupHookCallback {
+public:
+    using Callback = void (*)(void*);
+
+    CleanupHookCallback(Callback fn, void* arg, uint64_t insertion_order_counter)
+        : fn_(fn), arg_(arg), insertion_order_counter_(insertion_order_counter)
+    {}
+
+    struct Hash {
+        inline size_t operator()(const CleanupHookCallback& cb) const
+        {
+            return std::hash<void*>()(cb.arg_);
+        }
+    };
+    struct Equal {
+        inline bool operator()(const CleanupHookCallback& a, const CleanupHookCallback& b) const
+        {
+            return a.fn_ == b.fn_ && a.arg_ == b.arg_;
+        };
+    };
+
+private:
+    friend class NativeEngine;
+    Callback fn_;
+    void* arg_;
+    uint64_t insertion_order_counter_;
+};
 
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
@@ -60,7 +119,6 @@ public:
     virtual void CancelCheckUVLoop();
 #endif
     virtual void* GetJsEngine();
-    virtual void DeleteEngine();
 
     virtual NativeValue* GetGlobal() = 0;
 
@@ -99,7 +157,7 @@ public:
 
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
-                                      NativeValue* const *argv,
+                                      NativeValue* const* argv,
                                       size_t argc) = 0;
     virtual NativeValue* RunScript(NativeValue* script) = 0;
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
@@ -110,7 +168,7 @@ public:
                                      const NativePropertyDescriptor* properties,
                                      size_t length) = 0;
 
-    virtual NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const *argv, size_t argc) = 0;
+    virtual NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const* argv, size_t argc) = 0;
 
     virtual NativeReference* CreateReference(NativeValue* value, uint32_t initialRefcount,
         NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
@@ -141,7 +199,7 @@ public:
     virtual void DeleteSerializationData(NativeValue* value) const = 0;
     virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
 
-    virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
+    virtual void StartCpuProfiler(const std::string fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
 
     virtual void ResumeVM() = 0;
@@ -170,17 +228,17 @@ public:
 
     void MarkSubThread()
     {
-        nativeEngineImpl_->MarkSubThread();
+        isMainThread_ = false;
     }
 
     bool IsMainThread() const
     {
-        return nativeEngineImpl_->IsMainThread();
+        return isMainThread_;
     }
 
     void SetCleanEnv(CleanEnv cleanEnv)
     {
-        nativeEngineImpl_->SetCleanEnv(cleanEnv);
+        cleanEnv_ = cleanEnv;
     }
 
     // register init worker func
@@ -208,12 +266,12 @@ public:
 
     bool IsStopping() const
     {
-        return nativeEngineImpl_->IsStopping();
+        return isStopping_.load();
     }
 
     void SetStopping(bool value)
     {
-        nativeEngineImpl_->SetStopping(value);
+        isStopping_.store(value);
     }
 
     virtual void PrintStatisticResult() = 0;
@@ -231,20 +289,21 @@ public:
     // run script by path
     NativeValue* RunScript(const char* path);
 
-    NativeEngineInterface* GetNativeEngineImpl();
-
-    const char* GetModuleFileName();
-
-    void SetModuleFileName(std::string &moduleName);
-
-    void SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint);
-    void GetInstanceData(void** data);
-
 protected:
-    void *jsEngine_;
+    void Init();
+    void Deinit();
 
-    NativeEngineInterface* nativeEngineImpl_ = nullptr;
-    bool isAppModule_ = false;
+    NativeModuleManager* moduleManager_ = nullptr;
+    NativeScopeManager* scopeManager_ = nullptr;
+    NativeReferenceManager* referenceManager_ = nullptr;
+    NativeCallbackScopeManager* callbackScopeManager_ = nullptr;
+
+    NativeErrorExtendedInfo lastError_;
+    NativeValue* lastException_ = nullptr;
+
+    uv_loop_t* loop_ = nullptr;
+
+    void *jsEngine_;
 
     // register for worker
     InitWorkerFunc initWorkerFunc_ {nullptr};
@@ -254,10 +313,26 @@ protected:
     NativeAsyncCompleteCallback nativeAsyncCompleteCallback_ {nullptr};
 
 private:
-    std::string moduleName_;
-    std::mutex instanceDataLock_;
-    NativeObjectInfo instanceDataInfo_;
-    void FinalizerInstanceData(void);
+    bool isMainThread_ { true };
+
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    static void UVThreadRunner(void* nativeEngine);
+    void PostLoopTask();
+
+    bool checkUVLoop_ = false;
+    uv_thread_t uvThread_;
+#endif
+
+    PostTask postTask_ = nullptr;
+    CleanEnv cleanEnv_ = nullptr;
+    uv_sem_t uvSem_;
+    uv_async_t uvAsync_;
+    std::unordered_set<CleanupHookCallback, CleanupHookCallback::Hash, CleanupHookCallback::Equal> cleanup_hooks_;
+    uint64_t cleanup_hook_counter_ = 0;
+    int request_waiting_ = 0;
+    std::atomic_bool isStopping_ { false };
+    pthread_t tid_ = 0;
+    std::unique_ptr<NativeAsyncWork> asyncWorker_ {};
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */

@@ -59,12 +59,11 @@ bool jerry_add_external()
 
 jerry_value_t jerry_create_external(void* value, jerry_finalizer_t finalizer, void* hint)
 {
-    auto externalCtx = new jerry_external_context;
-    if (externalCtx) {
-        externalCtx->value = value;
-        externalCtx->callback = finalizer;
-        externalCtx->hint = hint;
-    }
+    auto externalCtx = new jerry_external_context {
+        .value = value,
+        .callback = finalizer,
+        .hint = hint,
+    };
     jerry_value_t global = jerry_get_global_object();
     jerry_value_t external = jerryx_get_property_str(global, "External");
     jerry_value_t object = jerry_create_undefined();

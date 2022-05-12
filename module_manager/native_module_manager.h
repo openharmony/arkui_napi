@@ -16,9 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 #define FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 
-#include <cstdint>
-#include <map>
 #include <pthread.h>
+#include <stdint.h>
 #include "utils/macros.h"
 
 #ifdef WINDOWS_PLATFORM
@@ -63,8 +62,6 @@ public:
     void SetAppLibPath(const char* appLibPath);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule, bool internal = false,
                                    bool isArk = false);
-    void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
-    const char* GetModuleFileName(const char* moduleName, bool isAppModule);
 
 private:
     NativeModuleManager();
@@ -85,8 +82,6 @@ private:
 
     static NativeModuleManager instance_;
     pthread_mutex_t mutex_;
-
-    std::map<std::string, NativeEngine*> nativeEngineList_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H */
