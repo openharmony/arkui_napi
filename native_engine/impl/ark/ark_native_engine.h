@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,16 +27,46 @@ using panda::ecmascript::EcmaVM;
 using panda::Local;
 using panda::LocalScope;
 using panda::JSValueRef;
+using panda::JSNApi;
+using panda::DFXJSNApi;
+
+class SerializationData {
+public:
+    SerializationData() : data_(nullptr), size_(0) {}
+    ~SerializationData() = default;
+
+    uint8_t* GetData() const
+    {
+        return data_.get();
+    }
+    size_t GetSize() const
+    {
+        return size_;
+    }
+
+private:
+    struct DataDeleter {
+        void operator()(uint8_t* p) const
+        {
+            free(p);
+        }
+    };
+
+    std::unique_ptr<uint8_t, DataDeleter> data_;
+    size_t size_;
+};
 
 class ArkNativeEngine : public NativeEngine {
 public:
     // ArkNativeEngine constructor
     ArkNativeEngine(EcmaVM* vm, void* jsEngine);
-    ArkNativeEngine(NativeEngineInterface* engineImpl, void* jsEngine, bool isAppModule);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    const EcmaVM* GetEcmaVm() const;
+    const EcmaVM* GetEcmaVm() const
+    {
+        return vm_;
+    }
 
     void Loop(LoopMode mode, bool needSync = false) override;
 
@@ -91,6 +121,7 @@ public:
     // Create native promise value
     NativeValue* CreatePromise(NativeDeferred** deferred) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
+    static void PromiseRejectCallback(void* values);
     // Create native error value
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
     // Call function
@@ -102,7 +133,7 @@ public:
     NativeValue* RunScript(NativeValue* script) override;
     // Run buffer script
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
-    NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
+    NativeValue* RunActor(std::vector<uint8_t>& buffer, const char *descriptor) override;
     // Set lib path
     void SetPackagePath(const std::string& packagePath);
     // Define native class
@@ -145,7 +176,7 @@ public:
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
     // Detect performance to obtain cpuprofiler file
-    void StartCpuProfiler(const std::string& fileName = "") override;
+    void StartCpuProfiler(const std::string fileName = "") override;
     void StopCpuProfiler() override;
 
     void ResumeVM() override;
@@ -153,11 +184,11 @@ public:
     bool IsSuspended() override;
     bool CheckSafepoint() override;
 
-    void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
+    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) override;
-    bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override;
+    bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
-    bool StopHeapTracking(const std::string& filePath) override;
+    bool StopHeapTracking(const std::string &filePath) override;
 
     void PrintStatisticResult() override;
     void StartRuntimeStat() override;
@@ -171,5 +202,17 @@ public:
     panda::Global<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
+
+private:
+    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
+
+    EcmaVM* vm_ = nullptr;
+    std::string exceptionStr_;
+    panda::LocalScope topScope_;
+    NativeReference* promiseRejectCallbackRef_ { nullptr };
+    NativeReference* checkCallbackRef_ { nullptr };
+    std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
+    UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
 };
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
