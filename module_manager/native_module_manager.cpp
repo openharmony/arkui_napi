@@ -22,6 +22,8 @@
 #include "securec.h"
 #include "utils/log.h"
 
+#include <mutex>
+
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined (IOS_PLATFORM)
@@ -29,7 +31,8 @@ constexpr static char DL_NAMESPACE[] = "ace";
 #endif
 } // namespace
 
-NativeModuleManager NativeModuleManager::instance_;
+NativeModuleManager* NativeModuleManager::instance_ = NULL;
+std::mutex g_instanceMutex;
 
 NativeModuleManager::NativeModuleManager()
 {
@@ -64,7 +67,13 @@ NativeModuleManager::~NativeModuleManager()
 
 NativeModuleManager* NativeModuleManager::GetInstance()
 {
-    return &instance_;
+    if (instance_ == NULL) {
+        std::lock_guard<std::mutex> lock(g_instanceMutex);
+        if (instance_ == NULL) {
+            instance_ = new NativeModuleManager();
+        }
+    }
+    return instance_;
 }
 
 void NativeModuleManager::SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine)
