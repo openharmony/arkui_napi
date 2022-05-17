@@ -129,6 +129,10 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->refCount = nativeModule->refCount;
     lastNativeModule_->registerCallback = nativeModule->registerCallback;
     lastNativeModule_->next = nullptr;
+#ifdef IOS_PLATFORM
+    // For iOS, force make module loaded, should support `GetJSCode` later
+    lastNativeModule_->moduleLoaded = true;
+#endif
 }
 
 void NativeModuleManager::CreateLdNamespace(const char* lib_ld_path)

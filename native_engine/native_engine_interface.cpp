@@ -15,7 +15,7 @@
 
 #include "native_engine_interface.h"
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/epoll.h>
 #endif
 #include <uv.h>
