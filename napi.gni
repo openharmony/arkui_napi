@@ -17,6 +17,7 @@ napi_sources = [
   "//foundation/arkui/napi/native_engine/native_api.cpp",
   "//foundation/arkui/napi/native_engine/native_async_work.cpp",
   "//foundation/arkui/napi/native_engine/native_engine.cpp",
+  "//foundation/arkui/napi/native_engine/native_engine_interface.cpp",
   "//foundation/arkui/napi/native_engine/native_node_api.cpp",
   "//foundation/arkui/napi/native_engine/native_safe_async_work.cpp",
   "//foundation/arkui/napi/reference_manager/native_reference_manager.cpp",

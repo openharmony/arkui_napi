@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,7 +21,8 @@
 
 class JerryScriptNativeEngine : public NativeEngine {
 public:
-    explicit JerryScriptNativeEngine(void* jsEngine);
+    JerryScriptNativeEngine(void* jsEngine);
+    JerryScriptNativeEngine(NativeEngineInterface* engineImpl, void* jsEngine, bool isAppModule);
     virtual ~JerryScriptNativeEngine();
 
     virtual void Loop(LoopMode mode, bool needSync = false) override;
@@ -88,7 +89,7 @@ public:
     virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
     virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
     virtual ExceptionInfo* GetExceptionForWorker() const override;
-    virtual void DeleteSerializationData(NativeValue* value) const override {}
+    virtual void DeleteSerializationData(NativeValue* value) const override;
 
     virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
 
@@ -99,56 +100,28 @@ public:
     virtual NativeValue* CreateDate(double time) override;
     virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) override;
 
-    void StartCpuProfiler(const std::string fileName = "") override {}
-    void StopCpuProfiler() override {}
+    void StartCpuProfiler(const std::string& fileName = "") override;
+    void StopCpuProfiler() override;
 
-    void ResumeVM() override {}
-    bool SuspendVM() override
-    {
-        return false;
-    }
-    bool IsSuspended() override
-    {
-        return false;
-    }
-    bool CheckSafepoint() override
-    {
-        return false;
-    }
+    void ResumeVM() override;
+    bool SuspendVM() override;
+    bool IsSuspended() override;
+    bool CheckSafepoint() override;
 
-    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON) override {}
-    bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) override
-    {
-        return false;
-    }
-    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override
-    {
-        return false;
-    }
-    bool StopHeapTracking(const std::string &filePath) override
-    {
-        return false;
-    }
-
-    void PrintStatisticResult() override {}
-    void StartRuntimeStat() override {}
-    void StopRuntimeStat() override {}
-    size_t GetArrayBufferSize() override
-    {
-        return 0;
-    }
-    size_t GetHeapTotalSize() override
-    {
-        return 0;
-    }
-    size_t GetHeapUsedSize() override
-    {
-        return 0;
-    }
-
-    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
-    void HandleUncaughtException() override {}
+    void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
+        DumpFormat dumpFormat = DumpFormat::JSON) override;
+    bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override;
+    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
+    bool StopHeapTracking(const std::string& filePath) override;
+    
+    void PrintStatisticResult() override;
+    void StartRuntimeStat() override;
+    void StopRuntimeStat() override;
+    size_t GetArrayBufferSize() override;
+    size_t GetHeapTotalSize() override;
+    size_t GetHeapUsedSize() override;
+    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
+    void HandleUncaughtException() override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_H_ */
