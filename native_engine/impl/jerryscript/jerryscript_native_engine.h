@@ -118,6 +118,8 @@ public:
 
     void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) override {}
+    void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
+        bool isPrivate = false) override {}
     bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) override
     {
         return false;

@@ -951,8 +951,24 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, D
         DFXJSNApi::DumpHeapSnapshot(vm_, 2, path, isVmMode); // 2:enum is 2
     }
 }
+void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+{
+    if (dumpFormat == DumpFormat::JSON) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate);
+    }
+    if (dumpFormat == DumpFormat::BINARY) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 1, isVmMode, isPrivate);
+    }
+    if (dumpFormat == DumpFormat::OTHER) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
+    }
+}
 #else
 void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat)
+{
+    HILOG_WARN("ARK does not support snapshot on windows");
+}
+void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
 {
     HILOG_WARN("ARK does not support snapshot on windows");
 }
