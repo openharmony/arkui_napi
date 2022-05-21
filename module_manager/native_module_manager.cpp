@@ -378,8 +378,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             HILOG_INFO("ignore: no %{public}s in %{public}s", symbol, loadPath);
         }
     }
-
-    lastNativeModule_->moduleLoaded = true;
+    if (lastNativeModule_) {
+        lastNativeModule_->moduleLoaded = true;
+    }
     return lastNativeModule_;
 }
 
