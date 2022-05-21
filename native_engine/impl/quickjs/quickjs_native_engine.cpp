@@ -490,8 +490,14 @@ bool QuickJSNativeEngine::CheckSafepoint()
 
 void QuickJSNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
 {
-    nativeEngineImpl_->DumpHeapSnapShot(path, isVmMode, dumpFormat);
+    nativeEngineImpl_->DumpHeapSnapshot(path, isVmMode, dumpFormat);
 }
+
+void QuickJSNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+{
+    nativeEngineImpl_->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
+}
+
 bool QuickJSNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
 {
     return nativeEngineImpl_->BuildNativeAndJsBackStackTrace(stackTraceStr);

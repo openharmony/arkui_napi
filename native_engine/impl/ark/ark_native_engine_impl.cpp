@@ -966,7 +966,7 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
 }
 
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
-void ArkNativeEngineImpl::DumpHeapSnapShot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngineImpl::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
 {
     if (dumpFormat == DumpFormat::JSON) {
         DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode);
@@ -978,8 +978,26 @@ void ArkNativeEngineImpl::DumpHeapSnapShot(const std::string& path, bool isVmMod
         DFXJSNApi::DumpHeapSnapshot(vm_, 2, path, isVmMode); // 2:enum is 2
     }
 }
+
+void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+{
+    if (dumpFormat == DumpFormat::JSON) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate);
+    }
+    if (dumpFormat == DumpFormat::BINARY) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 1, isVmMode, isPrivate);
+    }
+    if (dumpFormat == DumpFormat::OTHER) {
+        DFXJSNApi::DumpHeapSnapshot(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
+    }
+}
 #else
-void ArkNativeEngineImpl::DumpHeapSnapShot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngineImpl::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
+{
+    HILOG_WARN("ARK does not support snapshot on windows");
+}
+
+void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
 {
     HILOG_WARN("ARK does not support snapshot on windows");
 }

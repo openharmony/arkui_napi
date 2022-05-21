@@ -182,8 +182,10 @@ public:
     bool IsSuspended() override;
     bool CheckSafepoint() override;
 
-    void DumpHeapSnapShot(const std::string& path, bool isVmMode = true,
+    void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) override;
+    void DumpHeapSnapshotExt(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
+        bool isPrivate = false) override;
     bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;

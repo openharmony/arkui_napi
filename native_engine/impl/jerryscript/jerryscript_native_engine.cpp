@@ -435,8 +435,15 @@ void JerryScriptNativeEngine::DumpHeapSnapshot(
     const std::string& path, bool isVmMode, DumpFormat dumpFormat)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    jerryscriptNativeEngineImpl->DumpHeapSnapShot(path, isVmMode, dumpFormat);
+    jerryscriptNativeEngineImpl->DumpHeapSnapshot(path, isVmMode, dumpFormat);
 }
+
+void JerryScriptNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    jerryscriptNativeEngineImpl->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
+}
+
 bool JerryScriptNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);

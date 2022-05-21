@@ -472,7 +472,13 @@ void ArkNativeEngine::SetPromiseRejectCallback(NativeReference* rejectCallbackRe
 void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->DumpHeapSnapShot(path, isVmMode, dumpFormat);
+    return arkNativeEngineImpl->DumpHeapSnapshot(path, isVmMode, dumpFormat);
+}
+
+void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
 }
 
 bool ArkNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
