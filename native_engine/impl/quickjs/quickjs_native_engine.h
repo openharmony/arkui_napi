@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,36 +19,11 @@
 #include "native_engine/native_engine.h"
 #include "quickjs_headers.h"
 
-class SerializeData {
-public:
-    SerializeData(size_t size, uint8_t* data) : dataSize_(size), value_(data) {}
-    ~SerializeData() = default;
-
-    uint8_t* GetData() const
-    {
-        return value_.get();
-    }
-    size_t GetSize() const
-    {
-        return dataSize_;
-    }
-
-private:
-    struct Deleter {
-        void operator()(uint8_t* ptr) const
-        {
-            free(ptr);
-        }
-    };
-
-    size_t dataSize_;
-    std::unique_ptr<uint8_t, Deleter> value_;
-};
-
 class QuickJSNativeEngine : public NativeEngine {
 public:
     QuickJSNativeEngine(JSRuntime* runtime, JSContext* contex, void* jsEngine);
-    ~QuickJSNativeEngine() override;
+    QuickJSNativeEngine(NativeEngineInterface* engineImpl, void* jsEngine, bool isAppModule);
+    virtual ~QuickJSNativeEngine();
 
     JSRuntime* GetRuntime();
     JSContext* GetContext();
@@ -131,64 +106,30 @@ public:
     bool TriggerFatalException(NativeValue* error) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
-    void StartCpuProfiler(const std::string fileName = "") override {}
-    void StopCpuProfiler() override {}
+    void StartCpuProfiler(const std::string& fileName = "") override;
+    void StopCpuProfiler() override;
 
-    void ResumeVM() override {}
-    bool SuspendVM() override
-    {
-        return false;
-    }
-    bool IsSuspended() override
-    {
-        return false;
-    }
-    bool CheckSafepoint() override
-    {
-        return false;
-    }
+    void ResumeVM() override;
+    bool SuspendVM() override;
+    bool IsSuspended() override;
+    bool CheckSafepoint() override;
 
-    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON) override {}
+    void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
+        DumpFormat dumpFormat = DumpFormat::JSON) override;
     void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false) override {}
-    bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) override
-    {
-        return false;
-    }
-    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override
-    {
-        return false;
-    }
-    bool StopHeapTracking(const std::string &filePath) override
-    {
-        return false;
-    }
-
-    void PrintStatisticResult() override {}
-    void StartRuntimeStat() override {}
-    void StopRuntimeStat() override {}
-    size_t GetArrayBufferSize() override
-    {
-        return 0;
-    }
-    size_t GetHeapTotalSize() override
-    {
-        return 0;
-    }
-    size_t GetHeapUsedSize() override
-    {
-        return 0;
-    }
-
-    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
-    void HandleUncaughtException() override {}
-
-private:
-    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
-
-    JSRuntime* runtime_;
-    JSContext* context_;
+        bool isPrivate = false) override;
+    bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override;
+    bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
+    bool StopHeapTracking(const std::string& filePath) override;
+    
+    void PrintStatisticResult() override;
+    void StartRuntimeStat() override;
+    void StopRuntimeStat() override;
+    size_t GetArrayBufferSize() override;
+    size_t GetHeapTotalSize() override;
+    size_t GetHeapUsedSize() override;
+    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
+    void HandleUncaughtException() override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_QUICKJS_QUICKJS_NATIVE_ENGINE_H */

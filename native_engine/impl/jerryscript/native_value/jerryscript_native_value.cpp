@@ -168,3 +168,71 @@ bool JerryScriptNativeValue::StrictEquals(NativeValue* value)
     jerry_value_t op = jerry_binary_operation(JERRY_BIN_OP_STRICT_EQUAL, value_, *value);
     return jerry_get_boolean_value(op);
 }
+bool JerryScriptNativeValue::IsArgumentsObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsAsyncFunction()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsBooleanObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsGeneratorFunction()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsMapIterator()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsSetIterator()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsGeneratorObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsModuleNamespaceObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsProxy()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsRegExp()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsNumberObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsMap()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsStringObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsSymbolObject()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsWeakMap()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsWeakSet()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsSet()
+{
+    return false;
+}

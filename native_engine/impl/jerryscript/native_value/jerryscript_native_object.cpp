@@ -58,11 +58,12 @@ void JerryScriptNativeObject::SetNativePointer(void* pointer, NativeFinalize cb,
         return;
     }
 
-    JerryScriptNativeObjectInfo* info = new JerryScriptNativeObjectInfo {
-        .engine = engine_,
-        .cb = cb,
-        .data = pointer,
-        .hint = hint,
+    JerryScriptNativeObjectInfo* info = new JerryScriptNativeObjectInfo;
+    if (info) {
+        info->engine = engine_;
+        info->cb = cb;
+        info->data = pointer;
+        info->hint = hint;
     };
 
     jerry_set_object_native_pointer(value_, info, &g_freeCallback);
@@ -86,11 +87,12 @@ void JerryScriptNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, voi
         return;
     }
 
-    JerryScriptNativeObjectInfo* info = new JerryScriptNativeObjectInfo {
-        .engine = engine_,
-        .cb = cb,
-        .data = pointer,
-        .hint = hint,
+    JerryScriptNativeObjectInfo* info = new JerryScriptNativeObjectInfo;
+    if (info) {
+        info->engine = engine_;
+        info->cb = cb;
+        info->data = pointer;
+        info->hint = hint;
     };
 
     jerry_set_object_native_pointer(value_, info, &g_freeCallback);

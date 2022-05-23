@@ -51,13 +51,10 @@ public:
     bool IsNumberObject() override;
     bool IsMap() override;
     bool IsSet() override;
-    bool IsKeyObject() override;
     bool IsArgumentsObject() override;
     bool IsAsyncFunction() override;
     bool IsBooleanObject() override;
-    bool IsCryptoKey() override;
     bool IsGeneratorFunction() override;
-    bool IsSharedArrayBuffer() override;
     bool IsStringObject() override;
     bool IsSymbolObject() override;
     bool IsWeakMap() override;
