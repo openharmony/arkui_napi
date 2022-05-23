@@ -66,7 +66,8 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
         ArkNativeReference* ref = new ArkNativeReference(engine_, this, 1, true, cb, pointer, hint);
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr);
-        value->Set(vm, key, object);
+        PropertyAttribute attr(object, true, false, true);
+        value->DefineProperty(vm, key, attr);
     }
 }
 
