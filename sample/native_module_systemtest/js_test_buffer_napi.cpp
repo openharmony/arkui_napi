@@ -113,7 +113,6 @@ static napi_value CopyBufferFun(napi_env env, napi_callback_info info)
         const_cast<char*>(paraStr.c_str()), &result_data, &theBuffer));
     HILOG_INFO("%{public}s,end", __func__);
     HILOG_INFO("%{public}s,str", result_data);
-    HILOG_INFO("%{public}d,size", paraStr.size());
     return theBuffer;
 }
 
