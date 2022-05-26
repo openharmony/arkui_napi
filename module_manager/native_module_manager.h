@@ -83,7 +83,7 @@ private:
     NativeModule* lastNativeModule_ = nullptr;
     char* appLibPath_ = nullptr;
 
-    static NativeModuleManager instance_;
+    static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;
 
     std::map<std::string, NativeEngine*> nativeEngineList_;

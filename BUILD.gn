@@ -129,116 +129,84 @@ if (defined(ohos_lite)) {
   import("//build/ohos.gni")
   import("//foundation/arkui/ace_engine/ace_config.gni")
 
-  if (target_os == "ios") {
-    ohos_source_set("ace_napi") {
-      defines = []
-      public_configs = [ ":ace_napi_config" ]
-      public_deps = [ "//third_party/libuv:uv" ]
-      deps = []
+  ohos_source_set("ace_napi_static") {
+    defines = []
+    public_configs = [ ":ace_napi_config" ]
+    deps = []
 
-      include_dirs = [
-        "//foundation/arkui/napi",
-        "//foundation/arkui/napi/interfaces/inner_api",
-        "//foundation/arkui/napi/interfaces/kits",
-        "//third_party/libuv/include",
-        "//third_party/node/src",
-        "//third_party/bounds_checking_function/include",
-      ]
+    include_dirs = [
+      "//foundation/arkui/napi",
+      "//foundation/arkui/napi/interfaces/inner_api",
+      "//foundation/arkui/napi/interfaces/kits",
+      "//third_party/libuv/include",
+      "//third_party/node/src",
+      "//utils/native/base/include",
+    ]
 
-      sources = napi_sources
+    sources = napi_sources
 
-      if (current_cpu == "arm64") {
-        defines += [ "_ARM64_" ]
-      }
+    if (current_cpu == "arm64") {
+      defines += [ "_ARM64_" ]
+    }
 
+    if (use_mingw_win) {
+      defines += [ "WINDOWS_PLATFORM" ]
+    } else if (use_mac) {
+      defines += [ "MAC_PLATFORM" ]
+    } else if (is_cross_platform_build && target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
-
-      deps += [
-        "//third_party/bounds_checking_function:libsec_static",
-        "//third_party/libuv:uv",
-      ]
-
-      # Use static libuv for cross build
-      if (is_cross_platform_build) {
-        public_deps -= [ "//third_party/libuv:uv" ]
-        deps -= [ "//third_party/libuv:uv" ]
-        deps += [ "//third_party/libuv:uv_static" ]
+    } else if (is_cross_platform_build && target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+      aosp_deps = [ "shared_library:liblog" ]
+    } else {
+      if (is_standard_system) {
+        external_deps = [
+          "hitrace_native:libhitrace",
+          "hiviewdfx_hilog_native:libhilog",
+        ]
+        defines += [ "ENABLE_HITRACE" ]
+        if (product_name != "ohos-sdk") {
+          if (napi_enable_container_scope) {
+            deps += [ ":ace_container_scope" ]
+            defines += [ "ENABLE_CONTAINER_SCOPE" ]
+          }
+        }
+      } else {
+        external_deps = [ "hilog:libhilog" ]
       }
+    }
 
-      cflags_cc = [ "-Wno-missing-braces" ]
+    deps += [
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/libuv:uv",
+    ]
 
+    # Use static libuv for cross build
+    if (is_cross_platform_build) {
+      deps -= [ "//third_party/libuv:uv" ]
+      deps += [ "//third_party/libuv:uv_static" ]
+    }
+
+    cflags_cc = [ "-Wno-missing-braces" ]
+
+    subsystem_name = "arkui"
+    part_name = "napi"
+  }
+
+  if (is_cross_platform_build && target_os == "ios") {
+    ohos_source_set("ace_napi") {
+      deps = [ ":ace_napi_static" ]
+      public_configs = [ ":ace_napi_config" ]
       subsystem_name = "arkui"
       part_name = "napi"
     }
   } else {
     ohos_shared_library("ace_napi") {
-      defines = []
+      deps = [ ":ace_napi_static" ]
       public_configs = [ ":ace_napi_config" ]
-      public_deps = [ "//third_party/libuv:uv" ]
-      deps = []
-
-      include_dirs = [
-        "//foundation/arkui/napi",
-        "//foundation/arkui/napi/interfaces/inner_api",
-        "//foundation/arkui/napi/interfaces/kits",
-        "//third_party/libuv/include",
-        "//third_party/node/src",
-        "//third_party/bounds_checking_function/include",
-      ]
-
-      sources = napi_sources
-
-      if (current_cpu == "arm64") {
-        defines += [ "_ARM64_" ]
+      if (!is_cross_platform_build) {
+        public_deps = [ "//third_party/libuv:uv" ]
       }
-
-      if (use_mingw_win) {
-        defines += [ "WINDOWS_PLATFORM" ]
-      } else if (use_mac) {
-        defines += [ "MAC_PLATFORM" ]
-      } else if (target_os == "ios") {
-        defines += [ "IOS_PLATFORM" ]
-      } else if (is_cross_platform_build && defined(is_android) && is_android) {
-        defines += [ "ANDROID_PLATFORM" ]
-        aosp_deps = [ "shared_library:liblog" ]
-      } else {
-        if (is_standard_system) {
-          external_deps = [
-            "hitrace_native:libhitrace",
-            "hiviewdfx_hilog_native:libhilog",
-          ]
-          defines += [ "ENABLE_HITRACE" ]
-          if (product_name != "ohos-sdk") {
-            if (napi_enable_container_scope) {
-              deps += [ ":ace_container_scope" ]
-              defines += [ "ENABLE_CONTAINER_SCOPE" ]
-            }
-          }
-        } else {
-          external_deps = [ "hilog:libhilog" ]
-        }
-        if (napi_enable_memleak_debug) {
-          defines += [ "ENABLE_MEMLEAK_DEBUG" ]
-          deps += [ "//third_party/libunwind:libunwind" ]
-          external_deps += [ "startup_l2:syspara" ]
-          include_dirs += [ "//third_party/libunwind/include" ]
-        }
-      }
-
-      deps += [
-        "//third_party/bounds_checking_function:libsec_static",
-        "//third_party/libuv:uv",
-      ]
-
-      # Use static libuv for cross build
-      if (is_cross_platform_build) {
-        public_deps -= [ "//third_party/libuv:uv" ]
-        deps -= [ "//third_party/libuv:uv" ]
-        deps += [ "//third_party/libuv:uv_static" ]
-      }
-
-      cflags_cc = [ "-Wno-missing-braces" ]
-
       subsystem_name = "arkui"
       part_name = "napi"
     }
@@ -294,7 +262,7 @@ if (defined(ohos_lite)) {
   napi_libs = []
 
   foreach(item, ace_platforms) {
-    if (item.name == "ohos" || item.name == "android") {
+    if (item.name == "ohos" || is_cross_platform_build) {
       engine_config = {
       }
       support_engines = {
