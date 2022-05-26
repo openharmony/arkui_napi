@@ -267,6 +267,8 @@ public:
     virtual size_t GetArrayBufferSize() = 0;
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
+    virtual void NotifyApplicationState(bool inBackground) {}
+    virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) {}
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException(NativeEngine* engine) = 0;

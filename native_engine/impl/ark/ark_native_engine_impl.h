@@ -196,6 +196,8 @@ public:
     size_t GetArrayBufferSize() override;
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
+    void NotifyApplicationState(bool inBackground) override;
+    virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException(NativeEngine* engine) override;
