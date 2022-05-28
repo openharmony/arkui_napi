@@ -159,6 +159,12 @@ NativeValue* JerryScriptNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new JerryScriptNativeObject(static_cast<JerryScriptNativeEngine*>(engine));
 }
 
+NativeValue* JerryScriptNativeEngineImpl::CreateNativeObject(
+    NativeEngine* engine, void* detach, void* attach)
+{
+    return nullptr;
+}
+
 NativeValue* JerryScriptNativeEngineImpl::CreateFunction(
     NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value)
 {

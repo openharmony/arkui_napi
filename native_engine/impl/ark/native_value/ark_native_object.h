@@ -22,6 +22,7 @@ class ArkNativeObject : public ArkNativeValue, public NativeObject {
 public:
     explicit ArkNativeObject(ArkNativeEngine* engine);
     ArkNativeObject(ArkNativeEngine* engine, Local<JSValueRef> value);
+    ArkNativeObject(ArkNativeEngine* engine, void* detach, void* attach);
     ~ArkNativeObject() override;
 
     void* GetInterface(int interfaceId) override;
