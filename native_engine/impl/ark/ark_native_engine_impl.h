@@ -100,6 +100,8 @@ public:
     NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint) override;
     // Create native object value
     NativeValue* CreateObject(NativeEngine* engine) override;
+    // Create special native object value
+    NativeValue* CreateNativeObject(NativeEngine* engine, void* detach, void* attach) override;
     // Create native function value
     NativeValue* CreateFunction(
         NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value) override;
