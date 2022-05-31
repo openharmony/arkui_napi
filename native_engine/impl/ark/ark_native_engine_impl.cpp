@@ -610,14 +610,18 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     panda::RuntimeOption option;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
+    size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
+    size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);
     option.SetArkProperties(arkProperties);
+    option.SetGcThreadNum(gcThreadNum);
+    option.SetLongPauseTime(longPauseTime);
     HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d", arkProperties);
 #endif
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
     option.SetGcPoolSize(poolSize);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
 #endif
     option.SetDebuggerLibraryPath("");
     EcmaVM* vm = panda::JSNApi::CreateJSVM(option);
