@@ -1008,12 +1008,25 @@ void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpForm
 #endif
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-bool ArkNativeEngineImpl::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
+bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
-    return DFXJSNApi::BuildNativeAndJsBackStackTrace(vm_, stackTraceStr);
+    return DFXJSNApi::BuildNativeAndJsStackTrace(vm_, stackTraceStr);
 }
 #else
-bool ArkNativeEngineImpl::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
+bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return false;
+}
+#endif
+
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
+{
+    return DFXJSNApi::BuildJsStackTrace(vm_, stackTraceStr);
+}
+#else
+bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return false;
