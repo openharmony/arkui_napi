@@ -481,10 +481,16 @@ void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, boo
     return arkNativeEngineImpl->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
 }
 
-bool ArkNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
+bool ArkNativeEngine::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->BuildNativeAndJsBackStackTrace(stackTraceStr);
+    return arkNativeEngineImpl->BuildNativeAndJsStackTrace(stackTraceStr);
+}
+
+bool ArkNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->BuildJsStackTrace(stackTraceStr);
 }
 
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)

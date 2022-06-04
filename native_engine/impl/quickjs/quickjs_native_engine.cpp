@@ -498,9 +498,13 @@ void QuickJSNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat,
     nativeEngineImpl_->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
 }
 
-bool QuickJSNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
+bool QuickJSNativeEngine::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
-    return nativeEngineImpl_->BuildNativeAndJsBackStackTrace(stackTraceStr);
+    return nativeEngineImpl_->BuildNativeAndJsStackTrace(stackTraceStr);
+}
+bool QuickJSNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
+{
+    return nativeEngineImpl_->BuildJsStackTrace(stackTraceStr);
 }
 bool QuickJSNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {
