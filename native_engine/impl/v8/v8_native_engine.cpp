@@ -312,6 +312,11 @@ NativeValue* V8NativeEngine::CreateObject()
     return new V8NativeObject(this);
 }
 
+NativeValue* V8NativeEngine::CreateNativeObject(void* detach, void* attach)
+{
+    return nullptr;
+}
+
 NativeValue* V8NativeEngine::CreateFunction(const char* name, size_t length, NativeCallback cb, void* value)
 {
     return new V8NativeFunction(this, name, length, cb, value);

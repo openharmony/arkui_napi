@@ -46,6 +46,7 @@ public:
         NativeEngine* engine, void* value, NativeFinalize callback, void* hint) override;
 
     virtual NativeValue* CreateObject(NativeEngine* engine) override;
+    virtual NativeValue* CreateNativeObject(NativeEngine* engine, void* detach, void* attach) override;
     virtual NativeValue* CreateFunction(
         NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value) override;
     virtual NativeValue* CreateArray(NativeEngine* engine, size_t length) override;

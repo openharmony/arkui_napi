@@ -355,6 +355,11 @@ NativeValue* QuickJSNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new QuickJSNativeObject(static_cast<QuickJSNativeEngine*>(engine));
 }
 
+NativeValue* QuickJSNativeEngineImpl::CreateNativeObject(NativeEngine* engine, void* detach, void* attach)
+{
+    return nullptr;
+}
+
 NativeValue* QuickJSNativeEngineImpl::CreateArrayBuffer(NativeEngine* engine, void** value, size_t length)
 {
     return new QuickJSNativeArrayBuffer(static_cast<QuickJSNativeEngine*>(engine), (uint8_t**)value, length);

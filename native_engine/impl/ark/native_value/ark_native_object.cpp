@@ -40,6 +40,15 @@ ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine)
 
 ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, Local<JSValueRef> value) : ArkNativeValue(engine, value) {}
 
+ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, void* detach, void* attach)
+    : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
+{
+    auto vm = engine->GetEcmaVm();
+    LocalScope scope(vm);
+    Local<ObjectRef> object = ObjectRef::New(vm, detach, attach);
+    value_ = Global<ObjectRef>(vm, object);
+}
+
 ArkNativeObject::~ArkNativeObject() {}
 
 void* ArkNativeObject::GetInterface(int interfaceId)
