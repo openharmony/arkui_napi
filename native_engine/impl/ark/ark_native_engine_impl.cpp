@@ -497,6 +497,7 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
     if (!excep.IsNull()) {
         Local<StringRef> exceptionMsg = excep->ToString(vm_);
         exceptionStr_ = exceptionMsg->ToString();
+        return nullptr;
     }
 
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value);
