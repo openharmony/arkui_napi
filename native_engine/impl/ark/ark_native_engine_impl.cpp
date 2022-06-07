@@ -366,6 +366,11 @@ NativeValue* ArkNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine));
 }
 
+NativeValue* ArkNativeEngineImpl::CreateNativeObject(NativeEngine* engine, void* detach, void* attach)
+{
+    return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
+}
+
 NativeValue* ArkNativeEngineImpl::CreateFunction(
     NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value)
 {

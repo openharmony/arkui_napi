@@ -46,6 +46,7 @@ public:
     NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint) override;
 
     NativeValue* CreateObject() override;
+    NativeValue* CreateNativeObject(void* detach, void* attach) override;
     NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
     NativeValue* CreateArray(size_t length) override;
 
