@@ -535,6 +535,18 @@ size_t ArkNativeEngine::GetHeapUsedSize()
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->GetHeapUsedSize();
 }
+
+void ArkNativeEngine::NotifyApplicationState(bool inBackground)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->NotifyApplicationState(inBackground);
+}
+
+void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->NotifyMemoryPressure(inHighMemoryPressure);
+}
 #else
 void ArkNativeEngine::PrintStatisticResult()
 {
@@ -567,6 +579,16 @@ size_t ArkNativeEngine::GetHeapUsedSize()
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return 0;
+}
+
+void ArkNativeEngine::NotifyApplicationState([[maybe_unused]] bool inBackground)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
+void ArkNativeEngine::NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPressure)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
 }
 #endif
 

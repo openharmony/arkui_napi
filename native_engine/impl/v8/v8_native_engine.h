@@ -246,6 +246,8 @@ public:
     {
         return 0;
     }
+    void NotifyApplicationState(bool inBackground) override {}
+    void NotifyMemoryPressure(bool inHighMemoryPressure = false) override {}
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException() override {}

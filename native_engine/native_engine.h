@@ -224,6 +224,8 @@ public:
     virtual size_t GetArrayBufferSize() = 0;
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
+    virtual void NotifyApplicationState(bool inBackground) = 0;
+    virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 
