@@ -333,5 +333,8 @@ void NativeEngine::SetModuleFileName(std::string &moduleName)
 
 void NativeEngine::DeleteEngine()
 {
-    delete nativeEngineImpl_;
+    if (nativeEngineImpl_) {
+        delete nativeEngineImpl_;
+        nativeEngineImpl_ = nullptr;
+    }
 }
