@@ -154,7 +154,8 @@ public:
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false) = 0;
-    virtual bool BuildNativeAndJsBackStackTrace(std::string &stackTraceStr) = 0;
+    virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
+    virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(const std::string &filePath) = 0;
 

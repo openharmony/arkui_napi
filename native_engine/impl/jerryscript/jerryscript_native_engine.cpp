@@ -450,10 +450,15 @@ void JerryScriptNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFor
     jerryscriptNativeEngineImpl->DumpHeapSnapshotExt(isVmMode, dumpFormat, isPrivate);
 }
 
-bool JerryScriptNativeEngine::BuildNativeAndJsBackStackTrace(std::string& stackTraceStr)
+bool JerryScriptNativeEngine::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    return jerryscriptNativeEngineImpl->BuildNativeAndJsBackStackTrace(stackTraceStr);
+    return jerryscriptNativeEngineImpl->BuildNativeAndJsStackTrace(stackTraceStr);
+}
+bool JerryScriptNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    return jerryscriptNativeEngineImpl->BuildJsStackTrace(stackTraceStr);
 }
 bool JerryScriptNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {

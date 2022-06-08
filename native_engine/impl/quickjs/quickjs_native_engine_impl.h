@@ -159,7 +159,11 @@ public:
         DumpFormat dumpFormat = DumpFormat::JSON) override {}
     void DumpHeapSnapshotExt(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false) override {};
-    bool BuildNativeAndJsBackStackTrace(std::string& stackTraceStr) override
+    bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override
+    {
+        return false;
+    }
+    bool BuildJsStackTrace(std::string& stackTraceStr) override
     {
         return false;
     }
