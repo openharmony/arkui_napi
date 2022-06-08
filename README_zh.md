@@ -262,12 +262,11 @@ export default {
 ```
 
 ## 涉及仓<a name="section3970193518214"></a>
+[JS UI框架子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/JS-UI%E6%A1%86%E6%9E%B6%E5%AD%90%E7%B3%BB%E7%BB%9F.md)
 
-JS UI框架子系统
+[arkui\_ace\_engine](https://gitee.com/openharmony/arkui_ace_engine/blob/master/README_zh.md)
 
-arkui\_ace\_engine
-
-arkui\_ace\_engine\_lite
+[arkui\_ace\_engine\_lite](https://gitee.com/openharmony/arkui_ace_engine_lite/blob/master/README_zh.md)
 
 **arkui\_napi**
 
