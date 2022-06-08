@@ -113,8 +113,5 @@ ohos_unittest("test_quickjs_systemtest") {
 
 group("systemtest") {
   testonly = true
-  deps = [
-    ":systemtestnapi",
-    ":test_quickjs_systemtest",
-  ]
+  deps = [ ":systemtestnapi" ]
 }
