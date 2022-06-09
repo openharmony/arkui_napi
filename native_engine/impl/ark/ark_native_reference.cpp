@@ -43,7 +43,12 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
     Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
-        value_.SetWeak();
+        value_.SetWeak(reinterpret_cast<void*>(this), [](void *ref) {
+            if (ref != nullptr) {
+                auto that = reinterpret_cast<ArkNativeReference*>(ref);
+                that->FinalizeCallback();
+            }
+        });
     }
 
 #ifdef ENABLE_CONTAINER_SCOPE
