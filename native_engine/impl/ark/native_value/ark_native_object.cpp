@@ -63,7 +63,7 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
         delete ref;
     } else {
         Local<ObjectRef> object = ObjectRef::New(vm);
-        ArkNativeReference* ref = new ArkNativeReference(engine_, this, 1, true, cb, pointer, hint);
+        ArkNativeReference* ref = new ArkNativeReference(engine_, this, 0, true, cb, pointer, hint);
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr);
         PropertyAttribute attr(object, true, false, true);
