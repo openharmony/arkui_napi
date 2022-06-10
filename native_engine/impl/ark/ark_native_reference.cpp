@@ -47,6 +47,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
             if (ref != nullptr) {
                 auto that = reinterpret_cast<ArkNativeReference*>(ref);
                 that->FinalizeCallback();
+                that->value_.FreeGlobalHandleAddr();
             }
         });
     }
@@ -68,9 +69,14 @@ ArkNativeReference::~ArkNativeReference()
     if (deleteSelf_ && engine_->GetReferenceManager()) {
         engine_->GetReferenceManager()->ReleaseHandler(this);
     }
+    if (value_.IsEmpty()) {
+        return;
+    }
 
     if (!value_.IsWeak()) {
         value_.SetWeak();
+    } else {
+        value_.ClearWeakCallback();
     }
     refCount_ = 0;
     FinalizeCallback();
@@ -91,6 +97,9 @@ uint32_t ArkNativeReference::Unref()
         return refCount_;
     }
     --refCount_;
+    if (value_.IsEmpty()) {
+        return refCount_;
+    }
     if (refCount_ == 0) {
         value_.SetWeak();
         FinalizeCallback();
