@@ -137,6 +137,11 @@ void NativeEngine::EncodeToUtf8(NativeValue* nativeValue,
     nativeEngineImpl_->EncodeToUtf8(nativeValue, buffer, written, bufferSize, nchars);
 }
 
+void NativeEngine::EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding)
+{
+    nativeEngineImpl_->EncodeToChinese(nativeValue, buffer, encoding);
+}
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void NativeEngine::CheckUVLoop()
 {

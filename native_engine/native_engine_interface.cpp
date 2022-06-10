@@ -251,6 +251,21 @@ void NativeEngineInterface::EncodeToUtf8(
     *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
 }
 
+void NativeEngineInterface::EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding)
+{
+    if (nativeValue == nullptr) {
+        HILOG_ERROR("NativeEngine is nullptr");
+        return;
+    }
+
+    auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+    if (nativeString == nullptr) {
+        HILOG_ERROR("nativeValue GetInterface is nullptr");
+        return;
+    }
+    nativeString->EncodeWriteChinese(buffer, encoding.c_str());
+}
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void NativeEngineInterface::CheckUVLoop()
 {
