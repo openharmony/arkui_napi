@@ -64,7 +64,7 @@ if (defined(ohos_lite)) {
   import("//foundation/arkui/napi/test/unittest/ut.gni")
 
   if (is_standard_system) {
-    module_output_path = "ace_engine_standard/napi"
+    module_output_path = "ace_engine/napi"
   } else {
     module_output_path = "ace_engine_full/napi"
   }

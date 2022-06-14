@@ -64,7 +64,7 @@ import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 
 if (is_standard_system) {
-  module_output_path = "ace_engine_standard/native_module_systemtest"
+  module_output_path = "ace_engine/native_module_systemtest"
 }
 
 ohos_unittest("test_quickjs_systemtest") {
