@@ -778,7 +778,8 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
 
     auto nativeValue = reinterpret_cast<NativeValue*>(object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT || nativeValue->TypeOf() == NATIVE_FUNCTION,
+        napi_object_expected);
 
     NativeObject* nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
@@ -1018,7 +1019,8 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT || nativeValue->TypeOf() == NATIVE_FUNCTION,
+        napi_object_expected);
 
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
@@ -1034,7 +1036,8 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
 
     auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT || nativeValue->TypeOf() == NATIVE_FUNCTION,
+        napi_object_expected);
 
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
@@ -1051,7 +1054,8 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
 
     auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT || nativeValue->TypeOf() == NATIVE_FUNCTION,
+        napi_object_expected);
 
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
