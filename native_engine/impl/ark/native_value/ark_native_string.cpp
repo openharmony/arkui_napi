@@ -14,7 +14,9 @@
  */
 
 #include "ark_native_string.h"
+#include "ohos/init_data.h"
 #include "securec.h"
+#include "unicode/ucnv.h"
 #include "utils/log.h"
 
 using panda::StringRef;
@@ -97,4 +99,53 @@ size_t ArkNativeString::EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t
     buffer[bufferSize] = '\0';
     HILOG_DEBUG("EncodeWriteUtf8 the result of buffer: %{public}s", buffer);
     return pos;
+}
+
+void ArkNativeString::EncodeWriteChinese(std::string& buffer, const char* encoding)
+{
+    if (encoding == nullptr) {
+        HILOG_ERROR("encoding is nullptr");
+        return;
+    }
+    SetHwIcuDirectory();
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<StringRef> val = value_;
+    int32_t length = val->Length();
+    Local<ObjectRef> strObj = Local<ObjectRef>(val.ToLocal(vm));
+
+    int32_t pos = 0;
+    const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
+
+    std::string tempBuf = "";
+    tempBuf.resize(writableSize + 1);
+
+    UErrorCode ErrorCode = U_ZERO_ERROR;
+    const char* encFrom = "utf8";
+    for (int32_t i = 0; i < length; i++) {
+        Local<StringRef> str = Local<StringRef>(strObj->Get(vm, i));
+        int32_t len = str->Utf8Length() - 1;
+        if ((pos + len) >= writableSize) {
+            char outBuf[writableSize] = {0};
+            ucnv_convert(encoding, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
+            if (ErrorCode != U_ZERO_ERROR) {
+                HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+                return;
+            }
+            buffer += outBuf;
+            tempBuf.clear();
+            pos = 0;
+        }
+        str->WriteUtf8((tempBuf.data() + pos), writableSize);
+        pos += len;
+    }
+    if (pos > 0) {
+        char outBuf[writableSize] = {0};
+        ucnv_convert(encoding, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
+        if (ErrorCode != U_ZERO_ERROR) {
+            HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+            return;
+        }
+        buffer += outBuf;
+    }
 }

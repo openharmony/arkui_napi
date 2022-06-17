@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #include "../../../third_party/node/src/js_native_api.h"
 
@@ -198,6 +199,7 @@ public:
     virtual void GetCString(char* buffer, size_t size, size_t* length) = 0;
     virtual size_t GetLength() = 0;
     virtual size_t EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars) = 0;
+    virtual void EncodeWriteChinese(std::string& buffer, const char* encoding) = 0;
     virtual void GetCString16(char16_t* buffer, size_t size, size_t* length) = 0;
 };
 

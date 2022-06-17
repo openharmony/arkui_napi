@@ -39,7 +39,11 @@ template("ace_napi_impl") {
     defines = invoker.engine_defines
     configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
 
-    include_dirs = [ "//foundation/arkui/napi/native_engine/impl/ark" ]
+    include_dirs = [
+      "//foundation/arkui/napi/native_engine/impl/ark",
+      "//third_party/icu/icu4c/source",
+      "//third_party/icu/icu4c/source/common",
+    ]
 
     sources = [
       "ark_native_deferred.cpp",
@@ -70,6 +74,8 @@ template("ace_napi_impl") {
     deps = [
       "//ark/js_runtime:libark_jsruntime",
       "//foundation/arkui/napi:ace_napi",
+      "//third_party/icu/icu4c:static_icuuc",
+      "//third_party/icu/icu4c/source:shared_icuuc_host",
     ]
 
     if (product_name != "ohos-sdk") {

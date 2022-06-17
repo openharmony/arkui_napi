@@ -29,6 +29,7 @@ public:
     void GetCString(char* buffer, size_t size, size_t* length) override;
     size_t GetLength() override;
     size_t EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars) override;
+    void EncodeWriteChinese(std::string& buffer, const char* encoding) override { return; }
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_V8_NATIVE_VALUE_V8_NATIVE_STRING_H */
