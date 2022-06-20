@@ -621,6 +621,7 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     option.SetArkProperties(arkProperties);
     option.SetGcThreadNum(gcThreadNum);
     option.SetLongPauseTime(longPauseTime);
+    option.SetIsWorker();
     HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d", arkProperties);
 #endif
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
