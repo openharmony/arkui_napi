@@ -159,7 +159,7 @@ NativeValue* JerryScriptNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new JerryScriptNativeObject(static_cast<JerryScriptNativeEngine*>(engine));
 }
 
-NativeValue* JerryScriptNativeEngineImpl::CreateNativeObject(
+NativeValue* JerryScriptNativeEngineImpl::CreateNativeBindingObject(
     NativeEngine* engine, void* detach, void* attach)
 {
     return nullptr;

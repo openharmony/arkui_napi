@@ -66,6 +66,10 @@ void* V8NativeObject::GetNativePointer()
     return result;
 }
 
+void SetNativeBindingPointer(void* param1, void* param2)
+{
+}
+
 NativeValue* V8NativeObject::GetPropertyNames()
 {
     v8::Local<v8::Object> val = value_;

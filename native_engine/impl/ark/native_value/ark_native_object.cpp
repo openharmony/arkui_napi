@@ -96,6 +96,18 @@ void* ArkNativeObject::GetNativePointer()
     return result;
 }
 
+void ArkNativeObject::SetNativeBindingPointer(void* param1, void* param2)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> value = value_;
+
+    Local<ObjectRef> object = Local<ObjectRef>(value.ToLocal(vm));
+    object->SetNativePointerFieldCount(2); // 2 : NativeEngine, NativeValue
+    object->SetNativePointerField(0, param1, nullptr, nullptr);
+    object->SetNativePointerField(1, param2, nullptr, nullptr);
+}
+
 NativeValue* ArkNativeObject::GetPropertyNames()
 {
     auto vm = engine_->GetEcmaVm();

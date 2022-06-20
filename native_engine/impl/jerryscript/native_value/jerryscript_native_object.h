@@ -29,6 +29,7 @@ public:
 
     void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) override;
     void* GetNativePointer() override;
+    void SetNativeBindingPointer(void* param1, void* param2) override;
 
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
 
