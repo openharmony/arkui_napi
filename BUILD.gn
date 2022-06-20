@@ -161,6 +161,7 @@ if (defined(ohos_lite)) {
     } else {
       if (is_standard_system) {
         external_deps = [
+          "hitrace_native:hitrace_meter",
           "hitrace_native:libhitrace",
           "hiviewdfx_hilog_native:libhilog",
         ]

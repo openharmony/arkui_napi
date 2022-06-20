@@ -48,6 +48,7 @@ public:
     NativeAsyncWork(NativeEngine* engine,
                     NativeAsyncExecuteCallback execute,
                     NativeAsyncCompleteCallback complete,
+                    NativeValue* asyncResourceName,
                     void* data);
 
     virtual ~NativeAsyncWork();
@@ -57,7 +58,7 @@ public:
     virtual void Send(void* data);
     virtual void Close();
     virtual bool PopData(NativeAsyncWorkDataPointer* data);
-
+    virtual std::string GetTraceDescription();
     template<typename Inner, typename Outer>
     static Outer* DereferenceOf(const Inner Outer::*field, const Inner* pointer)
     {
@@ -82,6 +83,7 @@ private:
     void* data_;
     std::mutex workAsyncMutex_;
     std::queue<NativeAsyncWorkDataPointer> asyncWorkRecvData_;
+    std::string traceDescription_;
 #ifdef ENABLE_HITRACE
     std::unique_ptr<OHOS::HiviewDFX::HiTraceId> traceId_;
 #endif

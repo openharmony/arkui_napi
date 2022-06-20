@@ -159,13 +159,13 @@ NativeAsyncWork* NativeEngineInterface::CreateAsyncWork(NativeEngine* engine, Na
 {
     (void)asyncResource;
     (void)asyncResourceName;
-    return new NativeAsyncWork(engine, execute, complete, data);
+    return new NativeAsyncWork(engine, execute, complete, asyncResourceName, data);
 }
 
-NativeAsyncWork* NativeEngineInterface::CreateAsyncWork(
-    NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
+NativeAsyncWork* NativeEngineInterface::CreateAsyncWork(NativeEngine* engine, NativeValue* asyncResourceName,
+    NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
-    return new NativeAsyncWork(engine, execute, complete, data);
+    return new NativeAsyncWork(engine, execute, complete, asyncResourceName, data);
 }
 
 NativeSafeAsyncWork* NativeEngineInterface::CreateSafeAsyncWork(NativeEngine* engine, NativeValue* func,
@@ -179,7 +179,11 @@ NativeSafeAsyncWork* NativeEngineInterface::CreateSafeAsyncWork(NativeEngine* en
 void NativeEngineInterface::InitAsyncWork(
     NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
-    asyncWorker_ = std::make_unique<NativeAsyncWork>(engine, execute, complete, data);
+    napi_value name = nullptr;
+    auto env = reinterpret_cast<napi_env>(engine);
+    napi_create_string_utf8(env, "InitAsyncWork", NAPI_AUTO_LENGTH, &name);
+    auto asyncResourceName = reinterpret_cast<NativeValue*>(name);
+    asyncWorker_ = std::make_unique<NativeAsyncWork>(engine, execute, complete, asyncResourceName, data);
     asyncWorker_->Init();
 }
 
