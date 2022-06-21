@@ -48,7 +48,7 @@ public:
     NativeAsyncWork(NativeEngine* engine,
                     NativeAsyncExecuteCallback execute,
                     NativeAsyncCompleteCallback complete,
-                    NativeValue* asyncResourceName,
+                    const std::string &asyncResourceName,
                     void* data);
 
     virtual ~NativeAsyncWork();

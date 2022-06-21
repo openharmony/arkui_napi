@@ -71,7 +71,7 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResource, Nativ
     return nativeEngineImpl_->CreateAsyncWork(this, asyncResource, asyncResourceName, execute, complete, data);
 }
 
-NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResourceName, NativeAsyncExecuteCallback execute,
+NativeAsyncWork* NativeEngine::CreateAsyncWork(const std::string &asyncResourceName, NativeAsyncExecuteCallback execute,
                                                NativeAsyncCompleteCallback complete,
                                                void* data)
 {
