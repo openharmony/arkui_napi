@@ -122,7 +122,8 @@ public:
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
 
-    virtual NativeAsyncWork* CreateAsyncWork(NativeAsyncExecuteCallback execute,
+    virtual NativeAsyncWork* CreateAsyncWork(NativeValue* asyncResourceName,
+                                             NativeAsyncExecuteCallback execute,
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,

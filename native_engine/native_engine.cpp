@@ -71,11 +71,11 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResource, Nativ
     return nativeEngineImpl_->CreateAsyncWork(this, asyncResource, asyncResourceName, execute, complete, data);
 }
 
-NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeAsyncExecuteCallback execute,
+NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResourceName, NativeAsyncExecuteCallback execute,
                                                NativeAsyncCompleteCallback complete,
                                                void* data)
 {
-    return nativeEngineImpl_->CreateAsyncWork(this, execute, complete, data);
+    return nativeEngineImpl_->CreateAsyncWork(this, asyncResourceName, execute, complete, data);
 }
 
 NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
