@@ -122,7 +122,7 @@ public:
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
 
-    virtual NativeAsyncWork* CreateAsyncWork(NativeValue* asyncResourceName,
+    virtual NativeAsyncWork* CreateAsyncWork(const std::string &asyncResourceName,
                                              NativeAsyncExecuteCallback execute,
                                              NativeAsyncCompleteCallback complete,
                                              void* data);

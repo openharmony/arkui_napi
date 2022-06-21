@@ -33,14 +33,13 @@ using OHOS::Ace::ContainerScope;
 #endif
 
 #ifdef ENABLE_HITRACE
-constexpr size_t NAME_BUFFER_SIZE = 64;
 constexpr size_t TRACE_BUFFER_SIZE = 120;
 #endif
 
 NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
                                  NativeAsyncExecuteCallback execute,
                                  NativeAsyncCompleteCallback complete,
-                                 NativeValue* asyncResourceName,
+                                 const std::string &asyncResourceName,
                                  void* data)
     : work_({ 0 }), engine_(engine), execute_(execute), complete_(complete), data_(data)
 {
@@ -54,16 +53,9 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
             OHOS::HiviewDFX::HiTrace::Begin("New NativeAsyncWork", 0));
         createdTraceId = true;
     }
-    char name[NAME_BUFFER_SIZE] = {0};
-    if (asyncResourceName != nullptr) {
-        auto nativeString = reinterpret_cast<NativeString*>(
-            asyncResourceName->GetInterface(NativeString::INTERFACE_ID));
-        size_t strLength = 0;
-        nativeString->GetCString(name, NAME_BUFFER_SIZE, &strLength);
-    }
     char traceStr[TRACE_BUFFER_SIZE] = {0};
     if (sprintf_s(traceStr, sizeof(traceStr),
-        "name:%s, traceid:0x%x, workid:%p", name, traceId_->GetChainId(), this) < 0) {
+        "name:%s, traceid:0x%x, workid:%p", asyncResourceName.c_str(), traceId_->GetChainId(), this) < 0) {
         HILOG_ERROR("Get traceStr fail");
     }
     traceDescription_ = traceStr;

@@ -175,7 +175,7 @@ public:
         NativeValue* asyncResourceName, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete,
         void* data);
 
-    virtual NativeAsyncWork* CreateAsyncWork(NativeEngine* engine, NativeValue* asyncResourceName,
+    virtual NativeAsyncWork* CreateAsyncWork(NativeEngine* engine, const std::string &asyncResourceName,
         NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data);
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(NativeEngine* engine, NativeValue* func,
         NativeValue* asyncResource, NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount,
