@@ -38,6 +38,7 @@ using CleanEnv = std::function<void()>;
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
+using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 
 class NAPI_EXPORT NativeEngine {
@@ -200,7 +201,10 @@ public:
     virtual bool CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
     virtual bool CallWorkerAsyncWorkFunc(NativeEngine* engine);
-
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    virtual void SetDebuggerPostTaskFunc(DebuggerPostTask func);
+    virtual void CallDebuggerPostTaskFunc(std::function<void()>&& task);
+#endif
     virtual NativeValue* CreateDate(double value) = 0;
     virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) = 0;
     using CleanupCallback = CleanupHookCallback::Callback;
@@ -258,6 +262,9 @@ protected:
     InitWorkerFunc initWorkerFunc_ {nullptr};
     GetAssetFunc getAssetFunc_ {nullptr};
     OffWorkerFunc offWorkerFunc_ {nullptr};
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
+#endif
     NativeAsyncExecuteCallback nativeAsyncExecuteCallback_ {nullptr};
     NativeAsyncCompleteCallback nativeAsyncCompleteCallback_ {nullptr};
 
