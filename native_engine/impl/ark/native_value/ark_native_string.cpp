@@ -14,7 +14,11 @@
  */
 
 #include "ark_native_string.h"
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 #include "ohos/init_data.h"
+#else
+#include "unicode/putil.h"
+#endif
 #include "securec.h"
 #include "unicode/ucnv.h"
 #include "utils/log.h"
@@ -107,7 +111,11 @@ void ArkNativeString::EncodeWriteChinese(std::string& buffer, const char* encodi
         HILOG_ERROR("encoding is nullptr");
         return;
     }
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     SetHwIcuDirectory();
+#else
+    u_setDataDirectory(".");
+#endif
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<StringRef> val = value_;
