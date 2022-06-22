@@ -40,6 +40,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 {
     Global<JSValueRef> oldValue = *value;
     auto vm = engine->GetEcmaVm();
+    LocalScope scope(vm);
     Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
