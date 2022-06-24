@@ -17,6 +17,7 @@
 
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
+#include "scope_manager/native_scope_manager.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
@@ -287,18 +288,21 @@ void ArkNativeEngineImpl::Loop(LoopMode mode, bool needSync)
 
 NativeValue* ArkNativeEngineImpl::GetGlobal(NativeEngine* engine)
 {
+    LocalScope scope(vm_);
     Local<ObjectRef> value = panda::JSNApi::GetGlobalObject(vm_);
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNull(NativeEngine* engine)
 {
+    LocalScope scope(vm_);
     Local<PrimitiveRef> value = JSValueRef::Null(vm_);
     return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateUndefined(NativeEngine* engine)
 {
+    LocalScope scope(vm_);
     Local<PrimitiveRef> value = JSValueRef::Undefined(vm_);
     return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), value);
 }
@@ -474,6 +478,12 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         return nullptr;
     }
     LocalScope scope(vm_);
+    NativeScopeManager* scopeManager = engine->GetScopeManager();
+    if (scopeManager == nullptr) {
+        HILOG_ERROR("scope manager is null");
+        return nullptr;
+    }
+    NativeScope* nativeScope = scopeManager->OpenEscape();
     Global<JSValueRef> thisObj = (thisVar != nullptr) ? *thisVar : Global<JSValueRef>(vm_, JSValueRef::Undefined(vm_));
     Global<FunctionRef> funcObj = *function;
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -505,7 +515,9 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         return nullptr;
     }
 
-    return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value);
+    auto ret = scopeManager->Escape(nativeScope, ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value));
+    scopeManager->CloseEscape(nativeScope);
+    return ret;
 }
 
 NativeValue* ArkNativeEngineImpl::RunScript(NativeEngine* engine, NativeValue* script)
@@ -862,6 +874,7 @@ NativeValue* ArkNativeEngineImpl::ArkValueToNativeValue(ArkNativeEngine* engine,
 
 NativeValue* ArkNativeEngineImpl::ValueToNativeValue(NativeEngine* engine, JSValueWrapper& value)
 {
+    LocalScope scope(vm_);
     Global<JSValueRef> arkValue = value;
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), arkValue.ToLocal(vm_));
 }
@@ -958,6 +971,7 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
     }
 
     panda::ecmascript::EcmaVM* vm = engineImpl->GetEcmaVm();
+    LocalScope scope(vm);
     Local<JSValueRef> type(IntegerRef::New(vm, static_cast<int32_t>(operation)));
 
     Local<JSValueRef> args[] = {type, promise, reason};
