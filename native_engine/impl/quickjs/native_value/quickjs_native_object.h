@@ -27,6 +27,7 @@ public:
     void* GetInterface(int interfaceId) override;
 
     void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) override;
+    void SetNativeBindingPointer(void* param1, void* param2) override;
 
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
     void* GetNativePointer() override;

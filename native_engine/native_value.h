@@ -209,6 +209,7 @@ public:
 
     virtual void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) = 0;
     virtual void* GetNativePointer() = 0;
+    virtual void SetNativeBindingPointer(void* param1, void* param2) = 0;
 
     virtual void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) = 0;
 

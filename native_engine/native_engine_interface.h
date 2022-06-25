@@ -133,7 +133,7 @@ public:
     virtual NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint) = 0;
 
     virtual NativeValue* CreateObject(NativeEngine* engine) = 0;
-    virtual NativeValue* CreateNativeObject(NativeEngine* engine, void* detach, void* attach) = 0;
+    virtual NativeValue* CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach) = 0;
     virtual NativeValue* CreateFunction(
         NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value) = 0;
     virtual NativeValue* CreateArray(NativeEngine* engine, size_t length) = 0;

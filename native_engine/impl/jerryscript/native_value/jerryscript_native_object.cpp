@@ -80,6 +80,10 @@ void* JerryScriptNativeObject::GetNativePointer()
     }
 }
 
+void JerryScriptNativeObject::SetNativeBindingPointer(void* param1, void* param2)
+{
+}
+
 void JerryScriptNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, void* hint)
 {
     if (pointer == nullptr) {

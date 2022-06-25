@@ -190,10 +190,10 @@ NativeValue* QuickJSNativeEngine::CreateObject()
     return qjsNativeEngineImpl->CreateObject(this);
 }
 
-NativeValue* QuickJSNativeEngine::CreateNativeObject(void* detach, void* attach)
+NativeValue* QuickJSNativeEngine::CreateNativeBindingObject(void* detach, void* attach)
 {
     auto qjsNativeEngineImpl = static_cast<QuickJSNativeEngineImpl*>(nativeEngineImpl_);
-    return qjsNativeEngineImpl->CreateNativeObject(this, detach, attach);
+    return qjsNativeEngineImpl->CreateNativeBindingObject(this, detach, attach);
 }
 
 NativeValue* QuickJSNativeEngine::CreateArrayBuffer(void** value, size_t length)

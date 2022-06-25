@@ -355,7 +355,7 @@ NativeValue* QuickJSNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new QuickJSNativeObject(static_cast<QuickJSNativeEngine*>(engine));
 }
 
-NativeValue* QuickJSNativeEngineImpl::CreateNativeObject(NativeEngine* engine, void* detach, void* attach)
+NativeValue* QuickJSNativeEngineImpl::CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach)
 {
     return nullptr;
 }

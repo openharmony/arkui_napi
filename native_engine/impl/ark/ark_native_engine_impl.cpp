@@ -366,7 +366,7 @@ NativeValue* ArkNativeEngineImpl::CreateObject(NativeEngine* engine)
     return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine));
 }
 
-NativeValue* ArkNativeEngineImpl::CreateNativeObject(NativeEngine* engine, void* detach, void* attach)
+NativeValue* ArkNativeEngineImpl::CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach)
 {
     return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
 }

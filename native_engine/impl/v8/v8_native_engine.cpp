@@ -312,7 +312,7 @@ NativeValue* V8NativeEngine::CreateObject()
     return new V8NativeObject(this);
 }
 
-NativeValue* V8NativeEngine::CreateNativeObject(void* detach, void* attach)
+NativeValue* V8NativeEngine::CreateNativeBindingObject(void* detach, void* attach)
 {
     return nullptr;
 }
