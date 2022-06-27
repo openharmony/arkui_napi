@@ -298,6 +298,12 @@ void* ArkNativeEngine::CreateRuntime()
     return arkNativeEngineImpl->CreateRuntime(this);
 }
 
+NativeValue* ArkNativeEngine::CreateObjectFromProperties(const char* str[], const int64_t num[])
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->CreateObjectFromProperties(this, str, num);
+}
+
 NativeValue* ArkNativeEngine::Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

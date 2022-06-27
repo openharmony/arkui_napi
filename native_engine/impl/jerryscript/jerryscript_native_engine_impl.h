@@ -113,6 +113,11 @@ public:
     virtual NativeValue* CreateDate(NativeEngine* engine, double time) override;
     virtual NativeValue* CreateBigWords(
         NativeEngine* engine, int sign_bit, size_t word_count, const uint64_t* words) override;
+    virtual NativeValue* CreateObjectFromProperties(NativeEngine* engine, const char* str[],
+                                                    const int64_t num[]) override
+    {
+        return nullptr;
+    }
 
     void StartCpuProfiler(const std::string& fileName = "") override {}
     void StopCpuProfiler() override {}

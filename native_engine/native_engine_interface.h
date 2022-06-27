@@ -274,6 +274,7 @@ public:
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException(NativeEngine* engine) = 0;
+    virtual NativeValue* CreateObjectFromProperties(NativeEngine* engine, const char* str[], const int64_t num[]) = 0;
 
     // run script by path
     NativeValue* RunScript(const char* path);

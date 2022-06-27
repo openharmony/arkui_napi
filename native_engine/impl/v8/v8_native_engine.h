@@ -256,6 +256,7 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException() override {}
+    NativeValue* CreateObjectFromProperties(const char* str[], const int64_t num[]) override {return nullptr;}
 
 private:
     static void ExecuteWrap(NativeEngine* engine, void* data);

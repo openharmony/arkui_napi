@@ -132,6 +132,8 @@ public:
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
+    NativeValue* CreateObjectFromProperties(const char* str[], const int64_t num[]) override;
+
     static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
