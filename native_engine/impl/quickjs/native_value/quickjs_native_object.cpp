@@ -68,8 +68,13 @@ void* QuickJSNativeObject::GetNativePointer()
     return info ? info->nativeObject : nullptr;
 }
 
-void QuickJSNativeObject::SetNativeBindingPointer(void* param1, void* param2)
+void QuickJSNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
 {
+}
+
+void* QuickJSNativeObject::GetNativeBindingPointer(uint32_t index)
+{
+    return nullptr;
 }
 
 void QuickJSNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, void* hint)

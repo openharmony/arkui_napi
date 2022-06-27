@@ -375,6 +375,11 @@ NativeValue* ArkNativeEngineImpl::CreateNativeBindingObject(NativeEngine* engine
     return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
 }
 
+NativeValue* ArkNativeEngineImpl::CreateNBObject(NativeEngine* engine, DetachCallback detach, AttachCallback attach)
+{
+    return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
+}
+
 NativeValue* ArkNativeEngineImpl::CreateFunction(
     NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value)
 {
@@ -681,7 +686,7 @@ NativeValue* ArkNativeEngineImpl::Serialize(NativeEngine* context, NativeValue* 
 NativeValue* ArkNativeEngineImpl::Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder)
 {
     const panda::ecmascript::EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(context)->GetEcmaVm();
-    Local<JSValueRef> result = panda::JSNApi::DeserializeValue(vm, recorder);
+    Local<JSValueRef> result = panda::JSNApi::DeserializeValue(vm, recorder, reinterpret_cast<void*>(context));
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), result);
 }
 
@@ -869,6 +874,8 @@ NativeValue* ArkNativeEngineImpl::ArkValueToNativeValue(ArkNativeEngine* engine,
         result = new ArkNativeObject(engine, value);
     } else if (value->IsBoolean()) {
         result = new ArkNativeBoolean(engine, value);
+    } else {
+        result = new ArkNativeValue(engine, value);
     }
     return result;
 }

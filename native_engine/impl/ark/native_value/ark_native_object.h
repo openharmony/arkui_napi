@@ -23,13 +23,17 @@ public:
     explicit ArkNativeObject(ArkNativeEngine* engine);
     ArkNativeObject(ArkNativeEngine* engine, Local<JSValueRef> value);
     ArkNativeObject(ArkNativeEngine* engine, void* detach, void* attach);
+    ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach);
     ~ArkNativeObject() override;
 
     void* GetInterface(int interfaceId) override;
 
+    static void* DetachFuncCallback(void* engine, void* object, void* hint);
+    static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint);
     void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) override;
     void* GetNativePointer() override;
-    void SetNativeBindingPointer(void* param1, void* param2) override;
+    void SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint) override;
+    void* GetNativeBindingPointer(uint32_t index) override;
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
     void Freeze() override;
     void Seal() override;
@@ -58,6 +62,10 @@ public:
         napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion) override;
     bool AssociateTypeTag(NapiTypeTag* typeTag) override;
     bool CheckTypeTag(NapiTypeTag* typeTag) override;
+
+private:
+    static AttachCallback attach_;
+    static DetachCallback detach_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H */
