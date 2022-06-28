@@ -164,6 +164,7 @@ if (defined(ohos_lite)) {
           "hitrace_native:hitrace_meter",
           "hitrace_native:libhitrace",
           "hiviewdfx_hilog_native:libhilog",
+          "init:libbegetutil",
         ]
         defines += [ "ENABLE_HITRACE" ]
         if (product_name != "ohos-sdk") {

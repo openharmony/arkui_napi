@@ -18,6 +18,7 @@
 #ifdef ENABLE_HITRACE
 #include "hitrace/trace.h"
 #include "hitrace_meter.h"
+#include "parameter.h"
 #include <securec.h>
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -33,7 +34,10 @@ using OHOS::Ace::ContainerScope;
 #endif
 
 #ifdef ENABLE_HITRACE
+bool g_napiTraceIdEnabled = false;
+bool g_ParamUpdated = false;
 constexpr size_t TRACE_BUFFER_SIZE = 120;
+constexpr size_t TRACEID_PARAM_SIZE = 10;
 #endif
 
 NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
@@ -46,9 +50,18 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     work_.data = this;
     (void)asyncResourceName;
 #ifdef ENABLE_HITRACE
+    if (!g_ParamUpdated) {
+        char napiTraceIdEnabled[TRACEID_PARAM_SIZE] = {0};
+        int ret = GetParameter("persist.hiviewdfx.napitraceid.enabled", "false",
+            napiTraceIdEnabled, sizeof(napiTraceIdEnabled));
+        if (ret > 0 && strcmp(napiTraceIdEnabled, "true") == 0) {
+            g_napiTraceIdEnabled = true;
+        }
+        g_ParamUpdated = true;
+    }
     bool createdTraceId = false;
     traceId_ = std::make_unique<OHOS::HiviewDFX::HiTraceId>(OHOS::HiviewDFX::HiTrace::GetId());
-    if (!traceId_ || !traceId_->IsValid()) {
+    if (g_napiTraceIdEnabled && (!traceId_ || !traceId_->IsValid())) {
         traceId_ = std::make_unique<OHOS::HiviewDFX::HiTraceId>(
             OHOS::HiviewDFX::HiTrace::Begin("New NativeAsyncWork", 0));
         createdTraceId = true;
@@ -171,14 +184,15 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
     ContainerScope containerScope(that->containerScopeId_);
 #endif
 #ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
     if (that->traceId_ && that->traceId_->IsValid()) {
         OHOS::HiviewDFX::HiTrace::SetId(*(that->traceId_.get()));
-        StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
         that->execute_(that->engine_, that->data_);
         FinishTrace(HITRACE_TAG_ACE);
         OHOS::HiviewDFX::HiTrace::ClearId();
         return;
     }
+    FinishTrace(HITRACE_TAG_ACE);
 #endif
     that->execute_(that->engine_, that->data_);
 }
@@ -223,15 +237,16 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     ContainerScope containerScope(that->containerScopeId_);
 #endif
 #ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "Napi complete, " + that->GetTraceDescription());
     if (that->traceId_ && that->traceId_->IsValid()) {
         OHOS::HiviewDFX::HiTrace::SetId(*(that->traceId_.get()));
-        StartTrace(HITRACE_TAG_ACE, "Napi complete, " + that->GetTraceDescription());
         that->complete_(that->engine_, nstatus, that->data_);
         FinishTrace(HITRACE_TAG_ACE);
         OHOS::HiviewDFX::HiTrace::ClearId();
         scopeManager->Close(scope);
         return;
     }
+    FinishTrace(HITRACE_TAG_ACE);
 #endif
     that->complete_(that->engine_, nstatus, that->data_);
     scopeManager->Close(scope);
