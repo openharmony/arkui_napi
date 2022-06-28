@@ -100,6 +100,7 @@ public:
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
     virtual NativeValue* CreateDate(double time) override;
     virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) override;
+    NativeValue* CreateObjectFromProperties(const char* str[], const int64_t num[]) override {return nullptr;}
 
     void StartCpuProfiler(const std::string& fileName = "") override;
     void StopCpuProfiler() override;

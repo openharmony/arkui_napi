@@ -247,6 +247,13 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEng
     return exports;
 }
 
+NativeValue* ArkNativeEngineImpl::CreateObjectFromProperties(NativeEngine* engine, const char* str[],
+                                                             const int64_t num[])
+{
+    Local<ObjectRef> obj = ObjectRef::CreateObjectFromProperties(vm_ , str, num);
+    return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), obj);
+}
+
 panda::Global<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
     const std::string& moduleName, bool isAppModule, const std::string& param,
     const std::string& instanceName, void* instance)

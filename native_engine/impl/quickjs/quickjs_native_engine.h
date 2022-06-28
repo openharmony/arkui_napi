@@ -101,6 +101,7 @@ public:
     JSValue LoadModuleByName(
         const std::string& moduleName, bool isAppModule, const std::string& param,
         const std::string& instanceName, void* instance);
+    NativeValue* CreateObjectFromProperties(const char* str[], const int64_t num[]) override {return nullptr;}
 
     NativeValue* CreateDate(double time) override;
     NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) override;

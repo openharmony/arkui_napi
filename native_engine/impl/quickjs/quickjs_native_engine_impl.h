@@ -137,6 +137,9 @@ public:
         NativeEngine* engine, int sign_bit, size_t word_count, const uint64_t* words) override;
     virtual bool TriggerFatalException(NativeValue* error) override;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
+    virtual NativeValue* CreateObjectFromProperties(NativeEngine* engine,
+                                                    const char* str[],
+                                                    const int64_t num[]) override {return nullptr;}
 
     void StartCpuProfiler(const std::string& fileName = "") override {}
     void StopCpuProfiler() override {}
