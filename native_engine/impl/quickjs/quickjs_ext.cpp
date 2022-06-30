@@ -422,7 +422,7 @@ bool ParseBigIntWordsInternal(JSContext* context, JSValue value, int* signBit, s
         *wordCount = cntValue;
         return true;
     } else if (signBit != nullptr && words != nullptr) {
-        cntValue = (cntValue > *wordCount) ? *wordCount : cntValue;
+        cntValue = (cntValue > static_cast<int>(*wordCount)) ? *wordCount : cntValue;
         jsValue = JS_GetPropertyStr(context, value, "sign");
         if (!JS_IsException(jsValue)) {
             int sigValue = 0;
