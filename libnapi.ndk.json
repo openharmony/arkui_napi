@@ -108,5 +108,7 @@
     {"name": "napi_acquire_threadsafe_function"},
     {"name": "napi_release_threadsafe_function"},
     {"name": "napi_unref_threadsafe_function"},
-    {"name": "napi_ref_threadsafe_function"}
+    {"name": "napi_ref_threadsafe_function"},
+    {"name": "napi_create_date"},
+    {"name": "napi_get_date_value"}
 ]
