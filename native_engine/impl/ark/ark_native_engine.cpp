@@ -187,6 +187,12 @@ NativeValue* ArkNativeEngine::CreateNativeBindingObject(void* detach, void* atta
     return arkNativeEngineImpl->CreateNativeBindingObject(this, detach, attach);
 }
 
+NativeValue* ArkNativeEngine::CreateNBObject(DetachCallback detach, AttachCallback attach)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->CreateNBObject(this, detach, attach);
+}
+
 NativeValue* ArkNativeEngine::CreateFunction(const char* name, size_t length, NativeCallback cb, void* value)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

@@ -80,8 +80,13 @@ void* JerryScriptNativeObject::GetNativePointer()
     }
 }
 
-void JerryScriptNativeObject::SetNativeBindingPointer(void* param1, void* param2)
+void JerryScriptNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
 {
+}
+
+void* JerryScriptNativeObject::GetNativeBindingPointer(uint32_t index)
+{
+    return nullptr;
 }
 
 void JerryScriptNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, void* hint)

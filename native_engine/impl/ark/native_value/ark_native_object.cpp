@@ -29,6 +29,10 @@ using panda::StringRef;
 using panda::NativePointerRef;
 using panda::ArrayRef;
 using panda::PropertyAttribute;
+
+DetachCallback ArkNativeObject::detach_ = nullptr;
+AttachCallback ArkNativeObject::attach_ = nullptr;
+
 ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine)
     : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
@@ -46,6 +50,41 @@ ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, void* detach, void* at
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
     Local<ObjectRef> object = ObjectRef::New(vm, detach, attach);
+    value_ = Global<ObjectRef>(vm, object);
+}
+
+void* ArkNativeObject::DetachFuncCallback(void* engine, void* object, void* hint)
+{
+    if (detach_ == nullptr) {
+        HILOG_ERROR("detach_ is nullptr");
+        return nullptr;
+    }
+    DetachCallback detach = detach_;
+    void* detachVal = detach(reinterpret_cast<NativeEngine*>(engine), object, hint);
+    return detachVal;
+}
+
+Local<JSValueRef> ArkNativeObject::AttachFuncCallback(void* engine, void* buffer, void* hint)
+{
+    panda::EscapeLocalScope scope(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm());
+    if (attach_ == nullptr) {
+        HILOG_ERROR("attach_ is nullptr");
+    }
+    NativeValue* attachVal = attach_(reinterpret_cast<NativeEngine*>(engine), buffer, hint);
+    Global<JSValueRef> attach = *attachVal;
+    return scope.Escape(attach.ToLocal(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm()));
+}
+
+ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach)
+    : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
+{
+    auto vm = engine->GetEcmaVm();
+    LocalScope scope(vm);
+    detach_ = detach;
+    attach_ = attach;
+
+    Local<ObjectRef> object = ObjectRef::New(
+        vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
     value_ = Global<ObjectRef>(vm, object);
 }
 
@@ -96,16 +135,30 @@ void* ArkNativeObject::GetNativePointer()
     return result;
 }
 
-void ArkNativeObject::SetNativeBindingPointer(void* param1, void* param2)
+void ArkNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
 {
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<ObjectRef> value = value_;
 
     Local<ObjectRef> object = Local<ObjectRef>(value.ToLocal(vm));
-    object->SetNativePointerFieldCount(2); // 2 : NativeEngine, NativeValue
-    object->SetNativePointerField(0, param1, nullptr, nullptr);
-    object->SetNativePointerField(1, param2, nullptr, nullptr);
+    object->SetNativePointerFieldCount(3); // 3 : NativeEngine, NativeObject, hint
+    object->SetNativePointerField(0, enginePointer, nullptr, nullptr);
+    object->SetNativePointerField(1, objPointer, nullptr, nullptr);
+    object->SetNativePointerField(2, hint, nullptr, nullptr); // 2 : hint
+}
+
+void* ArkNativeObject::GetNativeBindingPointer(uint32_t index)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> value = value_;
+    uint32_t paramCount = value->GetNativePointerFieldCount();
+    if (index >= paramCount) {
+        HILOG_ERROR("index more than nativebindingpointer count");
+        return nullptr;
+    }
+    return value->GetNativePointerField(index);
 }
 
 NativeValue* ArkNativeObject::GetPropertyNames()

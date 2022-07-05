@@ -66,8 +66,13 @@ void* V8NativeObject::GetNativePointer()
     return result;
 }
 
-void SetNativeBindingPointer(void* param1, void* param2)
+void V8NativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
 {
+}
+
+void* V8NativeObject::GetNativeBindingPointer(uint32_t index)
+{
+    return nullptr;
 }
 
 NativeValue* V8NativeObject::GetPropertyNames()

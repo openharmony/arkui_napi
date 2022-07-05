@@ -102,6 +102,7 @@ public:
     NativeValue* CreateObject(NativeEngine* engine) override;
     // Create special native object value
     NativeValue* CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach) override;
+    NativeValue* CreateNBObject(NativeEngine* engine, DetachCallback detach, AttachCallback attach) override;
     // Create native function value
     NativeValue* CreateFunction(
         NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value) override;

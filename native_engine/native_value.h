@@ -33,6 +33,9 @@ typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
 
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
+typedef void* (*DetachCallback)(NativeEngine* engine, void* value, void* hint);
+typedef NativeValue* (*AttachCallback)(NativeEngine* engine, void* value, void* hint);
+
 using NativeThreadSafeFunctionCallJs =
     void (*)(NativeEngine* env, NativeValue* js_callback, void* context, void* data);
 
@@ -209,7 +212,8 @@ public:
 
     virtual void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) = 0;
     virtual void* GetNativePointer() = 0;
-    virtual void SetNativeBindingPointer(void* param1, void* param2) = 0;
+    virtual void SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint) = 0;
+    virtual void* GetNativeBindingPointer(uint32_t index) = 0;
 
     virtual void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) = 0;
 

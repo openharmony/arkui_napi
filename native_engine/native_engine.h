@@ -81,6 +81,7 @@ public:
 
     virtual NativeValue* CreateObject() = 0;
     virtual NativeValue* CreateNativeBindingObject(void* detach, void* attach) = 0;
+    virtual NativeValue* CreateNBObject(DetachCallback detach, AttachCallback attach) = 0;
     virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
     virtual NativeValue* CreateArray(size_t length) = 0;
     virtual NativeValue* CreateBuffer(void** value, size_t length) = 0;

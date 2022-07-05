@@ -72,6 +72,7 @@ public:
     NativeValue* CreateObject() override;
     // Create special native object value
     NativeValue* CreateNativeBindingObject(void* detach, void* attach) override;
+    NativeValue* CreateNBObject(DetachCallback detach, AttachCallback attach) override;
     // Create native function value
     NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
     // Create native array value
