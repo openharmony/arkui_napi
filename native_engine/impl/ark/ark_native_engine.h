@@ -103,6 +103,7 @@ public:
                                       size_t argc) override;
     // Run script
     NativeValue* RunScript(NativeValue* script) override;
+    NativeValue* RunScriptPath(const char* path) override;
     // Run buffer script
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;

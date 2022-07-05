@@ -109,6 +109,10 @@ public:
         const NativePropertyDescriptor* properties, size_t length) override;
 
     virtual NativeValue* RunScript(NativeEngine* engine, NativeValue* script) override;
+    NativeValue* RunScriptPath(NativeEngine* engine, const char* path) override
+    {
+        return nullptr;
+    }
     virtual NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     virtual NativeValue* RunActor(NativeEngine* engine, std::vector<uint8_t>& buffer, const char* descriptor) override;
 
@@ -177,7 +181,7 @@ public:
     {
         return false;
     }
-    
+
     void PrintStatisticResult() override {}
     void StartRuntimeStat() override {}
     void StopRuntimeStat() override {}
