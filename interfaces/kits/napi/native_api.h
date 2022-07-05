@@ -78,9 +78,6 @@ NAPI_INNER_EXTERN napi_status napi_create_buffer_copy(napi_env env,
                                                       void** result_data,
                                                       napi_value* result);
 
-NAPI_INNER_EXTERN napi_status napi_create_date(napi_env env,
-                                               double time,
-                                               napi_value* result);
 
 NAPI_INNER_EXTERN napi_status napi_create_external_buffer(napi_env env,
                                                           size_t length,
@@ -110,10 +107,6 @@ NAPI_INNER_EXTERN napi_status napi_get_buffer_info(napi_env env,
                                                    napi_value value,
                                                    void** data,
                                                    size_t* length);
-
-NAPI_INNER_EXTERN napi_status napi_get_date_value(napi_env env,
-                                                  napi_value value,
-                                                  double* result);
 
 NAPI_INNER_EXTERN napi_status napi_get_value_bigint_int64(napi_env env,
                                                           napi_value value,

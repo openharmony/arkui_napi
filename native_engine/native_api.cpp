@@ -2282,7 +2282,7 @@ NAPI_INNER_EXTERN napi_status napi_check_object_type_tag(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_date(napi_env env, double time, napi_value* result)
+NAPI_EXTERN napi_status napi_create_date(napi_env env, double time, napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
@@ -2293,7 +2293,7 @@ NAPI_INNER_EXTERN napi_status napi_create_date(napi_env env, double time, napi_v
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, double* result)
+NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, double* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
