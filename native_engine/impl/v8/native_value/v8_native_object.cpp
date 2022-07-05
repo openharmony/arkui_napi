@@ -34,6 +34,12 @@ void* V8NativeObject::GetInterface(int interfaceId)
     return (NativeObject::INTERFACE_ID == interfaceId) ? (NativeObject*)this : nullptr;
 }
 
+bool V8NativeObject::ConvertToNativeBindingObject(
+    void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint)
+{
+    return false;
+}
+
 void V8NativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
 {
     v8::Local<v8::Object> value = value_;
@@ -66,7 +72,8 @@ void* V8NativeObject::GetNativePointer()
     return result;
 }
 
-void V8NativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
+void V8NativeObject::SetNativeBindingPointer(
+    void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData)
 {
 }
 

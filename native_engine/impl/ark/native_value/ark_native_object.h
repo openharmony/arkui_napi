@@ -16,6 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H
 
+#include <mutex>
+
 #include "ark_native_value.h"
 
 class ArkNativeObject : public ArkNativeValue, public NativeObject {
@@ -26,13 +28,16 @@ public:
     ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach);
     ~ArkNativeObject() override;
 
+    bool ConvertToNativeBindingObject(
+        void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint) override;
     void* GetInterface(int interfaceId) override;
 
-    static void* DetachFuncCallback(void* engine, void* object, void* hint);
-    static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint);
+    static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData);
+    static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint, void* attachData);
     void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) override;
     void* GetNativePointer() override;
-    void SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint) override;
+    void SetNativeBindingPointer(
+        void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData) override;
     void* GetNativeBindingPointer(uint32_t index) override;
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
     void Freeze() override;
@@ -66,6 +71,7 @@ public:
 private:
     static AttachCallback attach_;
     static DetachCallback detach_;
+    std::mutex funcMutex_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H */
