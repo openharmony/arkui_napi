@@ -180,7 +180,12 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
             requireData);
 
     Local<ObjectRef> global = panda::JSNApi::GetGlobalObject(vm);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
     global->Set(vm, requireName, requireNapi);
+#else
+    Local<StringRef> requireNapiPreview = StringRef::NewFromUtf8(vm, "requireNapiPreview");
+    global->Set(vm, requireNapiPreview, requireNapi);
+#endif
     global->Set(vm, requireInternalName, requireInternal);
     // need to call init of base class.
     Init();
