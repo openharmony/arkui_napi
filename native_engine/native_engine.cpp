@@ -219,6 +219,20 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
     return false;
 }
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+void NativeEngine::CallDebuggerPostTaskFunc(std::function<void()>&& task)
+{
+    if (debuggerPostTaskFunc_ != nullptr) {
+        debuggerPostTaskFunc_(std::move(task));
+    }
+}
+
+void NativeEngine::SetDebuggerPostTaskFunc(DebuggerPostTask func)
+{
+    debuggerPostTaskFunc_ = func;
+}
+#endif
+
 bool NativeEngine::CallWorkerAsyncWorkFunc(NativeEngine* engine)
 {
     if (nativeAsyncExecuteCallback_ != nullptr && nativeAsyncCompleteCallback_ != nullptr) {
