@@ -134,7 +134,7 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
     NativeScope* nativeScope = scopeManager->Open();
     cbInfo.thisVar = ArkNativeEngine::ArkValueToNativeValue(engine, runtimeInfo->GetThisRef());
     cbInfo.function = ArkNativeEngine::ArkValueToNativeValue(engine, runtimeInfo->GetNewTargetRef());
-    cbInfo.argc = runtimeInfo->GetArgsNumber();
+    cbInfo.argc = static_cast<size_t>(runtimeInfo->GetArgsNumber());
     cbInfo.argv = nullptr;
     cbInfo.functionInfo = info;
     if (cbInfo.argc > 0) {
