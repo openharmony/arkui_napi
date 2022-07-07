@@ -66,7 +66,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
     EcmaVM* vm, NativeEngine* engine, void* jsEngine) : NativeEngineInterface(engine, jsEngine),
     vm_(vm), topScope_(vm)
 {
-    Local<StringRef> requireName = StringRef::NewFromUtf8(vm, "requireNapi");
     Local<StringRef> requireInternalName = StringRef::NewFromUtf8(vm, "requireInternal");
     void* requireData = static_cast<void*>(this);
 
@@ -181,6 +180,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
 
     Local<ObjectRef> global = panda::JSNApi::GetGlobalObject(vm);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+    Local<StringRef> requireName = StringRef::NewFromUtf8(vm, "requireNapi");
     global->Set(vm, requireName, requireNapi);
 #else
     Local<StringRef> requireNapiPreview = StringRef::NewFromUtf8(vm, "requireNapiPreview");
