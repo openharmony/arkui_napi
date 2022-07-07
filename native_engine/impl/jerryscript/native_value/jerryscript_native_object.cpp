@@ -51,6 +51,12 @@ JerryScriptNativeObject::JerryScriptNativeObject(JerryScriptNativeEngine* engine
 
 JerryScriptNativeObject::~JerryScriptNativeObject() {}
 
+bool JerryScriptNativeObject::ConvertToNativeBindingObject(
+    void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint)
+{
+    return false;
+}
+
 void JerryScriptNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
 {
     if (pointer == nullptr) {
@@ -80,7 +86,8 @@ void* JerryScriptNativeObject::GetNativePointer()
     }
 }
 
-void JerryScriptNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
+void JerryScriptNativeObject::SetNativeBindingPointer(
+    void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData)
 {
 }
 

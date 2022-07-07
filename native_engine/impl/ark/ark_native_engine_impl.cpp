@@ -852,7 +852,7 @@ NativeValue* ArkNativeEngineImpl::LoadArkModule(
         return nullptr;
     }
 
-    Local<ObjectRef> exportObj = JSNApi::GetExportObject(vm_, fileName, "default");
+    Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
     if (exportObj->IsNull()) {
         HILOG_ERROR("Get export object failed");
         return nullptr;

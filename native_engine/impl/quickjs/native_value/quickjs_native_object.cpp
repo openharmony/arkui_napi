@@ -35,6 +35,12 @@ QuickJSNativeObject::QuickJSNativeObject(QuickJSNativeEngine* engine, JSValue va
 
 QuickJSNativeObject::~QuickJSNativeObject() {}
 
+bool QuickJSNativeObject::ConvertToNativeBindingObject(
+    void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint)
+{
+    return false;
+}
+
 void QuickJSNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
 {
     NativeObjectInfo* info = (NativeObjectInfo*)JS_GetNativePointer(engine_->GetContext(), value_);
@@ -68,7 +74,8 @@ void* QuickJSNativeObject::GetNativePointer()
     return info ? info->nativeObject : nullptr;
 }
 
-void QuickJSNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
+void QuickJSNativeObject::SetNativeBindingPointer(
+    void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData)
 {
 }
 

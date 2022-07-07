@@ -53,42 +53,60 @@ ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, void* detach, void* at
     value_ = Global<ObjectRef>(vm, object);
 }
 
-void* ArkNativeObject::DetachFuncCallback(void* engine, void* object, void* hint)
+void* ArkNativeObject::DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
 {
-    if (detach_ == nullptr) {
-        HILOG_ERROR("detach_ is nullptr");
+    if (detachData == nullptr || (engine == nullptr || object ==nullptr)) {
+        HILOG_ERROR("DetachFuncCallback params has nullptr");
         return nullptr;
     }
-    DetachCallback detach = detach_;
+    DetachCallback detach = reinterpret_cast<DetachCallback>(detachData);
     void* detachVal = detach(reinterpret_cast<NativeEngine*>(engine), object, hint);
     return detachVal;
 }
 
-Local<JSValueRef> ArkNativeObject::AttachFuncCallback(void* engine, void* buffer, void* hint)
+Local<JSValueRef> ArkNativeObject::AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
     panda::EscapeLocalScope scope(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm());
-    if (attach_ == nullptr) {
-        HILOG_ERROR("attach_ is nullptr");
+    if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
+        HILOG_ERROR("AttachFuncCallback params has nullptr");
     }
-    NativeValue* attachVal = attach_(reinterpret_cast<NativeEngine*>(engine), buffer, hint);
-    Global<JSValueRef> attach = *attachVal;
-    return scope.Escape(attach.ToLocal(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm()));
+    AttachCallback attach = reinterpret_cast<AttachCallback>(attachData);
+    NativeValue* attachVal = attach(reinterpret_cast<NativeEngine*>(engine), buffer, hint);
+    Global<JSValueRef> result = *attachVal;
+    return scope.Escape(result.ToLocal(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm()));
 }
 
 ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach)
     : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
+    {
+        std::lock_guard<std::mutex> lock(funcMutex_);
+        detach_ = detach;
+        attach_ = attach;
+    }
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
-    detach_ = detach;
-    attach_ = attach;
-
     Local<ObjectRef> object = ObjectRef::New(
         vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
     value_ = Global<ObjectRef>(vm, object);
 }
 
 ArkNativeObject::~ArkNativeObject() {}
+
+bool ArkNativeObject::ConvertToNativeBindingObject(
+    void* engine, DetachCallback detachData, AttachCallback attachData, void *object, void *hint)
+{
+    if (detachData == nullptr || (attachData == nullptr || object == nullptr)) {
+        HILOG_ERROR("ConvertToNativeBindingObject params has nullptr");
+        return false;
+    }
+    auto vm = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
+    Global<ObjectRef> obj = value_;
+    bool res = obj->Set(vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
+    this->SetNativeBindingPointer(
+        engine, object, hint, reinterpret_cast<void *>(detachData), reinterpret_cast<void *>(attachData));
+    return res;
+}
 
 void* ArkNativeObject::GetInterface(int interfaceId)
 {
@@ -135,17 +153,20 @@ void* ArkNativeObject::GetNativePointer()
     return result;
 }
 
-void ArkNativeObject::SetNativeBindingPointer(void* enginePointer, void* objPointer, void* hint)
+void ArkNativeObject::SetNativeBindingPointer(
+    void *enginePointer, void *objPointer, void *hint, void *detachData, void *attachData)
 {
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<ObjectRef> value = value_;
 
     Local<ObjectRef> object = Local<ObjectRef>(value.ToLocal(vm));
-    object->SetNativePointerFieldCount(3); // 3 : NativeEngine, NativeObject, hint
+    object->SetNativePointerFieldCount(5); // 5 : NativeEngine, NativeObject, hint, detachData, attachData
     object->SetNativePointerField(0, enginePointer, nullptr, nullptr);
     object->SetNativePointerField(1, objPointer, nullptr, nullptr);
     object->SetNativePointerField(2, hint, nullptr, nullptr); // 2 : hint
+    object->SetNativePointerField(3, detachData, nullptr, nullptr); // 3 : detachData
+    object->SetNativePointerField(4, attachData, nullptr, nullptr); // 4 : attachData
 }
 
 void* ArkNativeObject::GetNativeBindingPointer(uint32_t index)
