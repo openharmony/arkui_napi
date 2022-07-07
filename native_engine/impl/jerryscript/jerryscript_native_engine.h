@@ -69,6 +69,10 @@ public:
                                       NativeValue* const* argv,
                                       size_t argc) override;
     virtual NativeValue* RunScript(NativeValue* script) override;
+    virtual NativeValue* RunScriptPath(const char* path) override
+    {
+        return nullptr;
+    }
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char *descriptor) override;
     virtual NativeValue* DefineClass(const char* name,
@@ -118,7 +122,7 @@ public:
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;
-    
+
     void PrintStatisticResult() override;
     void StartRuntimeStat() override;
     void StopRuntimeStat() override;

@@ -134,6 +134,7 @@ public:
         NativeValue* const *argv, size_t argc) override;
     // Run script
     NativeValue* RunScript(NativeEngine* engine, NativeValue* script) override;
+    NativeValue* RunScriptPath(NativeEngine* engine, const char* path) override;
     // Run buffer script
     NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     // Run actor
@@ -193,7 +194,7 @@ public:
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;
-    
+
     void PrintStatisticResult() override;
     void StartRuntimeStat() override;
     void StopRuntimeStat() override;

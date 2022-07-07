@@ -536,6 +536,22 @@ NativeValue* ArkNativeEngineImpl::RunScript(NativeEngine* engine, NativeValue* s
     return nullptr;
 }
 
+NativeValue* ArkNativeEngineImpl::RunScriptPath(NativeEngine* engine, const char* path)
+{
+    panda::JSExecutionScope executionScope(vm_);
+    LocalScope scope(vm_);
+    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
+
+    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
+    HandleUncaughtException(engine);
+    if (!excep.IsNull()) {
+        Local<StringRef> exceptionMsg = excep->ToString(vm_);
+        exceptionStr_ = exceptionMsg->ToString();
+        return nullptr;
+    }
+    return CreateUndefined(engine);
+}
+
 void ArkNativeEngineImpl::SetPackagePath(const std::string& packagePath)
 {
     auto moduleManager = NativeModuleManager::GetInstance();
@@ -811,7 +827,8 @@ NativeValue* ArkNativeEngineImpl::RunActor(NativeEngine* engine, std::vector<uin
     LocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
-    Local<ObjectRef> excep = panda::JSNApi::GetAndClearUncaughtException(vm_);
+    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
+    HandleUncaughtException(engine);
     if (!excep.IsNull()) {
         Local<StringRef> exceptionMsg = excep->ToString(vm_);
         exceptionStr_ = exceptionMsg->ToString();

@@ -257,6 +257,12 @@ NativeValue* ArkNativeEngine::RunScript(NativeValue* script)
     return arkNativeEngineImpl->RunScript(this, script);
 }
 
+NativeValue* ArkNativeEngine::RunScriptPath(const char* path)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->RunScriptPath(this, path);
+}
+
 void ArkNativeEngine::SetPackagePath(const std::string& packagePath)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
