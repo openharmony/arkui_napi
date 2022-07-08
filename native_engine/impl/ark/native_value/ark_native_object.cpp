@@ -174,7 +174,7 @@ void* ArkNativeObject::GetNativeBindingPointer(uint32_t index)
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<ObjectRef> value = value_;
-    int32_t paramCount = value->GetNativePointerFieldCount();
+    uint32_t paramCount = value->GetNativePointerFieldCount();
     if (index >= paramCount) {
         HILOG_ERROR("index more than nativebindingpointer count");
         return nullptr;
