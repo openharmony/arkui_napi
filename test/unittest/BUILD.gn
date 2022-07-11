@@ -180,7 +180,7 @@ if (defined(ohos_lite)) {
     ohos_unittest("test_ark_unittest") {
       module_out_path = module_output_path
 
-      configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
+      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
       include_dirs = ark_include
 
