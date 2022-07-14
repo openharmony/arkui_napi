@@ -746,7 +746,7 @@ void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
 
 void ArkNativeEngineImpl::StopCpuProfiler()
 {
-    DFXJSNApi::StopCpuProfilerForFile();
+    DFXJSNApi::StopCpuProfilerForFile(vm_);
 }
 #else
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
