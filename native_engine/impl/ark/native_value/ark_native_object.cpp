@@ -187,6 +187,16 @@ NativeValue* ArkNativeObject::GetPropertyNames()
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<ObjectRef> val = value_;
+    Local<ArrayRef> arrayVal = val->GetOwnPropertyNames(vm);
+
+    return new ArkNativeArray(engine_, arrayVal);
+}
+
+NativeValue* ArkNativeObject::GetEnumerablePropertyNames()
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> val = value_;
     Local<ArrayRef> arrayVal = val->GetOwnEnumerablePropertyNames(vm);
 
     return new ArkNativeArray(engine_, arrayVal);
