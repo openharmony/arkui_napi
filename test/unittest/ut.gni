@@ -28,7 +28,7 @@ quickjs_include += [ "//foundation/arkui/napi/native_engine/impl/quickjs" ]
 
 ark_include = common_include
 ark_include += [
-  "//ark/js_runtime",
+  "//arkcompiler/ets_runtime",
   "//foundation/arkui/napi/native_engine/impl/ark",
 ]
 
@@ -54,7 +54,7 @@ quickjs_deps += [
 
 ark_deps = common_deps
 ark_deps += [
-  "//ark/js_runtime:libark_jsruntime",
+  "//arkcompiler/ets_runtime:libark_jsruntime",
   "//foundation/arkui/napi:ace_napi_ark",
 ]
 
