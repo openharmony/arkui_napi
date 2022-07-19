@@ -43,6 +43,7 @@ public:
     void Freeze() override;
     void Seal() override;
     NativeValue* GetPropertyNames() override;
+    NativeValue* GetEnumerablePropertyNames() override;
 
     NativeValue* GetPrototype() override;
 

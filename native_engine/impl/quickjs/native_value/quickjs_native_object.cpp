@@ -138,6 +138,11 @@ NativeValue* QuickJSNativeObject::GetPropertyNames()
     return propertyNames;
 }
 
+NativeValue* QuickJSNativeObject::GetEnumerablePropertyNames()
+{
+    return nullptr;
+}
+
 NativeValue* QuickJSNativeObject::GetPrototype()
 {
     JSValue value = JS_GetPrototype(engine_->GetContext(), value_);

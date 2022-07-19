@@ -94,6 +94,11 @@ NativeValue* V8NativeObject::GetPropertyNames()
     return new V8NativeArray(engine_, arrayVal);
 }
 
+NativeValue* V8NativeObject::GetEnumerablePropertyNames()
+{
+    return nullptr;
+}
+
 NativeValue* V8NativeObject::GetPrototype()
 {
     v8::Local<v8::Object> obj = value_;

@@ -34,6 +34,7 @@ public:
     void* GetNativeBindingPointer(uint32_t index) override;
 
     NativeValue* GetPropertyNames() override;
+    NativeValue* GetEnumerablePropertyNames() override;
 
     NativeValue* GetPrototype() override;
 
