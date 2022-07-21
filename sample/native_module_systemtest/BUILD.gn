@@ -49,9 +49,15 @@ ohos_shared_library("systemtestnapi") {
   ]
 
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+    ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 
   relative_install_dir = "module"
@@ -78,7 +84,7 @@ ohos_unittest("test_quickjs_systemtest") {
     "//foundation/arkui/napi/native_engine/impl/quickjs",
     "//third_party/googletest/include",
     "//third_party/node/src",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
     "//foundation/arkui/napi/interfaces/kits/napi",
   ]
 
@@ -101,13 +107,18 @@ ohos_unittest("test_quickjs_systemtest") {
     "//third_party/googletest:gtest_main",
     "//third_party/libuv:uv",
     "//third_party/quickjs:qjs",
-    "//utils/native/base:utils",
   ]
 
   if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hiviewdfx_hilog_native:libhilog",
+    ]
   } else {
-    external_deps = [ "hilog:libhilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
   }
 }
 
