@@ -1069,8 +1069,6 @@ NAPI_EXTERN napi_status napi_create_external(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, data);
-    CHECK_ARG(env, finalize_cb);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
