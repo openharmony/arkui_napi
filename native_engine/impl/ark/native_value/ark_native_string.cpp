@@ -100,7 +100,6 @@ size_t ArkNativeString::EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t
     }
 
     *nchars = i;
-    buffer[bufferSize] = '\0';
     HILOG_DEBUG("EncodeWriteUtf8 the result of buffer: %{public}s", buffer);
     return pos;
 }
@@ -111,11 +110,6 @@ void ArkNativeString::EncodeWriteChinese(std::string& buffer, const char* encodi
         HILOG_ERROR("encoding is nullptr");
         return;
     }
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-    SetHwIcuDirectory();
-#else
-    u_setDataDirectory(".");
-#endif
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<StringRef> val = value_;
