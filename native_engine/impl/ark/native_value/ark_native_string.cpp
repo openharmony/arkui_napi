@@ -94,7 +94,6 @@ size_t ArkNativeString::EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t
     }
 
     *nchars = i;
-    buffer[bufferSize] = '\0';
     HILOG_DEBUG("EncodeWriteUtf8 the result of buffer: %{public}s", buffer);
     return pos;
 }
