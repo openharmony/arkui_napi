@@ -60,6 +60,11 @@ pthread_t NativeEngine::GetTid() const
     return nativeEngineImpl_->GetTid();
 }
 
+bool NativeEngine::ReinitUVLoop()
+{
+    return nativeEngineImpl_->ReinitUVLoop();
+}
+
 void NativeEngine::Loop(LoopMode mode, bool needSync)
 {
     nativeEngineImpl_->Loop(mode, needSync);

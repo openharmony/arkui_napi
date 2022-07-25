@@ -53,6 +53,8 @@ public:
     virtual uv_loop_t* GetUVLoop() const;
     virtual pthread_t GetTid() const;
 
+    virtual bool ReinitUVLoop();
+
     virtual void Loop(LoopMode mode, bool needSync = false);
     virtual void SetPostTask(PostTask postTask);
     virtual void TriggerPostTask();
