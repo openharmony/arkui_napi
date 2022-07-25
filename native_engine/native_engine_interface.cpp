@@ -130,6 +130,25 @@ pthread_t NativeEngineInterface::GetTid() const
     return tid_;
 }
 
+bool NativeEngineInterface::ReinitUVLoop()
+{
+    if (loop_ != nullptr) {
+        uv_sem_destroy(&uvSem_);
+        uv_close((uv_handle_t*)&uvAsync_, nullptr);
+        uv_run(loop_, UV_RUN_ONCE);
+        uv_loop_delete(loop_);
+    }
+
+    loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        return false;
+    }
+    tid_ = pthread_self();
+    uv_async_init(loop_, &uvAsync_, nullptr);
+    uv_sem_init(&uvSem_, 0);
+    return true;
+}
+
 void NativeEngineInterface::Loop(LoopMode mode, bool needSync)
 {
     bool more = true;
