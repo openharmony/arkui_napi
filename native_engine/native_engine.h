@@ -17,7 +17,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H
 
 #include <functional>
-#include <unordered_set>
+#include <string>
 #include <vector>
 
 #include "callback_scope_manager/native_callback_scope_manager.h"

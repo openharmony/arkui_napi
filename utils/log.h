@@ -33,7 +33,7 @@ enum class LogLevel : uint32_t {
 
 NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 
-#define HILOG_PRINT(Level, fmt, ...)                                                                            \
+#define HILOG_PRINT(Level, fmt, ...) \
     PrintLog(LogLevel::Level, "[%-20s(%s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__);
 
 #else
@@ -48,15 +48,14 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 #undef HILOG_INFO
 #undef HILOG_DEBUG
 
-
 #define LOG_DOMAIN 0xD003900
 #define LOG_TAG "NAPI"
 
 static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN, LOG_TAG };
 
-#define HILOG_PRINT(Level, fmt, ...)                                                                            \
-    (void)OHOS::HiviewDFX::HiLog::Level(LOG_LABEL, "[%{public}s(%{public}s)] " fmt, __FILENAME__, __FUNCTION__, \
-                                        ##__VA_ARGS__)
+#define HILOG_PRINT(Level, fmt, ...)     \
+    (void)OHOS::HiviewDFX::HiLog::Level( \
+        LOG_LABEL, "[%{public}s(%{public}s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__)
 
 #endif
 

@@ -14,9 +14,7 @@
  */
 #include "utils/log.h"
 
-#include <cstdarg>
-#include <cstdio>
-#include <string>
+#include <cstdint>
 
 [[maybe_unused]] static void StripFormatString(const std::string& prefix, std::string& str)
 {
@@ -41,8 +39,7 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...)
     StripFormatString("{private}", newFmt);
     va_list args;
     va_start(args, fmt);
-    __android_log_vprint(
-        LOG_LEVEL[static_cast<int>(level)], LOG_TAG, newFmt.c_str(), args);
+    __android_log_vprint(LOG_LEVEL[static_cast<int>(level)], LOG_TAG, newFmt.c_str(), args);
     va_end(args);
 }
 
