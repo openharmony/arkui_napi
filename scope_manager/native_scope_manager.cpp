@@ -31,6 +31,8 @@
 #ifdef ENABLE_MEMLEAK_DEBUG
 #include "parameters.h"
 #endif
+#include <cstddef>
+
 #include "utils/log.h"
 
 struct NativeHandle {
@@ -39,7 +41,10 @@ struct NativeHandle {
 };
 
 struct NativeScope {
-    static NativeScope* CreateNewInstance() { return new NativeScope(); }
+    static NativeScope* CreateNewInstance()
+    {
+        return new NativeScope();
+    }
     NativeHandle* handlePtr = nullptr;
     size_t handleCount = 0;
     bool escaped = false;
@@ -55,7 +60,7 @@ const int NativeScopeManager::DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>
 const int NativeScopeManager::BACKTRACE_DEPTH = OHOS::system::GetIntParameter<int>("persist.napi.memleak.depth", 100);
 std::atomic<std::vector<struct StructVma>*> NativeScopeManager::vmas(nullptr);
 
-static void TrimAndDupStr(const std::string &source, std::string &str)
+static void TrimAndDupStr(const std::string& source, std::string& str)
 {
     auto const firstPos = source.find_first_not_of(' ');
     if (firstPos == std::string::npos) {
@@ -68,16 +73,16 @@ static void TrimAndDupStr(const std::string &source, std::string &str)
     str = source.substr(firstPos, len);
 }
 
-static bool CreateVma(struct StructVma &vma, const std::string &mapInfo)
+static bool CreateVma(struct StructVma& vma, const std::string& mapInfo)
 {
     int pos = 0;
     uint64_t begin = 0;
     uint64_t end = 0;
     uint64_t offset = 0;
-    char perms[5] = {0}; // 5:rwxp
+    char perms[5] = { 0 }; // 5:rwxp
 
-    if (sscanf_s(mapInfo.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end,
-        &perms, sizeof(perms), &offset, &pos) != 4) { // 4:scan size
+    if (sscanf_s(mapInfo.c_str(), "%" SCNxPTR "-%" SCNxPTR " %4s %" SCNxPTR " %*x:%*x %*d%n", &begin, &end, &perms,
+            sizeof(perms), &offset, &pos) != 4) { // 4:scan size
         return false;
     }
     vma.begin = begin;
@@ -86,24 +91,24 @@ static bool CreateVma(struct StructVma &vma, const std::string &mapInfo)
     return true;
 }
 
-static void CreateVmas(int pid, std::vector<struct StructVma> &vmas)
+static void CreateVmas(int pid, std::vector<struct StructVma>& vmas)
 {
     if (pid <= 0) {
         return;
     }
-    char path[NativeScopeManager::NAME_LEN] = {0};
+    char path[NativeScopeManager::NAME_LEN] = { 0 };
     if (snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/maps", pid) <= 0) {
         return;
     }
-    char realPath[PATH_MAX] = {0};
+    char realPath[PATH_MAX] = { 0 };
     if (realpath(path, realPath) == nullptr) {
         return;
     }
-    FILE *fp = fopen(realPath, "r");
+    FILE* fp = fopen(realPath, "r");
     if (fp == nullptr) {
         return;
     }
-    char mapInfo[NativeScopeManager::MAPINFO_SIZE] = {0};
+    char mapInfo[NativeScopeManager::MAPINFO_SIZE] = { 0 };
     while (fgets(mapInfo, sizeof(mapInfo), fp) != nullptr) {
         struct StructVma vma;
         std::string info(mapInfo);
@@ -114,9 +119,9 @@ static void CreateVmas(int pid, std::vector<struct StructVma> &vmas)
     (void)fclose(fp);
 }
 
-static void ResetVmas(std::atomic<std::vector<struct StructVma>*> &vmas)
+static void ResetVmas(std::atomic<std::vector<struct StructVma>*>& vmas)
 {
-    std::vector<struct StructVma> *new_vmas = new std::vector<struct StructVma>();
+    std::vector<struct StructVma>* new_vmas = new std::vector<struct StructVma>();
     if (new_vmas == nullptr) {
         return;
     }
@@ -127,7 +132,7 @@ static void ResetVmas(std::atomic<std::vector<struct StructVma>*> &vmas)
     }
 }
 
-static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vector<struct StructVma> &vmas)
+static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vector<struct StructVma>& vmas)
 {
     for (auto iter = vmas.begin(); iter != vmas.end(); iter++) {
         if (((*iter).begin <= address) && ((*iter).end > address)) {
@@ -137,7 +142,7 @@ static const struct StructVma* FindMapByAddr(uintptr_t address, const std::vecto
     return nullptr;
 }
 
-static bool BackTrace(const std::vector<struct StructVma> &vmas)
+static bool BackTrace(const std::vector<struct StructVma>& vmas)
 {
     bool hasUnknowMap = false;
     int depth = 0;
@@ -159,10 +164,10 @@ static bool BackTrace(const std::vector<struct StructVma> &vmas)
         int ret = unw_get_proc_name(&cursor, sym, sizeof(sym), &offset);
         if (ret == 0) {
             HILOG_ERROR("MEMLEAK: %{public}s +0x%{public}" SCNxPTR ", %{public}s\n", sym, offset,
-                        (vma != nullptr) ? vma->path.c_str() : "unknow_path");
+                (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         } else {
-            HILOG_ERROR("MEMLEAK: unknow(%{public}d) pc=0x%{public}" SCNxPTR ", %{public}s\n",
-                        ret, pc, (vma != nullptr) ? vma->path.c_str() : "unknow_path");
+            HILOG_ERROR("MEMLEAK: unknow(%{public}d) pc=0x%{public}" SCNxPTR ", %{public}s\n", ret, pc,
+                (vma != nullptr) ? vma->path.c_str() : "unknow_path");
         }
     }
     return hasUnknowMap;
@@ -312,8 +317,8 @@ void NativeScopeManager::CreateHandle(NativeValue* value)
     current_->handleCount++;
 #ifdef ENABLE_MEMLEAK_DEBUG
     if (NativeScopeManager::DEBUG_MEMLEAK != 0 && current_ == root_) {
-        HILOG_ERROR("MEMLEAK: size=%{public}" SCNdPTR ", total=%{public}" SCNdPTR,
-                    sizeof(*value), current_->handleCount);
+        HILOG_ERROR(
+            "MEMLEAK: size=%{public}" SCNdPTR ", total=%{public}" SCNdPTR, sizeof(*value), current_->handleCount);
         if (NativeScopeManager::vmas != nullptr && !BackTrace(*NativeScopeManager::vmas)) {
             return;
         }

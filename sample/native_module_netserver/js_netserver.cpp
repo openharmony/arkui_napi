@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <cstddef>
+#include <cstdint>
+
 #include "net_server.h"
 
 napi_value NetServer::JS_Constructor(napi_env env, napi_callback_info cbinfo)
@@ -146,7 +149,7 @@ napi_value NetServer::JS_Once(napi_env env, napi_callback_info cbinfo)
 
     netServer->Once(type, argv[1]);
 
-    delete []type;
+    delete[] type;
 
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -189,7 +192,7 @@ napi_value NetServer::JS_Off(napi_env env, napi_callback_info cbinfo)
     } else {
         netServer->Off(type);
     }
-    delete []type;
+    delete[] type;
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     return result;
@@ -199,8 +202,10 @@ napi_value NetServer::Export(napi_env env, napi_value exports)
 {
     const char className[] = "NetServer";
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("start", JS_Start), DECLARE_NAPI_FUNCTION("stop", JS_Stop),
-        DECLARE_NAPI_FUNCTION("on", JS_On),       DECLARE_NAPI_FUNCTION("once", JS_Once),
+        DECLARE_NAPI_FUNCTION("start", JS_Start),
+        DECLARE_NAPI_FUNCTION("stop", JS_Stop),
+        DECLARE_NAPI_FUNCTION("on", JS_On),
+        DECLARE_NAPI_FUNCTION("once", JS_Once),
         DECLARE_NAPI_FUNCTION("off", JS_Off),
     };
     napi_value netServerClass = nullptr;

@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 #include <memory>
+
+#include "js_napi_common.h"
 #include "napi/native_api.h"
 #include "napi/native_common.h"
-#include "js_napi_common.h"
 #include "napi/native_node_api.h"
 #include "utils/log.h"
 
@@ -41,7 +42,7 @@ static napi_value GetModuleName(napi_env env, napi_callback_info info)
     NAPI_CALL(env, node_api_get_module_file_name(env, &data));
     std::shared_ptr<char> module(const_cast<char*>(data));
     napi_value jsValue = nullptr;
-    
+
     if (module != nullptr) {
         HILOG_INFO("%{public}s,called moduleName = %{public}s", __func__, data);
         NAPI_CALL(env, napi_create_string_utf8(env, data, NAPI_AUTO_LENGTH, &jsValue));
@@ -78,7 +79,7 @@ static napi_value GetInstanceData(napi_env env, napi_callback_info info)
     NAPI_CALL(env, node_api_get_module_file_name(env, &moduleName));
     napi_value jsString;
     NAPI_CALL(env, napi_create_string_utf8(env, moduleName, NAPI_AUTO_LENGTH, &jsString));
-    
+
     std::shared_ptr<char> name(const_cast<char*>(moduleName));
     HILOG_INFO("%{public}s,called moduleName = %{public}s", __func__, name.get());
     return jsString;
@@ -86,11 +87,9 @@ static napi_value GetInstanceData(napi_env env, napi_callback_info info)
 napi_value InstanceDataInit(napi_env env, napi_value exports)
 {
     HILOG_INFO("%{public}s,called", __func__);
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testGetModuleName", GetModuleName),
+    napi_property_descriptor descriptors[] = { DECLARE_NAPI_FUNCTION("testGetModuleName", GetModuleName),
         DECLARE_NAPI_FUNCTION("testSetInstanceData", SetInstanceData),
-        DECLARE_NAPI_FUNCTION("testGetInstanceData", GetInstanceData)
-    };
+        DECLARE_NAPI_FUNCTION("testGetInstanceData", GetInstanceData) };
 
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(*descriptors), descriptors));
 

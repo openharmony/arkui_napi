@@ -15,18 +15,16 @@
 
 #include "native_module_manager.h"
 
-#include "native_engine/native_engine.h"
-
 #include <dirent.h>
+#include <mutex>
 
+#include "native_engine/native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
 
-#include <mutex>
-
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined (IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
 constexpr static char DL_NAMESPACE[] = "ace";
 #endif
 } // namespace
@@ -165,8 +163,8 @@ void NativeModuleManager::SetAppLibPath(const char* appLibPath)
     CreateLdNamespace(appLibPath_);
 }
 
-NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
-    const char* path, bool isAppModule, bool internal, bool isArk)
+NativeModule* NativeModuleManager::LoadNativeModule(
+    const char* moduleName, const char* path, bool isAppModule, bool internal, bool isArk)
 {
     if (moduleName == nullptr) {
         HILOG_ERROR("moduleName value is null");
@@ -257,8 +255,7 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s",
-                prefix, dupModuleName, soPostfix) == -1) {
+            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", prefix, dupModuleName, soPostfix) == -1) {
                 return false;
             }
         }
@@ -353,8 +350,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     }
 
     if (lastNativeModule_ && strcmp(lastNativeModule_->name, moduleName)) {
-        HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'",
-            moduleName, lastNativeModule_->name);
+        HILOG_WARN(
+            "moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, lastNativeModule_->name);
     }
 
     if (!internal) {
@@ -375,7 +372,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         for (char* p = strchr(symbol, '.'); p != nullptr; p = strchr(p + 1, '.')) {
             *p = '_';
         }
-
 
         auto getJSCode = reinterpret_cast<NAPIGetJSCode>(LIBSYM(lib, symbol));
         if (getJSCode != nullptr) {
@@ -404,8 +400,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if (!strcasecmp(temp->name, moduleName)) {
             if (strcmp(temp->name, moduleName)) {
-                HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'",
-                    moduleName, temp->name);
+                HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, temp->name);
             }
             result = temp;
             break;

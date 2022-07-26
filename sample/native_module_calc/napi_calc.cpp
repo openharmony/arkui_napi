@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <cstddef>
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 

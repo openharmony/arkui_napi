@@ -16,12 +16,11 @@
 #ifndef FOUNDATION_ACE_NAPI_TEST_NATIVE_MODULE_NET_SERVER_NETSERVER_H
 #define FOUNDATION_ACE_NAPI_TEST_NATIVE_MODULE_NET_SERVER_NETSERVER_H
 
-#include "event_target.h"
+#include <cstddef>
 
+#include "event_target.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "securec.h"
-
 #include "uv.h"
 
 #define EVENT_TYPE_BUFFER_SIZE 64

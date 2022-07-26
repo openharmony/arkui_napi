@@ -12,11 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "event_target.h"
 
-#include "securec.h"
+#include <cstring>
 
+#include "securec.h"
 #include "utils/log.h"
 
 #define LISTENER_TYPTE_MAX_LENGTH 64
