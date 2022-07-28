@@ -140,7 +140,7 @@ if (defined(ohos_lite)) {
       "//foundation/arkui/napi/interfaces/kits",
       "//third_party/libuv/include",
       "//third_party/node/src",
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
     ]
 
     sources = napi_sources

@@ -20,7 +20,7 @@ config("ace_napi_ark_config") {
   include_dirs = [
     "//foundation/arkui/napi",
     "//third_party/libuv/include",
-    "//utils/native/base/include",
+    "//commonlibrary/c_utils/base/include",
   ]
 
   defines = []
