@@ -18,6 +18,9 @@
 #include <dirent.h>
 #include <mutex>
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
 #include "native_engine/native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
@@ -297,6 +300,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
         return nullptr;
     }
     LIBHANDLE lib = nullptr;
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, path);
+#endif
 #if defined(WINDOWS_PLATFORM)
     lib = LoadLibrary(path);
     if (lib == nullptr) {
@@ -319,6 +325,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
     if (lib == nullptr) {
         HILOG_ERROR("dlopen failed: %{public}s", dlerror());
     }
+#endif
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
 #endif
     return lib;
 }
