@@ -18,6 +18,11 @@
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/epoll.h>
 #endif
+
+#ifdef IOS_PLATFORM
+#include <sys/event.h>
+#endif
+
 #include <uv.h>
 
 #include "utils/log.h"
@@ -297,41 +302,49 @@ void NativeEngineInterface::EncodeToChinese(NativeValue* nativeValue, std::strin
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void NativeEngineInterface::CheckUVLoop()
 {
-#ifndef IOS_PLATFORM
     checkUVLoop_ = true;
     uv_thread_create(&uvThread_, NativeEngineInterface::UVThreadRunner, this);
-#endif
 }
 
 void NativeEngineInterface::CancelCheckUVLoop()
 {
-#ifndef IOS_PLATFORM
     checkUVLoop_ = false;
     RunCleanup();
     uv_async_send(&uvAsync_);
     uv_sem_post(&uvSem_);
     uv_thread_join(&uvThread_);
-#endif
 }
 
 void NativeEngineInterface::PostLoopTask()
 {
-#ifndef IOS_PLATFORM
     postTask_(true);
     uv_sem_wait(&uvSem_);
-#endif
 }
 
 void NativeEngineInterface::UVThreadRunner(void* nativeEngineImpl)
 {
-#ifndef IOS_PLATFORM
     auto engineImpl = static_cast<NativeEngineInterface*>(nativeEngineImpl);
     engineImpl->PostLoopTask();
     while (engineImpl->checkUVLoop_) {
         int32_t fd = uv_backend_fd(engineImpl->loop_);
         int32_t timeout = uv_backend_timeout(engineImpl->loop_);
+        int32_t result = -1;
+#ifdef IOS_PLATFORM
+        struct kevent events[1];
+        struct timespec spec;
+        static const int32_t mSec = 1000;
+        static const int32_t uSec = 1000000;
+        if (timeout != -1) {
+            spec.tv_sec = timeout / mSec;
+            spec.tv_nsec = (timeout % mSec) * uSec;
+        }
+        result = kevent(fd, NULL, 0, events, 1, timeout == -1 ? NULL : &spec);
+
+#else
         struct epoll_event ev;
-        int32_t result = epoll_wait(fd, &ev, 1, timeout);
+        result = epoll_wait(fd, &ev, 1, timeout);
+#endif
+
         if (!engineImpl->checkUVLoop_) {
             HILOG_INFO("break thread after epoll wait");
             break;
@@ -346,7 +359,6 @@ void NativeEngineInterface::UVThreadRunner(void* nativeEngineImpl)
             break;
         }
     }
-#endif
 }
 #endif
 
