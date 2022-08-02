@@ -15,7 +15,7 @@
 
 #include "test.h"
 
-#include "ark_native_engine.h"
+#include "native_engine/impl/ark/ark_native_engine.h"
 #include "utils/log.h"
 
 using panda::RuntimeOption;
