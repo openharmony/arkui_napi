@@ -741,12 +741,14 @@ void ArkNativeEngineImpl::DeleteSerializationData(NativeValue* value) const
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
 {
+    JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
     DFXJSNApi::StartCpuProfilerForFile(vm_, fileName);
 }
 
 void ArkNativeEngineImpl::StopCpuProfiler()
 {
     DFXJSNApi::StopCpuProfilerForFile();
+    JSNApi::SetNativePtrGetter(vm_, nullptr);
 }
 #else
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)

@@ -60,7 +60,7 @@ ArkNativeFunction::ArkNativeFunction(ArkNativeEngine* engine,
                                                     delete info;
                                                 }
                                              },
-                                             reinterpret_cast<void*>(funcInfo));
+                                             reinterpret_cast<void*>(funcInfo), true);
     Local<StringRef> fnName = StringRef::NewFromUtf8(vm, name);
     fn->SetName(vm, fnName);
 
@@ -95,7 +95,7 @@ ArkNativeFunction::ArkNativeFunction(ArkNativeEngine* engine,
                                                                  delete info;
                                                               }
                                                           },
-                                                          reinterpret_cast<void*>(funcInfo));
+                                                          reinterpret_cast<void*>(funcInfo), true);
     Local<StringRef> fnName = StringRef::NewFromUtf8(vm, name);
     fn->SetName(vm, fnName);
 
@@ -168,6 +168,13 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
         return scope.Escape(JSValueRef::Undefined(vm));
     }
     return scope.Escape(localRet);
+}
+
+void* ArkNativeFunction::GetNativePtrCallBack(void* data)
+{
+    auto info = reinterpret_cast<NativeFunctionInfo*>(data);
+    auto cb = reinterpret_cast<void*>(info->callback);
+    return cb;
 }
 
 NativeValue* ArkNativeFunction::GetFunctionPrototype()
