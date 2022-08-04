@@ -39,6 +39,9 @@
 #include "native_value/ark_native_typed_array.h"
 #include "native_value/ark_native_date.h"
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 #include "parameters.h"
 #endif
@@ -124,7 +127,13 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                             HILOG_ERROR("init module failed");
                             return scope.Escape(exports.ToLocal(ecmaVm));
                         }
+#ifdef ENABLE_HITRACE
+                        StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
+#endif
                         module->registerCallback(arkNativeEngine, exportObject);
+#ifdef ENABLE_HITRACE
+                        FinishTrace(HITRACE_TAG_ACE);
+#endif
                         exports = *exportObject;
                         engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
                         HILOG_INFO("load module %{public}s success", module->name);
