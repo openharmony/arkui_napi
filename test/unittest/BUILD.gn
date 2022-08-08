@@ -202,6 +202,32 @@ if (defined(ohos_lite)) {
         external_deps = [ "hilog:libhilog" ]
       }
     }
+
+    ohos_unittest("test_ark_unittest_threadsafe") {
+      module_out_path = module_output_path
+
+      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_ark.cpp",
+        "test_napi_threadsafe.cpp",
+      ]
+      sources += napi_sources
+
+      defines = [ "NAPI_TEST" ]
+
+      deps = ark_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      } else {
+        external_deps = [ "hilog:libhilog" ]
+      }
+    }
   }
 
   group("unittest") {
@@ -211,6 +237,12 @@ if (defined(ohos_lite)) {
       deps += [
         ":test_quickjs_unittest",
         ":test_quickjs_unittest_threadsafe",
+      ]
+    }
+    if (ark_support) {
+      deps += [
+        ":test_ark_unittest",
+        ":test_ark_unittest_threadsafe",
       ]
     }
   }

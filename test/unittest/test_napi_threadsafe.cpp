@@ -519,6 +519,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest005, testing::ext::TestSize.Level1)
     EXPECT_EQ(callSuccessCount, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("Threadsafe_Test_0500 end");
 }
+
 /**
  * @tc.name: ThreadsafeTest
  * @tc.desc: Test initial_thread_count not enough but acquire.
@@ -560,4 +561,147 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest006, testing::ext::TestSize.Level1)
     usleep(200 * 1000);
     EXPECT_EQ(callSuccessCount, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("Threadsafe_Test_0600 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest
+ * @tc.desc: Test napi_ref_threadsafe_function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest007, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_0700 start");
+
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_ref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    HILOG_INFO("Threadsafe_Test_0700 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest
+ * @tc.desc: Test napi_unref_threadsafe_function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest008, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_0800 start");
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_unref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    HILOG_INFO("Threadsafe_Test_0800 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest
+ * @tc.desc: Test napi_ref_threadsafe_function and napi_unref_threadsafe_function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest009, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_0900 start");
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_unref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_unref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    HILOG_INFO("Threadsafe_Test_0900 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest
+ * @tc.desc: Test napi_unref_threadsafe_function and napi_release_threadsafe_function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest010, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_1000 start");
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+    napi_threadsafe_function_release_mode abort = napi_tsfn_abort;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_unref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_release_threadsafe_function(tsFunc, abort);
+    EXPECT_EQ(status, napi_ok);
+
+    HILOG_INFO("Threadsafe_Test_1000 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest
+ * @tc.desc: Test napi_ref_threadsafe_function and napi_release_threadsafe_function.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest011, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_1100 start");
+
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+    napi_threadsafe_function_release_mode abort = napi_tsfn_abort;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_ref_threadsafe_function(env, tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    status = napi_release_threadsafe_function(tsFunc, abort);
+    EXPECT_EQ(status, napi_ok);
+
+    HILOG_INFO("Threadsafe_Test_1100 end");
 }
