@@ -79,7 +79,7 @@ NativeModuleManager* NativeModuleManager::GetInstance()
 
 void NativeModuleManager::SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine)
 {
-    HILOG_INFO("%{public}s, start.nativeEngine:%{public}p", __func__, nativeEngine);
+    HILOG_DEBUG("%{public}s, start.nativeEngine:%{public}p", __func__, nativeEngine);
     nativeEngineList_.emplace(moduleName, nativeEngine);
 }
 
@@ -340,20 +340,20 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
     if (!GetNativeModulePath(moduleName, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_ERROR("get module filed");
+        HILOG_ERROR("get module filed %{public}s", moduleName);
         return nullptr;
     }
 
     // load primary module path first
     char* loadPath = nativeModulePath[0];
-    HILOG_INFO("get primary module path: %{public}s", loadPath);
+    HILOG_DEBUG("get primary module path: %{public}s", loadPath);
     LIBHANDLE lib = LoadModuleLibrary(loadPath, isAppModule);
     if (lib == nullptr) {
         loadPath = nativeModulePath[1];
-        HILOG_WARN("primary module path load failed, try to load secondary module path: %{public}s", loadPath);
+        HILOG_DEBUG("primary module path load failed, try to load secondary module path: %{public}s", loadPath);
         lib = LoadModuleLibrary(loadPath, isAppModule);
         if (lib == nullptr) {
-            HILOG_ERROR("secondary module path load failed, load native module failed");
+            HILOG_ERROR("primary and secondary module path load failed %{public}s", moduleName);
             return nullptr;
         }
     }
@@ -388,12 +388,12 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             int bufLen = 0;
             getJSCode(&buf, &bufLen);
             if (lastNativeModule_ != nullptr) {
-                HILOG_INFO("get js code from module: bufLen: %{public}d", bufLen);
+                HILOG_DEBUG("get js code from module: bufLen: %{public}d", bufLen);
                 lastNativeModule_->jsCode = buf;
                 lastNativeModule_->jsCodeLen = bufLen;
             }
         } else {
-            HILOG_INFO("ignore: no %{public}s in %{public}s", symbol, loadPath);
+            HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
         }
     }
     if (lastNativeModule_) {
