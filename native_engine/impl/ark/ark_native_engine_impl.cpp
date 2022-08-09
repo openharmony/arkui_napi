@@ -99,7 +99,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     moduleManager->SetNativeEngine(strModuleName, nativeEngine);
 
                     if (module->jsCode != nullptr) {
-                        HILOG_INFO("load js code");
                         char fileName[NAPI_PATH_MAX] = { 0 };
                         const char* name = module->name;
                         if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
