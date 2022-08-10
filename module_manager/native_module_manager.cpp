@@ -135,11 +135,62 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 #endif
 }
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+char* NativeModuleManager::FormatString()
+{
+    const char* allowList[] = {
+        // bionic library
+        "libc.so",
+        "libdl.so",
+        "libm.so",
+        "libz.so",
+        // z library
+        "libace_napi.z.so",
+        "libace_ndk.z.so",
+        "libdeviceinfo_ndk.z.so",
+        "libEGL.so",
+        "libGLESv3.so",
+        "libhiappevent_ndk.z.so",
+        "libhilog_ndk.z.so",
+        "libnative_drawing.so",
+        "libnative_window.so",
+        "libOpenSLES.so",
+        "libpixelmap_ndk.z.so",
+        "librawfile.z.so",
+        "libuv.so",
+        "libhilog.so",
+        // adaptor library
+        "libohosadaptor.so",
+    };
+
+    size_t allowListLength = sizeof(allowList) / sizeof(char*);
+    int32_t sharedLibsSonamesLength = 1;
+    for (int32_t i = 0; i < allowListLength; i++) {
+        sharedLibsSonamesLength += strlen(allowList[i]) + 1;
+    }
+    char* sharedLibsSonames = new char[sharedLibsSonamesLength];
+    int32_t cursor = 0;
+    for (int32_t i = 0; i < allowListLength; i++) {
+        if (sprintf_s(sharedLibsSonames + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
+            delete[] sharedLibsSonames;
+            return nullptr;
+        }
+        cursor += strlen(allowList[i]) + 1;
+    }
+    sharedLibsSonames[cursor] = '\0';
+    return sharedLibsSonames;
+}
+#endif
+
 void NativeModuleManager::CreateLdNamespace(const char* lib_ld_path)
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+    Dl_namespace current_ns;
     dlns_init(&ns_, DL_NAMESPACE);
-    dlns_create(&ns_, lib_ld_path);
+    dlns_get(nullptr, &current_ns);
+    dlns_create2(&ns_, lib_ld_path, 0);
+    dlns_inherit(&ns_, &current_ns, FormatString());
+    HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
 #endif
 }
 
@@ -161,6 +212,7 @@ void NativeModuleManager::SetAppLibPath(const char* appLibPath)
     if (appLibPath_ != nullptr) {
         delete[] appLibPath_;
     }
+
     appLibPath_ = tmp;
     CreateLdNamespace(appLibPath_);
 }
