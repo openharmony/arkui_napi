@@ -77,6 +77,7 @@ private:
     LIBHANDLE LoadModuleLibrary(const char* path, const bool isAppModule);
     void CreateLdNamespace(const char* lib_ld_path);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+    char* FormatString();
     Dl_namespace ns_;
 #endif
     NativeModule* firstNativeModule_ = nullptr;
