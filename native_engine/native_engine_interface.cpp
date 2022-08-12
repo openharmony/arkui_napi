@@ -323,6 +323,12 @@ void NativeEngineInterface::PostLoopTask()
 
 void NativeEngineInterface::UVThreadRunner(void* nativeEngineImpl)
 {
+    std::string name("UVLoop");
+#ifdef IOS_PLATFORM
+    pthread_setname_np(name.c_str());
+#else
+    pthread_setname_np(pthread_self(), name.c_str());
+#endif
     auto engineImpl = static_cast<NativeEngineInterface*>(nativeEngineImpl);
     engineImpl->PostLoopTask();
     while (engineImpl->checkUVLoop_) {
