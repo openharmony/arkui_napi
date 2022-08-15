@@ -256,12 +256,11 @@ if (defined(ohos_lite)) {
           "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config",
         ]
         deps = deps_
-        if (!is_cross_platform_build) {
-          deps += [
-            "//third_party/icu/icu4c:shared_icui18n",
-            "//third_party/icu/icu4c:shared_icuuc",
-          ]
-        }
+
+        deps += [
+          "//third_party/icu/icu4c:shared_icui18n",
+          "//third_party/icu/icu4c:shared_icuuc",
+        ]
         subsystem_name = "arkui"
         part_name = "napi"
       }
