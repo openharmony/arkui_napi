@@ -25,7 +25,7 @@ if (defined(ohos_lite)) {
     output_dir = test_output_root
 
     include_dirs = [
-      "//utils/native/base/include",
+      "//commonlibrary/c_utils/base/include",
       "//third_party/node/src",
       "//foundation/arkui/napi",
       "//foundation/arkui/napi/interfaces/inner_api",
@@ -180,7 +180,7 @@ if (defined(ohos_lite)) {
     ohos_unittest("test_ark_unittest") {
       module_out_path = module_output_path
 
-      configs = [ "//ark/js_runtime:ark_jsruntime_public_config" ]
+      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
       include_dirs = ark_include
 
@@ -189,6 +189,32 @@ if (defined(ohos_lite)) {
       sources = [
         "engine/test_ark.cpp",
         "test_napi.cpp",
+      ]
+      sources += napi_sources
+
+      defines = [ "NAPI_TEST" ]
+
+      deps = ark_deps
+
+      if (is_standard_system) {
+        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+      } else {
+        external_deps = [ "hilog:libhilog" ]
+      }
+    }
+
+    ohos_unittest("test_ark_unittest_threadsafe") {
+      module_out_path = module_output_path
+
+      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
+
+      include_dirs = quickjs_include
+
+      cflags = [ "-g3" ]
+
+      sources = [
+        "engine/test_ark.cpp",
+        "test_napi_threadsafe.cpp",
       ]
       sources += napi_sources
 
@@ -211,6 +237,12 @@ if (defined(ohos_lite)) {
       deps += [
         ":test_quickjs_unittest",
         ":test_quickjs_unittest_threadsafe",
+      ]
+    }
+    if (ark_support) {
+      deps += [
+        ":test_ark_unittest",
+        ":test_ark_unittest_threadsafe",
       ]
     }
   }

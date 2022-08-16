@@ -36,6 +36,7 @@ public:
     void* GetNativePointer() override;
 
     NativeValue* GetPropertyNames() override;
+    NativeValue* GetEnumerablePropertyNames() override;
 
     NativeValue* GetPrototype() override;
 

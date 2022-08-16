@@ -37,6 +37,7 @@ public:
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
 
     NativeValue* GetPropertyNames() override;
+    NativeValue* GetEnumerablePropertyNames() override;
 
     NativeValue* GetPrototype() override;
 

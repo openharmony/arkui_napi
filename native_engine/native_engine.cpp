@@ -14,12 +14,7 @@
  */
 
 #include "native_engine.h"
-
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
-#include <sys/epoll.h>
-#endif
-#include <uv.h>
-
+#include "native_engine/native_engine_interface.h"
 #include "utils/log.h"
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
@@ -60,6 +55,11 @@ pthread_t NativeEngine::GetTid() const
     return nativeEngineImpl_->GetTid();
 }
 
+bool NativeEngine::ReinitUVLoop()
+{
+    return nativeEngineImpl_->ReinitUVLoop();
+}
+
 void NativeEngine::Loop(LoopMode mode, bool needSync)
 {
     nativeEngineImpl_->Loop(mode, needSync);
@@ -71,9 +71,8 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResource, Nativ
     return nativeEngineImpl_->CreateAsyncWork(this, asyncResource, asyncResourceName, execute, complete, data);
 }
 
-NativeAsyncWork* NativeEngine::CreateAsyncWork(const std::string &asyncResourceName, NativeAsyncExecuteCallback execute,
-                                               NativeAsyncCompleteCallback complete,
-                                               void* data)
+NativeAsyncWork* NativeEngine::CreateAsyncWork(const std::string& asyncResourceName, NativeAsyncExecuteCallback execute,
+    NativeAsyncCompleteCallback complete, void* data)
 {
     return nativeEngineImpl_->CreateAsyncWork(this, asyncResourceName, execute, complete, data);
 }
@@ -86,9 +85,7 @@ NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(NativeValue* func, Native
         threadCount, finalizeData, finalizeCallback, context, callJsCallback);
 }
 
-void NativeEngine::InitAsyncWork(NativeAsyncExecuteCallback execute,
-                                 NativeAsyncCompleteCallback complete,
-                                 void* data)
+void NativeEngine::InitAsyncWork(NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
     nativeEngineImpl_->InitAsyncWork(this, execute, complete, data);
 }
@@ -128,11 +125,8 @@ NativeValue* NativeEngine::GetAndClearLastException()
     return nativeEngineImpl_->GetAndClearLastException();
 }
 
-void NativeEngine::EncodeToUtf8(NativeValue* nativeValue,
-                                char* buffer,
-                                int32_t* written,
-                                size_t bufferSize,
-                                int32_t* nchars)
+void NativeEngine::EncodeToUtf8(
+    NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
     nativeEngineImpl_->EncodeToUtf8(nativeValue, buffer, written, bufferSize, nchars);
 }
@@ -145,16 +139,12 @@ void NativeEngine::EncodeToChinese(NativeValue* nativeValue, std::string& buffer
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
 void NativeEngine::CheckUVLoop()
 {
-#ifndef IOS_PLATFORM
     nativeEngineImpl_->CheckUVLoop();
-#endif
 }
 
 void NativeEngine::CancelCheckUVLoop()
 {
-#ifndef IOS_PLATFORM
     nativeEngineImpl_->CancelCheckUVLoop();
-#endif
 }
 #endif
 
@@ -187,8 +177,8 @@ void NativeEngine::SetOffWorkerFunc(OffWorkerFunc func)
 {
     offWorkerFunc_ = func;
 }
-void NativeEngine::SetWorkerAsyncWorkFunc(NativeAsyncExecuteCallback executeCallback,
-                                          NativeAsyncCompleteCallback completeCallback)
+void NativeEngine::SetWorkerAsyncWorkFunc(
+    NativeAsyncExecuteCallback executeCallback, NativeAsyncCompleteCallback completeCallback)
 {
     nativeAsyncExecuteCallback_ = executeCallback;
     nativeAsyncCompleteCallback_ = completeCallback;
@@ -345,7 +335,7 @@ const char* NativeEngine::GetModuleFileName()
     return nullptr;
 }
 
-void NativeEngine::SetModuleFileName(std::string &moduleName)
+void NativeEngine::SetModuleFileName(std::string& moduleName)
 {
     moduleName_ = moduleName;
 }

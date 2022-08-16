@@ -27,6 +27,8 @@ public:
 
     void* GetInterface(int interfaceId) override;
 
+    static void* GetNativePtrCallBack(void* data);
+
     NativeValue* GetFunctionPrototype();
 
 #ifdef ENABLE_CONTAINER_SCOPE

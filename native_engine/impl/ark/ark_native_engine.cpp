@@ -46,7 +46,7 @@
 
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEngine)
 {
-    HILOG_INFO("ArkNativeEngine::ArkNativeEngine");
+    HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
     nativeEngineImpl_ = new ArkNativeEngineImpl(vm, this, jsEngine);
 }
 
@@ -55,7 +55,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngineInterface* engineImpl, void* jsEngi
 {
     nativeEngineImpl_ = engineImpl;
     isAppModule_ = isAppModule;
-    HILOG_INFO("ArkNativeEngine::ArkNativeEngine");
+    HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
 }
 
 ArkNativeEngine::~ArkNativeEngine()

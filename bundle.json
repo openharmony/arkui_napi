@@ -12,7 +12,10 @@
     "component": {
         "name": "napi",
         "subsystem": "arkui",
-        "syscap": [],
+        "syscap": [
+            "SystemCapability.ArkUI.ArkUI.Napi",
+            "SystemCapability.ArkUI.ArkUI.Libuv"
+        ],
         "features": ["napi_enable_container_scope"],
         "adapted_system_type": [
             "standard"
@@ -34,10 +37,14 @@
             ]
         },
         "build": {
-            "sub_component": [
-                "//foundation/arkui/napi:napi_packages",
-                "//foundation/arkui/napi:napi_packages_ndk"
-            ],
+            "group_type": {
+                "base_group": [
+                    "//foundation/arkui/napi:napi_packages",
+                    "//foundation/arkui/napi:napi_packages_ndk"
+                ],
+                "fwk_group": [],
+                "service_group": []
+            },
             "inner_kits": [
                 {
                     "header": {

@@ -30,8 +30,10 @@ NAPI_EXTERN napi_status napi_get_last_error_info(napi_env env, const napi_extend
     auto engine = reinterpret_cast<NativeEngine*>(env);
 
     *result = reinterpret_cast<napi_extended_error_info*>(engine->GetLastError());
-
-    return napi_clear_last_error(env);
+    if ((*result)->error_code == napi_ok) {
+        napi_clear_last_error(env);
+    }
+    return napi_ok;
 }
 
 // Getters for defined singletons
@@ -876,6 +878,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     HILOG_INFO("engine: %{public}p, nativeRecv: %{public}p, nativeFunc: %{public}p, nativeArgv: %{public}p, "
         "resultValue: %{public}p", engine, nativeRecv, nativeFunc, nativeArgv, resultValue);
 
+    RETURN_STATUS_IF_FALSE(env, resultValue != nullptr, napi_pending_exception);
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
@@ -1069,8 +1072,6 @@ NAPI_EXTERN napi_status napi_create_external(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, data);
-    CHECK_ARG(env, finalize_cb);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);

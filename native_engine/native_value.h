@@ -221,6 +221,7 @@ public:
     virtual void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) = 0;
 
     virtual NativeValue* GetPropertyNames() = 0;
+    virtual NativeValue* GetEnumerablePropertyNames() = 0;
 
     virtual NativeValue* GetPrototype() = 0;
 

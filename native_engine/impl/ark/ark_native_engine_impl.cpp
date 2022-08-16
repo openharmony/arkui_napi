@@ -39,6 +39,9 @@
 #include "native_value/ark_native_typed_array.h"
 #include "native_value/ark_native_date.h"
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 #include "parameters.h"
 #endif
@@ -99,7 +102,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     moduleManager->SetNativeEngine(strModuleName, nativeEngine);
 
                     if (module->jsCode != nullptr) {
-                        HILOG_INFO("load js code");
                         char fileName[NAPI_PATH_MAX] = { 0 };
                         const char* name = module->name;
                         if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
@@ -124,7 +126,13 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                             HILOG_ERROR("init module failed");
                             return scope.Escape(exports.ToLocal(ecmaVm));
                         }
+#ifdef ENABLE_HITRACE
+                        StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
+#endif
                         module->registerCallback(arkNativeEngine, exportObject);
+#ifdef ENABLE_HITRACE
+                        FinishTrace(HITRACE_TAG_ACE);
+#endif
                         exports = *exportObject;
                         engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
                         HILOG_INFO("load module %{public}s success", module->name);
@@ -741,12 +749,14 @@ void ArkNativeEngineImpl::DeleteSerializationData(NativeValue* value) const
 #if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
 {
+    JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
     DFXJSNApi::StartCpuProfilerForFile(vm_, fileName);
 }
 
 void ArkNativeEngineImpl::StopCpuProfiler()
 {
     DFXJSNApi::StopCpuProfilerForFile(vm_);
+    JSNApi::SetNativePtrGetter(vm_, nullptr);
 }
 #else
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)

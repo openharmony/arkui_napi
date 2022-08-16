@@ -124,6 +124,11 @@ NativeValue* JerryScriptNativeObject::GetPropertyNames()
     return new JerryScriptNativeArray(engine_, jerry_get_object_keys(value_));
 }
 
+NativeValue* JerryScriptNativeObject::GetEnumerablePropertyNames()
+{
+    return nullptr;
+}
+
 NativeValue* JerryScriptNativeObject::GetPrototype()
 {
     return JerryScriptNativeEngine::JerryValueToNativeValue(engine_, jerry_get_prototype(value_));

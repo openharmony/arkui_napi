@@ -15,18 +15,19 @@
 
 #include "native_module_manager.h"
 
-#include "native_engine/native_engine.h"
-
 #include <dirent.h>
+#include <mutex>
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
+#include "native_engine/native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
 
-#include <mutex>
-
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined (IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
 constexpr static char DL_NAMESPACE[] = "ace";
 #endif
 } // namespace
@@ -78,7 +79,7 @@ NativeModuleManager* NativeModuleManager::GetInstance()
 
 void NativeModuleManager::SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine)
 {
-    HILOG_INFO("%{public}s, start.nativeEngine:%{public}p", __func__, nativeEngine);
+    HILOG_DEBUG("%{public}s, start.nativeEngine:%{public}p", __func__, nativeEngine);
     nativeEngineList_.emplace(moduleName, nativeEngine);
 }
 
@@ -165,8 +166,8 @@ void NativeModuleManager::SetAppLibPath(const char* appLibPath)
     CreateLdNamespace(appLibPath_);
 }
 
-NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
-    const char* path, bool isAppModule, bool internal, bool isArk)
+NativeModule* NativeModuleManager::LoadNativeModule(
+    const char* moduleName, const char* path, bool isAppModule, bool internal, bool isArk)
 {
     if (moduleName == nullptr) {
         HILOG_ERROR("moduleName value is null");
@@ -257,8 +258,7 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s",
-                prefix, dupModuleName, soPostfix) == -1) {
+            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", prefix, dupModuleName, soPostfix) == -1) {
                 return false;
             }
         }
@@ -300,6 +300,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
         return nullptr;
     }
     LIBHANDLE lib = nullptr;
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, path);
+#endif
 #if defined(WINDOWS_PLATFORM)
     lib = LoadLibrary(path);
     if (lib == nullptr) {
@@ -323,6 +326,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
         HILOG_ERROR("dlopen failed: %{public}s", dlerror());
     }
 #endif
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
     return lib;
 }
 
@@ -334,27 +340,27 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
     if (!GetNativeModulePath(moduleName, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_ERROR("get module filed");
+        HILOG_ERROR("get module filed %{public}s", moduleName);
         return nullptr;
     }
 
     // load primary module path first
     char* loadPath = nativeModulePath[0];
-    HILOG_INFO("get primary module path: %{public}s", loadPath);
+    HILOG_DEBUG("get primary module path: %{public}s", loadPath);
     LIBHANDLE lib = LoadModuleLibrary(loadPath, isAppModule);
     if (lib == nullptr) {
         loadPath = nativeModulePath[1];
-        HILOG_WARN("primary module path load failed, try to load secondary module path: %{public}s", loadPath);
+        HILOG_DEBUG("primary module path load failed, try to load secondary module path: %{public}s", loadPath);
         lib = LoadModuleLibrary(loadPath, isAppModule);
         if (lib == nullptr) {
-            HILOG_ERROR("secondary module path load failed, load native module failed");
+            HILOG_ERROR("primary and secondary module path load failed %{public}s", moduleName);
             return nullptr;
         }
     }
 
     if (lastNativeModule_ && strcmp(lastNativeModule_->name, moduleName)) {
-        HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'",
-            moduleName, lastNativeModule_->name);
+        HILOG_WARN(
+            "moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, lastNativeModule_->name);
     }
 
     if (!internal) {
@@ -376,19 +382,18 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             *p = '_';
         }
 
-
         auto getJSCode = reinterpret_cast<NAPIGetJSCode>(LIBSYM(lib, symbol));
         if (getJSCode != nullptr) {
             const char* buf = nullptr;
             int bufLen = 0;
             getJSCode(&buf, &bufLen);
             if (lastNativeModule_ != nullptr) {
-                HILOG_INFO("get js code from module: bufLen: %{public}d", bufLen);
+                HILOG_DEBUG("get js code from module: bufLen: %{public}d", bufLen);
                 lastNativeModule_->jsCode = buf;
                 lastNativeModule_->jsCodeLen = bufLen;
             }
         } else {
-            HILOG_INFO("ignore: no %{public}s in %{public}s", symbol, loadPath);
+            HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
         }
     }
     if (lastNativeModule_) {
@@ -404,8 +409,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if (!strcasecmp(temp->name, moduleName)) {
             if (strcmp(temp->name, moduleName)) {
-                HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'",
-                    moduleName, temp->name);
+                HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, temp->name);
             }
             result = temp;
             break;
