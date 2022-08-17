@@ -83,9 +83,7 @@ template("ace_napi_impl") {
     if (!is_mingw && !is_mac) {
       external_deps = hilog_deps
       if (is_standard_system) {
-        external_deps += [ "startup_l2:syspara" ]
-      } else {
-        external_deps += [ "startup:syspara" ]
+        external_deps += [ "init:libbegetutil" ]
       }
     }
 
