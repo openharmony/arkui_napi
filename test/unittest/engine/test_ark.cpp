@@ -19,6 +19,14 @@
 #include "utils/log.h"
 
 using panda::RuntimeOption;
+
+struct ThreadArgs {
+    NativeEngine* engine = nullptr;
+    bool initialState = false;
+    bool suspendState = false;
+    bool resumeState = false;
+};
+
 static NativeEngine* g_nativeEngine = nullptr;
 
 NativeEngineTest::NativeEngineTest()
@@ -29,18 +37,16 @@ NativeEngineTest::NativeEngineTest()
 NativeEngineTest::~NativeEngineTest()
 {}
 
-void *NativeEngineTest::Run(void *arg)
+void *NativeEngineTest::Run(void *args)
 {
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>(arg);
-    bool falgThread = engine->IsSuspended();
+    ThreadArgs* threadArgs = reinterpret_cast<ThreadArgs*>(args);
+    NativeEngine* engine = threadArgs->engine;
+    threadArgs->initialState = engine->IsSuspended();
     engine->SuspendVM();
-    bool falgThread2 = engine->IsSuspended();
+    threadArgs->suspendState = engine->IsSuspended();
     engine->ResumeVM();
-    sleep(10); // 10:sleep 10 second to wait thread checkpoint again
-    bool falgThread3 = engine->IsSuspended();
-    if (falgThread == 0 && falgThread2 == 1 && falgThread3 == 0) {
-        std::cout << "[OK]" << std::endl;
-    }
+    sleep(1);
+    threadArgs->resumeState = engine->IsSuspended();
     return nullptr;
 }
 
@@ -75,23 +81,23 @@ int main(int argc, char** argv)
     return ret;
 }
 
-HWTEST_F(NativeEngineTest, suppend002, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, SuspendVM001, testing::ext::TestSize.Level0)
 {
-    std::cout << "NativeEngineTest is start"<<std::endl;
     pthread_t tids;
-    int res = pthread_create(&tids, NULL, Run, (void*)engine_);
+    struct ThreadArgs *args = new ThreadArgs;
+    args->engine = engine_;
+    int res = pthread_create(&tids, NULL, Run, (void*)args);
     if (res != 0) {
         std::cout << "thread create failed";
         return;
     }
-    std::cout << "NativeEngineTest is start2" << std::endl;
-    for (int i = 0; i < 10; ++i) { // 10:Loop 10 times
-        sleep(10);                 // 10:sleep 10 second to wait thread checkpoint again
-        bool supportFlag = engine_->CheckSafepoint();
-        std::cout << "supportFlag " << supportFlag;
-        if (supportFlag) {
-            std::cout << "CheckSafepoint is ture";
-        }
+    for (int i = 0; i < 3; ++i) { // 3:Loop 3 times
+        sleep(1);
+        engine_->CheckSafepoint();
     }
-    pthread_exit(NULL);
+    ASSERT_TRUE(!args->initialState);
+    ASSERT_TRUE(args->suspendState);
+    ASSERT_TRUE(!args->resumeState);
+    delete args;
+    args = nullptr;
 }
