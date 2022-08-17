@@ -511,6 +511,12 @@ bool ArkNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
     return arkNativeEngineImpl->BuildJsStackTrace(stackTraceStr);
 }
 
+bool ArkNativeEngine::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->BuildJsStackInfoList(jsFrames);
+}
+
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

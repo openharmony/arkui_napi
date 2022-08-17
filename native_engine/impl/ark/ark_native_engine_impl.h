@@ -24,6 +24,16 @@
 #include "native_engine/native_engine_interface.h"
 #include "ark_native_engine.h"
 
+namespace panda::ecmascript {
+struct JsFrameInfo {
+    std::string functionName;
+    std::string fileName;
+    std::string pos;
+    uintptr_t *nativePointer = nullptr;
+};
+}
+using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
+
 using panda::ecmascript::EcmaVM;
 using panda::Local;
 using panda::LocalScope;
@@ -192,6 +202,7 @@ public:
         bool isPrivate = false) override;
     bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
+    bool BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;
 

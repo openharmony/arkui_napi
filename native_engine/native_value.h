@@ -47,6 +47,13 @@ struct NativeObjectInfo {
     void* hint = nullptr;
 };
 
+struct JsFrameInfo {
+    std::string functionName;
+    std::string fileName;
+    std::string pos;
+    uintptr_t *nativePointer = nullptr;
+};
+
 struct NativeFunctionInfo {
     static NativeFunctionInfo* CreateNewInstance() { return new NativeFunctionInfo(); }
     NativeEngine* engine = nullptr;
