@@ -86,18 +86,6 @@ NAPI_INNER_EXTERN napi_status napi_create_external_buffer(napi_env env,
                                                           void* finalize_hint,
                                                           napi_value* result);
 
-NAPI_INNER_EXTERN napi_status napi_create_bigint_int64(napi_env env,
-                                                       int64_t value,
-                                                       napi_value* result);
-
-NAPI_EXTERN napi_status napi_create_bigint_uint64(napi_env env, uint64_t value, napi_value* result);
-
-NAPI_INNER_EXTERN napi_status napi_create_bigint_words(napi_env env,
-                                                       int sign_bit,
-                                                       size_t word_count,
-                                                       const uint64_t* words,
-                                                       napi_value* result);
-
 NAPI_INNER_EXTERN napi_status napi_create_string_utf16(napi_env env,
                                                        const char16_t* str,
                                                        size_t length,
@@ -107,19 +95,6 @@ NAPI_INNER_EXTERN napi_status napi_get_buffer_info(napi_env env,
                                                    napi_value value,
                                                    void** data,
                                                    size_t* length);
-
-NAPI_INNER_EXTERN napi_status napi_get_value_bigint_int64(napi_env env,
-                                                          napi_value value,
-                                                          int64_t* result,
-                                                          bool* lossless);
-
-NAPI_EXTERN napi_status napi_get_value_bigint_uint64(napi_env env, napi_value value, uint64_t* result, bool* lossless);
-
-NAPI_INNER_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
-                                                          napi_value value,
-                                                          int* sign_bit,
-                                                          size_t* word_count,
-                                                          uint64_t* words);
 
 NAPI_INNER_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
                                                           napi_value value,
