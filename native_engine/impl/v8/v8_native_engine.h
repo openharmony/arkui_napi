@@ -233,6 +233,10 @@ public:
     {
         return false;
     }
+    bool BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames) override
+    {
+        return false;
+    }
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override
     {
         return false;

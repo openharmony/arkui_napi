@@ -1100,6 +1100,29 @@ bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 }
 #endif
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+bool ArkNativeEngineImpl::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+{
+    std::vector<ArkJsFrameInfo> arkJsFrames;
+    bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, arkJsFrames);
+    for (auto jf : arkJsFrames) {
+        struct JsFrameInfo jsframe;
+        jsframe.fileName = jf.fileName;
+        jsframe.functionName = jf.functionName;
+        jsframe.pos = jf.pos;
+        jsframe.nativePointer = jf.nativePointer;
+        jsFrames.emplace_back(jsframe);
+    }
+    return sign;
+}
+#else
+bool ArkNativeEngineImpl::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return false;
+}
+#endif
+
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 bool ArkNativeEngineImpl::StartHeapTracking(double timeInterval, bool isVmMode)
 {
