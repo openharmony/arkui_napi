@@ -24,6 +24,7 @@
 
 class NativeValue;
 class NativeEngine;
+class NativeReference;
 
 struct NativePropertyDescriptor;
 struct NativeCallbackInfo;
@@ -212,7 +213,8 @@ public:
 
     virtual bool ConvertToNativeBindingObject(
         void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint) = 0;
-    virtual void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) = 0;
+    virtual void SetNativePointer(
+        void* pointer, NativeFinalize cb, void* hint, NativeReference** reference = nullptr) = 0;
     virtual void* GetNativePointer() = 0;
     virtual void SetNativeBindingPointer(
         void* enginePointer, void* objPointer, void* hint, void* detachData = nullptr, void* attachData = nullptr) = 0;

@@ -57,7 +57,8 @@ bool JerryScriptNativeObject::ConvertToNativeBindingObject(
     return false;
 }
 
-void JerryScriptNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
+void JerryScriptNativeObject::SetNativePointer(
+    void* pointer, NativeFinalize cb, void* hint, NativeReference** reference)
 {
     if (pointer == nullptr) {
         jerry_delete_object_native_pointer(value_, &g_freeCallback);
