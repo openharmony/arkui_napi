@@ -18,6 +18,11 @@
 
 #include "ark_native_object.h"
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#include "ark_native_engine_impl.h"
+#endif
+
 class ArkNativeFunction : public ArkNativeObject, public NativeFunction {
 public:
     ArkNativeFunction(ArkNativeEngine* engine, Local<JSValueRef> value);
@@ -43,6 +48,27 @@ private:
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId_ = -1;
 #endif
+
+    static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
+    {
+#ifdef ENABLE_HITRACE
+        if (ArkNativeEngineImpl::napiProfilerEnabled) {
+            EcmaVM *vm = runtimeInfo->GetVM();
+            Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+            Local<panda::StringRef> nameRef = fn->GetName(vm);
+            StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s", nameRef->ToString().c_str());
+        }
+#endif
+    }
+
+    static inline void FinishNapiProfilerTrace()
+    {
+#ifdef ENABLE_HITRACE
+        if (ArkNativeEngineImpl::napiProfilerEnabled) {
+            FinishTrace(HITRACE_TAG_ACE);
+        }
+#endif
+    }
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_FUNCTION_H */
