@@ -216,6 +216,8 @@ public:
 class NativeObject {
 public:
     static const int INTERFACE_ID = 3;
+    static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
+    static const auto PANDA_MODULE_NAME_LEN = 32;
 
     virtual bool ConvertToNativeBindingObject(
         void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint) = 0;

@@ -20,6 +20,8 @@
 #include "ark_native_external.h"
 #include "ark_native_function.h"
 #include "ark_native_reference.h"
+#include "ark_native_string.h"
+
 #include "native_engine/native_property.h"
 
 #include "utils/log.h"
@@ -230,25 +232,32 @@ bool ArkNativeObject::DefineProperty(NativePropertyDescriptor propertyDescriptor
         return false;
     }
     NativeScope* nativeScope = scopeManager->Open();
+    std::string fullName("");
+#ifdef ENABLE_HITRACE
+    fullName += GetModuleName();
+#endif
     if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
         Global<JSValueRef> localGetter(vm, JSValueRef::Undefined(vm));
         Global<JSValueRef> localSetter(vm, JSValueRef::Undefined(vm));
 
         if (propertyDescriptor.getter != nullptr) {
+            fullName += "getter";
             NativeValue* getter =
-                new ArkNativeFunction(engine_, "getter", 0, propertyDescriptor.getter, propertyDescriptor.data);
+                new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.getter, propertyDescriptor.data);
             localGetter = *getter;
         }
         if (propertyDescriptor.setter != nullptr) {
+            fullName += "setter";
             NativeValue* setter =
-                new ArkNativeFunction(engine_, "setter", 0, propertyDescriptor.setter, propertyDescriptor.data);
+                new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.setter, propertyDescriptor.data);
             localSetter = *setter;
         }
 
         PropertyAttribute attr(JSValueRef::Undefined(engine_->GetEcmaVm()), false, enumable, configable);
         result = obj->SetAccessorProperty(vm, propertyName, localGetter.ToLocal(vm), localSetter.ToLocal(vm), attr);
     } else if (propertyDescriptor.method != nullptr) {
-        NativeValue* cb = new ArkNativeFunction(engine_, propertyDescriptor.utf8name, 0, propertyDescriptor.method,
+        fullName += propertyDescriptor.utf8name;
+        NativeValue* cb = new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.method,
                                                propertyDescriptor.data);
         Global<JSValueRef> globalCb = *cb;
         PropertyAttribute attr(globalCb.ToLocal(vm), writable, enumable, configable);
@@ -385,6 +394,28 @@ bool ArkNativeObject::AssociateTypeTag(NapiTypeTag* typeTag)
 bool ArkNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
 {
     return true;
+}
+
+void ArkNativeObject::SetModuleName(std::string moduleName)
+{
+    NativeValue* moduleValue = new ArkNativeString(engine_, moduleName.c_str(),
+        moduleName.size());
+    this->SetProperty(ArkNativeObject::PANDA_MODULE_NAME, moduleValue);
+}
+
+std::string ArkNativeObject::GetModuleName()
+{
+    std::string moduleName("");
+    auto nativeModuleName = this->GetProperty(ArkNativeObject::PANDA_MODULE_NAME);
+    if (nativeModuleName != nullptr && nativeModuleName->TypeOf() == NATIVE_STRING) {
+        auto nativeString = reinterpret_cast<NativeString*>(nativeModuleName->GetInterface(NativeString::INTERFACE_ID));
+        char arrayName[PANDA_MODULE_NAME_LEN] = {0};
+        size_t len = 0;
+        nativeString->GetCString(arrayName, PANDA_MODULE_NAME_LEN, &len);
+        moduleName += arrayName;
+        moduleName += ".";
+    }
+    return moduleName;
 }
 
 void ArkNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, void* hint) {}

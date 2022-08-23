@@ -23,6 +23,7 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "native_engine/native_engine_interface.h"
 #include "ark_native_engine.h"
+#include "native_value/ark_native_object.h"
 
 namespace panda::ecmascript {
 struct JsFrameInfo {
@@ -231,6 +232,8 @@ public:
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 
+    static bool napiProfilerEnabled;
+
 private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
 
@@ -241,6 +244,8 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
+    static bool napiProfilerParamReaded;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_IMPL_H */

@@ -68,6 +68,8 @@ public:
         napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion) override;
     bool AssociateTypeTag(NapiTypeTag* typeTag) override;
     bool CheckTypeTag(NapiTypeTag* typeTag) override;
+    void SetModuleName(std::string moduleName);
+    std::string GetModuleName();
 
 private:
     static AttachCallback attach_;

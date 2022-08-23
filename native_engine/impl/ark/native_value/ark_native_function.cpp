@@ -131,6 +131,8 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
         HILOG_ERROR("scope manager is null");
         return JSValueRef::Undefined(vm);
     }
+
+    StartNapiProfilerTrace(runtimeInfo);
     NativeScope* nativeScope = scopeManager->Open();
     cbInfo.thisVar = ArkNativeEngine::ArkValueToNativeValue(engine, runtimeInfo->GetThisRef());
     cbInfo.function = ArkNativeEngine::ArkValueToNativeValue(engine, runtimeInfo->GetNewTargetRef());
@@ -164,6 +166,7 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
     }
     auto localRet = ret.ToLocal(vm);
     scopeManager->Close(nativeScope);
+    FinishNapiProfilerTrace();
     if (localRet.IsEmpty()) {
         return scope.Escape(JSValueRef::Undefined(vm));
     }
