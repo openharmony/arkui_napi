@@ -242,3 +242,18 @@ bool QuickJSNativeValue::StrictEquals(NativeValue* value)
 {
     return JS_StrictEquals(engine_->GetContext(), value_, *value);
 }
+
+bool QuickJSNativeValue::IsBigInt64Array()
+{
+    return false;
+}
+
+bool QuickJSNativeValue::IsBigUint64Array()
+{
+    return false;
+}
+
+bool QuickJSNativeValue::IsSharedArrayBuffer()
+{
+    return false;
+}

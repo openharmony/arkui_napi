@@ -2377,3 +2377,39 @@ NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, nap
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(value);
+
+    *result = nativeValue->IsBigInt64Array();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(value);
+
+    *result = nativeValue->IsBigUint64Array();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(value);
+
+    *result = nativeValue->IsSharedArrayBuffer();
+    return napi_clear_last_error(env);
+}

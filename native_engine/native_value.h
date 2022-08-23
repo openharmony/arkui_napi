@@ -173,6 +173,9 @@ public:
     virtual bool IsWeakMap() = 0;
     virtual bool IsWeakSet() = 0;
     virtual bool IsSet() = 0;
+    virtual bool IsBigInt64Array() = 0;
+    virtual bool IsBigUint64Array() = 0;
+    virtual bool IsSharedArrayBuffer() = 0;
 
     virtual NativeValue* ToBoolean() = 0;
     virtual NativeValue* ToNumber() = 0;
