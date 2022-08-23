@@ -227,6 +227,8 @@ HWTEST_F(NapiBasicTest, ObjectTest001, testing::ext::TestSize.Level1)
     ASSERT_CHECK_VALUE_TYPE(env, numberAttribute, napi_number);
     ASSERT_CHECK_CALL(napi_set_named_property(env, result, "numberAttribute", numberAttribute));
 
+    result = nullptr;
+    napi_create_object(env, &result);
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("add", [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; }),
         DECLARE_NAPI_FUNCTION("sub", [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; })
@@ -747,56 +749,6 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest001, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: RunScriptTest001
- * @tc.desc: Test script running.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, RunScriptTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-
-    const char* tetScriptStr = "1+1;";
-    napi_value testScript = nullptr;
-    napi_create_string_utf8(env, tetScriptStr, strlen(tetScriptStr), &testScript);
-    ASSERT_NE(testScript, nullptr);
-    napi_value result = nullptr;
-    napi_run_script(env, testScript, &result);
-    ASSERT_NE(result, nullptr);
-    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
-}
-
-/**
- * @tc.name: DateTest
- * @tc.desc: Test date type.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, DateTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-
-    const char* tetScriptStr = "new Date();";
-    napi_value testScript = nullptr;
-
-    napi_create_string_utf8(env, tetScriptStr, strlen(tetScriptStr), &testScript);
-
-    napi_value date = nullptr;
-    napi_run_script(env, testScript, &date);
-    ASSERT_CHECK_VALUE_TYPE(env, date, napi_object);
-
-    napi_value getTimeFunc = nullptr;
-    napi_get_named_property(env, date, "getTime", &getTimeFunc);
-    ASSERT_CHECK_VALUE_TYPE(env, getTimeFunc, napi_function);
-
-    napi_value getTimeResult = nullptr;
-    napi_call_function(env, date, getTimeFunc, 0, nullptr, &getTimeResult);
-    ASSERT_CHECK_VALUE_TYPE(env, getTimeResult, napi_number);
-
-    int64_t value = 0;
-
-    napi_get_value_int64(env, getTimeResult, &value);
-}
-
-/**
  * @tc.name: StrictEqualsTest001
  * @tc.desc: Test date type.
  * @tc.type: FUNC
@@ -911,38 +863,6 @@ HWTEST_F(NapiBasicTest, IsCallableTest001, testing::ext::TestSize.Level1)
 
     bool result = false;
     napi_is_callable(env, funcValue, &result);
-    ASSERT_TRUE(result);
-}
-
-/**
- * @tc.name: LoadModuleTest001
- * @tc.desc: Test LoadModule Func.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, LoadModuleTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    std::string sourceText = "var a = 1; let b = 2;"
-                             "export function getA() {return a};"
-                             "export function getB() {return b};"
-                             "export default {'val': 4};";
-    auto sourceString = engine_->CreateString(sourceText.c_str(), sourceText.length());
-
-    std::string file = "file.js";
-    NativeValue *moduleValue = engine_->LoadModule(sourceString, file);
-    ASSERT_TRUE(moduleValue != nullptr);
-    auto moduleObject = reinterpret_cast<NativeObject*>(moduleValue->GetInterface(NativeObject::INTERFACE_ID));
-
-    std::string key = "val";
-    auto keyString = engine_->CreateString(key.c_str(), key.length());
-    auto resultValue = moduleObject->GetProperty(keyString);
-
-    napi_value lvalue = reinterpret_cast<napi_value>(resultValue);
-    napi_value rvalue = nullptr;
-    napi_create_int32(env, 4, &rvalue);
-
-    bool result = false;
-    napi_strict_equals(env, lvalue, rvalue, &result);
     ASSERT_TRUE(result);
 }
 
