@@ -41,7 +41,7 @@ bool QuickJSNativeObject::ConvertToNativeBindingObject(
     return false;
 }
 
-void QuickJSNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
+void QuickJSNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference)
 {
     NativeObjectInfo* info = (NativeObjectInfo*)JS_GetNativePointer(engine_->GetContext(), value_);
     if (info == nullptr) {

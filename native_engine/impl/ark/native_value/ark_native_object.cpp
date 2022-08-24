@@ -115,7 +115,7 @@ void* ArkNativeObject::GetInterface(int interfaceId)
     return (NativeObject::INTERFACE_ID == interfaceId) ? (NativeObject*)this : nullptr;
 }
 
-void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
+void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference)
 {
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
@@ -131,7 +131,13 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
         delete ref;
     } else {
         Local<ObjectRef> object = ObjectRef::New(vm);
-        ArkNativeReference* ref = new ArkNativeReference(engine_, this, 0, true, cb, pointer, hint);
+        ArkNativeReference* ref = nullptr;
+        if (reference != nullptr) {
+            ref = new ArkNativeReference(engine_, this, 1, false, cb, pointer, hint);
+            *reference = ref;
+        } else {
+            ref = new ArkNativeReference(engine_, this, 0, true, cb, pointer, hint);
+        }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr);
         PropertyAttribute attr(object, true, false, true);

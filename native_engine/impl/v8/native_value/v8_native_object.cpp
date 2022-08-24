@@ -40,7 +40,7 @@ bool V8NativeObject::ConvertToNativeBindingObject(
     return false;
 }
 
-void V8NativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint)
+void V8NativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference)
 {
     v8::Local<v8::Object> value = value_;
     v8::Local<v8::String> key = v8::String::NewFromUtf8(engine_->GetIsolate(), "_napiwrapper").ToLocalChecked();

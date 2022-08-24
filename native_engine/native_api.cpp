@@ -1027,7 +1027,12 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
 
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
-    nativeObject->SetNativePointer(native_object, callback, finalize_hint);
+    if (result != nullptr) {
+        nativeObject->SetNativePointer(
+            native_object, callback, finalize_hint, reinterpret_cast<NativeReference**>(result));
+    } else {
+        nativeObject->SetNativePointer(native_object, callback, finalize_hint);
+    }
     return napi_clear_last_error(env);
 }
 

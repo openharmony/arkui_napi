@@ -34,7 +34,7 @@ public:
 
     static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData);
     static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint, void* attachData);
-    void SetNativePointer(void* pointer, NativeFinalize cb, void* hint) override;
+    void SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference = nullptr) override;
     void* GetNativePointer() override;
     void SetNativeBindingPointer(
         void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData) override;
