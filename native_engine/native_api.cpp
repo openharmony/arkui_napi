@@ -2113,7 +2113,7 @@ NAPI_EXTERN napi_status napi_get_exception_info_for_worker(napi_env env, napi_va
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_bigint_int64(napi_env env, int64_t value, napi_value* result)
+NAPI_EXTERN napi_status napi_create_bigint_int64(napi_env env, int64_t value, napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
@@ -2137,7 +2137,7 @@ NAPI_EXTERN napi_status napi_create_bigint_uint64(napi_env env, uint64_t value, 
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_value_bigint_int64(
+NAPI_EXTERN napi_status napi_get_value_bigint_int64(
     napi_env env, napi_value value, int64_t* result, bool* lossless)
 {
     CHECK_ENV(env);
@@ -2331,7 +2331,7 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env, napi_value js_obj
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_bigint_words(
+NAPI_EXTERN napi_status napi_create_bigint_words(
     napi_env env, int sign_bit, size_t word_count, const uint64_t* words, napi_value* result)
 {
     CHECK_ENV(env);
@@ -2345,7 +2345,7 @@ NAPI_INNER_EXTERN napi_status napi_create_bigint_words(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_value_bigint_words(
+NAPI_EXTERN napi_status napi_get_value_bigint_words(
     napi_env env, napi_value value, int* sign_bit, size_t* word_count, uint64_t* words)
 {
     CHECK_ENV(env);
