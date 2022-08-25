@@ -372,9 +372,10 @@ public:
 };
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest001
  * @tc.desc: Test LoadModule Func.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest001, testing::ext::TestSize.Level1)
 {
@@ -409,9 +410,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest001, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest002
  * @tc.desc: Test LoadModule Func.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest002, testing::ext::TestSize.Level1)
 {
@@ -424,9 +426,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest002, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest003
  * @tc.desc: Test threadsafe Func, no js.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest003, testing::ext::TestSize.Level1)
 {
@@ -439,9 +442,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest003, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest004
  * @tc.desc: Test napi_release_threadsafe_function, napi_tsfn_abort.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest004, testing::ext::TestSize.Level1)
 {
@@ -477,9 +481,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest004, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest005
  * @tc.desc: Test initial_thread_count not enough.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest005, testing::ext::TestSize.Level1)
 {
@@ -521,9 +526,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest005, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest006
  * @tc.desc: Test initial_thread_count not enough but acquire.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest006, testing::ext::TestSize.Level1)
 {
@@ -564,9 +570,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest006, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest007
  * @tc.desc: Test napi_ref_threadsafe_function.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest007, testing::ext::TestSize.Level1)
 {
@@ -591,9 +598,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest007, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest008
  * @tc.desc: Test napi_unref_threadsafe_function.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest008, testing::ext::TestSize.Level1)
 {
@@ -617,9 +625,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest008, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest009
  * @tc.desc: Test napi_ref_threadsafe_function and napi_unref_threadsafe_function.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest009, testing::ext::TestSize.Level1)
 {
@@ -646,9 +655,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest009, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest010
  * @tc.desc: Test napi_unref_threadsafe_function and napi_release_threadsafe_function.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest010, testing::ext::TestSize.Level1)
 {
@@ -676,9 +686,10 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest010, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest
+ * @tc.name: ThreadsafeTest011
  * @tc.desc: Test napi_ref_threadsafe_function and napi_release_threadsafe_function.
  * @tc.type: FUNC
+ * @tc.require: I5K6KF
  */
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest011, testing::ext::TestSize.Level1)
 {
