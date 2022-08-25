@@ -146,6 +146,10 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
         }
     }
 
+    if (engine->IsMixedDebugEnabled()) {
+        engine->NotifyNativeCalling(reinterpret_cast<void *>(cb));
+    }
+
     NativeValue* result = nullptr;
     if (cb != nullptr) {
         result = cb(engine, &cbInfo);

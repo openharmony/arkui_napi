@@ -639,3 +639,15 @@ void ArkNativeEngine::HandleUncaughtException()
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->HandleUncaughtException(this);
 }
+
+bool ArkNativeEngine::IsMixedDebugEnabled()
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->IsMixedDebugEnabled();
+}
+
+void ArkNativeEngine::NotifyNativeCalling(const void *nativeAddress)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->NotifyNativeCalling(nativeAddress);
+}

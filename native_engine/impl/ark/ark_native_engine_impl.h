@@ -238,6 +238,10 @@ public:
 
     static bool napiProfilerEnabled;
 
+    // debugger
+    bool IsMixedDebugEnabled();
+    void NotifyNativeCalling(const void *nativeAddressess);
+
 private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
 
