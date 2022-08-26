@@ -699,7 +699,7 @@ bool ArkNativeEngineImpl::Throw(NativeEngine* engine, NativeErrorType type, cons
 NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine)
 {
     panda::RuntimeOption option;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if defined(OHOS_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
     size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);

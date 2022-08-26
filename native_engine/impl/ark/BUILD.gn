@@ -66,6 +66,9 @@ template("ace_napi_impl") {
     } else if (target_cpu == "arm") {
       defines += [ "APP_USE_ARM" ]
     }
+    if (target_os == "android") {
+      defines += [ "ANDROID_PLATFORM" ]
+    }
 
     deps = [
       "//arkcompiler/ets_runtime:libark_jsruntime",
@@ -97,7 +100,7 @@ template("ace_napi_impl") {
 }
 
 foreach(item, ace_platforms) {
-  if (item.name == "ohos") {
+  if (item.name == "ohos" || is_cross_platform_build) {
     engine_config = item.config
     support_engines = engine_config.js_engines
     foreach(engine, support_engines) {
