@@ -1623,7 +1623,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
 
     *type = (napi_typedarray_type)nativeTypedArray->GetTypedArrayType();
     *length = nativeTypedArray->GetLength();
-    *data = nativeTypedArray->GetData();
+    *data = static_cast<uint8_t*>(nativeTypedArray->GetData()) + nativeTypedArray->GetOffset();
     *arraybuffer = reinterpret_cast<napi_value>(nativeTypedArray->GetArrayBuffer());
     *byte_offset = nativeTypedArray->GetOffset();
     return napi_clear_last_error(env);
