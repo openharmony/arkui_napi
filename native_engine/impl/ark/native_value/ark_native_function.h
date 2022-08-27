@@ -19,6 +19,7 @@
 #include "ark_native_object.h"
 
 #ifdef ENABLE_HITRACE
+#include <sys/prctl.h>
 #include "hitrace_meter.h"
 #include "ark_native_engine_impl.h"
 #endif
@@ -56,7 +57,9 @@ private:
             EcmaVM *vm = runtimeInfo->GetVM();
             Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
             Local<panda::StringRef> nameRef = fn->GetName(vm);
-            StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s", nameRef->ToString().c_str());
+            char threadName[128];
+            prctl(PR_GET_NAME, threadName);
+            StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
         }
 #endif
     }

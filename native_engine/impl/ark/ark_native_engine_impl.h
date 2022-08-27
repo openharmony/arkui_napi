@@ -68,6 +68,7 @@ private:
 };
 
 class ArkNativeEngineImpl : public NativeEngineInterface {
+friend struct MoudleNameLocker;
 public:
     // ArkNativeEngineImpl constructor
     ArkNativeEngineImpl(EcmaVM* vm, NativeEngine* engine, void* jsEngine);
@@ -249,6 +250,7 @@ private:
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
+    static std::string tempModuleName_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_IMPL_H */
