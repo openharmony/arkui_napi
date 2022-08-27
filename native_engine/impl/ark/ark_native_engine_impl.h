@@ -146,6 +146,9 @@ public:
     // Run script
     NativeValue* RunScript(NativeEngine* engine, NativeValue* script) override;
     NativeValue* RunScriptPath(NativeEngine* engine, const char* path) override;
+
+    NativeValue* RunScriptBuffer(NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer) override;
+
     // Run buffer script
     NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     // Run actor

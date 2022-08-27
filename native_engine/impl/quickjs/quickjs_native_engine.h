@@ -81,6 +81,10 @@ public:
     {
         return nullptr;
     }
+    NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer) override
+    {
+        return nullptr;
+    }
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     NativeValue* RunActor(std::vector<uint8_t>& buffer, const char *descriptor) override;
 

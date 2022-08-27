@@ -108,6 +108,7 @@ public:
                                       size_t argc) = 0;
     virtual NativeValue* RunScript(NativeValue* script) = 0;
     virtual NativeValue* RunScriptPath(const char* path) = 0;
+    virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer) = 0;
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
     virtual NativeValue* DefineClass(const char* name,
