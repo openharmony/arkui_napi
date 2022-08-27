@@ -723,6 +723,8 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
 
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
 
+    const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
+    panda::JSNApi::addWorker(const_cast<EcmaVM*>(hostVM), vm);
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
 
@@ -1133,10 +1135,10 @@ bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 #endif
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
-bool ArkNativeEngineImpl::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+bool ArkNativeEngineImpl::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
     std::vector<ArkJsFrameInfo> arkJsFrames;
-    bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, arkJsFrames);
+    bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, tid, arkJsFrames);
     for (auto jf : arkJsFrames) {
         struct JsFrameInfo jsframe;
         jsframe.fileName = jf.fileName;
@@ -1148,7 +1150,7 @@ bool ArkNativeEngineImpl::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrame
     return sign;
 }
 #else
-bool ArkNativeEngineImpl::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+bool ArkNativeEngineImpl::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return false;
