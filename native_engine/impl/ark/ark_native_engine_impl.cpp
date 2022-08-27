@@ -73,6 +73,18 @@ constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 
 bool ArkNativeEngineImpl::napiProfilerEnabled {false};
 bool ArkNativeEngineImpl::napiProfilerParamReaded {false};
+std::string ArkNativeEngineImpl::tempModuleName_ {""};
+
+struct MoudleNameLocker {
+    explicit MoudleNameLocker(std::string moduleName)
+    {
+        ArkNativeEngineImpl::tempModuleName_ = moduleName;
+    }
+    ~MoudleNameLocker()
+    {
+        ArkNativeEngineImpl::tempModuleName_ = "";
+    }
+};
 
 ArkNativeEngineImpl::ArkNativeEngineImpl(
     EcmaVM* vm, NativeEngine* engine, void* jsEngine) : NativeEngineInterface(engine, jsEngine),
@@ -120,7 +132,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         isAppModule);
                     std::string strModuleName = moduleName->ToString();
                     moduleManager->SetNativeEngine(strModuleName, nativeEngine);
-
+                    MoudleNameLocker nameLocker(strModuleName);
                     if (module->jsCode != nullptr) {
                         char fileName[NAPI_PATH_MAX] = { 0 };
                         const char* name = module->name;
@@ -179,6 +191,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false);
                 Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
+                MoudleNameLocker nameLocker(moduleName->ToString());
                 if (module != nullptr && engineImpl) {
                     auto it = engineImpl->loadedModules_.find(module);
                     if (it != engineImpl->loadedModules_.end()) {
@@ -265,6 +278,7 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEng
         SetModuleName(exportObj, module->name);
         exportObj->DefineProperty(idProperty);
         exportObj->DefineProperty(paramProperty);
+        MoudleNameLocker nameLocker(module->name);
         module->registerCallback(engine, exportObject);
 
         napi_value nExport = reinterpret_cast<napi_value>(exportObject);
@@ -312,6 +326,7 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeE
         exportObj->DefineProperty(paramProperty);
         exportObj->DefineProperty(instanceProperty);
 
+        MoudleNameLocker nameLocker(module->name);
         module->registerCallback(engine, exportObject);
         exports = *exportObject;
     }
@@ -599,6 +614,9 @@ NativeValue* ArkNativeEngineImpl::DefineClass(NativeEngine* engine, const char* 
 {
     LocalScope scope(vm_);
     std::string className(name);
+    if (ArkNativeEngineImpl::napiProfilerEnabled) {
+        className = ArkNativeEngineImpl::tempModuleName_ + "." + name;
+    }
     std::string constructorName = className + ".Constructor";
     auto classConstructor = new ArkNativeFunction(static_cast<ArkNativeEngine*>(engine),
         constructorName.c_str(), callback, data);
