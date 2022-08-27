@@ -230,6 +230,20 @@ bool JS_IsKeyObject(JSContext* context, JSValue value)
     return false;
 }
 
+bool JS_IsBigInt64Array(JSContext* context, JSValue value)
+{
+    return false;
+}
+
+bool JS_IsBigUint64Array(JSContext* context, JSValue value)
+{
+    return false;
+}
+bool JS_IsSharedArrayBuffer(JSContext* context, JSValue value)
+{
+    return false;
+}
+
 bool JS_IsArrayBuffer(JSContext* context, JSValue value)
 {
     bool result = false;

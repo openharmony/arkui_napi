@@ -187,7 +187,8 @@ bool ArkNativeValue::IsMapIterator()
 
 bool ArkNativeValue::IsModuleNamespaceObject()
 {
-    return false;
+    Global<JSValueRef> value = value_;
+    return value->IsModuleNamespaceObject();
 }
 
 bool ArkNativeValue::IsNumberObject()
@@ -283,4 +284,22 @@ bool ArkNativeValue::StrictEquals(NativeValue* value)
     Global<JSValueRef> value1 = value_;
     Global<JSValueRef> value2 = *value;
     return value1->IsStrictEquals(vm, value2.ToLocal(vm));
+}
+
+bool ArkNativeValue::IsBigInt64Array()
+{
+    Global<JSValueRef> value = value_;
+    return value->IsBigInt64Array();
+}
+
+bool ArkNativeValue::IsBigUint64Array()
+{
+    Global<JSValueRef> value = value_;
+    return value->IsBigUint64Array();
+}
+
+bool ArkNativeValue::IsSharedArrayBuffer()
+{
+    Global<JSValueRef> value = value_;
+    return value->IsSharedArrayBuffer();
 }

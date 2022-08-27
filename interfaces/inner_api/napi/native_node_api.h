@@ -55,4 +55,8 @@ NAPI_EXTERN napi_status napi_is_symbol_object(napi_env env, napi_value value, bo
 NAPI_EXTERN napi_status napi_is_weak_map(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* result);
 
+NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, bool* result);
+NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value, bool* result);
+NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result);
+
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

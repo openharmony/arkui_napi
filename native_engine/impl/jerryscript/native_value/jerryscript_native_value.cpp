@@ -236,3 +236,16 @@ bool JerryScriptNativeValue::IsSet()
 {
     return false;
 }
+bool JerryScriptNativeValue::IsBigInt64Array()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsBigUint64Array()
+{
+    return false;
+}
+bool JerryScriptNativeValue::IsSharedArrayBuffer()
+{
+    return false;
+}
+

@@ -57,6 +57,9 @@ public:
     bool IsSymbolObject() override;
     bool IsWeakMap() override;
     bool IsWeakSet() override;
+    bool IsBigInt64Array() override;
+    bool IsBigUint64Array() override;
+    bool IsSharedArrayBuffer() override;
 
     NativeValue* ToBoolean() override;
     NativeValue* ToNumber() override;
