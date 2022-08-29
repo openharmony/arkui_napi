@@ -58,7 +58,6 @@ const char* g_errorMessages[] = {
 NativeEngineInterface::NativeEngineInterface(NativeEngine* engine, void* jsEngineInterface)
     : jsEngineInterface_(jsEngineInterface), rootNativeEngine__(engine)
 {
-    HILOG_INFO("NativeEngineInterface::NativeEngineInterface");
 }
 
 void NativeEngineInterface::Init()
@@ -370,7 +369,6 @@ void NativeEngineInterface::UVThreadRunner(void* nativeEngineImpl)
 
 void NativeEngineInterface::SetPostTask(PostTask postTask)
 {
-    HILOG_INFO("SetPostTask in");
     postTask_ = postTask;
 }
 

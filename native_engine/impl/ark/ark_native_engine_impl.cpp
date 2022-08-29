@@ -125,7 +125,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                 if (module != nullptr) {
                     auto it = engineImpl->loadedModules_.find(module);
                     if (it != engineImpl->loadedModules_.end()) {
-                        HILOG_INFO("load module %{public}s success, module already exists", module->name);
                         return scope.Escape(it->second.ToLocal(ecmaVm));
                     }
                     ArkNativeEngine* nativeEngine = new ArkNativeEngine(engineImpl, engineImpl->GetJsEngine(),
@@ -149,7 +148,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         } else {
                             exports = *exportObject;
                             engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
-                            HILOG_INFO("load module %{public}s success by jscode", module->name);
                         }
                     } else if (module->registerCallback != nullptr) {
                         NativeValue* exportObject = nativeEngine->CreateObject();
@@ -169,7 +167,6 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
 #endif
                         exports = *exportObject;
                         engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
-                        HILOG_INFO("load module %{public}s success", module->name);
                     } else {
                         HILOG_ERROR("init module failed");
                         return scope.Escape(exports.ToLocal(ecmaVm));
