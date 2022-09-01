@@ -155,6 +155,7 @@ char* NativeModuleManager::FormatString()
         "libhilog_ndk.z.so",
         "libnative_drawing.so",
         "libnative_window.so",
+        "libnative_vsync.so",
         "libOpenSLES.so",
         "libpixelmap_ndk.z.so",
         "librawfile.z.so",
