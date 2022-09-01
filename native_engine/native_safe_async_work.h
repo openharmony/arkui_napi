@@ -21,6 +21,9 @@
 #include <mutex>
 #include <queue>
 #include <uv.h>
+#ifdef LINUX_PLATFORM
+#include <condition_variable>
+#endif
 
 #include "native_async_context.h"
 

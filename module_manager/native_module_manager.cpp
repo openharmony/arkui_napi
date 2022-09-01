@@ -27,7 +27,8 @@
 
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
 constexpr static char DL_NAMESPACE[] = "ace";
 #endif
 } // namespace
@@ -136,7 +137,8 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 #endif
 }
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
 char* NativeModuleManager::FormatString()
 {
     const char* allowList[] = {
@@ -185,7 +187,8 @@ char* NativeModuleManager::FormatString()
 
 void NativeModuleManager::CreateLdNamespace(const char* lib_ld_path)
 {
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM)
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
     Dl_namespace current_ns;
     dlns_init(&ns_, DL_NAMESPACE);
     dlns_get(nullptr, &current_ns);
@@ -263,6 +266,10 @@ bool NativeModuleManager::GetNativeModulePath(
     const char* soPostfix = ".so";
     const char* sysPrefix = "/system/lib64/module";
     const char* zfix = ".z";
+#elif defined(LINUX_PLATFORM)
+    const char* soPostfix = ".so";
+    const char* sysPrefix = "./module";
+    const char* zfix = "";
 #else
     const char* soPostfix = ".so";
     const char* sysPrefix = "/system/lib/module";
@@ -360,7 +367,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
     if (lib == nullptr) {
         HILOG_WARN("LoadLibrary failed, error: %{public}d", GetLastError());
     }
-#elif defined(MAC_PLATFORM) || defined(__BIONIC__)
+#elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
         HILOG_WARN("dlopen failed: %{public}s", dlerror());

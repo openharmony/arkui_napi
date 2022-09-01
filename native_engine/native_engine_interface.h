@@ -19,6 +19,9 @@
 #include <functional>
 #include <unordered_set>
 #include <vector>
+#ifdef LINUX_PLATFORM
+#include<atomic>
+#endif
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
 #include "module_manager/native_module_manager.h"
@@ -111,7 +114,7 @@ public:
     virtual void Loop(LoopMode mode, bool needSync = false);
     virtual void SetPostTask(PostTask postTask);
     virtual void TriggerPostTask();
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
     virtual void CheckUVLoop();
     virtual void CancelCheckUVLoop();
 #endif
@@ -304,7 +307,7 @@ protected:
 private:
     bool isMainThread_ { true };
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
     static void UVThreadRunner(void* nativeEngine);
     void PostLoopTask();
 
