@@ -160,6 +160,13 @@ char* NativeModuleManager::FormatString()
         "librawfile.z.so",
         "libuv.so",
         "libhilog.so",
+        "libnative_image.so",
+        "libnative_media_adec.so",
+        "libnative_media_aenc.so",
+        "libnative_media_codecbase.so",
+        "libnative_media_core.so",
+        "libnative_media_vdec.so",
+        "libnative_media_venc.so",
         // adaptor library
         "libohosadaptor.so",
     };
