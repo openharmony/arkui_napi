@@ -148,6 +148,7 @@ char* NativeModuleManager::FormatString()
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
+        "libbundle_ndk.z.so",
         "libdeviceinfo_ndk.z.so",
         "libEGL.so",
         "libGLESv3.so",
