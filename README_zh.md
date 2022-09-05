@@ -14,7 +14,7 @@ NAPI（Native API）组件是一套对外接口基于Node.js N-API规范开发�
 **图 1**  NAPI组件架构图<a name="fig1049423884819"></a>  
 
 
-![](figures/zh-cn_image_0000001162437581.png)
+![](figures/zh-cn_image_0000001162437581.jpg)
 
 -   **NativeEngine**
 

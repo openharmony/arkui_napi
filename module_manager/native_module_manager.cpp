@@ -150,6 +150,7 @@ char* NativeModuleManager::FormatString()
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
+        "libbundle_ndk.z.so",
         "libdeviceinfo_ndk.z.so",
         "libEGL.so",
         "libGLESv3.so",
@@ -157,11 +158,19 @@ char* NativeModuleManager::FormatString()
         "libhilog_ndk.z.so",
         "libnative_drawing.so",
         "libnative_window.so",
+        "libnative_vsync.so",
         "libOpenSLES.so",
         "libpixelmap_ndk.z.so",
         "librawfile.z.so",
         "libuv.so",
         "libhilog.so",
+        "libnative_image.so",
+        "libnative_media_adec.so",
+        "libnative_media_aenc.so",
+        "libnative_media_codecbase.so",
+        "libnative_media_core.so",
+        "libnative_media_vdec.so",
+        "libnative_media_venc.so",
         // adaptor library
         "libohosadaptor.so",
     };

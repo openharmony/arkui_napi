@@ -14,7 +14,7 @@ The  **foundation/arkui/napi**  repository contains a development framework for 
 **Figure  1**  Architecture<a name="fig1049423884819"></a>  
 
 
-![](figures/en-us_image_0000001162437581.png)
+![](figures/en-us_image_0000001162437581.jpg)
 
 -   **NativeEngine**
 

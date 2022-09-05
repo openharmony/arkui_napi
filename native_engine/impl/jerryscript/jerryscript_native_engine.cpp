@@ -460,10 +460,10 @@ bool JerryScriptNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
     return jerryscriptNativeEngineImpl->BuildJsStackTrace(stackTraceStr);
 }
-bool JerryScriptNativeEngine::BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames)
+bool JerryScriptNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    return jerryscriptNativeEngineImpl->BuildJsStackInfoList(jsFrames);
+    return jerryscriptNativeEngineImpl->BuildJsStackInfoList(tid, jsFrames);
 }
 bool JerryScriptNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {

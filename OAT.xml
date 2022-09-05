@@ -60,8 +60,8 @@ Note:If the text contains special characters, please escape them according to th
         </policylist>
         <filefilterlist>
             <filefilter name="binaryFileTypePolicyFilter" desc="二进制文件校验策略的过滤条件" >
-                <filteritem type="filepath" name="figures/en-us_image_0000001162437581.png" desc="资源图片"/>
-                <filteritem type="filepath" name="figures/zh-cn_image_0000001162437581.png" desc="资源图片"/>
+                <filteritem type="filepath" name="figures/en-us_image_0000001162437581.jpg" desc="资源图片"/>
+                <filteritem type="filepath" name="figures/zh-cn_image_0000001162437581.jpg" desc="资源图片"/>
             </filefilter>
         </filefilterlist>
 
