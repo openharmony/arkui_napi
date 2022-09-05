@@ -239,7 +239,7 @@ public:
     {
         return false;
     }
-    bool BuildJsStackInfoList(std::vector<JsFrameInfo>& jsFrames) override
+    bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) override
     {
         return false;
     }
