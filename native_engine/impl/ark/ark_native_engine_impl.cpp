@@ -1322,3 +1322,13 @@ inline void ArkNativeEngineImpl::SetModuleName(ArkNativeObject *nativeObj, std::
     }
 #endif
 }
+
+bool ArkNativeEngineImpl::IsMixedDebugEnabled()
+{
+    return JSNApi::IsMixedDebugEnabled(vm_);
+}
+
+void ArkNativeEngineImpl::NotifyNativeCalling(const void *nativeAddress)
+{
+    JSNApi::NotifyNativeCalling(vm_, nativeAddress);
+}

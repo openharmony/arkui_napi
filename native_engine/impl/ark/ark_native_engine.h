@@ -182,6 +182,10 @@ public:
     void NotifyApplicationState(bool inBackground) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
+    // debugger
+    bool IsMixedDebugEnabled();
+    void NotifyNativeCalling(const void *nativeAddress);
+
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
     panda::Global<panda::ObjectRef> GetModuleFromName(
