@@ -151,7 +151,7 @@ QuickJSNativeEngineImpl::QuickJSNativeEngineImpl(JSRuntime* runtime, JSContext* 
         0, 0, 1, &jsNativeEngine);
 
     JS_SetPropertyStr(context_, jsGlobal, "requireInternal", jsRequireInternal);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
     JS_SetPropertyStr(context_, jsGlobal, "requireNapi", jsRequire);
 #else
     JS_SetPropertyStr(context_, jsGlobal, "requireNapiPreview", jsRequire);

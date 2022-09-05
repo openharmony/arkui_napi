@@ -14,7 +14,7 @@
  */
 
 #include "ark_native_string.h"
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 #include "ohos/init_data.h"
 #else
 #include "unicode/putil.h"

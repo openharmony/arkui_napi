@@ -38,8 +38,10 @@
 #include "native_value/ark_native_typed_array.h"
 #include "native_value/ark_native_date.h"
 
+#ifndef PREVIEW
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 #include "parameters.h"
+#endif
 #endif
 #include "securec.h"
 #include "utils/log.h"
@@ -535,7 +537,7 @@ bool ArkNativeEngine::StopHeapTracking(const std::string &filePath)
     return arkNativeEngineImpl->StopHeapTracking(filePath);
 }
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 void ArkNativeEngine::PrintStatisticResult()
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

@@ -58,11 +58,15 @@ template("ace_napi_impl") {
       "//foundation/arkui/napi:ace_napi",
       "//third_party/bounds_checking_function:libsec_static",
     ]
-
+    if (use_mingw_win || use_mac || use_linux) {
+      defines += [ "PREVIEW" ]
+    }
     if (use_mingw_win) {
       defines += [ "WINDOWS_PLATFORM" ]
     } else if (use_mac) {
       defines += [ "MAC_PLATFORM" ]
+    } else if (use_linux) {
+      defines += [ "LINUX_PLATFORM" ]
     } else if (is_cross_platform_build && target_os == "ios") {
       defines += [ "IOS_PLATFORM" ]
     } else if (is_cross_platform_build && target_os == "android") {

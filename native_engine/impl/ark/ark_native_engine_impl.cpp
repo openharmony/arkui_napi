@@ -42,8 +42,10 @@
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #endif
+#ifndef PREVIEW
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 #include "parameters.h"
+#endif
 #endif
 #include "securec.h"
 #include "utils/log.h"
@@ -221,7 +223,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
             requireData);
 
     Local<ObjectRef> global = panda::JSNApi::GetGlobalObject(vm);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
     Local<StringRef> requireName = StringRef::NewFromUtf8(vm, "requireNapi");
     global->Set(vm, requireName, requireNapi);
 #else
@@ -743,7 +745,7 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
     option.SetGcPoolSize(poolSize);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
     option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
 #endif
     option.SetDebuggerLibraryPath("");
@@ -841,7 +843,6 @@ void ArkNativeEngineImpl::StopCpuProfiler()
     HILOG_WARN("ARKCpuProfiler is not supported on windows");
 }
 #endif
-
 #if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 void ArkNativeEngineImpl::ResumeVM()
 {
@@ -1139,7 +1140,7 @@ void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpForm
 }
 #endif
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
     return DFXJSNApi::BuildNativeAndJsStackTrace(vm_, stackTraceStr);
@@ -1152,7 +1153,7 @@ bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 }
 #endif
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 {
     return DFXJSNApi::BuildJsStackTrace(vm_, stackTraceStr);
@@ -1165,7 +1166,7 @@ bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 }
 #endif
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 bool ArkNativeEngineImpl::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
     std::vector<ArkJsFrameInfo> arkJsFrames;
@@ -1214,7 +1215,7 @@ bool ArkNativeEngineImpl::StopHeapTracking(const std::string& filePath)
 }
 #endif
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM)
+#if !defined(PREVIEW)
 void ArkNativeEngineImpl::PrintStatisticResult()
 {
     DFXJSNApi::PrintStatisticResult(vm_);
