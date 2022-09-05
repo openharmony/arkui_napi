@@ -33,6 +33,9 @@
 #include "utils/macros.h"
 #include "native_engine_interface.h"
 
+typedef int32_t (*GetContainerScopeIdCallback)(void);
+typedef void (*ContainerScopeCallback)(int32_t);
+
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
@@ -202,11 +205,21 @@ public:
     virtual void SetOffWorkerFunc(OffWorkerFunc func);
     virtual void SetWorkerAsyncWorkFunc(NativeAsyncExecuteCallback executeCallback,
                                         NativeAsyncCompleteCallback completeCallback);
+
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
     virtual bool CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
     virtual bool CallWorkerAsyncWorkFunc(NativeEngine* engine);
+
+    // adapt worker to ace container
+    virtual void SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func);
+    virtual void SetInitContainerScopeFunc(ContainerScopeCallback func);
+    virtual void SetFinishContainerScopeFunc(ContainerScopeCallback func);
+    virtual int32_t GetContainerScopeIdFunc();
+    virtual bool InitContainerScopeFunc(int32_t id);
+    virtual bool FinishContainerScopeFunc(int32_t id);
+
 #if !defined(PREVIEW)
     virtual void SetDebuggerPostTaskFunc(DebuggerPostTask func);
     virtual void CallDebuggerPostTaskFunc(std::function<void()>&& task);
