@@ -195,6 +195,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
     global->Set(vm, requireNapiPreview, requireNapi);
 #endif
     global->Set(vm, requireInternalName, requireInternal);
+    JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
     // need to call init of base class.
     Init();
 }
@@ -762,7 +763,7 @@ void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
 
 void ArkNativeEngineImpl::StopCpuProfiler()
 {
-    DFXJSNApi::StopCpuProfilerForFile();
+    DFXJSNApi::StopCpuProfilerForFile(vm_);
     JSNApi::SetNativePtrGetter(vm_, nullptr);
 }
 #else
