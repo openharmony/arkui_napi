@@ -20,7 +20,7 @@ common_include = [
   "//foundation/arkui/napi/native_engine",
   "//third_party/googletest/include",
   "//third_party/node/src",
-  "//utils/native/base/include",
+  "//commonlibrary/c_utils/base/include",
 ]
 
 quickjs_include = common_include
@@ -43,7 +43,6 @@ common_deps = [
   "//third_party/googletest:gtest",
   "//third_party/googletest:gtest_main",
   "//third_party/libuv:uv",
-  "//utils/native/base:utils",
 ]
 
 quickjs_deps = common_deps
