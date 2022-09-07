@@ -677,10 +677,8 @@ NativeValue* ArkNativeEngineImpl::CreateInstance(
     }
     Local<JSValueRef> instance = value->Constructor(vm_, args.data(), argc);
     Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
     if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+        HILOG_ERROR("ArkNativeEngineImpl::CreateInstance occur Exception");
         return nullptr;
     }
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), instance);
