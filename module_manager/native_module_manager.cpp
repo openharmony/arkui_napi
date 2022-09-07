@@ -366,12 +366,12 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
 #if defined(WINDOWS_PLATFORM)
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        HILOG_ERROR("LoadLibrary failed, error: %{public}d", GetLastError());
+        HILOG_WARN("LoadLibrary failed, error: %{public}d", GetLastError());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__)
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
-        HILOG_ERROR("dlopen failed: %{public}s", dlerror());
+        HILOG_WARN("dlopen failed: %{public}s", dlerror());
     }
 
 #elif defined(IOS_PLATFORM)
@@ -383,7 +383,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const bool is
         lib = dlopen(path, RTLD_LAZY);
     }
     if (lib == nullptr) {
-        HILOG_ERROR("dlopen failed: %{public}s", dlerror());
+        HILOG_WARN("dlopen failed: %{public}s", dlerror());
     }
 #endif
 #ifdef ENABLE_HITRACE
@@ -400,7 +400,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
     if (!GetNativeModulePath(moduleName, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_ERROR("get module filed %{public}s", moduleName);
+        HILOG_WARN("get module filed %{public}s", moduleName);
         return nullptr;
     }
 
