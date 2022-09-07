@@ -231,6 +231,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
     global->Set(vm, requireNapiPreview, requireNapi);
 #endif
     global->Set(vm, requireInternalName, requireInternal);
+    JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
     // need to call init of base class.
     Init();
 }
