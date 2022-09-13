@@ -109,7 +109,8 @@ public:
     // Create native symbol value
     NativeValue* CreateSymbol(NativeEngine* engine, NativeValue* value) override;
     // Create native value of external pointer
-    NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint) override;
+    NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint,
+        size_t nativeBindingSize = 0) override;
     // Create native object value
     NativeValue* CreateObject(NativeEngine* engine) override;
     // Create special native object value

@@ -20,7 +20,8 @@
 
 class ArkNativeExternal : public ArkNativeValue, public NativeExternal {
 public:
-    ArkNativeExternal(ArkNativeEngine* engine, void* value, NativeFinalize callback, void* hint);
+    ArkNativeExternal(ArkNativeEngine* engine, void* value, NativeFinalize callback, void* hint,
+        size_t nativeBindingSize = 0);
     ArkNativeExternal(ArkNativeEngine* engine, Local<JSValueRef> value);
     ~ArkNativeExternal() override;
 

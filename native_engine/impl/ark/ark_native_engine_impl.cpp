@@ -414,9 +414,10 @@ NativeValue* ArkNativeEngineImpl::CreateSymbol(NativeEngine* engine, NativeValue
     return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), symbol);
 }
 
-NativeValue* ArkNativeEngineImpl::CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint)
+NativeValue* ArkNativeEngineImpl::CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback,
+    void* hint, size_t nativeBindingSize)
 {
-    return new ArkNativeExternal(static_cast<ArkNativeEngine*>(engine), value, callback, hint);
+    return new ArkNativeExternal(static_cast<ArkNativeEngine*>(engine), value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateObject(NativeEngine* engine)

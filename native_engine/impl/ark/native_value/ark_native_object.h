@@ -34,10 +34,11 @@ public:
 
     static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData);
     static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint, void* attachData);
-    void SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference = nullptr) override;
+    void SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference = nullptr,
+        size_t nativeBindingSize = 0) override;
     void* GetNativePointer() override;
-    void SetNativeBindingPointer(
-        void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData) override;
+    void SetNativeBindingPointer(void* enginePointer, void* objPointer,
+        void* hint, void* detachData, void* attachData) override;
     void* GetNativeBindingPointer(uint32_t index) override;
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
     void Freeze() override;

@@ -135,7 +135,8 @@ public:
     virtual NativeValue* CreateString16(NativeEngine* engine, const char16_t* value, size_t length) = 0;
 
     virtual NativeValue* CreateSymbol(NativeEngine* engine, NativeValue* value) = 0;
-    virtual NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback, void* hint) = 0;
+    virtual NativeValue* CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback,
+        void* hint, size_t nativeBindingSize = 0) = 0;
 
     virtual NativeValue* CreateObject(NativeEngine* engine) = 0;
     virtual NativeValue* CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach) = 0;

@@ -19,7 +19,8 @@
 
 using panda::NativePointerRef;
 
-ArkNativeExternal::ArkNativeExternal(ArkNativeEngine* engine, void* value, NativeFinalize callback, void* hint)
+ArkNativeExternal::ArkNativeExternal(ArkNativeEngine* engine, void* value, NativeFinalize callback,
+    void* hint, size_t nativeBindingSize)
     : ArkNativeExternal(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
     auto vm = engine->GetEcmaVm();
@@ -35,7 +36,8 @@ ArkNativeExternal::ArkNativeExternal(ArkNativeEngine* engine, void* value, Nativ
     info->callback = callback;
     info->hint = hint;
 
-    Local<NativePointerRef> object = NativePointerRef::New(vm, value, ArkExternalDeleterCallback, info);
+    Local<NativePointerRef> object = NativePointerRef::New(vm, value, ArkExternalDeleterCallback,
+        info, nativeBindingSize);
     value_ = Global<NativePointerRef>(vm, object);
 }
 

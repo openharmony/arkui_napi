@@ -71,7 +71,7 @@ public:
     virtual NativeValue* CreateString16(NativeEngine* engine, const char16_t* value, size_t length) override;
     virtual NativeValue* CreateSymbol(NativeEngine* engine, NativeValue* value) override;
     virtual NativeValue* CreateExternal(
-        NativeEngine* engine, void* value, NativeFinalize callback, void* hint) override;
+        NativeEngine* engine, void* value, NativeFinalize callback, void* hint, size_t nativeBindingSize = 0) override;
 
     virtual NativeValue* CreateObject(NativeEngine* engine) override;
     virtual NativeValue* CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach) override;

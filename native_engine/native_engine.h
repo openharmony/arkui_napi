@@ -80,7 +80,8 @@ public:
     virtual NativeValue* CreateString16(const char16_t* value, size_t length) = 0;
 
     virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
-    virtual NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint) = 0;
+    virtual NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint,
+        size_t nativeBindingSize = 0) = 0;
 
     virtual NativeValue* CreateObject() = 0;
     virtual NativeValue* CreateNativeBindingObject(void* detach, void* attach) = 0;

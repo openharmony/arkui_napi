@@ -1036,6 +1036,37 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     return napi_clear_last_error(env);
 }
 
+// Methods to work with external data objects
+NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
+                                            napi_value js_object,
+                                            void* native_object,
+                                            napi_finalize finalize_cb,
+                                            void* finalize_hint,
+                                            napi_ref* result,
+                                            size_t native_binding_size)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, finalize_cb);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
+    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT || nativeValue->TypeOf() == NATIVE_FUNCTION,
+        napi_object_expected);
+
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+
+    if (result != nullptr) {
+        nativeObject->SetNativePointer(
+            native_object, callback, finalize_hint, reinterpret_cast<NativeReference**>(result), native_binding_size);
+    } else {
+        nativeObject->SetNativePointer(native_object, callback, finalize_hint, nullptr, native_binding_size);
+    }
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** result)
 {
     CHECK_ENV(env);
@@ -1083,6 +1114,21 @@ NAPI_EXTERN napi_status napi_create_external(
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
 
     auto resultValue = engine->CreateExternal(data, callback, finalize_hint);
+
+    *result = reinterpret_cast<napi_value>(resultValue);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env, void* data, napi_finalize finalize_cb,
+    void* finalize_hint, napi_value* result, size_t native_binding_size)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+
+    auto resultValue = engine->CreateExternal(data, callback, finalize_hint, native_binding_size);
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);

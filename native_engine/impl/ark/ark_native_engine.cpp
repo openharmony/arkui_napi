@@ -171,10 +171,11 @@ NativeValue* ArkNativeEngine::CreateSymbol(NativeValue* value)
     return arkNativeEngineImpl->CreateSymbol(this, value);
 }
 
-NativeValue* ArkNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint)
+NativeValue* ArkNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint,
+    size_t nativeBindingSize)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->CreateExternal(this, value, callback, hint);
+    return arkNativeEngineImpl->CreateExternal(this, value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* ArkNativeEngine::CreateObject()

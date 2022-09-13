@@ -344,8 +344,8 @@ NativeValue* QuickJSNativeEngineImpl::CreateFunction(
     return new QuickJSNativeFunction(static_cast<QuickJSNativeEngine*>(engine), name, cb, value);
 }
 
-NativeValue* QuickJSNativeEngineImpl::CreateExternal(
-    NativeEngine* engine, void* value, NativeFinalize callback, void* hint)
+NativeValue* QuickJSNativeEngineImpl::CreateExternal(NativeEngine* engine, void* value,
+    NativeFinalize callback, void* hint, [[maybe_unused]] size_t nativeBindingSize)
 {
     return new QuickJSNativeExternal(static_cast<QuickJSNativeEngine*>(engine), value, callback, hint);
 }

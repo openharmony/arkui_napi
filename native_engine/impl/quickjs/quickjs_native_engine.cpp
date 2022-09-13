@@ -178,10 +178,11 @@ NativeValue* QuickJSNativeEngine::CreateFunction(const char* name, size_t length
     return qjsNativeEngineImpl->CreateFunction(this, name, length, cb, value);
 }
 
-NativeValue* QuickJSNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint)
+NativeValue* QuickJSNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint,
+    size_t nativeBindingSize)
 {
     auto qjsNativeEngineImpl = static_cast<QuickJSNativeEngineImpl*>(nativeEngineImpl_);
-    return qjsNativeEngineImpl->CreateExternal(this, value, callback, hint);
+    return qjsNativeEngineImpl->CreateExternal(this, value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* QuickJSNativeEngine::CreateObject()

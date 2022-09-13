@@ -32,6 +32,19 @@ NAPI_EXTERN napi_status napi_get_exception_info_for_worker(napi_env env, napi_va
 NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t>& buffer, napi_value* result);
 NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffer,
                                        const char* descriptor, napi_value* result);
+NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
+                                  napi_value js_object,
+                                  void* native_object,
+                                  napi_finalize finalize_cb,
+                                  void* finalize_hint,
+                                  napi_ref* result,
+                                  size_t native_binding_size);
+NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env,
+                                                       void* data,
+                                                       napi_finalize finalize_cb,
+                                                       void* finalize_hint,
+                                                       napi_value* result,
+                                                       size_t native_binding_size);
 NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_ref ref, napi_ref checkRef);
 
 NAPI_EXTERN napi_status napi_is_arguments_object(napi_env env, napi_value value, bool* result);
