@@ -149,7 +149,7 @@ NativeValue* JerryScriptNativeEngineImpl::CreateSymbol(NativeEngine* engine, Nat
 }
 
 NativeValue* JerryScriptNativeEngineImpl::CreateExternal(
-    NativeEngine* engine, void* value, NativeFinalize callback, void* hint)
+    NativeEngine* engine, void* value, NativeFinalize callback, void* hint, [[maybe_unused]] size_t nativeBindingSize)
 {
     return new JerryScriptNativeExternal(static_cast<JerryScriptNativeEngine*>(engine), value, callback, hint);
 }

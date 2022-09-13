@@ -302,7 +302,8 @@ NativeValue* V8NativeEngine::CreateSymbol(NativeValue* value)
     return new V8NativeValue(this, v8::Symbol::New(isolate_, *value));
 }
 
-NativeValue* V8NativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint)
+NativeValue* V8NativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint,
+    [[maybe_unused]] size_t nativeBindingSize)
 {
     return new V8NativeExternal(this, value, callback, hint);
 }

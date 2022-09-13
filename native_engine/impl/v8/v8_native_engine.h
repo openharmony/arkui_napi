@@ -122,7 +122,8 @@ public:
     // Create native symbol value
     NativeValue* CreateSymbol(NativeValue* value) override;
     // Create native value of external pointer
-    NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint) override;
+    NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint,
+        size_t nativeBindingSize = 0) override;
     // Create native object value
     NativeValue* CreateObject() override;
     NativeValue* CreateNativeBindingObject(void* detach, void* attach) override;

@@ -115,7 +115,8 @@ void* ArkNativeObject::GetInterface(int interfaceId)
     return (NativeObject::INTERFACE_ID == interfaceId) ? (NativeObject*)this : nullptr;
 }
 
-void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference)
+void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint,
+    NativeReference** reference, size_t nativeBindingSize)
 {
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
@@ -126,7 +127,8 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
         Local<ObjectRef> wrapper = value->Get(vm, key);
         auto ref = reinterpret_cast<ArkNativeReference*>(wrapper->GetNativePointerField(0));
         // Try to remove native pointer from ArrayDataList
-        wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr);
+        ASSERT(nativeBindingSize == 0);
+        wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, nativeBindingSize);
         value->Delete(vm, key);
         delete ref;
     } else {
@@ -139,7 +141,7 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
             ref = new ArkNativeReference(engine_, this, 0, true, cb, pointer, hint);
         }
         object->SetNativePointerFieldCount(1);
-        object->SetNativePointerField(0, ref, nullptr, nullptr);
+        object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
         PropertyAttribute attr(object, true, false, true);
         value->DefineProperty(vm, key, attr);
     }

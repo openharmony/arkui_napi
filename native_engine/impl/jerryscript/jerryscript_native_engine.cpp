@@ -118,10 +118,11 @@ NativeValue* JerryScriptNativeEngine::CreateSymbol(NativeValue* value)
     return jerryscriptNativeEngineImpl->CreateSymbol(this, value);
 }
 
-NativeValue* JerryScriptNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint)
+NativeValue* JerryScriptNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint,
+    size_t nativeBindingSize)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    return jerryscriptNativeEngineImpl->CreateExternal(this, value, callback, hint);
+    return jerryscriptNativeEngineImpl->CreateExternal(this, value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* JerryScriptNativeEngine::CreateObject()

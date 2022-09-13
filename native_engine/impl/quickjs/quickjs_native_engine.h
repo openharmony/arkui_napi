@@ -43,7 +43,8 @@ public:
     NativeValue* CreateString(const char* value, size_t length) override;
     NativeValue* CreateString16(const char16_t* value, size_t length) override;
     NativeValue* CreateSymbol(NativeValue* value) override;
-    NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint) override;
+    NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint,
+        size_t nativeBindingSize = 0) override;
 
     NativeValue* CreateObject() override;
     NativeValue* CreateNativeBindingObject(void* detach, void* attach) override;
