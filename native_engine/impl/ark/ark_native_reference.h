@@ -58,6 +58,9 @@ private:
     void* hint_ = nullptr;
 
     void FinalizeCallback();
+
+    static void FirstPassCallBack(void* ref);
+    static void SecondPassCallBack(void* ref);
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_REFERENCE_H */
