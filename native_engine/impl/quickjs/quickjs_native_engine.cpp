@@ -269,7 +269,7 @@ NativeValue* QuickJSNativeEngine::RunScript(NativeValue* script)
     return qjsNativeEngineImpl->RunScript(this, script);
 }
 
-void QuickJSNativeEngine::SetPackagePath(const std::string& packagePath)
+void QuickJSNativeEngine::SetPackagePath(const std::vector<std::string>& packagePath)
 {
     auto qjsNativeEngineImpl = static_cast<QuickJSNativeEngineImpl*>(nativeEngineImpl_);
     return qjsNativeEngineImpl->SetPackagePath(packagePath);

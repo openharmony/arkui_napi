@@ -89,7 +89,7 @@ public:
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     NativeValue* RunActor(std::vector<uint8_t>& buffer, const char *descriptor) override;
 
-    void SetPackagePath(const std::string& packagePath);
+    void SetPackagePath(const std::vector<std::string>& packagePath);
 
     bool Throw(NativeValue* error) override;
     bool Throw(NativeErrorType type, const char* code, const char* message) override;

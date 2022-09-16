@@ -120,7 +120,7 @@ public:
     virtual NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     virtual NativeValue* RunActor(NativeEngine* engine, std::vector<uint8_t>& buffer, const char* descriptor) override;
 
-    void SetPackagePath(const std::string& packagePath);
+    void SetPackagePath(const std::vector<std::string>& packagePath);
 
     virtual bool Throw(NativeValue* error) override;
     virtual bool Throw(NativeEngine* engine, NativeErrorType type, const char* code, const char* message) override;
