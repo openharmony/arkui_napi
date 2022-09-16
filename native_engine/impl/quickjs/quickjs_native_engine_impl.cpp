@@ -499,11 +499,11 @@ NativeValue* QuickJSNativeEngineImpl::RunActor(
     return RunBufferScript(engine, buffer);
 }
 
-void QuickJSNativeEngineImpl::SetPackagePath(const std::string& packagePath)
+void QuickJSNativeEngineImpl::SetPackagePath(const std::vector<std::string>& packagePath)
 {
     auto moduleManager = NativeModuleManager::GetInstance();
     if (moduleManager && !packagePath.empty()) {
-        moduleManager->SetAppLibPath(packagePath.c_str());
+        moduleManager->SetAppLibPath(packagePath);
     }
 }
 

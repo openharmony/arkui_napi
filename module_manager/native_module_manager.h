@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <map>
+#include <vector>
 #include <pthread.h>
 #include "utils/macros.h"
 
@@ -60,7 +61,7 @@ public:
     static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
-    void SetAppLibPath(const char* appLibPath);
+    void SetAppLibPath(const std::vector<std::string>& appLibPath);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule, bool internal = false,
                                    bool isArk = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);

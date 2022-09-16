@@ -207,9 +207,8 @@ void NativeModuleManager::CreateLdNamespace(const char* lib_ld_path)
 #endif
 }
 
-void NativeModuleManager::SetAppLibPath(const char* appLibPath)
+void NativeModuleManager::SetAppLibPath(const std::vector<std::string>& appLibPath)
 {
-    HILOG_INFO("create ld namespace, path: %{private}s", appLibPath);
     char* tmp = new char[NAPI_PATH_MAX];
     errno_t err = EOK;
     err = memset_s(tmp, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
@@ -217,17 +216,32 @@ void NativeModuleManager::SetAppLibPath(const char* appLibPath)
         delete[] tmp;
         return;
     }
-    err = strcpy_s(tmp, NAPI_PATH_MAX, appLibPath);
+
+    std::string tmpPath = "";
+    for (int i = 0; i < appLibPath.size(); i++) {
+        if (appLibPath[i].empty()) {
+            continue;
+        }
+        tmpPath += appLibPath[i];
+        tmpPath += ":";
+    }
+    if (tmpPath.back() == ':') {
+        tmpPath.pop_back();
+    }
+
+    err = strcpy_s(tmp, NAPI_PATH_MAX, tmpPath.c_str());
     if (err != EOK) {
         delete[] tmp;
         return;
     }
+
     if (appLibPath_ != nullptr) {
         delete[] appLibPath_;
     }
 
     appLibPath_ = tmp;
     CreateLdNamespace(appLibPath_);
+    HILOG_INFO("create ld namespace, path: %{private}s", appLibPath_);
 }
 
 NativeModule* NativeModuleManager::LoadNativeModule(
@@ -326,7 +340,7 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", prefix, dupModuleName, soPostfix) == -1) {
+            if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", dupModuleName, soPostfix) == -1) {
                 return false;
             }
         }
@@ -352,8 +366,7 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/%s/lib%s%s",
-                prefix, dupModuleName, afterDot, soPostfix) == -1) {
+            if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", afterDot, soPostfix) == -1) {
                 return false;
             }
         }

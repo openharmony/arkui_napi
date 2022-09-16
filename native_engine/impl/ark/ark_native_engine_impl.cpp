@@ -618,11 +618,11 @@ NativeValue* ArkNativeEngineImpl::RunScriptBuffer(NativeEngine* engine, const ch
     return CreateUndefined(engine);
 }
 
-void ArkNativeEngineImpl::SetPackagePath(const std::string& packagePath)
+void ArkNativeEngineImpl::SetPackagePath(const std::vector<std::string>& packagePath)
 {
     auto moduleManager = NativeModuleManager::GetInstance();
     if (moduleManager && !packagePath.empty()) {
-        moduleManager->SetAppLibPath(packagePath.c_str());
+        moduleManager->SetAppLibPath(packagePath);
     }
 }
 
