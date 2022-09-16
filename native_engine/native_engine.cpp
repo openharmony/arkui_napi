@@ -17,6 +17,10 @@
 #include "native_engine/native_engine_interface.h"
 #include "utils/log.h"
 
+static GetContainerScopeIdCallback getContainerScopeIdFunc_;
+static ContainerScopeCallback initContainerScopeFunc_;
+static ContainerScopeCallback finishContainerScopeFunc_;
+
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
 
 NativeEngine::~NativeEngine()
@@ -203,6 +207,44 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
     if (offWorkerFunc_ != nullptr) {
         offWorkerFunc_(engine);
+        return true;
+    }
+    return false;
+}
+
+// adapt worker to ace container
+void NativeEngine::SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func)
+{
+    getContainerScopeIdFunc_ = func;
+}
+void NativeEngine::SetInitContainerScopeFunc(ContainerScopeCallback func)
+{
+    initContainerScopeFunc_ = func;
+}
+void NativeEngine::SetFinishContainerScopeFunc(ContainerScopeCallback func)
+{
+    finishContainerScopeFunc_ = func;
+}
+int32_t NativeEngine::GetContainerScopeIdFunc()
+{
+    int32_t scopeId = -1;
+    if (getContainerScopeIdFunc_ != nullptr) {
+        scopeId = getContainerScopeIdFunc_();
+    }
+    return scopeId;
+}
+bool NativeEngine::InitContainerScopeFunc(int32_t id)
+{
+    if (initContainerScopeFunc_ != nullptr) {
+        initContainerScopeFunc_(id);
+        return true;
+    }
+    return false;
+}
+bool NativeEngine::FinishContainerScopeFunc(int32_t id)
+{
+    if (finishContainerScopeFunc_ != nullptr) {
+        finishContainerScopeFunc_(id);
         return true;
     }
     return false;
