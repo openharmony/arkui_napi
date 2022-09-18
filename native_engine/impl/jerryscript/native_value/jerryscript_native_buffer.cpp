@@ -92,9 +92,11 @@ JerryScriptNativeBuffer::JerryScriptNativeBuffer(JerryScriptNativeEngine* engine
                 callb = NULL;
             } else {
                 free(nativePoint);
+                nativePoint = nullptr;
             }
         } else {
             free(nativePoint);
+            nativePoint = nullptr;
         }
     });
 }
