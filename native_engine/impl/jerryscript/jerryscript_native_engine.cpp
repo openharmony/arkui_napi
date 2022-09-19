@@ -466,6 +466,11 @@ bool JerryScriptNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsF
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
     return jerryscriptNativeEngineImpl->BuildJsStackInfoList(tid, jsFrames);
 }
+bool JerryScriptNativeEngine::DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine)
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    return jerryscriptNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+}
 bool JerryScriptNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);

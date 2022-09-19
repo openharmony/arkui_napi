@@ -220,6 +220,7 @@ public:
     virtual bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string& stackTraceStr) = 0;
     virtual bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) = 0;
+    virtual bool DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(const std::string& filePath) = 0;
 
