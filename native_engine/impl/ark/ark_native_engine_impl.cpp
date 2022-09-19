@@ -769,6 +769,10 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     };
     arkEngine->SetCleanEnv(cleanEnv);
 
+    const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
+    if (hostVM != nullptr) {
+        panda::JSNApi::addWorker(const_cast<EcmaVM*>(hostVM), vm);
+    }
     return arkEngine;
 }
 
