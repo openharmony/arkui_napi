@@ -72,6 +72,13 @@ template("ace_napi_impl") {
       "//foundation/arkui/napi:ace_napi",
     ]
 
+    if (is_mingw || is_mac || is_linux) {
+      deps += [
+        "//third_party/icu/icu4c:shared_icui18n",
+        "//third_party/icu/icu4c:shared_icuuc",
+      ]
+    }
+
     if (product_name != "ohos-sdk") {
       if (napi_enable_container_scope) {
         deps += [ "//foundation/arkui/napi:ace_container_scope" ]
