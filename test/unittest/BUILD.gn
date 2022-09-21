@@ -48,7 +48,7 @@ if (defined(ohos_lite)) {
     deps = [
       "//base//hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       "//foundation/arkui/napi/:ace_napi_jerryscript",
-      "//test/developertest/third_party/lib/cpp:gtest_main",
+      "//test/testfwk/developer_test/third_party/lib/cpp:gtest_main",
       "//third_party/jerryscript/jerry-core:jerry-core_shared",
       "//third_party/jerryscript/jerry-ext:jerry-ext_shared",
       "//third_party/jerryscript/jerry-port/default:jerry-port-default_shared",
