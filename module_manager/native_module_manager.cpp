@@ -252,17 +252,35 @@ NativeModule* NativeModuleManager::LoadNativeModule(
         return nullptr;
     }
 
+#ifdef ANDROID_PLATFORM
+    std::string strModule(moduleName);
+    std::string strCutName =
+        strModule.find(".") == std::string::npos ?
+            strModule :
+            strModule.substr(0, strModule.find(".")) + "_" + strModule.substr(strModule.find(".") + 1);
+    HILOG_INFO("strCutName value is %{public}s", strCutName.c_str());
+#endif
+
     if (pthread_mutex_lock(&mutex_) != 0) {
         HILOG_ERROR("pthread_mutex_lock is failed");
         return nullptr;
     }
 
+#ifdef ANDROID_PLATFORM
+    NativeModule* nativeModule = FindNativeModuleByCache(strCutName.c_str());
+#else
     NativeModule* nativeModule = FindNativeModuleByCache(moduleName);
+#endif
 
 #ifndef IOS_PLATFORM
     if (nativeModule == nullptr) {
+#ifdef ANDROID_PLATFORM
+        HILOG_INFO("not in cache: moduleName: %{public}s", strCutName.c_str());
+        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), internal, isAppModule, isArk);
+#else
         HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, internal, isAppModule, isArk);
+#endif
     }
 #endif
 
