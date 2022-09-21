@@ -358,9 +358,16 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
             if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", dupModuleName, soPostfix) == -1) {
                 return false;
             }
+#else
+            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", prefix, dupModuleName, soPostfix) == -1) {
+                return false;
+            }
+#endif
         }
     } else {
         char* afterDot = lastDot + 1;
@@ -384,9 +391,17 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
         } else {
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
             if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", afterDot, soPostfix) == -1) {
                 return false;
             }
+#else
+            if (sprintf_s(nativeModulePath[0], pathLength, "%s/%s/lib%s%s",
+                prefix, dupModuleName, afterDot, soPostfix) == -1) {
+                return false;
+            }
+#endif
         }
     }
     return true;
