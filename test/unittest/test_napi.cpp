@@ -791,7 +791,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest001, testing::ext::TestSize.Leve
 
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
-#ifdef USE_V8_ENGINE
+
     napi_value num = nullptr;
     uint32_t value = 1000;
     napi_create_uint32(env, value, &num);
@@ -807,7 +807,6 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest001, testing::ext::TestSize.Leve
     ASSERT_EQ(resultData, 1000);
 
     napi_delete_serialization_data(env, data);
-#endif
 }
 
 /**

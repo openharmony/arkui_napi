@@ -822,45 +822,6 @@ HWTEST_F(NapiExtTest, AddFinalizerTest001, testing::ext::TestSize.Level1)
     HILOG_INFO("add_finalizer_test_0100 end");
 }
 
-#if (defined(FOR_JERRYSCRIPT_TEST))
-HWTEST_F(NapiExtTest, ApiGetModuleFileName_001, testing::ext::TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript start";
-
-    napi_env env = (napi_env)engine_;
-    const char* result = nullptr;
-    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript node_api_get_module_file_name 1 execute";
-    ASSERT_CHECK_CALL(node_api_get_module_file_name(env, &result));
-    ASSERT_EQ(std::string(result), "/usr/lib/liblauncher.so");
-
-    napi_env abilityEnv = (napi_env)moduleNameEngine_;
-    const char* result2 = nullptr;
-    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript node_api_get_module_file_name 2 execute";
-    ASSERT_CHECK_CALL(node_api_get_module_file_name(abilityEnv, &result2));
-    ASSERT_EQ(std::string(result2), "/usr/lib/libability.so");
-    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001_jerryscript end";
-}
-#else
-// quickjs
-HWTEST_F(NapiExtTest, ApiGetModuleFileName_001, testing::ext::TestSize.Level1)
-{
-    HILOG_INFO("ApiGetModuleFileName_001 start");
-    napi_env env = (napi_env)engine_;
-    const char* result = nullptr;
-    GTEST_LOG_(INFO) << "node_api_get_module_file_name 1 execute";
-    ASSERT_CHECK_CALL(node_api_get_module_file_name(env, &result));
-    ASSERT_EQ(std::string(result), "/system/lib/module/ability/libfeatureability.z.so");
-
-    napi_env windowEnv = (napi_env)moduleNameEngine_;
-    const char* result2 = nullptr;
-    GTEST_LOG_(INFO) << "node_api_get_module_file_name 2 execute";
-    ASSERT_CHECK_CALL(node_api_get_module_file_name(windowEnv, &result2));
-    ASSERT_EQ(std::string(result2), "/system/lib/module/libwindow.z.so");
-    GTEST_LOG_(INFO) << "ApiGetModuleFileName_001 result2" << result2;
-    HILOG_INFO("ApiGetModuleFileName_001 end");
-}
-#endif
-
 typedef struct {
     size_t value;
     bool print;

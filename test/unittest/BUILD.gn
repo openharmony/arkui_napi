@@ -246,6 +246,7 @@ if (defined(ohos_lite)) {
     if (qjs_support) {
       deps += [
         ":test_quickjs_unittest",
+        ":test_quickjs_unittest_ext",
         ":test_quickjs_unittest_threadsafe",
       ]
     }
