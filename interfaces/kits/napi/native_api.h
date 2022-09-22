@@ -149,14 +149,6 @@ NAPI_INNER_EXTERN napi_status napi_async_init(napi_env env,
 NAPI_INNER_EXTERN napi_status napi_async_destroy(napi_env env,
                                                  napi_async_context async_context);
 
-NAPI_INNER_EXTERN napi_status napi_make_callback(napi_env env,
-                                                 napi_async_context async_context,
-                                                 napi_value recv,
-                                                 napi_value func,
-                                                 size_t argc,
-                                                 const napi_value* argv,
-                                                 napi_value* result);
-
 NAPI_INNER_EXTERN napi_status napi_open_callback_scope(napi_env env,
                                                        napi_value resource_object,
                                                        napi_async_context context,
