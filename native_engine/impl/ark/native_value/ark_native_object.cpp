@@ -245,24 +245,26 @@ bool ArkNativeObject::DefineProperty(NativePropertyDescriptor propertyDescriptor
     fullName += GetModuleName();
 #endif
     if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
-        Global<JSValueRef> localGetter(vm, JSValueRef::Undefined(vm));
-        Global<JSValueRef> localSetter(vm, JSValueRef::Undefined(vm));
+        Local<JSValueRef> localGetter = JSValueRef::Undefined(vm);
+        Local<JSValueRef> localSetter = JSValueRef::Undefined(vm);
 
         if (propertyDescriptor.getter != nullptr) {
             fullName += "getter";
             NativeValue* getter =
                 new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.getter, propertyDescriptor.data);
-            localGetter = *getter;
+            Global<JSValueRef> globalGetter = *getter;
+            localGetter = globalGetter.ToLocal(vm);
         }
         if (propertyDescriptor.setter != nullptr) {
             fullName += "setter";
             NativeValue* setter =
                 new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.setter, propertyDescriptor.data);
-            localSetter = *setter;
+            Global<JSValueRef> globalSetter = *setter;
+            localSetter = globalSetter.ToLocal(vm);
         }
 
         PropertyAttribute attr(JSValueRef::Undefined(engine_->GetEcmaVm()), false, enumable, configable);
-        result = obj->SetAccessorProperty(vm, propertyName, localGetter.ToLocal(vm), localSetter.ToLocal(vm), attr);
+        result = obj->SetAccessorProperty(vm, propertyName, localGetter, localSetter, attr);
     } else if (propertyDescriptor.method != nullptr) {
         fullName += propertyDescriptor.utf8name;
         NativeValue* cb = new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.method,
