@@ -330,6 +330,11 @@ bool NativeModuleManager::GetNativeModulePath(
     const char* prefix = nullptr;
     if (isAppModule && appLibPath_) {
         prefix = appLibPath_;
+#ifdef ANDROID_PLATFORM
+        for (int32_t i = 0; i < lengthOfModuleName; i++) {
+            dupModuleName[i] = tolower(dupModuleName[i]);
+        }
+#endif
     } else {
         prefix = sysPrefix;
         for (int32_t i = 0; i < lengthOfModuleName; i++) {
@@ -368,6 +373,11 @@ bool NativeModuleManager::GetNativeModulePath(
                 return false;
             }
 #endif
+#ifdef ANDROID_PLATFORM
+            if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s", prefix, moduleName, soPostfix) == -1) {
+                return false;
+            }
+#endif
         }
     } else {
         char* afterDot = lastDot + 1;
@@ -399,6 +409,12 @@ bool NativeModuleManager::GetNativeModulePath(
 #else
             if (sprintf_s(nativeModulePath[0], pathLength, "%s/%s/lib%s%s",
                 prefix, dupModuleName, afterDot, soPostfix) == -1) {
+                return false;
+            }
+#endif
+#ifdef ANDROID_PLATFORM
+            if (sprintf_s(nativeModulePath[1], pathLength, "%s/%s/lib%s%s",
+                prefix, moduleName, afterDot, soPostfix) == -1) {
                 return false;
             }
 #endif
