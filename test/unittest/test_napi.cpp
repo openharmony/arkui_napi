@@ -924,3 +924,118 @@ HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
     ASSERT_EQ(nchars, 0);
     delete[] buffer;
 }
+
+/**
+ * @tc.name: WrapWithSizeTest001
+ * @tc.desc: Test wrap with size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, WrapWithSizeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testWrapClass = nullptr;
+    napi_define_class(
+        env, "TestWrapClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &testWrapClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testWrapClass, 0, nullptr, &instanceValue);
+
+    const char* testWrapStr = "testWrapStr";
+    size_t size = sizeof(*testWrapStr) / sizeof(char);
+    napi_wrap_with_size(
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr, size);
+
+    char* tempTestStr = nullptr;
+    napi_unwrap(env, instanceValue, (void**)&tempTestStr);
+    ASSERT_STREQ(testWrapStr, tempTestStr);
+
+    char* tempTestStr1 = nullptr;
+    napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
+    ASSERT_STREQ(testWrapStr, tempTestStr1);
+    
+}
+
+/**
+ * @tc.name: CreateExternalWithSizeTest001
+ * @tc.desc: Test create external with size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateExternalWithSizeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "test";
+    size_t size = sizeof(testStr) / sizeof(char);
+    napi_value external = nullptr;
+    napi_create_external_with_size(
+        env, (void*)testStr,
+        [](napi_env env, void* data, void* hint) { ASSERT_STREQ((const char*)data, (const char*)hint); },
+        (void*)testStr, &external, size);
+
+    ASSERT_CHECK_VALUE_TYPE(env, external, napi_external);
+    void* tempExternal = nullptr;
+    napi_get_value_external(env, external, &tempExternal);
+    ASSERT_TRUE(tempExternal);
+    ASSERT_EQ(tempExternal, testStr);
+}
+
+/**
+ * @tc.name: BigArrayTest001
+ * @tc.desc: Test is big int64 array and big uint64 array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
+    napi_env env = (napi_env) engine_;
+    {
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1024;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value bigint64array = nullptr;
+    napi_create_typedarray(env, napi_bigint64_array, arrayBufferSize, arrayBuffer, 0, &bigint64array);
+    ASSERT_NE(bigint64array, nullptr);
+    bool isBigInt64Array = false;
+    napi_is_big_int64_array(env, bigint64array, &isBigInt64Array);
+    ASSERT_TRUE(isBigInt64Array);
+    }
+    {
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1024;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    napi_value biguint64array = nullptr;
+    napi_create_typedarray(env, napi_biguint64_array, arrayBufferSize, arrayBuffer, 0, &biguint64array);
+    ASSERT_NE(biguint64array, nullptr);
+    bool isBigUInt64Array = false;
+    napi_is_big_uint64_array(env, biguint64array, &isBigUInt64Array);
+    ASSERT_TRUE(isBigUInt64Array);
+    }
+
+}
+
+/**
+ * @tc.name: SharedArrayBufferTest001
+ * @tc.desc: Test is shared array buffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1) {
+    napi_env env = (napi_env) engine_;
+    
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 1024;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    bool isSharedArrayBuffer = true;
+    napi_is_shared_array_buffer(env, arrayBuffer, &isSharedArrayBuffer);
+    ASSERT_EQ(isSharedArrayBuffer, false);
+}
