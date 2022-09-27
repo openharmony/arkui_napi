@@ -60,10 +60,10 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...)
 
     char buf[MAX_BUFFER_SIZE] = { '\0' };
     int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, newFmt.c_str(), args);
+    va_end(args);
     if (ret < 0) {
         return;
     }
-    va_end(args);
 
     printf("%s\r\n", buf);
     fflush(stdout);
