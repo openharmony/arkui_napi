@@ -74,7 +74,7 @@ public:
     {
         return nullptr;
     }
-    virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer) override
+    virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override
     {
         return nullptr;
     }

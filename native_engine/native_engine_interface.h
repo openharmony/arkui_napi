@@ -164,7 +164,8 @@ public:
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;
     virtual NativeValue* RunScript(NativeEngine* engine, NativeValue* script) = 0;
     virtual NativeValue* RunScriptPath(NativeEngine* engine, const char* path) = 0;
-    virtual NativeValue* RunScriptBuffer(NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer) = 0;
+    virtual NativeValue* RunScriptBuffer(
+        NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
     virtual NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) = 0;
     virtual NativeValue* RunActor(NativeEngine* engine, std::vector<uint8_t>& buffer, const char* descriptor) = 0;
     virtual NativeValue* DefineClass(NativeEngine* engine,

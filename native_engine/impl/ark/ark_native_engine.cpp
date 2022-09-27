@@ -266,10 +266,10 @@ NativeValue* ArkNativeEngine::RunScriptPath(const char* path)
     return arkNativeEngineImpl->RunScriptPath(this, path);
 }
 
-NativeValue* ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer)
+NativeValue* ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->RunScriptBuffer(this, path, buffer);
+    return arkNativeEngineImpl->RunScriptBuffer(this, path, buffer, isBundle);
 }
 
 void ArkNativeEngine::SetPackagePath(const std::vector<std::string>& packagePath)

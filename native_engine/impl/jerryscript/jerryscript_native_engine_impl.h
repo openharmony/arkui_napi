@@ -82,11 +82,12 @@ public:
     {
         return nullptr;
     }
-    virtual NativeValue* RunScriptBuffer(NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer) override
+    virtual NativeValue* RunScriptBuffer(
+        NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer, bool isBundle) override
     {
         return nullptr;
     }
-    RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer) override;
+    RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
     virtual NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     virtual NativeValue* RunActor(
         NativeEngine* engine, std::vector<uint8_t>& buffer, const char *descriptor) override;
