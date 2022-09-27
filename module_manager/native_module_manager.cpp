@@ -156,6 +156,8 @@ char* NativeModuleManager::FormatString()
         "libGLESv3.so",
         "libhiappevent_ndk.z.so",
         "libhilog_ndk.z.so",
+        "libhuks_ndk.z.so",
+        "libhukssdk.z.so",
         "libnative_drawing.so",
         "libnative_window.so",
         "libnative_vsync.so",
