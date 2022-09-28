@@ -1195,7 +1195,10 @@ bool ArkNativeEngineImpl::DeleteWorker(NativeEngine* hostEngine, NativeEngine* w
 {
     const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(hostEngine)->GetEcmaVm();
     const panda::ecmascript::EcmaVM* workerVM = reinterpret_cast<ArkNativeEngine*>(workerEngine)->GetEcmaVm();
-    return panda::JSNApi::DeleteWorker(const_cast<EcmaVM*>(hostVM), const_cast<EcmaVM*>(workerVM));
+    if (hostVM != nullptr && workerVM != nullptr) {
+        return panda::JSNApi::DeleteWorker(const_cast<EcmaVM*>(hostVM), const_cast<EcmaVM*>(workerVM));
+    }
+    return false;
 }
 #else
 bool ArkNativeEngineImpl::DeleteWorker(NativeEngine* engine, NativeEngine* workerEngine)
