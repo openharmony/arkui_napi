@@ -1063,15 +1063,16 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
 {
     panda::PromiseRejectInfo* promiseRejectInfo = reinterpret_cast<panda::PromiseRejectInfo*>(info);
     ArkNativeEngine* env = reinterpret_cast<ArkNativeEngine*>(promiseRejectInfo->GetData());
-    ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(env->GetNativeEngineImpl());
-    Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
-    Local<JSValueRef> reason = promiseRejectInfo->GetReason();
-    panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT operation = promiseRejectInfo->GetOperation();
 
     if (env == nullptr) {
         HILOG_ERROR("engine is nullptr");
         return;
     }
+
+    ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(env->GetNativeEngineImpl());
+    Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
+    Local<JSValueRef> reason = promiseRejectInfo->GetReason();
+    panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT operation = promiseRejectInfo->GetOperation();
 
     if (engineImpl == nullptr) {
         HILOG_ERROR("engine impl is nullptr");
