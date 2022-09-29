@@ -170,7 +170,7 @@ void NativeEngineInterface::Loop(LoopMode mode, bool needSync)
             return;
     }
     if (more == false) {
-        more = uv_loop_alive(loop_);
+        uv_loop_alive(loop_);
     }
 
     if (needSync) {
