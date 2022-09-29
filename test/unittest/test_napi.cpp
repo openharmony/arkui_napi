@@ -993,33 +993,21 @@ HWTEST_F(NapiBasicTest, CreateExternalWithSizeTest001, testing::ext::TestSize.Le
  */
 HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
     napi_env env = (napi_env) engine_;
-    {
-    napi_value arrayBuffer = nullptr;
-    void* arrayBufferPtr = nullptr;
-    size_t arrayBufferSize = 1024;
-    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
 
-    napi_value bigint64array = nullptr;
-    napi_create_typedarray(env, napi_bigint64_array, arrayBufferSize, arrayBuffer, 0, &bigint64array);
-    ASSERT_NE(bigint64array, nullptr);
-    bool isBigInt64Array = false;
-    napi_is_big_int64_array(env, bigint64array, &isBigInt64Array);
-    ASSERT_TRUE(isBigInt64Array);
-    }
-    {
-    napi_value arrayBuffer = nullptr;
-    void* arrayBufferPtr = nullptr;
-    size_t arrayBufferSize = 1024;
-    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+    napi_value array = nullptr;
+    napi_create_array(env, &array);
+    ASSERT_NE(array, nullptr);
+    bool isArray = false;
+    napi_is_array(env, array, &isArray);
+    ASSERT_TRUE(isArray);
 
-    napi_value biguint64array = nullptr;
-    napi_create_typedarray(env, napi_biguint64_array, arrayBufferSize, arrayBuffer, 0, &biguint64array);
-    ASSERT_NE(biguint64array, nullptr);
-    bool isBigUInt64Array = false;
-    napi_is_big_uint64_array(env, biguint64array, &isBigUInt64Array);
-    ASSERT_TRUE(isBigUInt64Array);
-    }
-
+    bool isBigInt64Array = true;
+    napi_is_big_int64_array(env, array, &isBigInt64Array);
+    ASSERT_EQ(isBigInt64Array, false);
+    
+    bool isBigUInt64Array = true;
+    napi_is_big_uint64_array(env, array, &isBigUInt64Array);
+    ASSERT_EQ(isBigUInt64Array, false);
 }
 
 /**
