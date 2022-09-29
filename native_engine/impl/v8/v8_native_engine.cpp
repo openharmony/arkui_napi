@@ -725,13 +725,15 @@ void* V8NativeEngine::CreateRuntime()
     v8::Isolate::CreateParams createParams;
     createParams.array_buffer_allocator = isolate_->GetArrayBufferAllocator();
     v8::Isolate* isolate = v8::Isolate::New(createParams);
-    v8::HandleScope handleScope(isolate);
-    v8::Isolate::Scope isolateScope(isolate);
-    v8::Local<v8::Context> context = v8::Context::New(isolate);
     v8::Persistent<v8::Context> persistContext;
-    persistContext.Reset(isolate, context);
-    if (context.IsEmpty()) {
-        return nullptr;
+    {
+        v8::HandleScope handleScope(isolate);
+        v8::Isolate::Scope isolateScope(isolate);
+        v8::Local<v8::Context> context = v8::Context::New(isolate);
+        if (context.IsEmpty()) {
+            return nullptr;
+        }
+        persistContext.Reset(isolate, context);
     }
 
     V8NativeEngine* v8Engine = new V8NativeEngine(platform_, isolate, persistContext, jsEngine_);
