@@ -8245,6 +8245,9 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Add_Async_Cleanup_Hook_0800, testing::ext::T
     EXPECT_EQ(ret, napi_ok);
 
     struct AsyncData* datathree = CreateAsyncData();
+    if (datathree == nullptr) {
+        return;
+    }
     datathree->env = envthree;
     ret = napi_add_async_cleanup_hook(env, AsyncCleanupHook, datathree, &datathree->handle);
     EXPECT_EQ(ret, napi_ok);
