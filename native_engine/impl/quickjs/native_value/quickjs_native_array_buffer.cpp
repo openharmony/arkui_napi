@@ -79,9 +79,8 @@ void* QuickJSNativeArrayBuffer::GetBuffer()
 
 size_t QuickJSNativeArrayBuffer::GetLength()
 {
-    void* buffer = nullptr;
     size_t bufferSize = 0;
-    buffer = JS_GetArrayBuffer(engine_->GetContext(), &bufferSize, value_);
+    JS_GetArrayBuffer(engine_->GetContext(), &bufferSize, value_);
     return bufferSize;
 }
 

@@ -576,6 +576,7 @@ NativeValue* QuickJSNativeEngineImpl::DefineClass(NativeEngine* engine, const ch
             auto functionInfo = (NativeFunctionInfo*)JS_ExternalToNativeObject(ctx, classContext);
             if (functionInfo == nullptr) {
                 HILOG_ERROR("functionInfo is nullptr");
+                delete callbackInfo;
                 return JS_UNDEFINED;
             }
 
