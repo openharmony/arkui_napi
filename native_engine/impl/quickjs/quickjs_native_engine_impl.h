@@ -113,7 +113,8 @@ public:
     {
         return nullptr;
     }
-    NativeValue* RunScriptBuffer(NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer) override
+    NativeValue* RunScriptBuffer(
+        NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer, bool isBundle) override
     {
         return nullptr;
     }
