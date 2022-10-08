@@ -24,8 +24,6 @@ class ArkNativeObject : public ArkNativeValue, public NativeObject {
 public:
     explicit ArkNativeObject(ArkNativeEngine* engine);
     ArkNativeObject(ArkNativeEngine* engine, Local<JSValueRef> value);
-    ArkNativeObject(ArkNativeEngine* engine, void* detach, void* attach);
-    ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach);
     ~ArkNativeObject() override;
 
     bool ConvertToNativeBindingObject(
@@ -71,11 +69,6 @@ public:
     bool CheckTypeTag(NapiTypeTag* typeTag) override;
     void SetModuleName(std::string moduleName);
     std::string GetModuleName();
-
-private:
-    static AttachCallback attach_;
-    static DetachCallback detach_;
-    std::mutex funcMutex_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H */

@@ -131,12 +131,6 @@ NativeValue* JerryScriptNativeEngine::CreateObject()
     return jerryscriptNativeEngineImpl->CreateObject(this);
 }
 
-NativeValue* JerryScriptNativeEngine::CreateNativeBindingObject(void* detach, void* attach)
-{
-    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    return jerryscriptNativeEngineImpl->CreateNativeBindingObject(this, detach, attach);
-}
-
 NativeValue* JerryScriptNativeEngine::CreateFunction(const char* name, size_t length, NativeCallback cb, void* value)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
