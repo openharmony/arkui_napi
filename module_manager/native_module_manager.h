@@ -61,7 +61,7 @@ public:
     static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
-    void SetAppLibPath(const std::vector<std::string>& appLibPath);
+    void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule, bool internal = false,
                                    bool isArk = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
@@ -71,16 +71,19 @@ private:
     NativeModuleManager();
     virtual ~NativeModuleManager();
 
-    bool GetNativeModulePath(const char* moduleName, bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX],
-        int32_t pathLength) const;
-    NativeModule* FindNativeModuleByDisk(const char* moduleName, bool internal, const bool isAppModule, bool isArk);
+    bool GetNativeModulePath(const char* moduleName, const char* pathKey, bool isAppModule,
+        char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
+    NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* pathKey, bool internal,
+        const bool isAppModule, bool isArk);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
-    LIBHANDLE LoadModuleLibrary(const char* path, const bool isAppModule);
-    void CreateLdNamespace(const char* lib_ld_path);
+    LIBHANDLE LoadModuleLibrary(const char* path, const char* pathKey, const bool isAppModule);
+    void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path);
+    bool IsExistedPath(const char* pathKey) const;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     char* FormatString();
     Dl_namespace ns_;
+    std::map<std::string, Dl_namespace> nsMap_;
 #endif
     NativeModule* firstNativeModule_ = nullptr;
     NativeModule* lastNativeModule_ = nullptr;
@@ -90,6 +93,7 @@ private:
     pthread_mutex_t mutex_;
 
     std::map<std::string, NativeEngine*> nativeEngineList_;
+    std::map<std::string, char*> appLibPathMap_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H */
