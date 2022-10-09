@@ -529,7 +529,10 @@ bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo
 bool ArkNativeEngine::DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+    if (hostEngine != nullptr && workerEngine != nullptr) {
+        return arkNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+    }
+    return false;
 }
 
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
