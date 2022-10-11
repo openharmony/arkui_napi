@@ -273,10 +273,11 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEng
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module = moduleManager->LoadNativeModule(moduleName.c_str(), nullptr, isAppModule);
     if (module != nullptr) {
-        NativeValue* idValue = new ArkNativeString(static_cast<ArkNativeEngine*>(engine), id.c_str(), id.size());
-        NativeValue* paramValue = new ArkNativeString(
+        NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+        NativeValue* idValue = chunk.New<ArkNativeString>(static_cast<ArkNativeEngine*>(engine), id.c_str(), id.size());
+        NativeValue* paramValue = chunk.New<ArkNativeString>(
             static_cast<ArkNativeEngine*>(engine), param.c_str(), param.size());
-        NativeValue* exportObject = new ArkNativeObject(static_cast<ArkNativeEngine*>(engine));
+        NativeValue* exportObject = chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine));
 
         NativePropertyDescriptor idProperty, paramProperty;
         idProperty.utf8name = "id";
@@ -361,54 +362,64 @@ NativeValue* ArkNativeEngineImpl::CreateNull(NativeEngine* engine)
 {
     LocalScope scope(vm_);
     Local<PrimitiveRef> value = JSValueRef::Null(vm_);
-    return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeValue>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateUndefined(NativeEngine* engine)
 {
     LocalScope scope(vm_);
     Local<PrimitiveRef> value = JSValueRef::Undefined(vm_);
-    return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeValue>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateBoolean(NativeEngine* engine, bool value)
 {
-    return new ArkNativeBoolean(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBoolean>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNumber(NativeEngine* engine, int32_t value)
 {
-    return new ArkNativeNumber(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeNumber>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNumber(NativeEngine* engine, uint32_t value)
 {
-    return new ArkNativeNumber(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeNumber>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNumber(NativeEngine* engine, int64_t value)
 {
-    return new ArkNativeNumber(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeNumber>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNumber(NativeEngine* engine, double value)
 {
-    return new ArkNativeNumber(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeNumber>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateBigInt(NativeEngine* engine, int64_t value)
 {
-    return new ArkNativeBigInt(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBigInt>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateBigInt(NativeEngine* engine, uint64_t value)
 {
-    return new ArkNativeBigInt(static_cast<ArkNativeEngine*>(engine), value, true);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBigInt>(static_cast<ArkNativeEngine*>(engine), value, true);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateString(NativeEngine* engine, const char* value, size_t length)
 {
-    return new ArkNativeString(static_cast<ArkNativeEngine*>(engine), value, length);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeString>(static_cast<ArkNativeEngine*>(engine), value, length);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateString16(NativeEngine* engine, const char16_t* value, size_t length)
@@ -421,50 +432,60 @@ NativeValue* ArkNativeEngineImpl::CreateSymbol(NativeEngine* engine, NativeValue
     LocalScope scope(vm_);
     Global<StringRef> str = *value;
     Local<SymbolRef> symbol = SymbolRef::New(vm_, str.ToLocal(vm_));
-    return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), symbol);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeValue>(static_cast<ArkNativeEngine*>(engine), symbol);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateExternal(NativeEngine* engine, void* value, NativeFinalize callback,
     void* hint, size_t nativeBindingSize)
 {
-    return new ArkNativeExternal(static_cast<ArkNativeEngine*>(engine), value, callback, hint, nativeBindingSize);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeExternal>(
+        static_cast<ArkNativeEngine*>(engine), value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateObject(NativeEngine* engine)
 {
-    return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine));
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine));
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach)
 {
-    return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine), detach, attach);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateNBObject(NativeEngine* engine, DetachCallback detach, AttachCallback attach)
 {
-    return new ArkNativeObject(static_cast<ArkNativeEngine*>(engine), detach, attach);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine), detach, attach);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateFunction(
     NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value)
 {
-    return new ArkNativeFunction(static_cast<ArkNativeEngine*>(engine), name, length, cb, value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeFunction>(static_cast<ArkNativeEngine*>(engine), name, length, cb, value);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateArray(NativeEngine* engine, size_t length)
 {
-    return new ArkNativeArray(static_cast<ArkNativeEngine*>(engine), length);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeArray>(static_cast<ArkNativeEngine*>(engine), length);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateArrayBuffer(NativeEngine* engine, void** value, size_t length)
 {
-    return new ArkNativeArrayBuffer(static_cast<ArkNativeEngine*>(engine), (uint8_t**)value, length);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeArrayBuffer>(static_cast<ArkNativeEngine*>(engine), (uint8_t**)value, length);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateArrayBufferExternal(
     NativeEngine* engine, void* value, size_t length, NativeFinalize cb, void* hint)
 {
-    return new ArkNativeArrayBuffer(static_cast<ArkNativeEngine*>(engine), (uint8_t*)value, length, cb, hint);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeArrayBuffer>(static_cast<ArkNativeEngine*>(engine), (uint8_t*)value, length, cb, hint);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateTypedArray(
@@ -512,12 +533,14 @@ NativeValue* ArkNativeEngineImpl::CreateTypedArray(
         default:
             return nullptr;
     }
-    return new ArkNativeTypedArray(static_cast<ArkNativeEngine*>(engine), typedArray);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeTypedArray>(static_cast<ArkNativeEngine*>(engine), typedArray);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateDataView(NativeEngine* engine, NativeValue* value, size_t length, size_t offset)
 {
-    return new ArkNativeDataView(static_cast<ArkNativeEngine*>(engine), value, length, offset);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeDataView>(static_cast<ArkNativeEngine*>(engine), value, length, offset);
 }
 
 NativeValue* ArkNativeEngineImpl::CreatePromise(NativeEngine* engine, NativeDeferred** deferred)
@@ -526,7 +549,8 @@ NativeValue* ArkNativeEngineImpl::CreatePromise(NativeEngine* engine, NativeDefe
     Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
     *deferred = new ArkNativeDeferred(static_cast<ArkNativeEngine*>(engine), capability);
 
-    return new ArkNativeValue(static_cast<ArkNativeEngine*>(engine), capability->GetPromise(vm_));
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeValue>(static_cast<ArkNativeEngine*>(engine), capability->GetPromise(vm_));
 }
 
 NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message)
@@ -553,7 +577,7 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         HILOG_ERROR("scope manager is null");
         return nullptr;
     }
-    NativeScope* nativeScope = scopeManager->OpenEscape();
+    NativeScope* nativeScope = scopeManager->Open();
     Local<JSValueRef> thisObj = JSValueRef::Undefined(vm_);
     if (thisVar != nullptr) {
         Global<JSValueRef> globalObj = *thisVar;
@@ -589,9 +613,8 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         return nullptr;
     }
 
-    auto ret = scopeManager->Escape(nativeScope, ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value));
-    scopeManager->CloseEscape(nativeScope);
-    return ret;
+    scopeManager->Close(nativeScope);
+    return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 NativeValue* ArkNativeEngineImpl::RunScript(NativeEngine* engine, NativeValue* script)
@@ -655,7 +678,8 @@ NativeValue* ArkNativeEngineImpl::DefineClass(NativeEngine* engine, const char* 
         className = ArkNativeEngineImpl::tempModuleName_ + "." + name;
     }
     std::string constructorName = className + ".Constructor";
-    auto classConstructor = new ArkNativeFunction(static_cast<ArkNativeEngine*>(engine),
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    auto classConstructor = chunk.New<ArkNativeFunction>(static_cast<ArkNativeEngine*>(engine),
         constructorName.c_str(), callback, data);
     SetModuleName(classConstructor, constructorName);
     auto classPrototype = classConstructor->GetFunctionPrototype();
@@ -974,34 +998,35 @@ NativeValue* ArkNativeEngineImpl::LoadModule(NativeEngine* engine, NativeValue* 
 NativeValue* ArkNativeEngineImpl::ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value)
 {
     NativeValue* result = nullptr;
+    NativeChunk& chunk = engine->GetNativeChunk();
     if (value->IsNull() || value->IsUndefined() || value->IsSymbol()) {
-        result = new ArkNativeValue(engine, value);
+        result = chunk.New<ArkNativeValue>(engine, value);
     } else if (value->IsNumber()) {
-        result = new ArkNativeNumber(engine, value);
+        result = chunk.New<ArkNativeNumber>(engine, value);
     } else if (value->IsString()) {
-        result = new ArkNativeString(engine, value);
+        result = chunk.New<ArkNativeString>(engine, value);
     } else if (value->IsArray(engine->GetEcmaVm())) {
-        result = new ArkNativeArray(engine, value);
+        result = chunk.New<ArkNativeArray>(engine, value);
     } else if (value->IsFunction()) {
-        result = new ArkNativeFunction(engine, value);
+        result = chunk.New<ArkNativeFunction>(engine, value);
     } else if (value->IsArrayBuffer()) {
-        result = new ArkNativeArrayBuffer(engine, value);
+        result = chunk.New<ArkNativeArrayBuffer>(engine, value);
     } else if (value->IsDataView()) {
-        result = new ArkNativeDataView(engine, value);
+        result = chunk.New<ArkNativeDataView>(engine, value);
     } else if (value->IsTypedArray()) {
-        result = new ArkNativeTypedArray(engine, value);
+        result = chunk.New<ArkNativeTypedArray>(engine, value);
     } else if (value->IsNativePointer()) {
-        result = new ArkNativeExternal(engine, value);
+        result = chunk.New<ArkNativeExternal>(engine, value);
     } else if (value->IsDate()) {
-        result = new ArkNativeDate(engine, value);
+        result = chunk.New<ArkNativeDate>(engine, value);
     } else if (value->IsBigInt()) {
-        result = new ArkNativeBigInt(engine, value);
+        result = chunk.New<ArkNativeBigInt>(engine, value);
     } else if (value->IsObject() || value->IsPromise()) {
-        result = new ArkNativeObject(engine, value);
+        result = chunk.New<ArkNativeObject>(engine, value);
     } else if (value->IsBoolean()) {
-        result = new ArkNativeBoolean(engine, value);
+        result = chunk.New<ArkNativeBoolean>(engine, value);
     } else {
-        result = new ArkNativeValue(engine, value);
+        result = chunk.New<ArkNativeValue>(engine, value);
     }
     return result;
 }
@@ -1054,7 +1079,8 @@ NativeValue* ArkNativeEngineImpl::CreateBigWords(
 
     Local<JSValueRef> value = BigIntRef::CreateBigWords(vm_, sign, size, words);
 
-    return new ArkNativeBigInt(static_cast<ArkNativeEngine*>(engine), value);
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBigInt>(static_cast<ArkNativeEngine*>(engine), value);
 }
 
 bool ArkNativeEngineImpl::TriggerFatalException(NativeValue* error)
