@@ -117,12 +117,22 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 bool isAppModule = false;
                 const uint32_t lengthMax = 2;
-                if (info->GetArgsNumber() == lengthMax) {
+                if (info->GetArgsNumber() >= lengthMax) {
                     Local<BooleanRef> ret(info->GetCallArgRef(1));
                     isAppModule = ret->Value();
                 }
-                NativeModule* module =
-                    moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false, true);
+                NativeModule* module;
+                if (info->GetArgsNumber() == 3) {
+                    Local<StringRef> path(info->GetCallArgRef(2));
+                    module = 
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(), 
+                            isAppModule, false, true);
+                } else {
+                    module = 
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false,
+                            true);
+                }
+                    
                 Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
                 if (module != nullptr) {
                     auto it = engineImpl->loadedModules_.find(module);
@@ -628,11 +638,11 @@ NativeValue* ArkNativeEngineImpl::RunScriptBuffer(
     return CreateUndefined(engine);
 }
 
-void ArkNativeEngineImpl::SetPackagePath(const std::vector<std::string>& packagePath)
+void ArkNativeEngineImpl::SetPackagePath(const std::string appLibPathKey, const std::vector<std::string>& packagePath)
 {
     auto moduleManager = NativeModuleManager::GetInstance();
     if (moduleManager && !packagePath.empty()) {
-        moduleManager->SetAppLibPath(packagePath);
+        moduleManager->SetAppLibPath(appLibPathKey, packagePath);
     }
 }
 
