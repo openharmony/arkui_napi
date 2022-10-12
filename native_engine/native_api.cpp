@@ -1603,11 +1603,6 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, typedarray);
-    CHECK_ARG(env, type);
-    CHECK_ARG(env, length);
-    CHECK_ARG(env, data);
-    CHECK_ARG(env, arraybuffer);
-    CHECK_ARG(env, byte_offset);
 
     auto value = reinterpret_cast<NativeValue*>(typedarray);
 
@@ -1615,11 +1610,22 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
 
     auto nativeTypedArray = reinterpret_cast<NativeTypedArray*>(value->GetInterface(NativeTypedArray::INTERFACE_ID));
 
-    *type = (napi_typedarray_type)nativeTypedArray->GetTypedArrayType();
-    *length = nativeTypedArray->GetLength();
-    *data = static_cast<uint8_t*>(nativeTypedArray->GetData()) + nativeTypedArray->GetOffset();
-    *arraybuffer = reinterpret_cast<napi_value>(nativeTypedArray->GetArrayBuffer());
-    *byte_offset = nativeTypedArray->GetOffset();
+    if(type != nullptr) {
+        *type = (napi_typedarray_type)nativeTypedArray->GetTypedArrayType();
+    }
+    if(length != nullptr) {
+        *length = nativeTypedArray->GetLength();
+    }
+    if(data != nullptr) {
+        *data = static_cast<uint8_t*>(nativeTypedArray->GetData()) + nativeTypedArray->GetOffset();
+    }
+    if(arraybuffer != nullptr) {
+        *arraybuffer = reinterpret_cast<napi_value>(nativeTypedArray->GetArrayBuffer());
+    }
+    if(byte_offset != nullptr) {
+        *byte_offset = nativeTypedArray->GetOffset();
+    }
+
     return napi_clear_last_error(env);
 }
 
