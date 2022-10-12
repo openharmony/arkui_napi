@@ -260,10 +260,10 @@ NativeValue* ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint
     return arkNativeEngineImpl->RunScriptBuffer(this, path, buffer, isBundle);
 }
 
-void ArkNativeEngine::SetPackagePath(const std::vector<std::string>& packagePath)
+void ArkNativeEngine::SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->SetPackagePath(packagePath);
+    return arkNativeEngineImpl->SetPackagePath(appLinPathKey, packagePath);
 }
 
 NativeValue* ArkNativeEngine::DefineClass(const char* name,
@@ -391,35 +391,41 @@ NativeValue* ArkNativeEngine::LoadModule(NativeValue* str, const std::string& fi
     return arkNativeEngineImpl->LoadModule(this, str, fileName);
 }
 
+NativeChunk& ArkNativeEngine::GetNativeChunk()
+{
+    return GetScopeManager()->GetNativeChunk();
+}
+
 NativeValue* ArkNativeEngine::ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value)
 {
     NativeValue* result = nullptr;
+    NativeChunk& chunk = engine->GetNativeChunk();
     if (value->IsNull() || value->IsUndefined() || value->IsSymbol()) {
-        result = new ArkNativeValue(engine, value);
+        result = chunk.New<ArkNativeValue>(engine, value);
     } else if (value->IsNumber()) {
-        result = new ArkNativeNumber(engine, value);
+        result = chunk.New<ArkNativeNumber>(engine, value);
     } else if (value->IsString()) {
-        result = new ArkNativeString(engine, value);
+        result = chunk.New<ArkNativeString>(engine, value);
     } else if (value->IsArray(engine->GetEcmaVm())) {
-        result = new ArkNativeArray(engine, value);
+        result = chunk.New<ArkNativeArray>(engine, value);
     } else if (value->IsFunction()) {
-        result = new ArkNativeFunction(engine, value);
+        result = chunk.New<ArkNativeFunction>(engine, value);
     } else if (value->IsArrayBuffer()) {
-        result = new ArkNativeArrayBuffer(engine, value);
+        result = chunk.New<ArkNativeArrayBuffer>(engine, value);
     } else if (value->IsDataView()) {
-        result = new ArkNativeDataView(engine, value);
+        result = chunk.New<ArkNativeDataView>(engine, value);
     } else if (value->IsTypedArray()) {
-        result = new ArkNativeTypedArray(engine, value);
+        result = chunk.New<ArkNativeTypedArray>(engine, value);
     } else if (value->IsNativePointer()) {
-        result = new ArkNativeExternal(engine, value);
+        result = chunk.New<ArkNativeExternal>(engine, value);
     } else if (value->IsDate()) {
-        result = new ArkNativeDate(engine, value);
+        result = chunk.New<ArkNativeDate>(engine, value);
     } else if (value->IsBigInt()) {
-        result = new ArkNativeBigInt(engine, value);
+        result = chunk.New<ArkNativeBigInt>(engine, value);
     } else if (value->IsObject() || value->IsPromise()) {
-        result = new ArkNativeObject(engine, value);
+        result = chunk.New<ArkNativeObject>(engine, value);
     } else if (value->IsBoolean()) {
-        result = new ArkNativeBoolean(engine, value);
+        result = chunk.New<ArkNativeBoolean>(engine, value);
     }
     return result;
 }
@@ -517,7 +523,10 @@ bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo
 bool ArkNativeEngine::DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+    if (hostEngine != nullptr && workerEngine != nullptr) {
+        return arkNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+    }
+    return false;
 }
 
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)

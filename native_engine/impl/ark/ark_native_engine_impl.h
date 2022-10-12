@@ -154,7 +154,7 @@ public:
     // Run actor
     NativeValue* RunActor(NativeEngine* engine, std::vector<uint8_t>& buffer, const char* descriptor) override;
     // Set lib path
-    void SetPackagePath(const std::vector<std::string>& packagePath);
+    void SetPackagePath(const std::string appLibPathKey, const std::vector<std::string>& packagePath);
     // Define native class
     NativeValue* DefineClass(NativeEngine* engine, const char* name, NativeCallback callback, void* data,
         const NativePropertyDescriptor* properties, size_t length) override;

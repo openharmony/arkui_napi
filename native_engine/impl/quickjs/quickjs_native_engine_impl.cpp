@@ -498,7 +498,7 @@ void QuickJSNativeEngineImpl::SetPackagePath(const std::vector<std::string>& pac
 {
     auto moduleManager = NativeModuleManager::GetInstance();
     if (moduleManager && !packagePath.empty()) {
-        moduleManager->SetAppLibPath(packagePath);
+        moduleManager->SetAppLibPath("default", packagePath);
     }
 }
 

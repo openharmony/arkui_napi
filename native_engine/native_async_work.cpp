@@ -60,10 +60,10 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
         g_ParamUpdated = true;
     }
     bool createdTraceId = false;
-    traceId_ = std::make_unique<OHOS::HiviewDFX::HiTraceId>(OHOS::HiviewDFX::HiTrace::GetId());
+    traceId_ = std::make_unique<OHOS::HiviewDFX::HiTraceId>(OHOS::HiviewDFX::HiTraceChain::GetId());
     if (g_napiTraceIdEnabled && (!traceId_ || !traceId_->IsValid())) {
         traceId_ = std::make_unique<OHOS::HiviewDFX::HiTraceId>(
-            OHOS::HiviewDFX::HiTrace::Begin("New NativeAsyncWork", 0));
+            OHOS::HiviewDFX::HiTraceChain::Begin("New NativeAsyncWork", 0));
         createdTraceId = true;
     }
     char traceStr[TRACE_BUFFER_SIZE] = {0};
@@ -73,7 +73,7 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     }
     traceDescription_ = traceStr;
     if (createdTraceId) {
-        OHOS::HiviewDFX::HiTrace::ClearId();
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
     }
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -186,10 +186,10 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
     if (that->traceId_ && that->traceId_->IsValid()) {
-        OHOS::HiviewDFX::HiTrace::SetId(*(that->traceId_.get()));
+        OHOS::HiviewDFX::HiTraceChain::SetId(*(that->traceId_.get()));
         that->execute_(that->engine_, that->data_);
         FinishTrace(HITRACE_TAG_ACE);
-        OHOS::HiviewDFX::HiTrace::ClearId();
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
         return;
     }
     FinishTrace(HITRACE_TAG_ACE);
@@ -239,10 +239,10 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi complete, " + that->GetTraceDescription());
     if (that->traceId_ && that->traceId_->IsValid()) {
-        OHOS::HiviewDFX::HiTrace::SetId(*(that->traceId_.get()));
+        OHOS::HiviewDFX::HiTraceChain::SetId(*(that->traceId_.get()));
         that->complete_(that->engine_, nstatus, that->data_);
         FinishTrace(HITRACE_TAG_ACE);
-        OHOS::HiviewDFX::HiTrace::ClearId();
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
         scopeManager->Close(scope);
         return;
     }

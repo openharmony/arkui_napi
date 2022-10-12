@@ -171,8 +171,8 @@ NativeValue* ArkNativeObject::GetPropertyNames()
     LocalScope scope(vm);
     Global<ObjectRef> val = value_;
     Local<ArrayRef> arrayVal = val->GetOwnPropertyNames(vm);
-
-    return new ArkNativeArray(engine_, arrayVal);
+    NativeChunk& chunk = engine_->GetNativeChunk();
+    return chunk.New<ArkNativeArray>(engine_, arrayVal);
 }
 
 NativeValue* ArkNativeObject::GetEnumerablePropertyNames()
@@ -181,8 +181,8 @@ NativeValue* ArkNativeObject::GetEnumerablePropertyNames()
     LocalScope scope(vm);
     Global<ObjectRef> val = value_;
     Local<ArrayRef> arrayVal = val->GetOwnEnumerablePropertyNames(vm);
-
-    return new ArkNativeArray(engine_, arrayVal);
+    NativeChunk& chunk = engine_->GetNativeChunk();
+    return chunk.New<ArkNativeArray>(engine_, arrayVal);
 }
 
 NativeValue* ArkNativeObject::GetPrototype()
@@ -217,21 +217,22 @@ bool ArkNativeObject::DefineProperty(NativePropertyDescriptor propertyDescriptor
 #ifdef ENABLE_HITRACE
     fullName += GetModuleName();
 #endif
+    NativeChunk& chunk = engine_->GetNativeChunk();
     if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
         Local<JSValueRef> localGetter = JSValueRef::Undefined(vm);
         Local<JSValueRef> localSetter = JSValueRef::Undefined(vm);
 
         if (propertyDescriptor.getter != nullptr) {
             fullName += "getter";
-            NativeValue* getter =
-                new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.getter, propertyDescriptor.data);
+            NativeValue* getter = chunk.New<ArkNativeFunction>(
+                engine_, fullName.c_str(), 0, propertyDescriptor.getter, propertyDescriptor.data);
             Global<JSValueRef> globalGetter = *getter;
             localGetter = globalGetter.ToLocal(vm);
         }
         if (propertyDescriptor.setter != nullptr) {
             fullName += "setter";
-            NativeValue* setter =
-                new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.setter, propertyDescriptor.data);
+            NativeValue* setter = chunk.New<ArkNativeFunction>(
+                engine_, fullName.c_str(), 0, propertyDescriptor.setter, propertyDescriptor.data);
             Global<JSValueRef> globalSetter = *setter;
             localSetter = globalSetter.ToLocal(vm);
         }
@@ -240,7 +241,7 @@ bool ArkNativeObject::DefineProperty(NativePropertyDescriptor propertyDescriptor
         result = obj->SetAccessorProperty(vm, propertyName, localGetter, localSetter, attr);
     } else if (propertyDescriptor.method != nullptr) {
         fullName += propertyDescriptor.utf8name;
-        NativeValue* cb = new ArkNativeFunction(engine_, fullName.c_str(), 0, propertyDescriptor.method,
+        NativeValue* cb = chunk.New<ArkNativeFunction>(engine_, fullName.c_str(), 0, propertyDescriptor.method,
                                                propertyDescriptor.data);
         Global<JSValueRef> globalCb = *cb;
         PropertyAttribute attr(globalCb.ToLocal(vm), writable, enumable, configable);
@@ -385,7 +386,8 @@ bool ArkNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
 
 void ArkNativeObject::SetModuleName(std::string moduleName)
 {
-    NativeValue* moduleValue = new ArkNativeString(engine_, moduleName.c_str(),
+    NativeChunk& chunk = engine_->GetNativeChunk();
+    NativeValue* moduleValue = chunk.New<ArkNativeString>(engine_, moduleName.c_str(),
         moduleName.size());
     this->SetProperty(ArkNativeObject::PANDA_MODULE_NAME, moduleValue);
 }
