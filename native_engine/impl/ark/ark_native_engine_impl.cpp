@@ -544,7 +544,11 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         return nullptr;
     }
     NativeScope* nativeScope = scopeManager->OpenEscape();
-    Global<JSValueRef> thisObj = (thisVar != nullptr) ? *thisVar : Global<JSValueRef>(vm_, JSValueRef::Undefined(vm_));
+    Local<JSValueRef> thisObj = JSValueRef::Undefined(vm_);
+    if (thisVar != nullptr) {
+        Global<JSValueRef> globalObj = *thisVar;
+        thisObj = globalObj.ToLocal(vm_);
+    }
     Global<FunctionRef> funcObj = *function;
 #ifdef ENABLE_CONTAINER_SCOPE
     auto nativeFunction = static_cast<NativeFunction*>(function->GetInterface(NativeFunction::INTERFACE_ID));
@@ -566,7 +570,7 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         }
     }
 
-    Local<JSValueRef> value = funcObj->Call(vm_, thisObj.ToLocal(vm_), args.data(), argc);
+    Local<JSValueRef> value = funcObj->Call(vm_, thisObj, args.data(), argc);
     Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
     HandleUncaughtException(engine);
     if (!excep.IsNull()) {
@@ -1091,8 +1095,7 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
     Local<JSValueRef> args[] = {type, promise, reason};
     Global<FunctionRef> promiseRejectCallback = *(engineImpl->promiseRejectCallbackRef_->Get());
     if (!promiseRejectCallback.IsEmpty()) {
-        Global<JSValueRef> thisObj = Global<JSValueRef>(vm, JSValueRef::Undefined(vm));
-        promiseRejectCallback->Call(vm, thisObj.ToLocal(vm), args, 3); // 3 args size
+        promiseRejectCallback->Call(vm, JSValueRef::Undefined(vm), args, 3); // 3 args size
     }
 
     if (operation == panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT::REJECT) {
