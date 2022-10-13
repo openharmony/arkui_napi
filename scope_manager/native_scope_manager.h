@@ -80,15 +80,25 @@ public:
         }
     }
 
-    void PushChunkStats()
+    void PushChunkStats(NativeScope* scope)
     {
-        ChunkStats stats(currentHandleStorageIndex_, ptr_, end_);
+        ChunkStats stats(scope, currentHandleStorageIndex_, ptr_, end_);
         chunkStats_.emplace_back(stats);
     }
 
     void PopChunkStats()
     {
         chunkStats_.pop_back();
+    }
+
+    void RemoveStats(NativeScope* scope)
+    {
+        for (auto iter = chunkStats_.begin(); iter != chunkStats_.end(); iter++) {
+            if (iter->scope_ == scope) {
+                chunkStats_.erase(iter);
+                return;
+            }
+        }
     }
 
     void PopChunkStatsAndReset()
@@ -101,9 +111,10 @@ public:
 private:
     class ChunkStats {
     public:
-        ChunkStats(uint32_t index, uintptr_t begin, uintptr_t end) :
-            prevScopeIndex_(index), prevNext_(begin), prevEnd_(end) {}
+        ChunkStats(NativeScope* scope, uint32_t index, uintptr_t begin, uintptr_t end) :
+            scope_(scope), prevScopeIndex_(index), prevNext_(begin), prevEnd_(end) {}
 
+        NativeScope* scope_ {nullptr};
         int32_t prevScopeIndex_ {-1};
         uintptr_t prevNext_ {0};
         uintptr_t prevEnd_ {0};
