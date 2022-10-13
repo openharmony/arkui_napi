@@ -312,7 +312,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(
     if (nativeModule == nullptr) {
 #ifdef ANDROID_PLATFORM
         HILOG_INFO("not in cache: moduleName: %{public}s", strCutName.c_str());
-        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), nullptr, internal, isAppModule, isArk);
+        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", internal, isAppModule, isArk);
 #else
         HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), internal, isAppModule, isArk);
