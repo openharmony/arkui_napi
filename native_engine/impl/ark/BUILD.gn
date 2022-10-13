@@ -36,6 +36,8 @@ config("ace_napi_ark_config") {
   } else if (is_linux) {
     defines += [ "LINUX_PLATFORM" ]
     cflags_cc += [ "-std=c++17" ]
+  } else if (target_os == "ios") {
+    defines += [ "IOS_PLATFORM" ]
   }
 }
 
@@ -76,10 +78,13 @@ template("ace_napi_impl") {
       defines += [ "ANDROID_PLATFORM" ]
     }
 
-    deps = [
-      "//arkcompiler/ets_runtime:libark_jsruntime",
-      "//foundation/arkui/napi:ace_napi",
-    ]
+    deps = [ "//foundation/arkui/napi:ace_napi" ]
+
+    if (target_os == "ios") {
+      deps += [ "//arkcompiler/ets_runtime:libark_jsruntime_static" ]
+    } else {
+      deps += [ "//arkcompiler/ets_runtime:libark_jsruntime" ]
+    }
 
     if (is_mingw || is_mac || is_linux) {
       deps += [
@@ -90,7 +95,11 @@ template("ace_napi_impl") {
 
     if (product_name != "ohos-sdk") {
       if (napi_enable_container_scope) {
-        deps += [ "//foundation/arkui/napi:ace_container_scope" ]
+        if (target_os == "ios") {
+          deps += [ "//foundation/arkui/napi:ace_container_scope_static" ]
+        } else {
+          deps += [ "//foundation/arkui/napi:ace_container_scope" ]
+        }
         defines += [ "ENABLE_CONTAINER_SCOPE" ]
       }
     }

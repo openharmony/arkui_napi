@@ -776,7 +776,7 @@ bool ArkNativeEngineImpl::Throw(NativeEngine* engine, NativeErrorType type, cons
 NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine)
 {
     panda::RuntimeOption option;
-#if defined(OHOS_PLATFORM)
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
     size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);
@@ -789,7 +789,7 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
     option.SetGcPoolSize(poolSize);
-#if !defined(PREVIEW)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
     option.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
 #endif
     option.SetDebuggerLibraryPath("");
@@ -1187,7 +1187,7 @@ void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpForm
 }
 #endif
 
-#if !defined(PREVIEW)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 {
     return DFXJSNApi::BuildNativeAndJsStackTrace(vm_, stackTraceStr);
@@ -1200,7 +1200,7 @@ bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
 }
 #endif
 
-#if !defined(PREVIEW)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 {
     return DFXJSNApi::BuildJsStackTrace(vm_, stackTraceStr);
@@ -1213,7 +1213,7 @@ bool ArkNativeEngineImpl::BuildJsStackTrace(std::string& stackTraceStr)
 }
 #endif
 
-#if !defined(PREVIEW)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 bool ArkNativeEngineImpl::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
     std::vector<ArkJsFrameInfo> arkJsFrames;
@@ -1280,7 +1280,7 @@ bool ArkNativeEngineImpl::StopHeapTracking(const std::string& filePath)
 }
 #endif
 
-#if !defined(PREVIEW)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 void ArkNativeEngineImpl::PrintStatisticResult()
 {
     DFXJSNApi::PrintStatisticResult(vm_);
