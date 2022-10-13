@@ -213,7 +213,7 @@ NativeScope* NativeScopeManager::Open()
     }
 
     auto scope = new NativeScope();
-    nativeChunk_.PushChunkStats();
+    nativeChunk_.PushChunkStats(current_);
     if (scope != nullptr) {
         current_->child = scope;
         scope->parent = current_;
@@ -228,10 +228,13 @@ void NativeScopeManager::Close(NativeScope* scope, bool needReset)
     if ((scope == nullptr) || (scope == root_)) {
         return;
     }
-    if (scope != current_) {
-        std::abort();
+    bool alreadyPop = false;
+    if (scope == current_) {
+        current_ = scope->parent;
+    } else {
+        nativeChunk_.RemoveStats(scope);
+        alreadyPop = true;
     }
-    current_ = scope->parent;
 
     scope->parent->child = scope->child;
 
@@ -242,10 +245,12 @@ void NativeScopeManager::Close(NativeScope* scope, bool needReset)
         nativeChunk_.Delete(handle);
         handle = scope->handlePtr;
     }
-    if (needReset) {
-        nativeChunk_.PopChunkStatsAndReset();
-    } else {
-        nativeChunk_.PopChunkStats();
+    if (!alreadyPop) {
+        if (needReset) {
+            nativeChunk_.PopChunkStatsAndReset();
+        } else {
+            nativeChunk_.PopChunkStats();
+        }
     }
     delete scope;
 }
