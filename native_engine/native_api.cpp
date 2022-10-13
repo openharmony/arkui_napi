@@ -1662,19 +1662,19 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
 
     auto nativeTypedArray = reinterpret_cast<NativeTypedArray*>(value->GetInterface(NativeTypedArray::INTERFACE_ID));
 
-    if(type != nullptr) {
+    if (type != nullptr) {
         *type = (napi_typedarray_type)nativeTypedArray->GetTypedArrayType();
     }
-    if(length != nullptr) {
+    if (length != nullptr) {
         *length = nativeTypedArray->GetLength();
     }
-    if(data != nullptr) {
+    if (data != nullptr) {
         *data = static_cast<uint8_t*>(nativeTypedArray->GetData()) + nativeTypedArray->GetOffset();
     }
-    if(arraybuffer != nullptr) {
+    if (arraybuffer != nullptr) {
         *arraybuffer = reinterpret_cast<napi_value>(nativeTypedArray->GetArrayBuffer());
     }
-    if(byte_offset != nullptr) {
+    if (byte_offset != nullptr) {
         *byte_offset = nativeTypedArray->GetOffset();
     }
 
