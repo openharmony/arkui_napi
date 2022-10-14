@@ -173,7 +173,11 @@ if (defined(ohos_lite)) {
         defines += [ "ENABLE_HITRACE" ]
         if (product_name != "ohos-sdk") {
           if (napi_enable_container_scope) {
-            deps += [ ":ace_container_scope" ]
+            if (target_os == "ios") {
+              deps += [ ":ace_container_scope_static" ]
+            } else {
+              deps += [ ":ace_container_scope" ]
+            }
             defines += [ "ENABLE_CONTAINER_SCOPE" ]
           }
         }
@@ -232,6 +236,14 @@ if (defined(ohos_lite)) {
 
     subsystem_name = "arkui"
     part_name = "napi"
+  }
+
+  ohos_source_set("ace_container_scope_static") {
+    public_configs = [ ":container_scope_config" ]
+
+    configs = [ "$ace_root:ace_config" ]
+
+    sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
   }
 
   template("ace_napi_lib") {
