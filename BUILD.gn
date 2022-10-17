@@ -166,14 +166,18 @@ if (defined(ohos_lite)) {
       if (is_standard_system) {
         external_deps = [
           "hitrace_native:hitrace_meter",
-          "hitrace_native:libhitrace",
+          "hitrace_native:libhitracechain",
           "hiviewdfx_hilog_native:libhilog",
           "init:libbegetutil",
         ]
         defines += [ "ENABLE_HITRACE" ]
         if (product_name != "ohos-sdk") {
           if (napi_enable_container_scope) {
-            deps += [ ":ace_container_scope" ]
+            if (target_os == "ios") {
+              deps += [ ":ace_container_scope_static" ]
+            } else {
+              deps += [ ":ace_container_scope" ]
+            }
             defines += [ "ENABLE_CONTAINER_SCOPE" ]
           }
         }
@@ -234,6 +238,14 @@ if (defined(ohos_lite)) {
     part_name = "napi"
   }
 
+  ohos_source_set("ace_container_scope_static") {
+    public_configs = [ ":container_scope_config" ]
+
+    configs = [ "$ace_root:ace_config" ]
+
+    sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
+  }
+
   template("ace_napi_lib") {
     forward_variables_from(invoker, "*")
     if (defined(use_js_debug) && use_js_debug) {
@@ -251,6 +263,12 @@ if (defined(ohos_lite)) {
           "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config",
         ]
         deps = deps_
+        if (defined(use_icu) && use_icu) {
+          deps += [
+            "//third_party/icu/icu4c:static_icui18n",
+            "//third_party/icu/icu4c:static_icuuc",
+          ]
+        }
         subsystem_name = "arkui"
         part_name = "napi"
       }
@@ -260,7 +278,7 @@ if (defined(ohos_lite)) {
           "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config",
         ]
         deps = deps_
-        if (defined(use_icu) && use_icu == "shared") {
+        if (defined(use_icu) && use_icu) {
           deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
         }
 
@@ -299,7 +317,7 @@ if (defined(ohos_lite)) {
         } else if (engine.engine_name == "ark") {
           ace_napi_lib("ace_napi_${engine.engine_name}") {
             engine_path = engine.engine_name
-            use_icu = "shared"
+            use_icu = true
           }
           napi_libs += [ ":ace_napi_${engine.engine_name}" ]
         }

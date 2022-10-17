@@ -64,7 +64,8 @@ NativeValue* ArkNativeDataView::GetArrayBuffer()
     LocalScope scope(vm);
     Global<DataViewRef> value = value_;
 
-    return new ArkNativeArrayBuffer(engine_, value->GetArrayBuffer(vm));
+    NativeChunk& chunk = engine_->GetNativeChunk();
+    return chunk.New<ArkNativeArrayBuffer>(engine_, value->GetArrayBuffer(vm));
 }
 
 size_t ArkNativeDataView::GetOffset()

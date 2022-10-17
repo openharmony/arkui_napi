@@ -112,7 +112,7 @@ public:
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
     // Set lib path
-    void SetPackagePath(const std::vector<std::string>& packagePath);
+    void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     // Define native class
     NativeValue* DefineClass(const char* name,
                                      NativeCallback callback,
@@ -193,5 +193,7 @@ public:
     panda::Global<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
+
+    NativeChunk& GetNativeChunk();
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
