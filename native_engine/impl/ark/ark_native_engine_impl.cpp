@@ -780,9 +780,13 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
     size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);
+    bool asmInterpreterEnabled = OHOS::system::GetBoolParameter("persist.ark.asminterpreter", true);
+    std::string asmOpcodeDisableRange = OHOS::system::GetParameter("persist.ark.asmopcodedisablerange", "");
     option.SetArkProperties(arkProperties);
     option.SetGcThreadNum(gcThreadNum);
     option.SetLongPauseTime(longPauseTime);
+    option.SetEnableAsmInterpreter(asmInterpreterEnabled);
+    option.SetAsmOpcodeDisableRange(asmOpcodeDisableRange);
     option.SetIsWorker();
     HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d", arkProperties);
 #endif
