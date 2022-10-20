@@ -140,10 +140,10 @@ private:
     uintptr_t Expand()
     {
         if (currentHandleStorageIndex_ != static_cast<int32_t>(usedPage_.size()) - 1) {
+            currentHandleStorageIndex_++;
             auto ptr = usedPage_[currentHandleStorageIndex_];
             ptr_ = reinterpret_cast<uintptr_t>(ptr);
             end_ = ptr_ + CHUNK_PAGE_SIZE;
-            currentHandleStorageIndex_++;
             return ptr_;
         }
         void *ptr = malloc(CHUNK_PAGE_SIZE);
