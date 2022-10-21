@@ -311,12 +311,13 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEng
 }
 
 panda::Global<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
-    const std::string& moduleName, bool isAppModule, const std::string& param,
-    const std::string& instanceName, void* instance)
+    const std::string& moduleName, bool isAppModule, const std::string& param, const std::string& instanceName,
+    void* instance, const std::string& path)
 {
     Global<ObjectRef> exports(vm_, JSValueRef::Undefined(vm_));
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    NativeModule* module = moduleManager->LoadNativeModule(moduleName.c_str(), nullptr, isAppModule);
+    NativeModule* module =
+        moduleManager->LoadNativeModule(moduleName.c_str(), path.empty() ? nullptr : path.c_str(), isAppModule);
     if (module != nullptr) {
         NativeValue* exportObject = new ArkNativeObject(static_cast<ArkNativeEngine*>(engine));
         ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
