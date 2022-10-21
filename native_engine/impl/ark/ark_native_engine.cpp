@@ -79,12 +79,11 @@ panda::Global<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     return arkNativeEngineImpl->GetModuleFromName(this, moduleName, isAppModule, id, param, instanceName, instance);
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(
-    const std::string& moduleName, bool isAppModule, const std::string& param,
-    const std::string& instanceName, void* instance)
+panda::Global<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
+    const std::string& param, const std::string& instanceName, void* instance, const std::string& path)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->LoadModuleByName(this, moduleName, isAppModule, param, instanceName, instance);
+    return arkNativeEngineImpl->LoadModuleByName(this, moduleName, isAppModule, param, instanceName, instance, path);
 }
 
 void ArkNativeEngine::Loop(LoopMode mode, bool needSync)

@@ -187,7 +187,8 @@ public:
 
     bool ExecuteJsBin(const std::string& fileName);
     panda::Global<panda::ObjectRef> LoadModuleByName(ArkNativeEngine* engine, const std::string& moduleName,
-        bool isAppModule, const std::string& param, const std::string& instanceName, void* instance);
+        bool isAppModule, const std::string& param, const std::string& instanceName, void* instance,
+        const std::string& path = "");
 
     virtual bool TriggerFatalException(NativeValue* error) override;
     NativeValue* CreateDate(NativeEngine* engine, double value) override;
