@@ -42,7 +42,7 @@ struct StructVma {
 
 class NativeChunk {
 public:
-    static constexpr size_t CHUNK_PAGE_SIZE = 1024 * 1024;
+    static constexpr size_t CHUNK_PAGE_SIZE = 8 * 1024;
 
     NativeChunk() {};
     ~NativeChunk()
@@ -105,6 +105,14 @@ public:
     {
         ChunkStats& stats = chunkStats_.back();
         ChunkReset(stats.prevScopeIndex_, stats.prevNext_, stats.prevEnd_);
+        int index = static_cast<int>(usedPage_.size()) - 1;
+        if (index < 0) {
+            return;
+        }
+        for (; index > stats.prevScopeIndex_; index--) {
+            free(usedPage_[index]);
+            usedPage_.pop_back();
+        }
         chunkStats_.pop_back();
     }
 
@@ -139,13 +147,6 @@ private:
 
     uintptr_t Expand()
     {
-        if (currentHandleStorageIndex_ != static_cast<int32_t>(usedPage_.size()) - 1) {
-            currentHandleStorageIndex_++;
-            auto ptr = usedPage_[currentHandleStorageIndex_];
-            ptr_ = reinterpret_cast<uintptr_t>(ptr);
-            end_ = ptr_ + CHUNK_PAGE_SIZE;
-            return ptr_;
-        }
         void *ptr = malloc(CHUNK_PAGE_SIZE);
         if (ptr == nullptr) {
             std::abort();
