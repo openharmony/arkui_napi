@@ -451,18 +451,6 @@ NativeValue* ArkNativeEngineImpl::CreateObject(NativeEngine* engine)
     return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine));
 }
 
-NativeValue* ArkNativeEngineImpl::CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach)
-{
-    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
-    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine), detach, attach);
-}
-
-NativeValue* ArkNativeEngineImpl::CreateNBObject(NativeEngine* engine, DetachCallback detach, AttachCallback attach)
-{
-    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
-    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine), detach, attach);
-}
-
 NativeValue* ArkNativeEngineImpl::CreateFunction(
     NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value)
 {

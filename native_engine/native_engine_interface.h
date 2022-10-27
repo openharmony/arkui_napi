@@ -139,8 +139,6 @@ public:
         void* hint, size_t nativeBindingSize = 0) = 0;
 
     virtual NativeValue* CreateObject(NativeEngine* engine) = 0;
-    virtual NativeValue* CreateNativeBindingObject(NativeEngine* engine, void* detach, void* attach) = 0;
-    virtual NativeValue* CreateNBObject(NativeEngine* engine, DetachCallback detach, AttachCallback attach) = 0;
     virtual NativeValue* CreateFunction(
         NativeEngine* engine, const char* name, size_t length, NativeCallback cb, void* value) = 0;
     virtual NativeValue* CreateArray(NativeEngine* engine, size_t length) = 0;

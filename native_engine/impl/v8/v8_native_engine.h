@@ -126,8 +126,6 @@ public:
         size_t nativeBindingSize = 0) override;
     // Create native object value
     NativeValue* CreateObject() override;
-    NativeValue* CreateNativeBindingObject(void* detach, void* attach) override;
-    NativeValue* CreateNBObject(DetachCallback detach, AttachCallback attach) override { return nullptr; }
     // Create native function value
     NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
     // Create native array value

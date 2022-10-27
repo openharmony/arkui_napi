@@ -32,9 +32,6 @@ using panda::NativePointerRef;
 using panda::ArrayRef;
 using panda::PropertyAttribute;
 
-DetachCallback ArkNativeObject::detach_ = nullptr;
-AttachCallback ArkNativeObject::attach_ = nullptr;
-
 ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine)
     : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
@@ -45,15 +42,6 @@ ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine)
 }
 
 ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, Local<JSValueRef> value) : ArkNativeValue(engine, value) {}
-
-ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, void* detach, void* attach)
-    : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
-{
-    auto vm = engine->GetEcmaVm();
-    LocalScope scope(vm);
-    Local<ObjectRef> object = ObjectRef::New(vm, detach, attach);
-    value_ = Global<ObjectRef>(vm, object);
-}
 
 void* ArkNativeObject::DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
 {
@@ -76,21 +64,6 @@ Local<JSValueRef> ArkNativeObject::AttachFuncCallback(void* engine, void* buffer
     NativeValue* attachVal = attach(reinterpret_cast<NativeEngine*>(engine), buffer, hint);
     Global<JSValueRef> result = *attachVal;
     return scope.Escape(result.ToLocal(reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm()));
-}
-
-ArkNativeObject::ArkNativeObject(ArkNativeEngine* engine, DetachCallback detach, AttachCallback attach)
-    : ArkNativeObject(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
-{
-    {
-        std::lock_guard<std::mutex> lock(funcMutex_);
-        detach_ = detach;
-        attach_ = attach;
-    }
-    auto vm = engine->GetEcmaVm();
-    LocalScope scope(vm);
-    Local<ObjectRef> object = ObjectRef::New(
-        vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
-    value_ = Global<ObjectRef>(vm, object);
 }
 
 ArkNativeObject::~ArkNativeObject() {}
