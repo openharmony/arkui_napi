@@ -119,8 +119,8 @@ public:
 private:
     class ChunkStats {
     public:
-        ChunkStats(NativeScope* scope, uint32_t index, uintptr_t begin, uintptr_t end) :
-            scope_(scope), prevScopeIndex_(index), prevNext_(begin), prevEnd_(end) {}
+        ChunkStats(NativeScope* scope, uint32_t index, uintptr_t begin, uintptr_t end)
+            : scope_(scope), prevScopeIndex_(index), prevNext_(begin), prevEnd_(end) {}
 
         NativeScope* scope_ {nullptr};
         int32_t prevScopeIndex_ {-1};
