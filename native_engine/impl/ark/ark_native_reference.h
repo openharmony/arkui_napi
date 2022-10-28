@@ -59,8 +59,8 @@ private:
 
     void FinalizeCallback();
 
-    static void FirstPassCallBack(void* ref);
-    static void SecondPassCallBack(void* ref);
+    static void FreeGlobalCallBack(void* ref);
+    static void NativeFinalizeCallBack(void* ref);
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_REFERENCE_H */

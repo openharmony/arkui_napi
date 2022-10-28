@@ -44,7 +44,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
     Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
-        value_.SetWeakCallback(reinterpret_cast<void*>(this), FirstPassCallBack, SecondPassCallBack);
+        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -132,13 +132,13 @@ void ArkNativeReference::FinalizeCallback()
     hint_ = nullptr;
 }
 
-void ArkNativeReference::FirstPassCallBack(void* ref)
+void ArkNativeReference::FreeGlobalCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
     that->value_.FreeGlobalHandleAddr();
 }
 
-void ArkNativeReference::SecondPassCallBack(void* ref)
+void ArkNativeReference::NativeFinalizeCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
     that->FinalizeCallback();
