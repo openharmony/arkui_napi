@@ -125,8 +125,10 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
             HILOG_ERROR("next NativeModule create failed");
             return;
         }
-        lastNativeModule_->next = next;
-        lastNativeModule_ = lastNativeModule_->next;
+        if (lastNativeModule_) {
+            lastNativeModule_->next = next;
+            lastNativeModule_ = lastNativeModule_->next;
+        }
     }
 
     char* moduleName;
