@@ -192,9 +192,11 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
         OHOS::HiviewDFX::HiTraceChain::ClearId();
         return;
     }
-    FinishTrace(HITRACE_TAG_ACE);
 #endif
     that->execute_(that->engine_, that->data_);
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
 }
 
 void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
@@ -246,9 +248,11 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
         scopeManager->Close(scope);
         return;
     }
+#endif
+#ifdef ENABLE_HITRACE
+    that->complete_(that->engine_, nstatus, that->data_);
     FinishTrace(HITRACE_TAG_ACE);
 #endif
-    that->complete_(that->engine_, nstatus, that->data_);
     scopeManager->Close(scope);
 }
 
