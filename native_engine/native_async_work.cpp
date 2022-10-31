@@ -249,8 +249,8 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
         return;
     }
 #endif
-#ifdef ENABLE_HITRACE
     that->complete_(that->engine_, nstatus, that->data_);
+#ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
     scopeManager->Close(scope);
