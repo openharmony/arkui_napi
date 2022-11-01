@@ -51,7 +51,7 @@ void ArkNativeString::GetCString(char* buffer, size_t size, size_t* length)
     LocalScope scope(vm);
     Global<StringRef> val = value_;
     if (buffer == nullptr) {
-        *length = val->Utf8Length() - 1;
+        *length = val->Utf8Length(vm) - 1;
     } else if (size != 0) {
         int copied = val->WriteUtf8(buffer, size - 1, true) - 1;
         buffer[copied] = '\0';
@@ -68,7 +68,7 @@ size_t ArkNativeString::GetLength()
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<StringRef> value = value_;
-    return value->Utf8Length() - 1;
+    return value->Utf8Length(vm) - 1;
 }
 
 size_t ArkNativeString::EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars)
@@ -89,7 +89,7 @@ size_t ArkNativeString::EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t
     Local<ObjectRef> strObj = Local<ObjectRef>(val.ToLocal(vm));
     for (; i < length; i++) {
         Local<StringRef> str = Local<StringRef>(strObj->Get(vm, i));
-        int32_t len = str->Utf8Length() - 1;
+        int32_t len = str->Utf8Length(vm) - 1;
         if (len > writableSize) {
             break;
         }
@@ -126,7 +126,7 @@ void ArkNativeString::EncodeWriteChinese(std::string& buffer, const char* encodi
     const char* encFrom = "utf8";
     for (int32_t i = 0; i < length; i++) {
         Local<StringRef> str = Local<StringRef>(strObj->Get(vm, i));
-        int32_t len = str->Utf8Length() - 1;
+        int32_t len = str->Utf8Length(vm) - 1;
         if ((pos + len) >= writableSize) {
             char outBuf[writableSize] = {0};
             ucnv_convert(encoding, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
