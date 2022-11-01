@@ -279,11 +279,13 @@ if (defined(ohos_lite)) {
         ]
         deps = deps_
         if (defined(use_icu) && use_icu) {
-          deps += [
-            "//third_party/icu/icu4c:shared_icui18n",
-            "//third_party/icu/icu4c:shared_icuuc",
-          ]
+          deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
         }
+
+        if (target_name == "ark" || target_name == "quickjs") {
+          deps -= [ "//third_party/libuv:uv" ]
+        }
+
         subsystem_name = "arkui"
         part_name = "napi"
       }
