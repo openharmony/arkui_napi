@@ -126,13 +126,13 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     Local<StringRef> path(info->GetCallArgRef(2));
                     module =
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
-                            isAppModule, false, true);
+                            isAppModule, false);
                 } else {
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false,
-                            true);
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
+                                                        false);
                 }
-                    
+
                 Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
                 if (module != nullptr) {
                     auto it = engineImpl->loadedModules_.find(module);

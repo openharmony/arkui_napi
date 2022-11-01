@@ -63,57 +63,7 @@ ohos_shared_library("systemtestnapi") {
 import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 
-if (is_standard_system) {
-  module_output_path = "ace_engine/native_module_systemtest"
-}
-
-ohos_unittest("test_quickjs_systemtest") {
-  module_out_path = module_output_path
-
-  include_dirs = [
-    "//foundation/arkui/napi",
-    "//foundation/arkui/napi/interfaces/inner_api",
-    "//foundation/arkui/napi/interfaces/kits",
-    "//foundation/arkui/napi/native_engine",
-    "//foundation/arkui/napi/native_engine/impl/quickjs",
-    "//third_party/googletest/include",
-    "//third_party/node/src",
-    "//commonlibrary/c_utils/base/include",
-    "//foundation/arkui/napi/interfaces/kits/napi",
-  ]
-
-  cflags = [
-    "-g3",
-    "-DFOR_QUICKJS_TEST",
-  ]
-
-  sources = [
-    "test_napi.cpp",
-    "test_quickjs.cpp",
-  ]
-  sources += napi_sources
-
-  defines = [ "NAPI_TEST" ]
-
-  deps = [
-    "//foundation/arkui/napi/:ace_napi_quickjs",
-    "//third_party/googletest:gtest",
-    "//third_party/googletest:gtest_main",
-    "//third_party/libuv:uv",
-    "//third_party/quickjs:qjs",
-  ]
-
-  if (is_standard_system) {
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  } else {
-    external_deps = [ "hilog:libhilog" ]
-  }
-}
-
 group("systemtest") {
   testonly = true
-  deps = [
-    ":systemtestnapi",
-    ":test_quickjs_systemtest",
-  ]
+  deps = [ ":systemtestnapi" ]
 }

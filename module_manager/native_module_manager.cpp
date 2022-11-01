@@ -274,7 +274,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
 }
 
 NativeModule* NativeModuleManager::LoadNativeModule(
-    const char* moduleName, const char* path, bool isAppModule, bool internal, bool isArk)
+    const char* moduleName, const char* path, bool isAppModule, bool internal)
 {
     if (moduleName == nullptr) {
         HILOG_ERROR("moduleName value is null");
@@ -314,10 +314,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(
     if (nativeModule == nullptr) {
 #ifdef ANDROID_PLATFORM
         HILOG_INFO("not in cache: moduleName: %{public}s", strCutName.c_str());
-        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", internal, isAppModule, isArk);
+        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", internal, isAppModule);
 #else
         HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
-        nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), internal, isAppModule, isArk);
+        nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), internal, isAppModule);
 #endif
     }
 #endif
@@ -503,7 +503,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const char* p
 
 using NAPIGetJSCode = void (*)(const char** buf, int* bufLen);
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(
-    const char* moduleName, const char* path, bool internal, const bool isAppModule, bool isArk)
+    const char* moduleName, const char* path, bool internal, const bool isAppModule)
 {
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     nativeModulePath[0][0] = 0;
@@ -540,16 +540,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
 
     if (!internal) {
         char symbol[NAPI_PATH_MAX] = { 0 };
-        if (!isArk) {
-            if (sprintf_s(symbol, sizeof(symbol), "NAPI_%s_GetJSCode", moduleKey.c_str()) == -1) {
-                LIBFREE(lib);
-                return nullptr;
-            }
-        } else {
-            if (sprintf_s(symbol, sizeof(symbol), "NAPI_%s_GetABCCode", moduleKey.c_str()) == -1) {
-                LIBFREE(lib);
-                return nullptr;
-            }
+        if (sprintf_s(symbol, sizeof(symbol), "NAPI_%s_GetABCCode", moduleKey.c_str()) == -1) {
+            LIBFREE(lib);
+            return nullptr;
         }
 
         // replace '.' with '_'
