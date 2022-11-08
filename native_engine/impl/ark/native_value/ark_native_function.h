@@ -37,6 +37,8 @@ public:
 
     NativeValue* GetFunctionPrototype();
 
+    std::string GetSourceCodeInfo(ErrorPos pos) override;
+
 #ifdef ENABLE_CONTAINER_SCOPE
     inline int32_t GetScopeId()
     {
