@@ -775,8 +775,6 @@ HWTEST_F(NapiBasicTest, CreateRuntimeTest001, testing::ext::TestSize.Level1)
     napi_create_runtime(env, &newEnv);
 #ifdef USE_V8_ENGINE
     ASSERT_NE(newEnv, nullptr);
-#elif USE_QUICKJS_ENGINE
-    ASSERT_EQ(newEnv, nullptr);
 #endif
 }
 

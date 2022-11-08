@@ -45,7 +45,7 @@ foundation/arkui/napi
    ├── module_manager         # Module manager
    ├── native_engine          # NativeEngine abstraction layer
    │   └── impl
-   │       └── quickjs        # QuickJS-based NativeEngine implementation
+   │       └── ark            # Ark-based NativeEngine implementation
    ├── scope_manager          # Scope manager
    └── test                   # Test code
 ```
