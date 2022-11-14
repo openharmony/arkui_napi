@@ -67,12 +67,7 @@ ArkNativeReference::~ArkNativeReference()
     if (value_.IsEmpty()) {
         return;
     }
-    if (!value_.IsWeak()) {
-        value_.SetWeak();
-    } else {
-        value_.FreeGlobalHandleAddr();
-    }
-    refCount_ = 0;
+    value_.FreeGlobalHandleAddr();
     FinalizeCallback();
 }
 
@@ -95,8 +90,7 @@ uint32_t ArkNativeReference::Unref()
         return refCount_;
     }
     if (refCount_ == 0) {
-        value_.SetWeak();
-        FinalizeCallback();
+        value_.SetWeakCallback(reinterpret_cast<void*>(this), FirstPassCallBack, SecondPassCallBack);
     }
     return refCount_;
 }
