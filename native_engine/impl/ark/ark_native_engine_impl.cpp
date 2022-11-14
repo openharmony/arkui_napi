@@ -244,6 +244,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
     JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
     // need to call init of base class.
     Init();
+    panda::JSNApi::SetLoop(vm, loop_);
 }
 
 ArkNativeEngineImpl::~ArkNativeEngineImpl()
