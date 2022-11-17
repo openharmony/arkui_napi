@@ -88,6 +88,8 @@ NativeEngineInterface::~NativeEngineInterface()
 void NativeEngineInterface::Deinit()
 {
     HILOG_INFO("NativeEngineInterface::Deinit");
+    uv_sem_destroy(&uvSem_);
+    uv_close((uv_handle_t*)&uvAsync_, nullptr);
     uv_run(loop_, UV_RUN_ONCE);
     if (referenceManager_ != nullptr) {
         delete referenceManager_;
@@ -99,8 +101,6 @@ void NativeEngineInterface::Deinit()
     }
 
     SetStopping(true);
-    uv_sem_destroy(&uvSem_);
-    uv_close((uv_handle_t*)&uvAsync_, nullptr);
     uv_loop_delete(loop_);
 }
 
