@@ -29,7 +29,6 @@ public:
     bool ConvertToNativeBindingObject(
         void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint) override;
     void* GetInterface(int interfaceId) override;
-
     static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData);
     static Local<JSValueRef> AttachFuncCallback(void* engine, void* object, void* hint, void* attachData);
     void SetNativePointer(void* pointer, NativeFinalize cb, void* hint, NativeReference** reference = nullptr,
