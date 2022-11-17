@@ -803,7 +803,10 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     if (vm == nullptr) {
         return nullptr;
     }
-
+    // worker adaptation mergeabc
+    const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
+    panda::JSNApi::SetBundle(vm, panda::JSNApi::IsBundle(const_cast<EcmaVM*>(hostVM)));
+    panda::JSNApi::SetAssetPath(vm, panda::JSNApi::GetAssetPath(const_cast<EcmaVM*>(hostVM)));
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
@@ -816,7 +819,6 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     };
     arkEngine->SetCleanEnv(cleanEnv);
 
-    const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
     if (hostVM != nullptr) {
         panda::JSNApi::addWorker(const_cast<EcmaVM*>(hostVM), vm);
     }
@@ -960,7 +962,13 @@ NativeValue* ArkNativeEngineImpl::RunActor(NativeEngine* engine, std::vector<uin
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     std::string desc(descriptor);
-    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
+    [[maybe_unused]] bool ret = false;
+    if (panda::JSNApi::IsBundle(vm_)) {
+        ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
+    } else {
+        ret = panda::JSNApi::ExecuteModuleBuffer(vm_, nullptr, 0, desc);
+    }
+
     Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
     HandleUncaughtException(engine);
     if (!excep.IsNull()) {
