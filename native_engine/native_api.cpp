@@ -870,12 +870,12 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
 
     RETURN_STATUS_IF_FALSE(env, nativeFunc->TypeOf() == NATIVE_FUNCTION, napi_function_expected);
 
-    HILOG_INFO("engine: %{public}p, nativeRecv: %{public}p, nativeFunc: %{public}p, nativeArgv: %{public}p",
+    HILOG_DEBUG("engine: %{public}p, nativeRecv: %{public}p, nativeFunc: %{public}p, nativeArgv: %{public}p",
         engine, nativeRecv, nativeFunc, nativeArgv);
 
     auto resultValue = engine->CallFunction(nativeRecv, nativeFunc, nativeArgv, argc);
 
-    HILOG_INFO("engine: %{public}p, nativeRecv: %{public}p, nativeFunc: %{public}p, nativeArgv: %{public}p, "
+    HILOG_DEBUG("engine: %{public}p, nativeRecv: %{public}p, nativeFunc: %{public}p, nativeArgv: %{public}p, "
         "resultValue: %{public}p", engine, nativeRecv, nativeFunc, nativeArgv, resultValue);
 
     RETURN_STATUS_IF_FALSE(env, resultValue != nullptr, napi_pending_exception);
