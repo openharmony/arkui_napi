@@ -102,6 +102,7 @@ void NativeEngineInterface::Deinit()
 
     SetStopping(true);
     uv_loop_delete(loop_);
+    loop_ = nullptr;
 }
 
 NativeScopeManager* NativeEngineInterface::GetScopeManager()
