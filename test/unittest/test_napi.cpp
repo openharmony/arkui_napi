@@ -805,8 +805,6 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest001, testing::ext::TestSize.Leve
     int32_t resultData = 0;
     napi_get_value_int32(env, result, &resultData);
     ASSERT_EQ(resultData, 1000);
-
-    napi_delete_serialization_data(env, data);
 }
 
 /**
