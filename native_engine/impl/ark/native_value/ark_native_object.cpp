@@ -125,7 +125,7 @@ void* ArkNativeObject::GetNativePointer()
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<ObjectRef> value = value_;
-    Local<StringRef> key = StringRef::NewFromUtf8(vm, "_napiwrapper");
+    Local<StringRef> key = StringRef::GetNapiWrapperString(vm);
     Local<JSValueRef> val = value->Get(vm, key);
     void* result = nullptr;
     if (val->IsObject()) {
