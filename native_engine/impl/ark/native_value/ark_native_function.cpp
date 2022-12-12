@@ -156,15 +156,15 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(EcmaVM* vm,
         cbInfo.argv = nullptr;
     }
 
-    Global<JSValueRef> ret(vm, JSValueRef::Undefined(vm));
+    Local<JSValueRef> localRet = JSValueRef::Undefined(vm);
     if (result == nullptr) {
         if (engine->IsExceptionPending()) {
             [[maybe_unused]] NativeValue* error = engine->GetAndClearLastException();
         }
     } else {
-        ret = *result;
+        Global<JSValueRef> ret = *result;
+        localRet = ret.ToLocal(vm);
     }
-    auto localRet = ret.ToLocal(vm);
     scopeManager->Close(nativeScope);
     if (localRet.IsEmpty()) {
         return scope.Escape(JSValueRef::Undefined(vm));
