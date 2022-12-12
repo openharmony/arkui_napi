@@ -83,7 +83,9 @@ private:
     bool IsExistedPath(const char* pathKey) const;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-    char* FormatString();
+    void CreateSharedLibsSonames();
+
+    char* sharedLibsSonames_ = nullptr;
     std::map<std::string, Dl_namespace> nsMap_;
 #endif
     NativeModule* firstNativeModule_ = nullptr;
