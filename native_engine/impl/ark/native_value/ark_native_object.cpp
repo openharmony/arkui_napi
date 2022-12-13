@@ -95,8 +95,8 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
     LocalScope scope(vm);
     Global<ObjectRef> value = value_;
 
-    Local<StringRef> key = StringRef::NewFromUtf8(vm, "_napiwrapper");
-    if (value->Has(vm, key) && pointer == nullptr) {
+    Local<StringRef> key = StringRef::GetNapiWrapperString(vm);
+    if (pointer == nullptr && value->Has(vm, key)) {
         Local<ObjectRef> wrapper = value->Get(vm, key);
         auto ref = reinterpret_cast<ArkNativeReference*>(wrapper->GetNativePointerField(0));
         // Try to remove native pointer from ArrayDataList
