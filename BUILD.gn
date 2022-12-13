@@ -148,6 +148,9 @@ if (defined(ohos_lite)) {
     if (current_cpu == "arm64") {
       defines += [ "_ARM64_" ]
     }
+    if (current_os == "ohos" && current_cpu == "x86_64") {
+      defines += [ "SIMULATOR" ]
+    }
     if (use_mingw_win || use_mac || use_linux) {
       defines += [ "PREVIEW" ]
     }
