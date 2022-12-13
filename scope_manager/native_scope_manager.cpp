@@ -19,7 +19,6 @@
 #include <atomic>
 #include <cstdio>
 #include <cstdlib>
-#include <securec.h>
 #include <thread>
 #include <unistd.h>
 // for libunwind.h empty struct has size 0 in c, size 1 in c++
@@ -32,6 +31,7 @@
 #include "parameters.h"
 #endif
 #include <cstddef>
+#include <securec.h>
 
 #include "utils/log.h"
 
@@ -49,6 +49,7 @@ struct NativeScope {
     NativeHandle* handlePtr = nullptr;
     size_t handleCount = 0;
     bool escaped = false;
+    bool hasEscaped = false;
 
     NativeScope* child = nullptr;
     NativeScope* parent = nullptr;
@@ -223,7 +224,7 @@ NativeScope* NativeScopeManager::Open()
     return scope;
 }
 
-void NativeScopeManager::Close(NativeScope* scope, bool needReset)
+void NativeScopeManager::Close(NativeScope* scope)
 {
     if ((scope == nullptr) || (scope == root_)) {
         return;
@@ -246,17 +247,18 @@ void NativeScopeManager::Close(NativeScope* scope, bool needReset)
         handle = scope->handlePtr;
     }
     if (!alreadyPop) {
-        if (needReset) {
-            nativeChunk_.PopChunkStatsAndReset();
-        } else {
-            nativeChunk_.PopChunkStats();
+        nativeChunk_.PopChunkStatsAndReset();
+        if (scope->escaped && !current_->hasEscaped) {
+            nativeChunk_.MovBackChunkPtr(sizeof(NativeHandle) + ESCAPED_VALUE_SIZE);
         }
+        current_->hasEscaped = false;
     }
     delete scope;
 }
 
 NativeScope* NativeScopeManager::OpenEscape()
 {
+    nativeChunk_.Allocate(sizeof(NativeHandle) + ESCAPED_VALUE_SIZE);
     NativeScope* scope = Open();
     if (scope != nullptr) {
         scope->escaped = true;
@@ -269,7 +271,7 @@ void NativeScopeManager::CloseEscape(NativeScope* scope)
     if (scope == nullptr) {
         return;
     }
-    Close(scope, false);
+    Close(scope);
 }
 
 NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
@@ -281,27 +283,25 @@ NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
     }
 
     NativeHandle* handle = scope->handlePtr;
-    NativeHandle* temp = nullptr;
     while (handle != nullptr && scope->escaped) {
         if (handle->value == value) {
-            if (temp == nullptr) {
-                scope->handlePtr = handle->sibling;
-            } else {
-                temp->sibling = handle->sibling;
+            uintptr_t endAddr = nativeChunk_.GetPrevChunkPtr();
+            uintptr_t valueAddr = endAddr - ESCAPED_VALUE_SIZE;
+            if (memcpy_s(reinterpret_cast<void *>(valueAddr), ESCAPED_VALUE_SIZE,
+                handle->value, ESCAPED_VALUE_SIZE) != EOK) {
+                HILOG_ERROR("memcpy_s error");
+                return nullptr;
             }
-            if (scope->parent->handlePtr == nullptr) {
-                scope->parent->handlePtr = handle;
-                handle->sibling = nullptr;
-            } else {
-                handle->sibling = scope->parent->handlePtr;
-                scope->parent->handlePtr = handle;
-            }
-            scope->handleCount--;
+            NativeHandle *handleAddr = reinterpret_cast<NativeHandle *>(valueAddr - sizeof(NativeHandle));
+            handleAddr->value = reinterpret_cast<NativeValue *>(valueAddr);
+            handleAddr->sibling = scope->parent->handlePtr;
+            scope->parent->handlePtr = handleAddr;
+
             scope->parent->handleCount++;
+            scope->parent->hasEscaped = true;
             result = scope->parent->handlePtr->value;
             break;
         }
-        temp = handle;
         handle = handle->sibling;
     }
     return result;
