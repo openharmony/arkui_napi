@@ -31,6 +31,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine, NativeValue* val
 {
     Global<JSValueRef> oldValue = *value;
     auto vm = engine->GetEcmaVm();
+    LocalScope scope(vm);
     Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
@@ -44,9 +45,10 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine, NativeValue* val
 
 ArkNativeReference::~ArkNativeReference()
 {
-    if (!value_.IsWeak()) {
-        value_.SetWeak();
+    if (value_.IsEmpty()) {
+        return;
     }
+    value_.FreeGlobalHandleAddr();
     refCount_ = 0;
     FinalizeCallback();
 }
