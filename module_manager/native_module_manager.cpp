@@ -343,7 +343,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     const char* soPostfix = ".dylib";
     const char* sysPrefix = "./module";
     const char* zfix = "";
-#elif defined(_ARM64_)
+#elif defined(_ARM64_) || defined(SIMULATOR)
     const char* soPostfix = ".so";
     const char* sysPrefix = "/system/lib64/module";
     const char* zfix = ".z";
