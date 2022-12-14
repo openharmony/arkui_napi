@@ -53,6 +53,12 @@ NativeModuleManager::~NativeModuleManager()
     if (appLibPath_) {
         delete[] appLibPath_;
     }
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    if (sharedLibsSonames_) {
+        delete[] sharedLibsSonames_;
+    }
+#endif
 
     for (const auto& item : appLibPathMap_) {
         delete[] item.second;
@@ -165,7 +171,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-char* NativeModuleManager::FormatString()
+void NativeModuleManager::CreateSharedLibsSonames()
 {
     const char* allowList[] = {
         // bionic library
@@ -208,17 +214,17 @@ char* NativeModuleManager::FormatString()
     for (int32_t i = 0; i < allowListLength; i++) {
         sharedLibsSonamesLength += strlen(allowList[i]) + 1;
     }
-    char* sharedLibsSonames = new char[sharedLibsSonamesLength];
+    sharedLibsSonames_ = new char[sharedLibsSonamesLength];
     int32_t cursor = 0;
     for (int32_t i = 0; i < allowListLength; i++) {
-        if (sprintf_s(sharedLibsSonames + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
-            delete[] sharedLibsSonames;
-            return nullptr;
+        if (sprintf_s(sharedLibsSonames_ + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
+            delete[] sharedLibsSonames_;
+            sharedLibsSonames_ = nullptr;
+            return;
         }
         cursor += strlen(allowList[i]) + 1;
     }
-    sharedLibsSonames[cursor] = '\0';
-    return sharedLibsSonames;
+    sharedLibsSonames_[cursor] = '\0';
 }
 #endif
 
@@ -232,7 +238,10 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     dlns_init(&ns, nsName.c_str());
     dlns_get(nullptr, &current_ns);
     dlns_create2(&ns, lib_ld_path, 0);
-    dlns_inherit(&ns, &current_ns, FormatString());
+    if (!sharedLibsSonames_) {
+        CreateSharedLibsSonames();
+    }
+    dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
     nsMap_[moduleName] = ns;
     HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
 #endif
