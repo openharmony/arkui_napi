@@ -215,6 +215,7 @@ public:
     virtual size_t EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars) = 0;
     virtual void EncodeWriteChinese(std::string& buffer, const char* encoding) = 0;
     virtual void GetCString16(char16_t* buffer, size_t size, size_t* length) = 0;
+    virtual void GetCStringLatin1(char* buffer, size_t size, size_t* length) = 0;
 };
 
 class NativeObject {

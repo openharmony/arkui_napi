@@ -157,6 +157,30 @@ HWTEST_F(NapiBasicTest, StringTest001, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: StringTest002
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "中测";
+    size_t testStrLength = strlen(testStr);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    std::string str = "";
+    size_t strSize = 0;
+    napi_get_value_string_latin1(env, result, nullptr, 0, &strSize);
+    str.reserve(strSize + 1);
+    str.resize(strSize);
+    napi_get_value_string_latin1(env, result, str.data(), strSize + 1, &strSize);
+
+    ASSERT_EQ(str, "-K");
+}
+
+/**
  * @tc.name: SymbolTest001
  * @tc.desc: Test symbol type.
  * @tc.type: FUNC
