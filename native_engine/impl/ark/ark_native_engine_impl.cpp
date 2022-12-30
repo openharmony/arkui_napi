@@ -555,6 +555,20 @@ NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue*
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), errorVal);
 }
 
+void ArkNativeEngineImpl::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
+{
+    if (func == nullptr) {
+        return;
+    }
+    LocalScope scope(vm_);
+    Local<JSValueRef> function = JSValueRef::Undefined(vm_);
+    if (func != nullptr) {
+        Global<JSValueRef> globalObj = *func;
+        function = globalObj.ToLocal(vm_);
+    }
+    JSNApi::InitForConcurrentFunction(vm_, function);
+}
+
 NativeValue* ArkNativeEngineImpl::CallFunction(
     NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc)
 {

@@ -94,6 +94,7 @@ public:
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
     // Create native error value
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
+    void CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
