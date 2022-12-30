@@ -1853,7 +1853,10 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto resultValue = engine->RunBufferScript(buffer);
+    NativeValue* resultValue = nullptr;
+    if (engine->ExecutePermissionCheck()) {
+        resultValue = engine->RunBufferScript(buffer);
+    }
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }

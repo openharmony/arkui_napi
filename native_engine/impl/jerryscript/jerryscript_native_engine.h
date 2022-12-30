@@ -139,6 +139,8 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
+    bool ExecutePermissionCheck() override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_H_ */

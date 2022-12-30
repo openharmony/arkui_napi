@@ -259,6 +259,9 @@ public:
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
 
+    virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
+    virtual bool ExecutePermissionCheck() = 0;
+
     // run script by path
     NativeValue* RunScript(const char* path);
 

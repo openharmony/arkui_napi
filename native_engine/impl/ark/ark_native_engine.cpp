@@ -645,6 +645,18 @@ void ArkNativeEngine::HandleUncaughtException()
     return arkNativeEngineImpl->HandleUncaughtException(this);
 }
 
+void ArkNativeEngine::RegisterPermissionCheck(PermissionCheckCallback callback)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->RegisterPermissionCheck(callback);
+}
+
+bool ArkNativeEngine::ExecutePermissionCheck()
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->ExecutePermissionCheck();
+}
+
 bool ArkNativeEngine::IsMixedDebugEnabled()
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

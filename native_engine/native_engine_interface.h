@@ -96,6 +96,7 @@ private:
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
+using PermissionCheckCallback = std::function<bool()>;
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
@@ -285,6 +286,9 @@ public:
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException(NativeEngine* engine) = 0;
+    
+    virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
+    virtual bool ExecutePermissionCheck() = 0;
 
     // run script by path
     NativeValue* RunScript(const char* path);
