@@ -794,6 +794,8 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     // worker adaptation mergeabc
     const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
     panda::JSNApi::SetBundle(vm, panda::JSNApi::IsBundle(const_cast<EcmaVM*>(hostVM)));
+    panda::JSNApi::SetBundleName(vm, panda::JSNApi::GetBundleName(const_cast<EcmaVM*>(hostVM)));
+    panda::JSNApi::SetModuleName(vm, panda::JSNApi::GetModuleName(const_cast<EcmaVM*>(hostVM)));
     panda::JSNApi::SetAssetPath(vm, panda::JSNApi::GetAssetPath(const_cast<EcmaVM*>(hostVM)));
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
     // init callback
