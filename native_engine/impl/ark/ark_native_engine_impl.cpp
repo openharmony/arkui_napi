@@ -970,7 +970,7 @@ NativeValue* ArkNativeEngineImpl::RunActor(NativeEngine* engine, std::vector<uin
     if (panda::JSNApi::IsBundle(vm_)) {
         ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
     } else {
-        ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);
+        ret = panda::JSNApi::ExecuteModuleBuffer(vm_, nullptr, 0, desc);
     }
 
     Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
