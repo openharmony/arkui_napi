@@ -234,7 +234,7 @@ NativeValue* ArkNativeEngine::CreateError(NativeValue* code, NativeValue* messag
     return arkNativeEngineImpl->CreateError(this, code, message);
 }
 
-void ArkNativeEngine::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
+bool ArkNativeEngine::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->CallInitTaskFunc(this, func);

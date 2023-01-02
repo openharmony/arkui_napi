@@ -158,7 +158,7 @@ public:
         NativeEngine* engine, NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) = 0;
 
-    virtual void CallInitTaskFunc(NativeEngine* engine, NativeValue* func) = 0;
+    virtual bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) = 0;
     virtual NativeValue* CallFunction(
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;
     virtual NativeValue* RunScript(NativeEngine* engine, NativeValue* script) = 0;

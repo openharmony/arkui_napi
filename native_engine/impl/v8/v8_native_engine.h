@@ -148,7 +148,7 @@ public:
     static void PromiseRejectCallback(v8::PromiseRejectMessage message);
     // Create native error value
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
-    void CallInitTaskFunc(NativeEngine* engine, NativeValue* func) {};
+    bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,

@@ -63,7 +63,7 @@ public:
                                           NativeReference* checkCallbackRef) override;
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* Message) override;
 
-    virtual void CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override {};
+    virtual bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override;
 
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
