@@ -13,6 +13,7 @@
 
 napi_sources = [
   "//foundation/arkui/napi/callback_scope_manager/native_callback_scope_manager.cpp",
+  "//foundation/arkui/napi/module_manager/module_load_checker.cpp",
   "//foundation/arkui/napi/module_manager/native_module_manager.cpp",
   "//foundation/arkui/napi/native_engine/native_api.cpp",
   "//foundation/arkui/napi/native_engine/native_async_work.cpp",
