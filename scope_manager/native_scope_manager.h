@@ -116,27 +116,6 @@ public:
         chunkStats_.pop_back();
     }
 
-    void *Allocate(size_t size)
-    {
-        uintptr_t result = ptr_;
-        if (size > end_ - ptr_) {
-            result = Expand();
-        }
-        ptr_ += size;
-        return reinterpret_cast<void *>(result);
-    }
-
-    // not support skip-page
-    void MovBackChunkPtr(size_t size)
-    {
-        ptr_ -= size;
-    }
-
-    uintptr_t GetPrevChunkPtr()
-    {
-        return chunkStats_.back().prevNext_;
-    }
-
 private:
     class ChunkStats {
     public:
@@ -154,6 +133,16 @@ private:
         currentHandleStorageIndex_ = prevIndex;
         ptr_ = prevNext;
         end_ = prevEnd;
+    }
+
+    void *Allocate(size_t size)
+    {
+        uintptr_t result = ptr_;
+        if (size > end_ - ptr_) {
+            result = Expand();
+        }
+        ptr_ += size;
+        return reinterpret_cast<void *>(result);
     }
 
     uintptr_t Expand()
@@ -184,7 +173,7 @@ public:
     virtual ~NativeScopeManager();
 
     virtual NativeScope* Open();
-    virtual void Close(NativeScope* scope);
+    virtual void Close(NativeScope* scope, bool needReset = true);
 
     virtual NativeScope* OpenEscape();
     virtual void CloseEscape(NativeScope* scope);
@@ -200,7 +189,6 @@ public:
     NativeScopeManager(NativeScopeManager&) = delete;
     virtual NativeScopeManager& operator=(NativeScopeManager&) = delete;
 
-    static const int ESCAPED_VALUE_SIZE = 24;  // size of ArkNativeValue
 #ifdef ENABLE_MEMLEAK_DEBUG
     static const int MAPINFO_SIZE = 256;
     static const int NAME_LEN = 128;
