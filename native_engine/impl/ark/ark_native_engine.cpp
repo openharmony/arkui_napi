@@ -234,6 +234,12 @@ NativeValue* ArkNativeEngine::CreateError(NativeValue* code, NativeValue* messag
     return arkNativeEngineImpl->CreateError(this, code, message);
 }
 
+bool ArkNativeEngine::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->CallInitTaskFunc(this, func);
+}
+
 NativeValue* ArkNativeEngine::CallFunction(
     NativeValue* thisVar, NativeValue* function, NativeValue* const* argv, size_t argc)
 {
