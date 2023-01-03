@@ -275,6 +275,11 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException() override {}
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
+    bool ExecutePermissionCheck() override
+    {
+        return true;
+    }
 
 private:
     static void ExecuteWrap(NativeEngine* engine, void* data);

@@ -187,6 +187,11 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException(NativeEngine* engine) override {}
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
+    bool ExecutePermissionCheck() override
+    {
+        return true;
+    }
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_IMPL_H_ */

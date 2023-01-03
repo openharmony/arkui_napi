@@ -224,6 +224,9 @@ public:
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException(NativeEngine* engine) override;
 
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override;
+    bool ExecutePermissionCheck() override;
+
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
@@ -253,6 +256,7 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    PermissionCheckCallback permissionCheckCallback_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
     static std::string tempModuleName_;

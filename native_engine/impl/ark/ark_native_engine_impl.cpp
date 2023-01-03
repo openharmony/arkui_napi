@@ -1383,6 +1383,16 @@ void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
     }
 }
 
+void ArkNativeEngineImpl::RegisterPermissionCheck(PermissionCheckCallback callback)
+{
+    permissionCheckCallback_ = callback;
+}
+
+bool ArkNativeEngineImpl::ExecutePermissionCheck()
+{
+    return (permissionCheckCallback_ != nullptr) ? permissionCheckCallback_() : true;
+}
+
 inline void ArkNativeEngineImpl::SetModuleName(ArkNativeObject *nativeObj, std::string moduleName)
 {
 #ifdef ENABLE_HITRACE
