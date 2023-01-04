@@ -128,9 +128,8 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
                             isAppModule, false);
                 } else {
-                    module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
-                                                        false);
+                    module = 
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false);
                 }
 
                 Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
