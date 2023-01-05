@@ -410,7 +410,7 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(
 
     auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
 
-    nativeString->GetCString(buf, bufsize, result);
+    nativeString->GetCStringLatin1(buf, bufsize, result);
     return napi_clear_last_error(env);
 }
 
