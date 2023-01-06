@@ -76,6 +76,7 @@ constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 bool ArkNativeEngineImpl::napiProfilerEnabled {false};
 bool ArkNativeEngineImpl::napiProfilerParamReaded {false};
 std::string ArkNativeEngineImpl::tempModuleName_ {""};
+PermissionCheckCallback ArkNativeEngineImpl::permissionCheckCallback_ {nullptr};
 
 struct MoudleNameLocker {
     explicit MoudleNameLocker(std::string moduleName)
@@ -1408,12 +1409,19 @@ void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
 
 void ArkNativeEngineImpl::RegisterPermissionCheck(PermissionCheckCallback callback)
 {
-    permissionCheckCallback_ = callback;
+    if (permissionCheckCallback_ == nullptr) {
+        permissionCheckCallback_ = callback;
+    }
 }
 
 bool ArkNativeEngineImpl::ExecutePermissionCheck()
 {
-    return (permissionCheckCallback_ != nullptr) ? permissionCheckCallback_() : true;
+    if (permissionCheckCallback_ != nullptr) {
+        return permissionCheckCallback_();
+    } else {
+        HILOG_INFO("permissionCheckCallback_ is still nullptr when executing permission check!");
+        return true;
+    }
 }
 
 inline void ArkNativeEngineImpl::SetModuleName(ArkNativeObject *nativeObj, std::string moduleName)
