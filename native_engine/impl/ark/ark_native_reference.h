@@ -46,8 +46,9 @@ public:
 private:
     ArkNativeEngine* engine_;
     Global<JSValueRef> value_;
-    uint32_t refCount_;
-    bool deleteSelf_;
+    uint32_t refCount_ {0};
+    bool deleteSelf_ {false};
+    bool hasDelete_ {false};
 
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId_ = -1;
