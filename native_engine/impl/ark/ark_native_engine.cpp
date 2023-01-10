@@ -71,7 +71,7 @@ const EcmaVM* ArkNativeEngine::GetEcmaVm() const
     return arkNativeEngineImpl->GetEcmaVm();
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
+panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
     const std::string& instanceName, void** instance)
 {
@@ -79,7 +79,7 @@ panda::Global<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     return arkNativeEngineImpl->GetModuleFromName(this, moduleName, isAppModule, id, param, instanceName, instance);
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
+panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
     const std::string& param, const std::string& instanceName, void* instance, const std::string& path)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

@@ -141,7 +141,7 @@ public:
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
 
     bool ExecuteJsBin(const std::string& fileName);
-    panda::Global<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
+    panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
     bool TriggerFatalException(NativeValue* error) override;
@@ -190,7 +190,7 @@ public:
     void HandleUncaughtException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
-    panda::Global<panda::ObjectRef> GetModuleFromName(
+    panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 
