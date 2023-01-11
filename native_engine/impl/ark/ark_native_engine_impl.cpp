@@ -1320,7 +1320,7 @@ void ArkNativeEngineImpl::NotifyApplicationState(bool inBackground)
 
 void ArkNativeEngineImpl::NotifyIdleTime(int idleMicroSec)
 {
-    DFXJSNApi::TriggerCompressCollection(vm_, idleMicroSec);
+    DFXJSNApi::NotifyIdleTime(vm_, idleMicroSec);
 }
 
 void ArkNativeEngineImpl::NotifyMemoryPressure(bool inHighMemoryPressure)
