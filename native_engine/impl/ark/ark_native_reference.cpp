@@ -67,6 +67,7 @@ ArkNativeReference::~ArkNativeReference()
     if (value_.IsEmpty()) {
         return;
     }
+    hasDelete_ = true;
     value_.FreeGlobalHandleAddr();
     FinalizeCallback();
 }
@@ -124,6 +125,10 @@ void ArkNativeReference::FinalizeCallback()
     callback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
+
+    if (deleteSelf_ && !hasDelete_) {
+        delete this;
+    }
 }
 
 void ArkNativeReference::FirstPassCallBack(void* ref)
