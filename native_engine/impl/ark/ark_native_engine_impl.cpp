@@ -133,7 +133,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                             true);
                 }
                     
-                Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
+                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
                 if (module != nullptr) {
                     auto it = engineImpl->loadedModules_.find(module);
                     if (it != engineImpl->loadedModules_.end()) {
@@ -149,24 +149,25 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         const char* name = module->name;
                         if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
                             HILOG_ERROR("sprintf_s file name failed");
-                            return scope.Escape(exports.ToLocal(ecmaVm));
+                            return scope.Escape(exports);
                         }
                         HILOG_DEBUG("load js code from %{public}s", fileName);
                         NativeValue* exportObject = nativeEngine->LoadArkModule(module->jsCode,
                             module->jsCodeLen, fileName);
                         if (exportObject == nullptr) {
                             HILOG_ERROR("load module failed");
-                            return scope.Escape(exports.ToLocal(ecmaVm));
+                            return scope.Escape(exports);
                         } else {
-                            exports = *exportObject;
-                            engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
+                            Global<JSValueRef> globalExports = *exportObject;
+                            exports = globalExports.ToLocal(ecmaVm);
+                            engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                         }
                     } else if (module->registerCallback != nullptr) {
                         NativeValue* exportObject = nativeEngine->CreateObject();
                         auto arkNativeEngine = static_cast<ArkNativeEngine*>(engineImpl->GetRootNativeEngine());
                         if (!arkNativeEngine) {
                             HILOG_ERROR("init module failed");
-                            return scope.Escape(exports.ToLocal(ecmaVm));
+                            return scope.Escape(exports);
                         }
 #ifdef ENABLE_HITRACE
                         StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
@@ -177,14 +178,15 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
 #ifdef ENABLE_HITRACE
                         FinishTrace(HITRACE_TAG_ACE);
 #endif
-                        exports = *exportObject;
-                        engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
+                        Global<JSValueRef> globalExports = *exportObject;
+                        exports = globalExports.ToLocal(ecmaVm);
+                        engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
                         HILOG_ERROR("init module failed");
-                        return scope.Escape(exports.ToLocal(ecmaVm));
+                        return scope.Escape(exports);
                     }
                 }
-                return scope.Escape(exports.ToLocal(ecmaVm));
+                return scope.Escape(exports);
             },
             nullptr,
             requireData);
@@ -199,7 +201,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                 ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false);
-                Global<JSValueRef> exports(ecmaVm, JSValueRef::Undefined(ecmaVm));
+                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
                 MoudleNameLocker nameLocker(moduleName->ToString());
                 if (module != nullptr && engineImpl) {
                     auto it = engineImpl->loadedModules_.find(module);
@@ -215,19 +217,20 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         auto arkNativeEngine = static_cast<ArkNativeEngine*>(engineImpl->GetRootNativeEngine());
                         if (!arkNativeEngine) {
                             HILOG_ERROR("exportObject is nullptr");
-                            return scope.Escape(exports.ToLocal(ecmaVm));
+                            return scope.Escape(exports);
                         }
                         ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
                         engineImpl->SetModuleName(exportObj, module->name);
                         module->registerCallback(arkNativeEngine, exportObject);
-                        exports = *exportObject;
-                        engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports.ToLocal(ecmaVm));
+                        Global<JSValueRef> globalExports = *exportObject;
+                        exports = globalExports.ToLocal(ecmaVm);
+                        engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
                         HILOG_ERROR("exportObject is nullptr");
-                        return scope.Escape(exports.ToLocal(ecmaVm));
+                        return scope.Escape(exports);
                     }
                 }
-                return scope.Escape(exports.ToLocal(ecmaVm));
+                return scope.Escape(exports);
             },
             nullptr,
             requireData);
@@ -266,11 +269,11 @@ ArkNativeEngineImpl::~ArkNativeEngineImpl()
     }
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEngine* engine,
+panda::Local<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEngine* engine,
     const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
     const std::string& instanceName, void** instance)
 {
-    Global<ObjectRef> exports(vm_, JSValueRef::Undefined(vm_));
+    Local<ObjectRef> exports(JSValueRef::Undefined(vm_));
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module = moduleManager->LoadNativeModule(moduleName.c_str(), nullptr, isAppModule);
     if (module != nullptr) {
@@ -306,16 +309,17 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEng
             HILOG_ERROR("GetModuleFromName napi_unwrap status != napi_ok");
         }
 
-        exports = *exportObject;
+        Global<ObjectRef> globalExports = *exportObject;
+        exports = globalExports.ToLocal(vm_);
     }
     return exports;
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
+panda::Local<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
     const std::string& moduleName, bool isAppModule, const std::string& param, const std::string& instanceName,
     void* instance, const std::string& path)
 {
-    Global<ObjectRef> exports(vm_, JSValueRef::Undefined(vm_));
+    Local<ObjectRef> exports(JSValueRef::Undefined(vm_));
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module =
         moduleManager->LoadNativeModule(moduleName.c_str(), path.empty() ? nullptr : path.c_str(), isAppModule);
@@ -341,7 +345,8 @@ panda::Global<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeE
 
         MoudleNameLocker nameLocker(module->name);
         module->registerCallback(engine, exportObject);
-        exports = *exportObject;
+        Global<ObjectRef> globalExports = *exportObject;
+        exports = globalExports.ToLocal(vm_);
     }
     return exports;
 }

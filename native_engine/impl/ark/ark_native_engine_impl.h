@@ -186,7 +186,7 @@ public:
     NativeValue* ValueToNativeValue(NativeEngine* engine, JSValueWrapper& value) override;
 
     bool ExecuteJsBin(const std::string& fileName);
-    panda::Global<panda::ObjectRef> LoadModuleByName(ArkNativeEngine* engine, const std::string& moduleName,
+    panda::Local<panda::ObjectRef> LoadModuleByName(ArkNativeEngine* engine, const std::string& moduleName,
         bool isAppModule, const std::string& param, const std::string& instanceName, void* instance,
         const std::string& path = "");
 
@@ -236,7 +236,7 @@ public:
     {
         return checkCallbackRef_;
     }
-    panda::Global<panda::ObjectRef> GetModuleFromName(NativeEngine* engine,
+    panda::Local<panda::ObjectRef> GetModuleFromName(NativeEngine* engine,
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 
