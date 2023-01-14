@@ -138,6 +138,7 @@ public:
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
     void NotifyApplicationState(bool inBackground) override {}
+    void NotifyIdleTime(int idleMicroSec) override {}
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override {}
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;

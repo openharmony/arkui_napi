@@ -601,6 +601,12 @@ void ArkNativeEngine::NotifyApplicationState(bool inBackground)
     return arkNativeEngineImpl->NotifyApplicationState(inBackground);
 }
 
+void ArkNativeEngine::NotifyIdleTime(int idleMicroSec)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->NotifyIdleTime(idleMicroSec);
+}
+
 void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
@@ -641,6 +647,11 @@ size_t ArkNativeEngine::GetHeapUsedSize()
 }
 
 void ArkNativeEngine::NotifyApplicationState([[maybe_unused]] bool inBackground)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
+void ArkNativeEngine::NotifyIdleTime([[maybe_unused]] int idleMicroSec)
 {
     HILOG_WARN("ARK does not support dfx on windows");
 }
