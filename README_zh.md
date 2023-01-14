@@ -45,7 +45,7 @@ foundation/arkui/napi
    ├── module_manager         # 模块管理
    ├── native_engine          # NativeEngine抽象层
    │   └── impl
-   │       └── quickjs        # 基于QuickJS的NativeEngine实现
+   │       └── ark            # 基于Ark的NativeEngine实现
    ├── scope_manager          # 作用域管理
    └── test                   # 测试目录
 ```

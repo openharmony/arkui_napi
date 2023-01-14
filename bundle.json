@@ -32,7 +32,6 @@
                 "libuv",
                 "node",
                 "bounds_checking_function",
-                "quickjs",
                 "v8"
             ]
         },

@@ -70,7 +70,6 @@ if (defined(ohos_lite)) {
   }
 
   ark_support = false
-  qjs_support = false
 
   foreach(item, ace_platforms) {
     if (item.name == "ohos") {
@@ -79,107 +78,7 @@ if (defined(ohos_lite)) {
       foreach(engine, support_engines) {
         if (engine.engine_name == "ark") {
           ark_support = true
-        } else if (engine.engine_name == "qjs") {
-          qjs_support = true
         }
-      }
-    }
-  }
-
-  if (qjs_support) {
-    ohos_unittest("test_quickjs_unittest") {
-      module_out_path = module_output_path
-
-      include_dirs = quickjs_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "engine/test_quickjs.cpp",
-        "test_napi.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = quickjs_deps
-
-      external_deps = [ "c_utils:utils" ]
-
-      if (is_standard_system) {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
-      }
-    }
-
-    ohos_unittest("test_quickjs_unittest_ext") {
-      module_out_path = module_output_path
-
-      include_dirs = quickjs_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "./engine/test_quickjs.cpp",
-        "test_napi_ext.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = quickjs_deps
-
-      external_deps = [ "c_utils:utils" ]
-
-      if (is_standard_system) {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
-      }
-    }
-
-    ohos_unittest("test_quickjs_unittest_threadsafe") {
-      module_out_path = module_output_path
-
-      include_dirs = quickjs_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "engine/test_quickjs.cpp",
-        "test_napi_threadsafe.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = quickjs_deps
-
-      external_deps = [ "c_utils:utils" ]
-
-      if (is_standard_system) {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
-      }
-    }
-
-    ohos_unittest("test_quickjs_unittest_instance_data") {
-      module_out_path = module_output_path
-
-      include_dirs = quickjs_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "engine/test_quickjs.cpp",
-        "test_instance_data.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = quickjs_deps
-
-      external_deps = [ "c_utils:utils" ]
-
-      if (is_standard_system) {
-        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
       }
     }
   }
@@ -218,7 +117,7 @@ if (defined(ohos_lite)) {
 
       configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
-      include_dirs = quickjs_include
+      include_dirs = ark_include
 
       cflags = [ "-g3" ]
 
@@ -243,13 +142,6 @@ if (defined(ohos_lite)) {
   group("unittest") {
     testonly = true
     deps = []
-    if (qjs_support) {
-      deps += [
-        ":test_quickjs_unittest",
-        ":test_quickjs_unittest_ext",
-        ":test_quickjs_unittest_threadsafe",
-      ]
-    }
     if (ark_support) {
       deps += [
         ":test_ark_unittest",

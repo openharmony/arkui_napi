@@ -23,9 +23,6 @@ common_include = [
   "//commonlibrary/c_utils/base/include",
 ]
 
-quickjs_include = common_include
-quickjs_include += [ "//foundation/arkui/napi/native_engine/impl/quickjs" ]
-
 ark_include = common_include
 ark_include += [
   "//arkcompiler/ets_runtime",
@@ -43,12 +40,6 @@ common_deps = [
   "//third_party/googletest:gtest",
   "//third_party/googletest:gtest_main",
   "//third_party/libuv:uv",
-]
-
-quickjs_deps = common_deps
-quickjs_deps += [
-  "//foundation/arkui/napi:ace_napi_quickjs",
-  "//third_party/quickjs:qjs",
 ]
 
 ark_deps = common_deps
