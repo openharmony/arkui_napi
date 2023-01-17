@@ -787,17 +787,20 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     panda::RuntimeOption option;
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
+    std::string bundleName = OHOS::system::GetParameter("persist.ark.arkbundlename", "");
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
     size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);
     bool asmInterpreterEnabled = OHOS::system::GetBoolParameter("persist.ark.asminterpreter", true);
     std::string asmOpcodeDisableRange = OHOS::system::GetParameter("persist.ark.asmopcodedisablerange", "");
     option.SetArkProperties(arkProperties);
+    option.SetArkBundleName(bundleName);
     option.SetGcThreadNum(gcThreadNum);
     option.SetLongPauseTime(longPauseTime);
     option.SetEnableAsmInterpreter(asmInterpreterEnabled);
     option.SetAsmOpcodeDisableRange(asmOpcodeDisableRange);
     option.SetIsWorker();
-    HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d", arkProperties);
+    HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d, bundlename = %{public}s",
+        arkProperties, bundleName.c_str());
 #endif
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
