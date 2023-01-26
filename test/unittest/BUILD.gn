@@ -87,8 +87,6 @@ if (defined(ohos_lite)) {
     ohos_unittest("test_ark_unittest") {
       module_out_path = module_output_path
 
-      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
-
       include_dirs = ark_include
 
       cflags = [ "-g3" ]
@@ -113,12 +111,11 @@ if (defined(ohos_lite)) {
       } else {
         external_deps += [ "hilog:libhilog" ]
       }
+      external_deps += [ "ets_runtime:libark_jsruntime" ]
     }
 
     ohos_unittest("test_ark_unittest_threadsafe") {
       module_out_path = module_output_path
-
-      configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
       include_dirs = ark_include
 
@@ -140,6 +137,7 @@ if (defined(ohos_lite)) {
       } else {
         external_deps += [ "hilog:libhilog" ]
       }
+      external_deps += [ "ets_runtime:libark_jsruntime" ]
     }
   }
 

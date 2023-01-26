@@ -24,10 +24,7 @@ common_include = [
 ]
 
 ark_include = common_include
-ark_include += [
-  "//arkcompiler/ets_runtime",
-  "//foundation/arkui/napi/native_engine/impl/ark",
-]
+ark_include += [ "//foundation/arkui/napi/native_engine/impl/ark" ]
 
 jerryscript_include = common_include
 jerryscript_include += [
@@ -43,10 +40,7 @@ common_deps = [
 ]
 
 ark_deps = common_deps
-ark_deps += [
-  "//arkcompiler/ets_runtime:libark_jsruntime",
-  "//foundation/arkui/napi:ace_napi_ark",
-]
+ark_deps += [ "//foundation/arkui/napi:ace_napi_ark" ]
 
 jerryscript_deps = common_deps
 jerryscript_deps += [
