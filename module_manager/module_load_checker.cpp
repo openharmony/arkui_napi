@@ -17,11 +17,11 @@
 
 #include "utils/log.h"
 
-void ModuleLoadChecker::SetModuleBlacklist(
-    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist)
+void ModuleLoadChecker::SetModuleBlocklist(
+    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
 {
-    moduleBlacklist_ = std::move(blacklist);
-    HILOG_INFO("moduleBlacklist_ size = %{public}d", static_cast<int32_t>(moduleBlacklist_.size()));
+    moduleBlocklist_ = std::move(blocklist);
+    HILOG_INFO("moduleBlocklist_ size = %{public}d", static_cast<int32_t>(moduleBlocklist_.size()));
 }
 
 void ModuleLoadChecker::SetProcessExtensionType(int32_t extensionType)
@@ -36,13 +36,13 @@ int32_t ModuleLoadChecker::GetProcessExtensionType()
 
 bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName)
 {
-    HILOG_INFO("check blacklist, moduleName = %{public}s, processExtensionType_ = %{public}d",
+    HILOG_INFO("check blocklist, moduleName = %{public}s, processExtensionType_ = %{public}d",
         moduleName, static_cast<int32_t>(processExtensionType_));
-    const auto& blackListIter = moduleBlacklist_.find(processExtensionType_);
-    if (blackListIter == moduleBlacklist_.end()) {
+    const auto& blockListIter = moduleBlocklist_.find(processExtensionType_);
+    if (blockListIter == moduleBlocklist_.end()) {
         return true;
     }
-    auto blackList = blackListIter->second;
+    auto blackList = blockListIter->second;
     if (blackList.find(moduleName) == blackList.end()) {
         return true;
     }

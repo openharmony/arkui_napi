@@ -293,11 +293,11 @@ public:
     const std::unordered_map<std::string, int32_t>& GetExtensionInfos();
 
     /**
-     * @brief Set the Module Blacklist
+     * @brief Set the Module Blocklist
      * 
-     * @param blacklist the blacklist set to native engine
+     * @param blocklist the blocklist set to native engine
      */
-    void SetModuleBlacklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist);
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
 
 protected:
     void *jsEngine_;
