@@ -76,9 +76,9 @@ public:
     /**
      * @brief Set the Module Blacklist
      * 
-     * @param blacklist the blacklist
+     * @param blocklist the blocklist
      */
-    void SetModuleBlacklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist);
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
 
     /**
      * @brief Set the Process Extension Type

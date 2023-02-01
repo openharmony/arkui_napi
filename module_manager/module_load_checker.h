@@ -34,11 +34,11 @@ public:
     virtual ~ModuleLoadChecker() = default;
 
     /**
-     * @brief Set the module blacklist, module in the blacklist will prevent loading 
+     * @brief Set the module blocklist, module in the blocklist will prevent loading 
      * 
-     * @param blacklist module blacklist
+     * @param blocklist module blocklist
      */
-    void SetModuleBlacklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist);
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
 
     /**
      * @brief Set the process extension type
@@ -64,7 +64,7 @@ public:
     bool CheckModuleLoadable(const char* moduleName);
 
 private:
-    std::unordered_map<int32_t, std::unordered_set<std::string>> moduleBlacklist_;
+    std::unordered_map<int32_t, std::unordered_set<std::string>> moduleBlocklist_;
     int32_t processExtensionType_{EXTENSION_TYPE_UNSPECIFIED};
 };
 

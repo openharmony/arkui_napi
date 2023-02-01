@@ -399,7 +399,7 @@ const std::unordered_map<std::string, int32_t>& NativeEngine::GetExtensionInfos(
     return extensionInfos_;
 }
 
-void NativeEngine::SetModuleBlacklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist)
+void NativeEngine::SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
 {
     if (!nativeEngineImpl_) {
         return;
@@ -408,5 +408,5 @@ void NativeEngine::SetModuleBlacklist(std::unordered_map<int32_t, std::unordered
     if (!moduleManager) {
         return;
     }
-    moduleManager->SetModuleBlacklist(std::forward<decltype(blacklist)>(blacklist));
+    moduleManager->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
 }

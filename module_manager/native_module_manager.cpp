@@ -628,13 +628,13 @@ bool NativeModuleManager::IsExistedPath(const char* pathKey) const
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
 }
 
-void NativeModuleManager::SetModuleBlacklist(
-    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blacklist)
+void NativeModuleManager::SetModuleBlocklist(
+    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
 {
     if (!moduleLoadChecker_) {
         return;
     }
-    moduleLoadChecker_->SetModuleBlacklist(std::forward<decltype(blacklist)>(blacklist));
+    moduleLoadChecker_->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
 }
 
 void NativeModuleManager::SetProcessExtensionType(int32_t extensionType)
