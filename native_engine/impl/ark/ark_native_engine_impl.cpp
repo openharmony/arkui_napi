@@ -163,10 +163,17 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                             engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                         }
                     } else if (module->registerCallback != nullptr) {
+                        NativeScopeManager* scopeManager = nativeEngine->GetScopeManager();
+                        if (scopeManager == nullptr) {
+                            HILOG_ERROR("scope manager is null");
+                            return scope.Escape(exports);
+                        }
+                        NativeScope* nativeScope = scopeManager->Open();
                         NativeValue* exportObject = nativeEngine->CreateObject();
                         auto arkNativeEngine = static_cast<ArkNativeEngine*>(engineImpl->GetRootNativeEngine());
                         if (!arkNativeEngine) {
                             HILOG_ERROR("init module failed");
+                            scopeManager->Close(nativeScope);
                             return scope.Escape(exports);
                         }
 #ifdef ENABLE_HITRACE
@@ -181,6 +188,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         Global<JSValueRef> globalExports = *exportObject;
                         exports = globalExports.ToLocal(ecmaVm);
                         engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
+                        scopeManager->Close(nativeScope);
                     } else {
                         HILOG_ERROR("init module failed");
                         return scope.Escape(exports);
@@ -211,12 +219,18 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     ArkNativeEngine* nativeEngine = new ArkNativeEngine(engineImpl, engineImpl->GetJsEngine(), false);
                     std::string strModuleName = moduleName->ToString();
                     moduleManager->SetNativeEngine(strModuleName, nativeEngine);
-
+                    NativeScopeManager* scopeManager = nativeEngine->GetScopeManager();
+                    if (scopeManager == nullptr) {
+                        HILOG_ERROR("scope manager is null");
+                        return scope.Escape(exports);
+                    }
+                    NativeScope* nativeScope = scopeManager->Open();
                     NativeValue* exportObject = nativeEngine->CreateObject();
                     if (exportObject != nullptr) {
                         auto arkNativeEngine = static_cast<ArkNativeEngine*>(engineImpl->GetRootNativeEngine());
                         if (!arkNativeEngine) {
                             HILOG_ERROR("exportObject is nullptr");
+                            scopeManager->Close(nativeScope);
                             return scope.Escape(exports);
                         }
                         ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
@@ -225,8 +239,10 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                         Global<JSValueRef> globalExports = *exportObject;
                         exports = globalExports.ToLocal(ecmaVm);
                         engineImpl->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
+                        scopeManager->Close(nativeScope);
                     } else {
                         HILOG_ERROR("exportObject is nullptr");
+                        scopeManager->Close(nativeScope);
                         return scope.Escape(exports);
                     }
                 }
