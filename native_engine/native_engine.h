@@ -106,7 +106,8 @@ public:
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
-    virtual bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) = 0;
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
                                       NativeValue* const *argv,
@@ -140,9 +141,6 @@ public:
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
         NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
-    virtual void InitAsyncWork(NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data);
-    virtual bool SendAsyncWork(void* data);
-    virtual void CloseAsyncWork();
 
     virtual bool Throw(NativeValue* error) = 0;
     virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
@@ -206,14 +204,11 @@ public:
     virtual void SetInitWorkerFunc(InitWorkerFunc func);
     virtual void SetGetAssetFunc(GetAssetFunc func);
     virtual void SetOffWorkerFunc(OffWorkerFunc func);
-    virtual void SetWorkerAsyncWorkFunc(NativeAsyncExecuteCallback executeCallback,
-                                        NativeAsyncCompleteCallback completeCallback);
 
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
     virtual bool CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
-    virtual bool CallWorkerAsyncWorkFunc(NativeEngine* engine);
 
     // adapt worker to ace container
     virtual void SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func);
@@ -312,8 +307,6 @@ protected:
 #if !defined(PREVIEW)
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
-    NativeAsyncExecuteCallback nativeAsyncExecuteCallback_ {nullptr};
-    NativeAsyncCompleteCallback nativeAsyncCompleteCallback_ {nullptr};
 
 private:
     std::string moduleName_;

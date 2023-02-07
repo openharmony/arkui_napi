@@ -234,10 +234,16 @@ NativeValue* ArkNativeEngine::CreateError(NativeValue* code, NativeValue* messag
     return arkNativeEngineImpl->CreateError(this, code, message);
 }
 
-bool ArkNativeEngine::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
+bool ArkNativeEngine::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->CallInitTaskFunc(this, func);
+    return arkNativeEngineImpl->InitTaskPoolThread(this, callback);
+}
+
+bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->InitTaskPoolFunc(this, func);
 }
 
 NativeValue* ArkNativeEngine::CallFunction(

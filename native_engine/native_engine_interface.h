@@ -97,6 +97,7 @@ using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
+using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* value, NativeValue* data);
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
@@ -159,7 +160,9 @@ public:
         NativeEngine* engine, NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) = 0;
 
-    virtual bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) = 0;
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
+
     virtual NativeValue* CallFunction(
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;
     virtual NativeValue* RunScript(NativeEngine* engine, NativeValue* script) = 0;
@@ -191,10 +194,6 @@ public:
         NativeValue* asyncResource, NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount,
         void* finalizeData, NativeFinalize finalizeCallback, void* context,
         NativeThreadSafeFunctionCallJs callJsCallback);
-    virtual void InitAsyncWork(
-        NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data);
-    virtual bool SendAsyncWork(void* data);
-    virtual void CloseAsyncWork();
 
     virtual bool Throw(NativeValue* error) = 0;
     virtual bool Throw(NativeEngine* engine, NativeErrorType type, const char* code, const char* message) = 0;
@@ -331,7 +330,6 @@ private:
     int request_waiting_ = 0;
     std::atomic_bool isStopping_ { false };
     pthread_t tid_ = 0;
-    std::unique_ptr<NativeAsyncWork> asyncWorker_ {};
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */
