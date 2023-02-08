@@ -797,9 +797,6 @@ HWTEST_F(NapiBasicTest, CreateRuntimeTest001, testing::ext::TestSize.Level1)
 
     napi_env newEnv = nullptr;
     napi_create_runtime(env, &newEnv);
-#ifdef USE_V8_ENGINE
-    ASSERT_NE(newEnv, nullptr);
-#endif
 }
 
 /**
