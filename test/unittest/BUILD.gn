@@ -103,7 +103,10 @@ if (defined(ohos_lite)) {
 
       deps = ark_deps
 
-      external_deps = [ "c_utils:utils" ]
+      external_deps = [
+        "bounds_checking_function:libsec_shared",
+        "c_utils:utils",
+      ]
 
       if (is_standard_system) {
         external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
@@ -130,11 +133,12 @@ if (defined(ohos_lite)) {
       defines = [ "NAPI_TEST" ]
 
       deps = ark_deps
+      external_deps = [ "bounds_checking_function:libsec_shared" ]
 
       if (is_standard_system) {
-        external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+        external_deps += [ "hiviewdfx_hilog_native:libhilog" ]
       } else {
-        external_deps = [ "hilog:libhilog" ]
+        external_deps += [ "hilog:libhilog" ]
       }
     }
   }
