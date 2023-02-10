@@ -27,6 +27,7 @@ ark_include = common_include
 ark_include += [
   "//arkcompiler/ets_runtime",
   "//foundation/arkui/napi/native_engine/impl/ark",
+  "//third_party/bounds_checking_function/include",
 ]
 
 jerryscript_include = common_include
@@ -46,6 +47,7 @@ ark_deps = common_deps
 ark_deps += [
   "//arkcompiler/ets_runtime:libark_jsruntime",
   "//foundation/arkui/napi:ace_napi_ark",
+  "//third_party/bounds_checking_function:libsec_shared",
 ]
 
 jerryscript_deps = common_deps
