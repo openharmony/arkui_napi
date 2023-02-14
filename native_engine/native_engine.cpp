@@ -89,21 +89,6 @@ NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(NativeValue* func, Native
         threadCount, finalizeData, finalizeCallback, context, callJsCallback);
 }
 
-void NativeEngine::InitAsyncWork(NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
-{
-    nativeEngineImpl_->InitAsyncWork(this, execute, complete, data);
-}
-
-bool NativeEngine::SendAsyncWork(void* data)
-{
-    return nativeEngineImpl_->SendAsyncWork(data);
-}
-
-void NativeEngine::CloseAsyncWork()
-{
-    nativeEngineImpl_->CloseAsyncWork();
-}
-
 NativeErrorExtendedInfo* NativeEngine::GetLastError()
 {
     return nativeEngineImpl_->GetLastError();
@@ -179,12 +164,6 @@ void NativeEngine::SetGetAssetFunc(GetAssetFunc func)
 void NativeEngine::SetOffWorkerFunc(OffWorkerFunc func)
 {
     offWorkerFunc_ = func;
-}
-void NativeEngine::SetWorkerAsyncWorkFunc(
-    NativeAsyncExecuteCallback executeCallback, NativeAsyncCompleteCallback completeCallback)
-{
-    nativeAsyncExecuteCallback_ = executeCallback;
-    nativeAsyncCompleteCallback_ = completeCallback;
 }
 // call init worker func
 bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
@@ -264,15 +243,6 @@ void NativeEngine::SetDebuggerPostTaskFunc(DebuggerPostTask func)
 }
 #endif
 
-bool NativeEngine::CallWorkerAsyncWorkFunc(NativeEngine* engine)
-{
-    if (nativeAsyncExecuteCallback_ != nullptr && nativeAsyncCompleteCallback_ != nullptr) {
-        engine->InitAsyncWork(nativeAsyncExecuteCallback_, nativeAsyncCompleteCallback_, nullptr);
-        return true;
-    }
-    return false;
-}
-
 void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
     nativeEngineImpl_->AddCleanupHook(fun, arg);
@@ -311,7 +281,6 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetInitWorkerFunc(engine->initWorkerFunc_);
     SetGetAssetFunc(engine->getAssetFunc_);
     SetOffWorkerFunc(engine->offWorkerFunc_);
-    SetWorkerAsyncWorkFunc(engine->nativeAsyncExecuteCallback_, engine->nativeAsyncCompleteCallback_);
 }
 
 NativeValue* NativeEngine::RunScript(const char* path)

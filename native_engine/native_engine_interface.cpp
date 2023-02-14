@@ -209,32 +209,6 @@ NativeSafeAsyncWork* NativeEngineInterface::CreateSafeAsyncWork(NativeEngine* en
         finalizeData, finalizeCallback, context, callJsCallback);
 }
 
-void NativeEngineInterface::InitAsyncWork(
-    NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
-{
-    asyncWorker_ = std::make_unique<NativeAsyncWork>(engine, execute, complete, "InitAsyncWork", data);
-    asyncWorker_->Init();
-}
-
-bool NativeEngineInterface::SendAsyncWork(void* data)
-{
-    if (!asyncWorker_) {
-        HILOG_ERROR("asyncWorker_ is nullptr");
-        return false;
-    }
-    asyncWorker_->Send(data);
-    return true;
-}
-
-void NativeEngineInterface::CloseAsyncWork()
-{
-    if (!asyncWorker_) {
-        HILOG_ERROR("asyncWorker_ is nullptr");
-        return;
-    }
-    asyncWorker_->Close();
-}
-
 NativeErrorExtendedInfo* NativeEngineInterface::GetLastError()
 {
     return &lastError_;
