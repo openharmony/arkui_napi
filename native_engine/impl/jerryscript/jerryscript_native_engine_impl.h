@@ -72,7 +72,9 @@ public:
                                           NativeReference* checkCallbackRef) override;
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* Message) override;
 
-    virtual bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override;
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
+
     virtual NativeValue* CallFunction(NativeEngine* engine,
                                       NativeValue* thisVar,
                                       NativeValue* function,

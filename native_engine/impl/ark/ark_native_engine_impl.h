@@ -142,7 +142,8 @@ public:
     static void PromiseRejectCallback(void* values);
     // Create native error value
     NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) override;
-    bool CallInitTaskFunc(NativeEngine* engine, NativeValue* func) override;
+    bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
     // Call function
     NativeValue* CallFunction(NativeEngine* engine, NativeValue* thisVar, NativeValue* function,
         NativeValue* const *argv, size_t argc) override;
@@ -233,6 +234,10 @@ public:
     {
         return promiseRejectCallbackRef_;
     }
+    NapiConcurrentCallback GetConcurrentCallbackFunc()
+    {
+        return concurrentCallbackFunc_;
+    }
 
     NativeReference* GetCheckCallbackRef()
     {
@@ -258,6 +263,7 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
     static std::string tempModuleName_;

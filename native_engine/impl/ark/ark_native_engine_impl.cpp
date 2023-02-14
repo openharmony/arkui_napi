@@ -572,7 +572,31 @@ NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue*
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), errorVal);
 }
 
-bool ArkNativeEngineImpl::CallInitTaskFunc(NativeEngine* engine, NativeValue* func)
+static void ConcurrentCallbackFunc(Local<JSValueRef> val, Local<JSValueRef> hint, void *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+
+    auto engine = static_cast<ArkNativeEngine *>(data);
+    ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(engine->GetNativeEngineImpl());
+    auto concurrentCallbackFunc = engineImpl->GetConcurrentCallbackFunc();
+    if (concurrentCallbackFunc == nullptr) {
+        return;
+    }
+
+    auto value = ArkNativeEngineImpl::ArkValueToNativeValue(engine, val);
+    auto hintVal = ArkNativeEngineImpl::ArkValueToNativeValue(engine, hint);
+    concurrentCallbackFunc(engine, value, hintVal);
+}
+
+bool ArkNativeEngineImpl::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
+{
+    concurrentCallbackFunc_ = callback;
+    return JSNApi::InitForConcurrentThread(vm_, ConcurrentCallbackFunc, static_cast<void *>(engine));
+}
+
+bool ArkNativeEngineImpl::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
 {
     if (func == nullptr) {
         return false;
