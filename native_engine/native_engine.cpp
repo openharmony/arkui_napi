@@ -104,16 +104,6 @@ void NativeEngine::ClearLastError()
     nativeEngineImpl_->ClearLastError();
 }
 
-bool NativeEngine::IsExceptionPending() const
-{
-    return nativeEngineImpl_->IsExceptionPending();
-}
-
-NativeValue* NativeEngine::GetAndClearLastException()
-{
-    return nativeEngineImpl_->GetAndClearLastException();
-}
-
 void NativeEngine::EncodeToUtf8(
     NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {

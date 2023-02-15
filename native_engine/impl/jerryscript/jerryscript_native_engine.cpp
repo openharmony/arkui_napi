@@ -281,12 +281,6 @@ NativeValue* JerryScriptNativeEngine::Deserialize(NativeEngine* context, NativeV
     return jerryscriptNativeEngineImpl->Deserialize(this, context, recorder);
 }
 
-ExceptionInfo* JerryScriptNativeEngine::GetExceptionForWorker() const
-{
-    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
-    return jerryscriptNativeEngineImpl->GetExceptionForWorker();
-}
-
 NativeValue* JerryScriptNativeEngine::LoadModule(NativeValue* str, const std::string& fileName)
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);

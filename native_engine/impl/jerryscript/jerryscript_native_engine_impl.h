@@ -115,7 +115,6 @@ public:
     virtual void* CreateRuntime(NativeEngine* engine) override;
     virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
     virtual NativeValue* Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder) override;
-    virtual ExceptionInfo* GetExceptionForWorker() const override;
     virtual void DeleteSerializationData(NativeValue* value) const override {}
 
     virtual NativeValue* LoadModule(NativeEngine* engine, NativeValue* str, const std::string& fileName) override;

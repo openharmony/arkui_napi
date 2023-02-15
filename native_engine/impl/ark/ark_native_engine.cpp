@@ -312,6 +312,18 @@ NativeReference* ArkNativeEngine::CreateReference(NativeValue* value, uint32_t i
     return arkNativeEngineImpl->CreateReference(this, value, initialRefcount, callback, data, hint);
 }
 
+bool ArkNativeEngine::IsExceptionPending() const
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->IsExceptionPending();
+}
+
+NativeValue* ArkNativeEngine::GetAndClearLastException()
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->GetAndClearLastException(this);
+}
+
 bool ArkNativeEngine::Throw(NativeValue* error)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
@@ -340,12 +352,6 @@ NativeValue* ArkNativeEngine::Deserialize(NativeEngine* context, NativeValue* re
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->Deserialize(this, context, recorder);
-}
-
-ExceptionInfo* ArkNativeEngine::GetExceptionForWorker() const
-{
-    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->GetExceptionForWorker();
 }
 
 void ArkNativeEngine::DeleteSerializationData(NativeValue* value) const
