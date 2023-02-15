@@ -2155,36 +2155,6 @@ NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_get_exception_info_for_worker(napi_env env, napi_value obj)
-{
-    CHECK_ENV(env);
-    CHECK_ARG(env, obj);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    ExceptionInfo* exceptionInfo = engine->GetExceptionForWorker();
-    if (exceptionInfo == nullptr) {
-        HILOG_INFO("engine get exception info error");
-        return napi_invalid_arg;
-    }
-
-    napi_value lineno = nullptr;
-    napi_create_int32(env, exceptionInfo->lineno_, &lineno);
-    napi_set_named_property(env, obj, "lineno", lineno);
-
-    napi_value colno = nullptr;
-    napi_create_int32(env, exceptionInfo->colno_, &colno);
-    napi_set_named_property(env, obj, "colno", colno);
-
-    if (exceptionInfo->message_ != nullptr) {
-        napi_value messageValue = nullptr;
-        uint32_t messageLen = strlen(exceptionInfo->message_);
-        napi_create_string_utf8(env, exceptionInfo->message_, messageLen, &messageValue);
-        napi_set_named_property(env, obj, "message", messageValue);
-    }
-
-    delete exceptionInfo;
-    return napi_clear_last_error(env);
-}
-
 NAPI_EXTERN napi_status napi_create_bigint_int64(napi_env env, int64_t value, napi_value* result)
 {
     CHECK_ENV(env);

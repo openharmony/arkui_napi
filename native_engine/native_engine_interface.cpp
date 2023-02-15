@@ -74,7 +74,6 @@ void NativeEngineInterface::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-    lastException_ = nullptr;
 }
 
 NativeEngineInterface::~NativeEngineInterface()
@@ -228,18 +227,6 @@ void NativeEngineInterface::ClearLastError()
     lastError_.engineErrorCode = 0;
     lastError_.message = nullptr;
     lastError_.reserved = nullptr;
-}
-
-bool NativeEngineInterface::IsExceptionPending() const
-{
-    return !(lastException_ == nullptr);
-}
-
-NativeValue* NativeEngineInterface::GetAndClearLastException()
-{
-    NativeValue* temp = lastException_;
-    lastException_ = nullptr;
-    return temp;
 }
 
 void NativeEngineInterface::EncodeToUtf8(

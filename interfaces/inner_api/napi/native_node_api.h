@@ -28,7 +28,6 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_value* result);
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, napi_value recorder, napi_value* object);
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value value);
-NAPI_EXTERN napi_status napi_get_exception_info_for_worker(napi_env env, napi_value obj);
 NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t>& buffer, napi_value* result);
 NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffer,
                                        const char* descriptor, napi_value* result);
