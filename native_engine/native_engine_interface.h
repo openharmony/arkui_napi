@@ -96,6 +96,8 @@ private:
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
+using PermissionCheckCallback = std::function<bool()>;
+using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* value, NativeValue* data);
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
@@ -158,6 +160,9 @@ public:
         NativeEngine* engine, NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) = 0;
 
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
+
     virtual NativeValue* CallFunction(
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;
     virtual NativeValue* RunScript(NativeEngine* engine, NativeValue* script) = 0;
@@ -189,10 +194,6 @@ public:
         NativeValue* asyncResource, NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount,
         void* finalizeData, NativeFinalize finalizeCallback, void* context,
         NativeThreadSafeFunctionCallJs callJsCallback);
-    virtual void InitAsyncWork(
-        NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data);
-    virtual bool SendAsyncWork(void* data);
-    virtual void CloseAsyncWork();
 
     virtual bool Throw(NativeValue* error) = 0;
     virtual bool Throw(NativeEngine* engine, NativeErrorType type, const char* code, const char* message) = 0;
@@ -281,10 +282,14 @@ public:
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
     virtual void NotifyApplicationState([[maybe_unused]] bool inBackground) {}
+    virtual void NotifyIdleTime([[maybe_unused]] int idleMicroSec) {}
     virtual void NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPressure = false) {}
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException(NativeEngine* engine) = 0;
+    
+    virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
+    virtual bool ExecutePermissionCheck() = 0;
 
     // run script by path
     NativeValue* RunScript(const char* path);
@@ -325,7 +330,6 @@ private:
     int request_waiting_ = 0;
     std::atomic_bool isStopping_ { false };
     pthread_t tid_ = 0;
-    std::unique_ptr<NativeAsyncWork> asyncWorker_ {};
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */

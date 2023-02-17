@@ -63,6 +63,9 @@ public:
                                           NativeReference* checkCallbackRef) override;
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* Message) override;
 
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
+
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
                                       NativeValue* const* argv,
@@ -135,10 +138,13 @@ public:
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
     void NotifyApplicationState(bool inBackground) override {}
+    void NotifyIdleTime(int idleMicroSec) override {}
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override {}
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
+    bool ExecutePermissionCheck() override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_H_ */

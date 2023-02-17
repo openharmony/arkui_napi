@@ -522,3 +522,8 @@ void JerryScriptNativeEngine::DeleteSerializationData(NativeValue* value) const
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
     jerryscriptNativeEngineImpl->DeleteSerializationData(value);
 }
+bool JerryScriptNativeEngine::ExecutePermissionCheck()
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    return jerryscriptNativeEngineImpl->ExecutePermissionCheck();
+}

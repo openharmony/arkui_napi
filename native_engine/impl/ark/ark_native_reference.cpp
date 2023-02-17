@@ -67,6 +67,7 @@ ArkNativeReference::~ArkNativeReference()
     if (value_.IsEmpty()) {
         return;
     }
+    hasDelete_ = true;
     value_.FreeGlobalHandleAddr();
     FinalizeCallback();
 }
@@ -97,6 +98,9 @@ uint32_t ArkNativeReference::Unref()
 
 NativeValue* ArkNativeReference::Get()
 {
+    if (value_.IsEmpty()) {
+        return nullptr;
+    }
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Local<JSValueRef> value = value_.ToLocal(vm);
@@ -124,6 +128,10 @@ void ArkNativeReference::FinalizeCallback()
     callback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
+
+    if (deleteSelf_ && !hasDelete_) {
+        delete this;
+    }
 }
 
 void ArkNativeReference::FreeGlobalCallBack(void* ref)

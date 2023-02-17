@@ -102,6 +102,7 @@ void NativeEngineInterface::Deinit()
 
     SetStopping(true);
     uv_loop_delete(loop_);
+    loop_ = nullptr;
 }
 
 NativeScopeManager* NativeEngineInterface::GetScopeManager()
@@ -206,32 +207,6 @@ NativeSafeAsyncWork* NativeEngineInterface::CreateSafeAsyncWork(NativeEngine* en
 {
     return new NativeSafeAsyncWork(engine, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
         finalizeData, finalizeCallback, context, callJsCallback);
-}
-
-void NativeEngineInterface::InitAsyncWork(
-    NativeEngine* engine, NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
-{
-    asyncWorker_ = std::make_unique<NativeAsyncWork>(engine, execute, complete, "InitAsyncWork", data);
-    asyncWorker_->Init();
-}
-
-bool NativeEngineInterface::SendAsyncWork(void* data)
-{
-    if (!asyncWorker_) {
-        HILOG_ERROR("asyncWorker_ is nullptr");
-        return false;
-    }
-    asyncWorker_->Send(data);
-    return true;
-}
-
-void NativeEngineInterface::CloseAsyncWork()
-{
-    if (!asyncWorker_) {
-        HILOG_ERROR("asyncWorker_ is nullptr");
-        return;
-    }
-    asyncWorker_->Close();
 }
 
 NativeErrorExtendedInfo* NativeEngineInterface::GetLastError()

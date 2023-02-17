@@ -35,6 +35,7 @@ std::mutex g_instanceMutex;
 NativeModuleManager::NativeModuleManager()
 {
     pthread_mutex_init(&mutex_, nullptr);
+    moduleLoadChecker_ = new ModuleLoadChecker();
 }
 
 NativeModuleManager::~NativeModuleManager()
@@ -53,6 +54,12 @@ NativeModuleManager::~NativeModuleManager()
     if (appLibPath_) {
         delete[] appLibPath_;
     }
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    if (sharedLibsSonames_) {
+        delete[] sharedLibsSonames_;
+    }
+#endif
 
     for (const auto& item : appLibPathMap_) {
         delete[] item.second;
@@ -67,7 +74,9 @@ NativeModuleManager::~NativeModuleManager()
         }
         nativeEngineList_.erase(nativeEngineList_.begin());
     }
-
+    if (moduleLoadChecker_) {
+        delete moduleLoadChecker_;
+    }
     pthread_mutex_destroy(&mutex_);
 }
 
@@ -165,7 +174,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-char* NativeModuleManager::FormatString()
+void NativeModuleManager::CreateSharedLibsSonames()
 {
     const char* allowList[] = {
         // bionic library
@@ -208,17 +217,17 @@ char* NativeModuleManager::FormatString()
     for (int32_t i = 0; i < allowListLength; i++) {
         sharedLibsSonamesLength += strlen(allowList[i]) + 1;
     }
-    char* sharedLibsSonames = new char[sharedLibsSonamesLength];
+    sharedLibsSonames_ = new char[sharedLibsSonamesLength];
     int32_t cursor = 0;
     for (int32_t i = 0; i < allowListLength; i++) {
-        if (sprintf_s(sharedLibsSonames + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
-            delete[] sharedLibsSonames;
-            return nullptr;
+        if (sprintf_s(sharedLibsSonames_ + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
+            delete[] sharedLibsSonames_;
+            sharedLibsSonames_ = nullptr;
+            return;
         }
         cursor += strlen(allowList[i]) + 1;
     }
-    sharedLibsSonames[cursor] = '\0';
-    return sharedLibsSonames;
+    sharedLibsSonames_[cursor] = '\0';
 }
 #endif
 
@@ -232,7 +241,10 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     dlns_init(&ns, nsName.c_str());
     dlns_get(nullptr, &current_ns);
     dlns_create2(&ns, lib_ld_path, 0);
-    dlns_inherit(&ns, &current_ns, FormatString());
+    if (!sharedLibsSonames_) {
+        CreateSharedLibsSonames();
+    }
+    dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
     nsMap_[moduleName] = ns;
     HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
 #endif
@@ -343,7 +355,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     const char* soPostfix = ".dylib";
     const char* sysPrefix = "./module";
     const char* zfix = "";
-#elif defined(_ARM64_)
+#elif defined(_ARM64_) || defined(SIMULATOR)
     const char* soPostfix = ".so";
     const char* sysPrefix = "/system/lib64/module";
     const char* zfix = ".z";
@@ -511,7 +523,14 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
     if (!GetNativeModulePath(moduleName, path, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_WARN("get module filed %{public}s", moduleName);
+        HILOG_WARN("get module failed, moduleName = %{public}s", moduleName);
+        return nullptr;
+    }
+    if (!moduleLoadChecker_) {
+        return nullptr;
+    }
+    if (!moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+        HILOG_ERROR("module %{public}s is not allow to load", moduleName);
         return nullptr;
     }
 
@@ -607,4 +626,29 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 bool NativeModuleManager::IsExistedPath(const char* pathKey) const
 {
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
+}
+
+void NativeModuleManager::SetModuleBlocklist(
+    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
+{
+    if (!moduleLoadChecker_) {
+        return;
+    }
+    moduleLoadChecker_->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
+}
+
+void NativeModuleManager::SetProcessExtensionType(int32_t extensionType)
+{
+    if (!moduleLoadChecker_) {
+        return;
+    }
+    moduleLoadChecker_->SetProcessExtensionType(extensionType);
+}
+
+int32_t NativeModuleManager::GetProcessExtensionType()
+{
+    if (!moduleLoadChecker_) {
+        return EXTENSION_TYPE_UNSPECIFIED;
+    }
+    return moduleLoadChecker_->GetProcessExtensionType();
 }

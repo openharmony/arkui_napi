@@ -70,6 +70,9 @@ public:
                                           NativeReference* checkCallbackRef) override;
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* Message) override;
 
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
+
     virtual NativeValue* CallFunction(NativeEngine* engine,
                                       NativeValue* thisVar,
                                       NativeValue* function,
@@ -187,6 +190,11 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException(NativeEngine* engine) override {}
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
+    bool ExecutePermissionCheck() override
+    {
+        return true;
+    }
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_IMPL_H_ */

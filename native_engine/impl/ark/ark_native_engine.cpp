@@ -71,7 +71,7 @@ const EcmaVM* ArkNativeEngine::GetEcmaVm() const
     return arkNativeEngineImpl->GetEcmaVm();
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
+panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
     const std::string& instanceName, void** instance)
 {
@@ -79,7 +79,7 @@ panda::Global<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     return arkNativeEngineImpl->GetModuleFromName(this, moduleName, isAppModule, id, param, instanceName, instance);
 }
 
-panda::Global<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
+panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
     const std::string& param, const std::string& instanceName, void* instance, const std::string& path)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
@@ -232,6 +232,18 @@ NativeValue* ArkNativeEngine::CreateError(NativeValue* code, NativeValue* messag
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->CreateError(this, code, message);
+}
+
+bool ArkNativeEngine::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->InitTaskPoolThread(this, callback);
+}
+
+bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->InitTaskPoolFunc(this, func);
 }
 
 NativeValue* ArkNativeEngine::CallFunction(
@@ -583,6 +595,12 @@ void ArkNativeEngine::NotifyApplicationState(bool inBackground)
     return arkNativeEngineImpl->NotifyApplicationState(inBackground);
 }
 
+void ArkNativeEngine::NotifyIdleTime(int idleMicroSec)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->NotifyIdleTime(idleMicroSec);
+}
+
 void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
@@ -627,6 +645,11 @@ void ArkNativeEngine::NotifyApplicationState([[maybe_unused]] bool inBackground)
     HILOG_WARN("ARK does not support dfx on windows");
 }
 
+void ArkNativeEngine::NotifyIdleTime([[maybe_unused]] int idleMicroSec)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
 void ArkNativeEngine::NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPressure)
 {
     HILOG_WARN("ARK does not support dfx on windows");
@@ -643,6 +666,18 @@ void ArkNativeEngine::HandleUncaughtException()
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->HandleUncaughtException(this);
+}
+
+void ArkNativeEngine::RegisterPermissionCheck(PermissionCheckCallback callback)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->RegisterPermissionCheck(callback);
+}
+
+bool ArkNativeEngine::ExecutePermissionCheck()
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->ExecutePermissionCheck();
 }
 
 bool ArkNativeEngine::IsMixedDebugEnabled()

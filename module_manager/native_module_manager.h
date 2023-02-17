@@ -18,9 +18,13 @@
 
 #include <cstdint>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <string>
 #include <pthread.h>
+
+#include "module_load_checker.h"
 #include "utils/macros.h"
 
 #ifdef WINDOWS_PLATFORM
@@ -69,6 +73,27 @@ public:
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
     const char* GetModuleFileName(const char* moduleName, bool isAppModule);
 
+    /**
+     * @brief Set the Module Blacklist
+     * 
+     * @param blocklist the blocklist
+     */
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
+
+    /**
+     * @brief Set the Process Extension Type
+     * 
+     * @param extensionType extension type
+     */
+    void SetProcessExtensionType(int32_t extensionType);
+
+    /**
+     * @brief Get the Process Extension Type
+     * 
+     * @return Process extension type
+     */
+    int32_t GetProcessExtensionType();
+
 private:
     NativeModuleManager();
     virtual ~NativeModuleManager();
@@ -83,7 +108,9 @@ private:
     bool IsExistedPath(const char* pathKey) const;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-    char* FormatString();
+    void CreateSharedLibsSonames();
+
+    char* sharedLibsSonames_ = nullptr;
     std::map<std::string, Dl_namespace> nsMap_;
 #endif
     NativeModule* firstNativeModule_ = nullptr;
@@ -97,6 +124,7 @@ private:
 
     std::map<std::string, NativeEngine*> nativeEngineList_;
     std::map<std::string, char*> appLibPathMap_;
+    ModuleLoadChecker* moduleLoadChecker_ = nullptr;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H */

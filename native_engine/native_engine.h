@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
@@ -104,6 +106,8 @@ public:
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
+    virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
                                       NativeValue* const *argv,
@@ -137,9 +141,6 @@ public:
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
         NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
-    virtual void InitAsyncWork(NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data);
-    virtual bool SendAsyncWork(void* data);
-    virtual void CloseAsyncWork();
 
     virtual bool Throw(NativeValue* error) = 0;
     virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
@@ -203,14 +204,11 @@ public:
     virtual void SetInitWorkerFunc(InitWorkerFunc func);
     virtual void SetGetAssetFunc(GetAssetFunc func);
     virtual void SetOffWorkerFunc(OffWorkerFunc func);
-    virtual void SetWorkerAsyncWorkFunc(NativeAsyncExecuteCallback executeCallback,
-                                        NativeAsyncCompleteCallback completeCallback);
 
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
     virtual bool CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
-    virtual bool CallWorkerAsyncWorkFunc(NativeEngine* engine);
 
     // adapt worker to ace container
     virtual void SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func);
@@ -252,12 +250,16 @@ public:
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
     virtual void NotifyApplicationState(bool inBackground) = 0;
+    virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
+
+    virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
+    virtual bool ExecutePermissionCheck() = 0;
 
     // run script by path
     NativeValue* RunScript(const char* path);
@@ -270,6 +272,27 @@ public:
 
     void SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint);
     void GetInstanceData(void** data);
+
+    /**
+     * @brief Set the Extension Infos
+     * 
+     * @param extensionInfos extension infos to set 
+     */
+    void SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos);
+
+    /**
+     * @brief Get the Extension Infos
+     * 
+     * @return extension infos
+     */
+    const std::unordered_map<std::string, int32_t>& GetExtensionInfos();
+
+    /**
+     * @brief Set the Module Blocklist
+     * 
+     * @param blocklist the blocklist set to native engine
+     */
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
 
 protected:
     void *jsEngine_;
@@ -284,14 +307,13 @@ protected:
 #if !defined(PREVIEW)
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
-    NativeAsyncExecuteCallback nativeAsyncExecuteCallback_ {nullptr};
-    NativeAsyncCompleteCallback nativeAsyncCompleteCallback_ {nullptr};
 
 private:
     std::string moduleName_;
     std::mutex instanceDataLock_;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
+    std::unordered_map<std::string, int32_t> extensionInfos_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */

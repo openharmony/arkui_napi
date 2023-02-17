@@ -31,8 +31,7 @@
                 "jerryscript",
                 "libuv",
                 "node",
-                "bounds_checking_function",
-                "v8"
+                "bounds_checking_function"
             ]
         },
         "build": {

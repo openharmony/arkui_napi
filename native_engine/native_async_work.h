@@ -54,10 +54,6 @@ public:
     virtual ~NativeAsyncWork();
     virtual bool Queue();
     virtual bool Cancel();
-    virtual bool Init();
-    virtual void Send(void* data);
-    virtual void Close();
-    virtual bool PopData(NativeAsyncWorkDataPointer* data);
     virtual std::string GetTraceDescription();
     template<typename Inner, typename Outer>
     static Outer* DereferenceOf(const Inner Outer::*field, const Inner* pointer)
@@ -73,10 +69,8 @@ public:
 private:
     static void AsyncWorkCallback(uv_work_t* req);
     static void AsyncAfterWorkCallback(uv_work_t* req, int status);
-    static void AsyncWorkRecvCallback(const uv_async_t* req);
 
     uv_work_t work_;
-    uv_async_t workAsyncHandler_;
     NativeEngine* engine_;
     NativeAsyncExecuteCallback execute_;
     NativeAsyncCompleteCallback complete_;

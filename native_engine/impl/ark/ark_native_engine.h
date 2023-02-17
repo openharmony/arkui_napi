@@ -94,6 +94,8 @@ public:
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
     // Create native error value
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
+    bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
@@ -140,7 +142,7 @@ public:
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
 
     bool ExecuteJsBin(const std::string& fileName);
-    panda::Global<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
+    panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
     bool TriggerFatalException(NativeValue* error) override;
@@ -178,6 +180,7 @@ public:
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
     void NotifyApplicationState(bool inBackground) override;
+    void NotifyIdleTime(int idleMicroSec) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
     // debugger
@@ -186,7 +189,9 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
-    panda::Global<panda::ObjectRef> GetModuleFromName(
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override;
+    bool ExecutePermissionCheck() override;
+    panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 

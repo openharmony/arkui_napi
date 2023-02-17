@@ -139,6 +139,8 @@ public:
     static void PromiseRejectCallback(void* values);
     // Create native error value
     NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) override;
+    bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
     // Call function
     NativeValue* CallFunction(NativeEngine* engine, NativeValue* thisVar, NativeValue* function,
         NativeValue* const *argv, size_t argc) override;
@@ -183,7 +185,7 @@ public:
     NativeValue* ValueToNativeValue(NativeEngine* engine, JSValueWrapper& value) override;
 
     bool ExecuteJsBin(const std::string& fileName);
-    panda::Global<panda::ObjectRef> LoadModuleByName(ArkNativeEngine* engine, const std::string& moduleName,
+    panda::Local<panda::ObjectRef> LoadModuleByName(ArkNativeEngine* engine, const std::string& moduleName,
         bool isAppModule, const std::string& param, const std::string& instanceName, void* instance,
         const std::string& path = "");
 
@@ -219,21 +221,29 @@ public:
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
     void NotifyApplicationState(bool inBackground) override;
+    void NotifyIdleTime(int idleMicroSec) override;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException(NativeEngine* engine) override;
 
+    void RegisterPermissionCheck(PermissionCheckCallback callback) override;
+    bool ExecutePermissionCheck() override;
+
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
+    }
+    NapiConcurrentCallback GetConcurrentCallbackFunc()
+    {
+        return concurrentCallbackFunc_;
     }
 
     NativeReference* GetCheckCallbackRef()
     {
         return checkCallbackRef_;
     }
-    panda::Global<panda::ObjectRef> GetModuleFromName(NativeEngine* engine,
+    panda::Local<panda::ObjectRef> GetModuleFromName(NativeEngine* engine,
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 
@@ -253,6 +263,8 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
+    static PermissionCheckCallback permissionCheckCallback_;
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
     static std::string tempModuleName_;
