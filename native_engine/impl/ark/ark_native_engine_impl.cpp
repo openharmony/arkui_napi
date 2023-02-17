@@ -114,13 +114,17 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                 NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
                 ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
+                NativeModule* module = nullptr;
                 bool isAppModule = false;
+#ifdef IOS_PLATFORM
+                module =
+                    moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false, false);
+#else
                 const uint32_t lengthMax = 2;
                 if (info->GetArgsNumber() >= lengthMax) {
                     Local<BooleanRef> ret(info->GetCallArgRef(1));
                     isAppModule = ret->Value();
                 }
-                NativeModule* module;
                 if (info->GetArgsNumber() == 3) {
                     Local<StringRef> path(info->GetCallArgRef(2));
                     module =
@@ -130,7 +134,7 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     module = 
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false);
                 }
-
+#endif
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
                 if (module != nullptr) {
                     auto it = engineImpl->loadedModules_.find(module);
