@@ -656,11 +656,8 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
     }
 
     Local<JSValueRef> value = funcObj->Call(vm_, thisObj, args.data(), argc);
-    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
-    if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException(engine);
         return nullptr;
     }
 
@@ -680,11 +677,8 @@ NativeValue* ArkNativeEngineImpl::RunScriptPath(NativeEngine* engine, const char
     LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
 
-    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
-    if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException(engine);
         return nullptr;
     }
     return CreateUndefined(engine);
@@ -702,11 +696,8 @@ NativeValue* ArkNativeEngineImpl::RunScriptBuffer(
         ret = panda::JSNApi::ExecuteModuleBuffer(vm_, buffer.data(), buffer.size(), path);
     }
     
-    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
-    if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException(engine);
         return nullptr;
     }
     return CreateUndefined(engine);
@@ -786,12 +777,27 @@ NativeReference* ArkNativeEngineImpl::CreateReference(
     return new ArkNativeReference(static_cast<ArkNativeEngine*>(engine), value, initialRefcount, false);
 }
 
+bool ArkNativeEngineImpl::IsExceptionPending() const
+{
+    return panda::JSNApi::HasPendingException(vm_);
+}
+
+NativeValue* ArkNativeEngineImpl::GetAndClearLastException(NativeEngine* engine)
+{
+    LocalScope scope(vm_);
+    Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm_);
+    if (exception.IsNull()) {
+        return nullptr;
+    }
+
+    return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), exception);
+}
+
 bool ArkNativeEngineImpl::Throw(NativeValue* error)
 {
     LocalScope scope(vm_);
     Global<JSValueRef> errorVal = *error;
     panda::JSNApi::ThrowException(vm_, errorVal.ToLocal(vm_));
-    lastException_ = error;
     return true;
 }
 
@@ -820,7 +826,6 @@ bool ArkNativeEngineImpl::Throw(NativeEngine* engine, NativeErrorType type, cons
     }
 
     panda::JSNApi::ThrowException(vm_, error);
-    lastException_ = ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), error);
     return true;
 }
 
@@ -900,27 +905,6 @@ NativeValue* ArkNativeEngineImpl::Deserialize(NativeEngine* engine, NativeEngine
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), result);
 }
 
-ExceptionInfo* ArkNativeEngineImpl::GetExceptionForWorker() const
-{
-    if (exceptionStr_.empty()) {
-        HILOG_ERROR("worker:: exception is null");
-        return nullptr;
-    }
-
-    ExceptionInfo* exceptionInfo = new ExceptionInfo();
-    size_t msgLength = exceptionStr_.length();
-    char* exceptionMessage = new char[msgLength + 1] { 0 };
-    if (memcpy_s(exceptionMessage, msgLength + 1, exceptionStr_.c_str(), msgLength) != EOK) {
-        HILOG_ERROR("worker:: memcpy_s error");
-        delete exceptionInfo;
-        delete[] exceptionMessage;
-        return nullptr;
-    }
-    exceptionInfo->message_ = exceptionMessage;
-    // need add colno, lineno when ark exception support
-    return exceptionInfo;
-}
-
 void ArkNativeEngineImpl::DeleteSerializationData(NativeValue* value) const
 {
     void* data = reinterpret_cast<void*>(value);
@@ -965,11 +949,8 @@ NativeValue* ArkNativeEngineImpl::RunBufferScript(NativeEngine* engine, std::vec
     LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
 
-    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
-    if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException(engine);
         return nullptr;
     }
     return CreateUndefined(engine);
@@ -987,11 +968,8 @@ NativeValue* ArkNativeEngineImpl::RunActor(NativeEngine* engine, std::vector<uin
         ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);
     }
 
-    Local<ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm_);
-    HandleUncaughtException(engine);
-    if (!excep.IsNull()) {
-        Local<StringRef> exceptionMsg = excep->ToString(vm_);
-        exceptionStr_ = exceptionMsg->ToString();
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException(engine);
         return nullptr;
     }
     return CreateUndefined(engine);
@@ -1387,8 +1365,11 @@ void ArkNativeEngineImpl::RegisterUncaughtExceptionHandler(UncaughtExceptionCall
 
 void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
 {
+    if (uncaughtExceptionCallback_ == nullptr) {
+        return;
+    }
     Local<ObjectRef> exception = JSNApi::GetAndClearUncaughtException(vm_);
-    if (!exception.IsEmpty() && !exception->IsHole() && uncaughtExceptionCallback_ != nullptr) {
+    if (!exception.IsEmpty() && !exception->IsHole()) {
         uncaughtExceptionCallback_(ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), exception));
     }
 }

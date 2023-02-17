@@ -167,6 +167,8 @@ public:
     // Create native reference
     NativeReference* CreateReference(NativeEngine* engine, NativeValue* value, uint32_t initialRefcount,
         NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+    bool IsExceptionPending() const override;
+    NativeValue* GetAndClearLastException(NativeEngine* engine) override;
     // Throw exception
     bool Throw(NativeValue* error) override;
     // Throw exception
@@ -176,7 +178,6 @@ public:
     NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
     NativeValue* Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder) override;
     void DeleteSerializationData(NativeValue* value) const override;
-    ExceptionInfo* GetExceptionForWorker() const override;
     NativeValue* LoadModule(NativeEngine* engine, NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(NativeEngine* engine, const char* str, int32_t len, const std::string& fileName);
 
@@ -257,7 +258,6 @@ private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
 
     EcmaVM* vm_ = nullptr;
-    std::string exceptionStr_;
     panda::LocalScope topScope_;
     NativeReference* promiseRejectCallbackRef_ { nullptr };
     NativeReference* checkCallbackRef_ { nullptr };
