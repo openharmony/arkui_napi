@@ -38,10 +38,8 @@
 #include "native_value/ark_native_typed_array.h"
 #include "native_value/ark_native_date.h"
 
-#ifndef PREVIEW
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
+#if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
-#endif
 #endif
 #include "securec.h"
 #include "utils/log.h"

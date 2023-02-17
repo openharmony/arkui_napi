@@ -42,10 +42,8 @@
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #endif
-#ifndef PREVIEW
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
+#if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
-#endif
 #endif
 #include "securec.h"
 #include "utils/log.h"
@@ -925,7 +923,6 @@ void ArkNativeEngineImpl::DeleteSerializationData(NativeValue* value) const
     panda::JSNApi::DeleteSerializationData(data);
 }
 
-#if defined(ECMASCRIPT_SUPPORT_CPUPROFILER)
 void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeFunction::GetNativePtrCallBack));
@@ -937,18 +934,7 @@ void ArkNativeEngineImpl::StopCpuProfiler()
     DFXJSNApi::StopCpuProfilerForFile(vm_);
     JSNApi::SetNativePtrGetter(vm_, nullptr);
 }
-#else
-void ArkNativeEngineImpl::StartCpuProfiler(const std::string& fileName)
-{
-    HILOG_WARN("ARKCpuProfiler is not supported on windows");
-}
 
-void ArkNativeEngineImpl::StopCpuProfiler()
-{
-    HILOG_WARN("ARKCpuProfiler is not supported on windows");
-}
-#endif
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 void ArkNativeEngineImpl::ResumeVM()
 {
     DFXJSNApi::ResumeVM(vm_);
@@ -968,30 +954,6 @@ bool ArkNativeEngineImpl::CheckSafepoint()
 {
     return DFXJSNApi::CheckSafepoint(vm_);
 }
-#else
-void ArkNativeEngineImpl::ResumeVM()
-{
-    HILOG_WARN("ARK Snapshot is not supported on windows");
-}
-
-bool ArkNativeEngineImpl::SuspendVM()
-{
-    HILOG_WARN("ARK Snapshot is not supported on windows");
-    return false;
-}
-
-bool ArkNativeEngineImpl::IsSuspended()
-{
-    HILOG_WARN("ARK Snapshot is not supported on windows");
-    return false;
-}
-
-bool ArkNativeEngineImpl::CheckSafepoint()
-{
-    HILOG_WARN("ARK Snapshot is not supported on windows");
-    return false;
-}
-#endif
 
 NativeValue* ArkNativeEngineImpl::RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer)
 {
@@ -1215,7 +1177,6 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
     }
 }
 
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 void ArkNativeEngineImpl::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
 {
     if (dumpFormat == DumpFormat::JSON) {
@@ -1241,17 +1202,6 @@ void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpForm
         DFXJSNApi::DumpHeapSnapshot(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
     }
 }
-#else
-void ArkNativeEngineImpl::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
-{
-    HILOG_WARN("ARK does not support snapshot on windows");
-}
-
-void ArkNativeEngineImpl::DumpHeapSnapshotExt(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
-{
-    HILOG_WARN("ARK does not support snapshot on windows");
-}
-#endif
 
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 bool ArkNativeEngineImpl::BuildNativeAndJsStackTrace(std::string& stackTraceStr)
@@ -1320,31 +1270,15 @@ bool ArkNativeEngineImpl::DeleteWorker(NativeEngine* engine, NativeEngine* worke
 }
 #endif
 
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 bool ArkNativeEngineImpl::StartHeapTracking(double timeInterval, bool isVmMode)
 {
     return DFXJSNApi::StartHeapTracking(vm_, timeInterval, isVmMode);
 }
-#else
-bool ArkNativeEngineImpl::StartHeapTracking(double timeInterval, bool isVmMode)
-{
-    HILOG_WARN("ARK does not support snapshot on windows");
-    return false;
-}
-#endif
 
-#if defined(ECMASCRIPT_SUPPORT_SNAPSHOT)
 bool ArkNativeEngineImpl::StopHeapTracking(const std::string& filePath)
 {
     return DFXJSNApi::StopHeapTracking(vm_, filePath);
 }
-#else
-bool ArkNativeEngineImpl::StopHeapTracking(const std::string& filePath)
-{
-    HILOG_WARN("ARK does not support snapshot on windows");
-    return false;
-}
-#endif
 
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
 void ArkNativeEngineImpl::PrintStatisticResult()
