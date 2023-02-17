@@ -779,11 +779,17 @@ NativeReference* ArkNativeEngineImpl::CreateReference(
 
 bool ArkNativeEngineImpl::IsExceptionPending() const
 {
-    return panda::JSNApi::HasPendingException(vm_);
+    return lastException_ != nullptr;
 }
 
 NativeValue* ArkNativeEngineImpl::GetAndClearLastException(NativeEngine* engine)
 {
+    NativeValue* temp = lastException_;
+    lastException_ = nullptr;
+    if (IsMainThread()) {
+        return temp;
+    }
+    // Worker need handle all exception
     LocalScope scope(vm_);
     Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm_);
     if (exception.IsNull()) {
@@ -798,6 +804,7 @@ bool ArkNativeEngineImpl::Throw(NativeValue* error)
     LocalScope scope(vm_);
     Global<JSValueRef> errorVal = *error;
     panda::JSNApi::ThrowException(vm_, errorVal.ToLocal(vm_));
+    lastException_ = error;
     return true;
 }
 
@@ -826,6 +833,7 @@ bool ArkNativeEngineImpl::Throw(NativeEngine* engine, NativeErrorType type, cons
     }
 
     panda::JSNApi::ThrowException(vm_, error);
+    lastException_ = ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), error);
     return true;
 }
 
