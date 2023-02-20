@@ -127,6 +127,8 @@ public:
     // Create native reference
     NativeReference* CreateReference(NativeValue* value, uint32_t initialRefcount,
         NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+    bool IsExceptionPending() const override;
+    NativeValue* GetAndClearLastException() override;
     // Throw exception
     bool Throw(NativeValue* error) override;
     // Throw exception
@@ -136,7 +138,6 @@ public:
     NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
     NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
     void DeleteSerializationData(NativeValue* value) const override;
-    ExceptionInfo* GetExceptionForWorker() const override;
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 

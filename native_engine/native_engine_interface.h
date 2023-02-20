@@ -202,7 +202,6 @@ public:
     virtual void* CreateRuntime(NativeEngine* engine) = 0;
     virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
     virtual NativeValue* Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder) = 0;
-    virtual ExceptionInfo* GetExceptionForWorker() const = 0;
     virtual void DeleteSerializationData(NativeValue* value) const = 0;
     virtual NativeValue* LoadModule(NativeEngine* engine, NativeValue* str, const std::string& fileName) = 0;
 
@@ -228,8 +227,8 @@ public:
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
     void ClearLastError();
-    bool IsExceptionPending() const;
-    NativeValue* GetAndClearLastException();
+    virtual bool IsExceptionPending() const = 0;
+    virtual NativeValue* GetAndClearLastException(NativeEngine* engine) = 0;
     void EncodeToUtf8(NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
     void EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding);
     NativeEngineInterface(NativeEngineInterface&) = delete;
@@ -302,7 +301,6 @@ protected:
     NativeCallbackScopeManager* callbackScopeManager_ = nullptr;
 
     NativeErrorExtendedInfo lastError_;
-    NativeValue* lastException_ = nullptr;
 
     uv_loop_t* loop_ = nullptr;
 

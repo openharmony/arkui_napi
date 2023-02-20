@@ -398,11 +398,6 @@ NativeValue* JerryScriptNativeEngineImpl::Deserialize(
     return nullptr;
 }
 
-ExceptionInfo* JerryScriptNativeEngineImpl::GetExceptionForWorker() const
-{
-    return nullptr;
-}
-
 NativeValue* JerryScriptNativeEngineImpl::LoadModule(
     NativeEngine* engine, NativeValue* str, const std::string& fileName)
 {
