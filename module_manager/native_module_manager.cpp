@@ -198,6 +198,8 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libnative_vsync.so",
         "libOpenSLES.so",
         "libpixelmap_ndk.z.so",
+        "libimage_ndk.z.so",
+        "libimage_receiver_ndk.z.so",
         "librawfile.z.so",
         "libuv.so",
         "libhilog.so",
