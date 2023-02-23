@@ -323,7 +323,7 @@ static void TsFuncThreadInternal(napi_env env,
                                  bool secondary,
                                  bool block)
 {
-    HILOG_INFO("TsFuncThreadInternal start cb %p secondary %d block %d", cb, secondary, block);
+    HILOG_INFO("TsFuncThreadInternal start secondary %d block %d", secondary, block);
 
     napi_threadsafe_function tsFunc = nullptr;
     napi_value resourceName = 0;
