@@ -387,7 +387,7 @@ static void ThreadSafeCallJs(napi_env env, napi_value tsfn_cb, void* context, vo
 
     CallJsCbData* jsData = nullptr;
     jsData = (CallJsCbData*)context;
-    GTEST_LOG_(INFO) << "context is" << context << "jsData->id is" << jsData->id;
+    GTEST_LOG_(INFO) << "jsData->id is" << jsData->id;
     EXPECT_EQ(jsData->id, CALL_JSCB_DATA);
     int32_t* pData = nullptr;
     pData = (int32_t*)data;
@@ -4287,7 +4287,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Buffer_0100, testing::ext::TestSize.L
     size_t BufferSize = 1;
 
     napi_status creatresult = napi_create_buffer(env, BufferSize, &BufferPtr, &Buffer);
-    GTEST_LOG_(INFO) << "BufferPtr is" << BufferPtr;
     EXPECT_EQ(creatresult, napi_status::napi_ok);
     EXPECT_NE(BufferPtr, nullptr);
 
@@ -4313,7 +4312,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Buffer_0200, testing::ext::TestSize.L
     size_t BufferSize = BUFFER_OVERMAX_SIZE;
 
     napi_status creatresult = napi_create_buffer(env, BufferSize, &BufferPtr, &Buffer);
-    GTEST_LOG_(INFO) << "BufferPtr is" << BufferPtr;
     EXPECT_EQ(creatresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(BufferPtr, nullptr);
 
@@ -4340,7 +4338,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Buffer_0300, testing::ext::TestSize.L
 
     GTEST_LOG_(INFO) << "BufferSize is" << BufferSize;
     napi_status creatresult = napi_create_buffer(env, BufferSize, &BufferPtr, &Buffer);
-    GTEST_LOG_(INFO) << "BufferPtr is" << BufferPtr;
     EXPECT_EQ(creatresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(BufferPtr, nullptr);
 
@@ -4366,7 +4363,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Buffer_0400, testing::ext::TestSize.L
     size_t BufferSize = 0;
 
     napi_status creatresult = napi_create_buffer(env, BufferSize, &BufferPtr, &Buffer);
-    GTEST_LOG_(INFO) << "BufferPtr is" << BufferPtr;
     EXPECT_EQ(creatresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(BufferPtr, nullptr);
 
@@ -4551,7 +4547,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Is_Buffer_0400, testing::ext::TestSize.Level
     size_t BufferSize = -1;
 
     napi_status creatresult = napi_create_buffer(env, BufferSize, &BufferPtr, &Buffer);
-    GTEST_LOG_(INFO) << "BufferPtr is" << BufferPtr;
     EXPECT_EQ(creatresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(BufferPtr, nullptr);
     bool isBuffer = false;
@@ -4756,7 +4751,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Buffer_Info_0500, testing::ext::TestSize
     EXPECT_EQ(creatresult, napi_status::napi_ok);
     void* tmpBufferPtr = nullptr;
     napi_status getinforesult = napi_get_buffer_info(env, Buffer, &tmpBufferPtr, nullptr);
-    GTEST_LOG_(INFO) << "tmpBufferPtr" << tmpBufferPtr;
     GTEST_LOG_(INFO) << "*tmpBufferPtr"<<(char*)tmpBufferPtr;
     EXPECT_EQ(strcmp((char*)tmpBufferPtr, ""), 0);
     EXPECT_EQ(getinforesult, napi_status::napi_ok);
@@ -6841,7 +6835,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0100, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -6875,7 +6868,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0200, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(env, nullptr, nullptr, resource_name,
         0, MAX_COUNT, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -6908,7 +6900,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0300, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(env, nullptr, nullptr, resource_name, 0, OVER_MAX_COUNT,
         &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -6936,7 +6927,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0400, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, &finalData, Threadfinalcb, &jsData, nullptr, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -6967,7 +6957,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0500, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, &finalData, nullptr, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -6994,7 +6983,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0600, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, &finalData, nullptr, &jsData, nullptr, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -7022,7 +7010,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0700, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 0, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -7050,7 +7037,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0800, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, -1, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
 
@@ -7074,7 +7060,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_0900, testing::ex
     finalData.id = FINAL_CB_DATA;
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, nullptr, 0, 1, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -7127,7 +7112,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Create_Threadsafe_Function_1100, testing::ex
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_invalid_arg);
     EXPECT_EQ(result, nullptr);
@@ -7152,15 +7136,12 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0100, testin
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     jsData.id = CALL_JSCB_DATA;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(result, &contextresult);
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     EXPECT_EQ(getcontextresult, napi_status::napi_ok);
     CallJsCbData* cbdata = nullptr;
     cbdata = (CallJsCbData*)contextresult;
@@ -7194,7 +7175,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0200, testin
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(result, nullptr);
     EXPECT_EQ(getcontextresult, napi_status::napi_invalid_arg);
@@ -7224,15 +7204,12 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0300, testin
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     jsData.id = CALL_JSCB_DATA;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(nullptr, &contextresult);
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     EXPECT_EQ(getcontextresult, napi_status::napi_invalid_arg);
     napi_status releaseresult = napi_release_threadsafe_function(result, napi_tsfn_release);
     GTEST_LOG_(INFO) << "napi_release_threadsafe_function finish!";
@@ -7259,7 +7236,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0400, testin
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     jsData_str.id = CALL_JSCB_DATA;
     if (strcpy_s(jsData_str.strdata, strlen("contextdata") + 1, "contextdata") != 0) {
         return;
@@ -7267,14 +7243,11 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0400, testin
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData_str, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(result, &contextresult);
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     EXPECT_EQ(getcontextresult, napi_status::napi_ok);
     CallJsCbData_str* cbdata = nullptr;
     cbdata = (CallJsCbData_str*)contextresult;
-    GTEST_LOG_(INFO) << "cbdata is " << cbdata;
     GTEST_LOG_(INFO) << "cbdata->id is " << cbdata->id;
     EXPECT_EQ(cbdata->id, CALL_JSCB_DATA);
     GTEST_LOG_(INFO) << "cbdata->strdata is " << cbdata->strdata;
@@ -7305,7 +7278,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0500, testin
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     jsData_str.id = CALL_JSCB_DATA;
     if (strcpy_s(jsData_str.strdata, strlen("~!@#$%^&*( ") + 1, "~!@#$%^&*( ") != 0) {
         return;
@@ -7313,14 +7285,11 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0500, testin
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData_str, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(result, &contextresult);
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     EXPECT_EQ(getcontextresult, napi_status::napi_ok);
     CallJsCbData_str* cbdata = nullptr;
     cbdata = (CallJsCbData_str*)contextresult;
-    GTEST_LOG_(INFO) << "cbdata is " << cbdata;
     GTEST_LOG_(INFO) << "cbdata->id is " << cbdata->id;
     EXPECT_EQ(cbdata->id, CALL_JSCB_DATA);
     GTEST_LOG_(INFO) << "cbdata->strdata is " << cbdata->strdata;
@@ -7351,7 +7320,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0600, testin
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     jsData_str.id = CALL_JSCB_DATA;
     if (strcpy_s(jsData_str.strdata, strlen("大家好!!") + 1, "大家好!!") != 0) {
         return;
@@ -7359,14 +7327,11 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Get_Threadsafe_Function_Context_0600, testin
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, &jsData_str, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status getcontextresult = napi_get_threadsafe_function_context(result, &contextresult);
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     EXPECT_EQ(getcontextresult, napi_status::napi_ok);
     CallJsCbData_str* cbdata = nullptr;
     cbdata = (CallJsCbData_str*)contextresult;
-    GTEST_LOG_(INFO) << "cbdata is " << cbdata;
     GTEST_LOG_(INFO) << "cbdata->id is " << cbdata->id;
     EXPECT_EQ(cbdata->id, CALL_JSCB_DATA);
     GTEST_LOG_(INFO) << "cbdata->strdata is " << cbdata->strdata;
@@ -7396,11 +7361,9 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0100, testing::e
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status acquireresult = napi_acquire_threadsafe_function(result);
     GTEST_LOG_(INFO) << "acquireresult is " << acquireresult;
@@ -7433,11 +7396,9 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0200, testing::e
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status acquireresult = napi_acquire_threadsafe_function(nullptr);
     GTEST_LOG_(INFO) << "acquireresult is " << acquireresult;
@@ -7470,11 +7431,9 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0300, testing::e
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
     void* contextresult = nullptr;
-    GTEST_LOG_(INFO) << "contextresult is " << contextresult;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     napi_status acquireresultone = napi_acquire_threadsafe_function(result);
     GTEST_LOG_(INFO) << "acquireresult is " << acquireresultone;
@@ -7515,7 +7474,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Release_Threadsafe_Function_0100, testing::e
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -7547,7 +7505,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Release_Threadsafe_Function_0200, testing::e
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -7581,7 +7538,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Release_Threadsafe_Function_0300, testing::e
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 5, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);
@@ -7616,7 +7572,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Release_Threadsafe_Function_0400, testing::e
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 2, &finalData, Threadfinalcb, &jsData, ThreadSafeCallJs, &result);
-    GTEST_LOG_(INFO) << "result is " << result;
     GTEST_LOG_(INFO) << "threadresult is " << threadresult;
     EXPECT_EQ(threadresult, napi_status::napi_ok);
     EXPECT_NE(result, nullptr);

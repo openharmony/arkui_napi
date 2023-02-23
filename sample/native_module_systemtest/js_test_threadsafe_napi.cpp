@@ -112,7 +112,7 @@ static void DataSourceThread(void* data)
 // Getting the data into JS
 static void CallJsFuntion(napi_env env, napi_value cb, void* hint, void* data)
 {
-    HILOG_INFO("%{public}s called, env =%{public}p, cb= %{public}p", __func__, env, cb);
+    HILOG_INFO("%{public}s called", __func__);
     if (!(env == nullptr || cb == nullptr)) {
         napi_value argv = nullptr;
         NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, *(int*)data, &argv));
