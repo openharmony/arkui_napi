@@ -516,7 +516,7 @@ NAPI_INNER_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callb
 NAPI_INNER_EXTERN napi_status napi_set_instance_data(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint)
 {
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
+    HILOG_INFO("%{public}s", __func__);
     CHECK_ENV(env);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
@@ -526,7 +526,7 @@ NAPI_INNER_EXTERN napi_status napi_set_instance_data(
 
 NAPI_INNER_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 {
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
+    HILOG_INFO("%{public}s", __func__);
     CHECK_ENV(env);
     CHECK_ARG(env, data);
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -536,7 +536,7 @@ NAPI_INNER_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 
 NAPI_INNER_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result)
 {
-    HILOG_INFO("%{public}s, napi called env:%{public}p", __func__, env);
+    HILOG_INFO("%{public}s", __func__);
     CHECK_ENV(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
