@@ -557,7 +557,7 @@ NativeValue* ArkNativeEngineImpl::CreatePromise(NativeEngine* engine, NativeDefe
     *deferred = new ArkNativeDeferred(static_cast<ArkNativeEngine*>(engine), capability);
 
     NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
-    return chunk.New<ArkNativeValue>(static_cast<ArkNativeEngine*>(engine), capability->GetPromise(vm_));
+    return chunk.New<ArkNativeObject>(static_cast<ArkNativeEngine*>(engine), capability->GetPromise(vm_));
 }
 
 NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message)
