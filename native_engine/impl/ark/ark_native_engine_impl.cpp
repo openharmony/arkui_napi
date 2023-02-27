@@ -791,7 +791,7 @@ NativeValue* ArkNativeEngineImpl::GetAndClearLastException(NativeEngine* engine)
     }
     // Worker need handle all exception
     LocalScope scope(vm_);
-    Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm_);
+    Local<ObjectRef> exception = panda::JSNApi::GetUncaughtException(vm_);
     if (exception.IsNull()) {
         return nullptr;
     }
