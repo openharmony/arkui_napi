@@ -1417,3 +1417,8 @@ void ArkNativeEngineImpl::NotifyNativeCalling(const void *nativeAddress)
 {
     JSNApi::NotifyNativeCalling(vm_, nativeAddress);
 }
+
+void ArkNativeEngineImpl::AllowCrossThreadExecution() const
+{
+    JSNApi::AllowCrossThreadExecution(vm_);
+}

@@ -184,6 +184,8 @@ public:
     void NotifyIdleTime(int idleMicroSec) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
+    void AllowCrossThreadExecution() const override;
+
     // debugger
     bool IsMixedDebugEnabled();
     void NotifyNativeCalling(const void *nativeAddress);

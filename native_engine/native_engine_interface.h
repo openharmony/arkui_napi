@@ -237,6 +237,8 @@ public:
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
+    virtual void AllowCrossThreadExecution() const = 0;
+
     void MarkSubThread()
     {
         isMainThread_ = false;

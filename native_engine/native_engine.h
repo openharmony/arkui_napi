@@ -169,6 +169,8 @@ public:
     virtual bool DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(const std::string &filePath) = 0;
+    
+    virtual void AllowCrossThreadExecution() const = 0;
 
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);

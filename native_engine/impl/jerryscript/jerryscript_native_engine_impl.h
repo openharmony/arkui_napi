@@ -194,6 +194,8 @@ public:
     {
         return true;
     }
+
+    void AllowCrossThreadExecution() const override {}
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_IMPL_H_ */
