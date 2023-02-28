@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//arkcompiler/ets_runtime/js_runtime_config.gni")
 import("//build/ohos.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/napi.gni")
@@ -45,7 +44,6 @@ template("ace_napi_impl") {
   ohos_source_set(target_name) {
     public_configs = [ ":ace_napi_ark_config" ]
     defines = invoker.engine_defines
-    configs = [ "//arkcompiler/ets_runtime:ark_jsruntime_public_config" ]
 
     include_dirs = [ "//foundation/arkui/napi/native_engine/impl/ark" ]
 
@@ -80,10 +78,11 @@ template("ace_napi_impl") {
 
     deps = [ "//foundation/arkui/napi:ace_napi" ]
 
+    external_deps = []
     if (target_os == "ios") {
-      deps += [ "//arkcompiler/ets_runtime:libark_jsruntime_static" ]
+      external_deps += [ "ets_runtime:libark_jsruntime_static" ]
     } else {
-      deps += [ "//arkcompiler/ets_runtime:libark_jsruntime" ]
+      external_deps += [ "ets_runtime:libark_jsruntime" ]
     }
 
     if (is_mingw || is_mac || is_linux) {
@@ -106,7 +105,7 @@ template("ace_napi_impl") {
 
     cflags_cc = [ "-Wno-missing-braces" ]
     if (!is_mingw && !is_mac && !is_linux) {
-      external_deps = hilog_deps
+      external_deps += hilog_deps
       if (is_standard_system) {
         defines += [ "OHOS_PLATFORM" ]
         defines += [ "ENABLE_HITRACE" ]
