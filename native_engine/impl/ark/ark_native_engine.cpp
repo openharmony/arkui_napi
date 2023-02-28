@@ -695,3 +695,9 @@ void ArkNativeEngine::NotifyNativeCalling(const void *nativeAddress)
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
     return arkNativeEngineImpl->NotifyNativeCalling(nativeAddress);
 }
+
+void ArkNativeEngine::AllowCrossThreadExecution() const
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->AllowCrossThreadExecution();
+}

@@ -231,6 +231,8 @@ public:
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
 
+    void AllowCrossThreadExecution() const override;
+
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;

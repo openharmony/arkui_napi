@@ -144,6 +144,8 @@ public:
     void HandleUncaughtException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
     bool ExecutePermissionCheck() override;
+
+    void AllowCrossThreadExecution() const override {};
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_H_ */
