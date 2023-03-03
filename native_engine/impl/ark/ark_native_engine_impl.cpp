@@ -1303,6 +1303,11 @@ void ArkNativeEngineImpl::NotifyApplicationState(bool inBackground)
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
 }
 
+void ArkNativeEngineImpl::NotifyIdleStatusControl(std::function<void(bool)> callback)
+{
+    DFXJSNApi::NotifyIdleStatusControl(vm_, callback);
+}
+
 void ArkNativeEngineImpl::NotifyIdleTime(int idleMicroSec)
 {
     DFXJSNApi::NotifyIdleTime(vm_, idleMicroSec);
@@ -1347,6 +1352,11 @@ size_t ArkNativeEngineImpl::GetHeapUsedSize()
 }
 
 void ArkNativeEngineImpl::NotifyApplicationState([[maybe_unused]] bool inBackground)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
+void ArkNativeEngineImpl::NotifyIdleStatusControl([[maybe_unused]] std::function<void(bool)> callback)
 {
     HILOG_WARN("ARK does not support dfx on windows");
 }

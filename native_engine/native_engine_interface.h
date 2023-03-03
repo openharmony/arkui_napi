@@ -283,6 +283,7 @@ public:
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
     virtual void NotifyApplicationState([[maybe_unused]] bool inBackground) {}
+    virtual void NotifyIdleStatusControl([[maybe_unused]] std::function<void(bool)> callback) {}
     virtual void NotifyIdleTime([[maybe_unused]] int idleMicroSec) {}
     virtual void NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPressure = false) {}
 
