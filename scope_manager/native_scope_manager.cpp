@@ -40,20 +40,6 @@ struct NativeHandle {
     NativeHandle* sibling = nullptr;
 };
 
-struct NativeScope {
-    static NativeScope* CreateNewInstance()
-    {
-        return new NativeScope();
-    }
-
-    NativeHandle* handlePtr = nullptr;
-    size_t handleCount = 0;
-    bool escaped = false;
-
-    NativeScope* child = nullptr;
-    NativeScope* parent = nullptr;
-};
-
 #ifdef ENABLE_MEMLEAK_DEBUG
 using OHOS::system::GetIntParameter;
 const int NativeScopeManager::DEBUG_MEMLEAK = OHOS::system::GetIntParameter<int>("persist.napi.memleak.debug", 0);

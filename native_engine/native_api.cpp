@@ -1332,10 +1332,13 @@ NAPI_EXTERN napi_status napi_escape_handle(napi_env env,
         return napi_set_last_error(env, napi_generic_failure);
     }
 
-    auto resultValue = scopeManager->Escape(nativeScope, escapeeValue);
-
-    *result = reinterpret_cast<napi_value>(resultValue);
-    return napi_clear_last_error(env);
+    if (!nativeScope->escapeCalled) {
+        auto resultValue = scopeManager->Escape(nativeScope, escapeeValue);
+        *result = reinterpret_cast<napi_value>(resultValue);
+        nativeScope->escapeCalled = true;
+        return napi_clear_last_error(env);
+    }
+    return napi_set_last_error(env, napi_escape_called_twice);
 }
 
 // Methods to support error handling

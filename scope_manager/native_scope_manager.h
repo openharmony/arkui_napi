@@ -31,7 +31,7 @@
 #endif
 
 class NativeValue;
-struct NativeScope;
+struct NativeHandle;
 #ifdef ENABLE_MEMLEAK_DEBUG
 struct StructVma {
     uint64_t begin = 0;
@@ -39,6 +39,21 @@ struct StructVma {
     std::string path;
 };
 #endif
+
+struct NativeScope {
+    static NativeScope* CreateNewInstance()
+    {
+        return new NativeScope();
+    }
+
+    NativeHandle* handlePtr = nullptr;
+    size_t handleCount = 0;
+    bool escaped = false;
+    bool escapeCalled = false;
+
+    NativeScope* child = nullptr;
+    NativeScope* parent = nullptr;
+};
 
 class NativeChunk {
 public:
