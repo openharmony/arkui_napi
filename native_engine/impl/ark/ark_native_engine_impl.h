@@ -227,7 +227,7 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException(NativeEngine* engine) override;
-
+    bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
 

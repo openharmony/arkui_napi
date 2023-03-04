@@ -142,6 +142,7 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
+    bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
     bool ExecutePermissionCheck() override;
 

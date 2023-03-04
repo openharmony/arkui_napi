@@ -288,6 +288,7 @@ public:
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException(NativeEngine* engine) = 0;
+    virtual bool HasPendingException() = 0;
     
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
