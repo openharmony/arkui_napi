@@ -1379,6 +1379,11 @@ void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
     }
 }
 
+bool ArkNativeEngineImpl::HasPendingException()
+{
+    return panda::JSNApi::HasPendingException(vm_);
+}
+
 void ArkNativeEngineImpl::RegisterPermissionCheck(PermissionCheckCallback callback)
 {
     if (permissionCheckCallback_ == nullptr) {
