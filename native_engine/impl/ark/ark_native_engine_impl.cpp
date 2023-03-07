@@ -655,7 +655,7 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
         }
     }
 
-    Local<JSValueRef> value = funcObj->Call(vm_, thisObj, args.data(), argc);
+    Local<JSValueRef> value = funcObj->Call(vm_, thisObj, args.data(), argc, true);
     if (panda::JSNApi::HasPendingException(vm_)) {
         HandleUncaughtException(engine);
         return nullptr;
