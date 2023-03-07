@@ -30,3 +30,5 @@ declare_args() {
   napi_enable_container_scope = true
   napi_enable_memleak_debug = true
 }
+
+ark_ets_path = "//arkcompiler/ets_runtime"
