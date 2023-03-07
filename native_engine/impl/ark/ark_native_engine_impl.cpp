@@ -578,7 +578,8 @@ NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue*
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), errorVal);
 }
 
-static void ConcurrentCallbackFunc(Local<JSValueRef> val, Local<JSValueRef> hint, void *data)
+static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success,
+    Local<JSValueRef> hint, void *data)
 {
     if (data == nullptr) {
         return;
@@ -591,9 +592,8 @@ static void ConcurrentCallbackFunc(Local<JSValueRef> val, Local<JSValueRef> hint
         return;
     }
 
-    auto value = ArkNativeEngineImpl::ArkValueToNativeValue(engine, val);
-    auto hintVal = ArkNativeEngineImpl::ArkValueToNativeValue(engine, hint);
-    concurrentCallbackFunc(engine, value, hintVal);
+    concurrentCallbackFunc(engine, ArkNativeEngineImpl::ArkValueToNativeValue(engine, result),
+        success, ArkNativeEngineImpl::ArkValueToNativeValue(engine, hint));
 }
 
 bool ArkNativeEngineImpl::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
