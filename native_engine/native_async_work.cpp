@@ -68,7 +68,7 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     }
     char traceStr[TRACE_BUFFER_SIZE] = {0};
     if (sprintf_s(traceStr, sizeof(traceStr),
-        "name:%s, traceid:0x%x, workid:%p", asyncResourceName.c_str(), traceId_->GetChainId(), this) < 0) {
+        "name:%s, traceid:0x%x", asyncResourceName.c_str(), traceId_->GetChainId()) < 0) {
         HILOG_ERROR("Get traceStr fail");
     }
     traceDescription_ = traceStr;
