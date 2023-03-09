@@ -517,6 +517,10 @@ void JerryScriptNativeEngine::HandleUncaughtException()
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
     jerryscriptNativeEngineImpl->HandleUncaughtException(this);
 }
+bool JerryScriptNativeEngine::HasPendingException()
+{
+    return false;
+}
 void JerryScriptNativeEngine::DeleteSerializationData(NativeValue* value) const
 {
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
