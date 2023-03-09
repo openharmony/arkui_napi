@@ -222,6 +222,7 @@ public:
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
     void NotifyApplicationState(bool inBackground) override;
+    void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
     void NotifyIdleTime(int idleMicroSec) override;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
