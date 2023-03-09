@@ -171,11 +171,7 @@ Local<JSValueRef> ArkNativeFunction::NativeFunctionCallBack(JsiRuntimeCallInfo *
     }
 
     Local<JSValueRef> localRet = JSValueRef::Undefined(vm);
-    if (result == nullptr) {
-        if (engine->IsExceptionPending()) {
-            [[maybe_unused]] NativeValue* error = engine->GetAndClearLastException();
-        }
-    } else {
+    if (result != nullptr) {
         Global<JSValueRef> ret = *result;
         localRet = ret.ToLocal(vm);
     }
