@@ -97,7 +97,8 @@ using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
-using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* value, NativeValue* data);
+using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result,
+    bool success, NativeValue* data);
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
