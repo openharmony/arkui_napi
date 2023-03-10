@@ -256,7 +256,10 @@ public:
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
-
+    virtual bool HasPendingException()
+    {
+        return false;
+    }
     // run script by path
     NativeValue* RunScript(const char* path);
 

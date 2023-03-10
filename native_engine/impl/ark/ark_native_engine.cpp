@@ -686,6 +686,12 @@ void ArkNativeEngine::HandleUncaughtException()
     return arkNativeEngineImpl->HandleUncaughtException(this);
 }
 
+bool ArkNativeEngine::HasPendingException()
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->HasPendingException();
+}
+
 bool ArkNativeEngine::IsMixedDebugEnabled()
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

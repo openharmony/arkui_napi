@@ -144,6 +144,7 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
+    bool HasPendingException() override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_JERRYSCRIPT_NATIVE_ENGINE_H_ */

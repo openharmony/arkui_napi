@@ -1441,6 +1441,11 @@ void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
     }
 }
 
+bool ArkNativeEngineImpl::HasPendingException()
+{
+    return panda::JSNApi::HasPendingException(vm_);
+}
+
 inline void ArkNativeEngineImpl::SetModuleName(ArkNativeObject *nativeObj, std::string moduleName)
 {
 #ifdef ENABLE_HITRACE

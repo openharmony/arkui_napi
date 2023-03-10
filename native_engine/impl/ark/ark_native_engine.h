@@ -193,6 +193,7 @@ public:
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
+    bool HasPendingException() override;
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);

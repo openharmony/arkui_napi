@@ -2388,10 +2388,12 @@ NAPI_EXTERN napi_status napi_create_bigint_words(
     CHECK_ENV(env);
     CHECK_ARG(env, words);
     CHECK_ARG(env, result);
-
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    RETURN_STATUS_IF_FALSE(env, word_count <= INT_MAX, napi_invalid_arg);
     auto resultValue = engine->CreateBigWords(sign_bit, word_count, words);
-
+    if (engine->HasPendingException()) {
+        return napi_set_last_error(env, napi_pending_exception);
+    }
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
