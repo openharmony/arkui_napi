@@ -214,16 +214,16 @@ NAPI_INNER_EXTERN napi_status napi_create_string_utf16(
 NAPI_EXTERN napi_status napi_create_symbol(napi_env env, napi_value description, napi_value* result)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, description);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto descriptionValue = reinterpret_cast<NativeValue*>(description);
-
+    if (description == nullptr) {
+        const char* str = "";
+        descriptionValue = engine->CreateString(str, 0);
+    }
     RETURN_STATUS_IF_FALSE(env, (descriptionValue->TypeOf() == NATIVE_STRING), napi_invalid_arg);
-
     auto resultValue = engine->CreateSymbol(descriptionValue);
-
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
@@ -236,15 +236,20 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
                                              napi_value* result)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, utf8name);
     CHECK_ARG(env, cb);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto callback = reinterpret_cast<NativeCallback>(cb);
-
-    auto resultValue =
-        engine->CreateFunction(utf8name, (length == NAPI_AUTO_LENGTH) ? strlen(utf8name) : length, callback, data);
+    NativeValue* resultValue = nullptr;
+    if (utf8name != nullptr) {
+        resultValue = engine->CreateFunction(utf8name,
+            (length == NAPI_AUTO_LENGTH) ? strlen(utf8name) : length, callback, data);
+    } else {
+        const char* name = "defaultName";
+        resultValue = engine->CreateFunction(name,
+            (length == NAPI_AUTO_LENGTH) ? strlen(name) : length, callback, data);
+    }
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
@@ -953,6 +958,13 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
         for (i = 0; (i < *argc) && (i < info->argc); i++) {
             argv[i] = reinterpret_cast<napi_value>(info->argv[i]);
         }
+        if (i < *argc) {
+            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+            napi_value undefined = reinterpret_cast<napi_value>(engine->CreateUndefined());
+            for (size_t j = i; j < *argc; j++) {
+                argv[j] = undefined;
+            }
+        }
         *argc = i;
     }
 
@@ -999,6 +1011,7 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, utf8name);
+    RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX, napi_object_expected);
     CHECK_ARG(env, constructor);
     if (property_count > 0) {
         CHECK_ARG(env, properties);
@@ -1009,9 +1022,15 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
     auto callback = reinterpret_cast<NativeCallback>(constructor);
     auto nativeProperties = reinterpret_cast<const NativePropertyDescriptor*>(properties);
 
-    auto resultValue = engine->DefineClass(utf8name, callback, data, nativeProperties, property_count);
-
-    *result = reinterpret_cast<napi_value>(resultValue);
+    size_t nameLength = std::min(length, strlen(utf8name));
+    char newName[nameLength + 1];
+    if (strncpy_s(newName, nameLength + 1, utf8name, nameLength) != EOK) {
+        HILOG_ERROR("napi_define_class strncpy_s failed");
+        *result = nullptr;
+    } else {
+        auto resultValue = engine->DefineClass(newName, callback, data, nativeProperties, property_count);
+        *result = reinterpret_cast<napi_value>(resultValue);
+    }
 
     return napi_clear_last_error(env);
 }
@@ -1715,6 +1734,17 @@ NAPI_EXTERN napi_status napi_create_dataview(
 
     RETURN_STATUS_IF_FALSE(env, arrayBufferValue->IsArrayBuffer(), napi_status::napi_arraybuffer_expected);
 
+    auto nativeArrayBuffer =
+        reinterpret_cast<NativeArrayBuffer*>(arrayBufferValue->GetInterface(NativeArrayBuffer::INTERFACE_ID));
+    if (length + byte_offset > nativeArrayBuffer->GetLength()) {
+        napi_throw_range_error(
+            env,
+            "ERR_NAPI_INVALID_DATAVIEW_ARGS",
+            "byte_offset + byte_length should be less than or "
+            "equal to the size in bytes of the array passed in");
+        return napi_set_last_error(env, napi_pending_exception);
+    }
+
     auto resultValue = engine->CreateDataView(arrayBufferValue, length, byte_offset);
 
     *result = reinterpret_cast<napi_value>(resultValue);
@@ -1742,10 +1772,6 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, dataview);
-    CHECK_ARG(env, bytelength);
-    CHECK_ARG(env, data);
-    CHECK_ARG(env, arraybuffer);
-    CHECK_ARG(env, byte_offset);
 
     auto nativeValue = reinterpret_cast<NativeValue*>(dataview);
 
@@ -1753,10 +1779,18 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
 
     auto nativeDataView = reinterpret_cast<NativeDataView*>(nativeValue->GetInterface(NativeDataView::INTERFACE_ID));
 
-    *bytelength = nativeDataView->GetLength();
-    *data = nativeDataView->GetBuffer();
-    *arraybuffer = reinterpret_cast<napi_value>(nativeDataView->GetArrayBuffer());
-    *byte_offset = nativeDataView->GetOffset();
+    if (bytelength != nullptr) {
+        *bytelength = nativeDataView->GetLength();
+    }
+    if (data != nullptr) {
+        *data = nativeDataView->GetBuffer();
+    }
+    if (arraybuffer != nullptr) {
+        *arraybuffer = reinterpret_cast<napi_value>(nativeDataView->GetArrayBuffer());
+    }
+    if (byte_offset != nullptr) {
+        *byte_offset = nativeDataView->GetOffset();
+    }
     return napi_clear_last_error(env);
 }
 

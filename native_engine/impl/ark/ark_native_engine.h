@@ -114,10 +114,10 @@ public:
     void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     // Define native class
     NativeValue* DefineClass(const char* name,
-                                     NativeCallback callback,
-                                     void* data,
-                                     const NativePropertyDescriptor* properties,
-                                     size_t length) override;
+                             NativeCallback callback,
+                             void* data,
+                             const NativePropertyDescriptor* properties,
+                             size_t length) override;
     // Create instance by defined class
     NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const* argv, size_t argc) override;
 

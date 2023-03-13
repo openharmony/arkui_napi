@@ -719,11 +719,10 @@ NativeValue* ArkNativeEngineImpl::DefineClass(NativeEngine* engine, const char* 
     if (ArkNativeEngineImpl::napiProfilerEnabled) {
         className = ArkNativeEngineImpl::tempModuleName_ + "." + name;
     }
-    std::string constructorName = className + ".Constructor";
     NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
     auto classConstructor = chunk.New<ArkNativeFunction>(static_cast<ArkNativeEngine*>(engine),
-        constructorName.c_str(), callback, data);
-    SetModuleName(classConstructor, constructorName);
+        className.c_str(), callback, data);
+    SetModuleName(classConstructor, className);
     auto classPrototype = classConstructor->GetFunctionPrototype();
 
     for (size_t i = 0; i < length; i++) {

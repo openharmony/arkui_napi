@@ -77,7 +77,7 @@ private:
     bool IsMaxQueueSize();
 
     NativeEngine* engine_ = nullptr;
-    NativeValue* func_ = nullptr;
+    NativeReference* ref_ = nullptr;
     size_t maxQueueSize_ = 0;
     size_t threadCount_ = 0;
     void* finalizeData_ = nullptr;
