@@ -958,13 +958,6 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
         for (i = 0; (i < *argc) && (i < info->argc); i++) {
             argv[i] = reinterpret_cast<napi_value>(info->argv[i]);
         }
-        if (i < *argc) {
-            NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
-            napi_value undefined = reinterpret_cast<napi_value>(engine->CreateUndefined());
-            for (size_t j = i; j < *argc; j++) {
-                argv[j] = undefined;
-            }
-        }
         *argc = i;
     }
 
