@@ -203,8 +203,11 @@ public:
 
     // register init worker func
     virtual void SetInitWorkerFunc(InitWorkerFunc func);
+    InitWorkerFunc GetInitWorkerFunc() const;
     virtual void SetGetAssetFunc(GetAssetFunc func);
+    GetAssetFunc GetGetAssetFunc() const;
     virtual void SetOffWorkerFunc(OffWorkerFunc func);
+    OffWorkerFunc GetOffWorkerFunc() const;
 
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
@@ -304,14 +307,6 @@ protected:
 
     NativeEngineInterface* nativeEngineImpl_ = nullptr;
     bool isAppModule_ = false;
-
-    // register for worker
-    InitWorkerFunc initWorkerFunc_ {nullptr};
-    GetAssetFunc getAssetFunc_ {nullptr};
-    OffWorkerFunc offWorkerFunc_ {nullptr};
-#if !defined(PREVIEW)
-    DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
-#endif
 
 private:
     std::string moduleName_;

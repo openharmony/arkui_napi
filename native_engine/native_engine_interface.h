@@ -99,6 +99,10 @@ using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result,
     bool success, NativeValue* data);
+using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
+using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
+using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
+using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
@@ -294,6 +298,16 @@ public:
     
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
+    void SetInitWorkerFunc(InitWorkerFunc func);
+    InitWorkerFunc GetInitWorkerFunc();
+    void SetGetAssetFunc(GetAssetFunc func);
+    GetAssetFunc GetGetAssetFunc();
+    void SetOffWorkerFunc(OffWorkerFunc func);
+    OffWorkerFunc GetOffWorkerFunc();
+#if !defined(PREVIEW)
+    void SetDebuggerPostTaskFunc(DebuggerPostTask func);
+    DebuggerPostTask GetDebuggerPostTaskFunc();
+#endif
 
     // run script by path
     NativeValue* RunScript(const char* path);
@@ -313,6 +327,15 @@ protected:
 
     void* jsEngineInterface_;
     NativeEngine* rootNativeEngine__;
+
+    // register for worker
+    InitWorkerFunc initWorkerFunc_ {nullptr};
+    GetAssetFunc getAssetFunc_ {nullptr};
+    OffWorkerFunc offWorkerFunc_ {nullptr};
+#if !defined(PREVIEW)
+    DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
+#endif
+
 private:
     bool isMainThread_ { true };
 

@@ -424,3 +424,44 @@ NativeEngine* NativeEngineInterface::GetRootNativeEngine(void)
 {
     return rootNativeEngine__;
 }
+
+void NativeEngineInterface::SetInitWorkerFunc(InitWorkerFunc func)
+{
+    initWorkerFunc_ = func;
+}
+
+InitWorkerFunc NativeEngineInterface::GetInitWorkerFunc()
+{
+    return initWorkerFunc_;
+}
+
+void NativeEngineInterface::SetGetAssetFunc(GetAssetFunc func)
+{
+    getAssetFunc_ = func;
+}
+GetAssetFunc NativeEngineInterface::GetGetAssetFunc()
+{
+    return getAssetFunc_;
+}
+
+void NativeEngineInterface::SetOffWorkerFunc(OffWorkerFunc func)
+{
+    offWorkerFunc_ = func;
+}
+
+OffWorkerFunc NativeEngineInterface::GetOffWorkerFunc()
+{
+    return offWorkerFunc_;
+}
+
+#if !defined(PREVIEW)
+void NativeEngineInterface::SetDebuggerPostTaskFunc(DebuggerPostTask func)
+{
+    debuggerPostTaskFunc_ = func;
+}
+
+DebuggerPostTask NativeEngineInterface::GetDebuggerPostTaskFunc()
+{
+    return debuggerPostTaskFunc_;
+}
+#endif
