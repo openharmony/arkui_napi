@@ -47,11 +47,14 @@ class NativeValue;
 class NativeEngine;
 
 typedef NativeValue* (*RegisterCallback)(NativeEngine*, NativeValue*);
+typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);
 
 struct NativeModule {
     const char* name = nullptr;
     const char* fileName = nullptr;
     RegisterCallback registerCallback = nullptr;
+    GetJSCodeCallback getABCCode = nullptr;
+    GetJSCodeCallback getJSCode = nullptr;
     int32_t version = 0;
     uint32_t refCount = 0;
     NativeModule* next = nullptr;

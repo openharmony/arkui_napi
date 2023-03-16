@@ -38,6 +38,26 @@ NAPI_EXTERN void napi_module_register(napi_module* mod)
     moduleManager->Register(&module);
 }
 
+NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod)
+{
+    if (mod == nullptr) {
+        HILOG_ERROR("mod is nullptr");
+        return;
+    }
+
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    NativeModule module;
+
+    module.version = mod->nm_version;
+    module.fileName = mod->nm_filename;
+    module.name = mod->nm_modname;
+    module.registerCallback = (RegisterCallback)mod->nm_register_func;
+    module.getJSCode = (GetJSCodeCallback)mod->nm_get_js_code;
+    module.getABCCode = (GetJSCodeCallback)mod->nm_get_abc_code;
+
+    moduleManager->Register(&module);
+}
+
 NAPI_EXTERN NAPI_NO_RETURN void napi_fatal_error(const char* location,
                                                  size_t location_len,
                                                  const char* message,
