@@ -20,9 +20,23 @@
 #include <vector>
 
 #include <js_native_api.h>
+#include <node_api.h>
 
 #include "napi/native_common.h"
 
+typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
+typedef struct napi_module_with_js {
+    int nm_version = 0;
+    unsigned int nm_flags = 0;
+    const char* nm_filename = nullptr;
+    napi_addon_register_func nm_register_func = nullptr;
+    const char* nm_modname = nullptr;
+    void* nm_priv = nullptr;
+    NAPIGetJSCode nm_get_abc_code = nullptr;
+    NAPIGetJSCode nm_get_js_code = nullptr;
+} napi_module_with_js;
+
+NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_value* result);

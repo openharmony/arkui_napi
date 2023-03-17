@@ -164,9 +164,11 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         lastNativeModule_->name = isAppModule_ ? moduleName : nativeModule->name;
         lastNativeModule_->refCount = nativeModule->refCount;
         lastNativeModule_->registerCallback = nativeModule->registerCallback;
+        lastNativeModule_->getJSCode = nativeModule->getJSCode;
+        lastNativeModule_->getABCCode = nativeModule->getABCCode;
         lastNativeModule_->next = nullptr;
 #ifdef IOS_PLATFORM
-        // For iOS, force make module loaded, should support `GetJSCode` later
+        // For iOS, force make module loaded
         lastNativeModule_->moduleLoaded = true;
 #endif
     }
@@ -518,7 +520,6 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const char* p
     return lib;
 }
 
-using NAPIGetJSCode = void (*)(const char** buf, int* bufLen);
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     const char* moduleName, const char* path, bool internal, const bool isAppModule)
 {
@@ -574,7 +575,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             *p = '_';
         }
 
-        auto getJSCode = reinterpret_cast<NAPIGetJSCode>(LIBSYM(lib, symbol));
+        auto getJSCode = reinterpret_cast<GetJSCodeCallback>(LIBSYM(lib, symbol));
         if (getJSCode != nullptr) {
             const char* buf = nullptr;
             int bufLen = 0;

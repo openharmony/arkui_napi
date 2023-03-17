@@ -146,6 +146,10 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     std::string strModuleName = moduleName->ToString();
                     moduleManager->SetNativeEngine(strModuleName, nativeEngine);
                     MoudleNameLocker nameLocker(strModuleName);
+
+                    if (module->jsCode == nullptr && module->getABCCode != nullptr) {
+                        module->getABCCode(&module->jsCode, &module->jsCodeLen);
+                    }
                     if (module->jsCode != nullptr) {
                         char fileName[NAPI_PATH_MAX] = { 0 };
                         const char* name = module->name;
