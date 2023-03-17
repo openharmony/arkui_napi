@@ -145,19 +145,33 @@ void* NativeEngine::GetJsEngine()
 // register init worker func
 void NativeEngine::SetInitWorkerFunc(InitWorkerFunc func)
 {
-    initWorkerFunc_ = func;
+    nativeEngineImpl_->SetInitWorkerFunc(func);
+}
+InitWorkerFunc NativeEngine::GetInitWorkerFunc() const
+{
+    return nativeEngineImpl_->GetInitWorkerFunc();
 }
 void NativeEngine::SetGetAssetFunc(GetAssetFunc func)
 {
-    getAssetFunc_ = func;
+    nativeEngineImpl_->SetGetAssetFunc(func);
+}
+GetAssetFunc NativeEngine::GetGetAssetFunc() const
+{
+    return nativeEngineImpl_->GetGetAssetFunc();
 }
 void NativeEngine::SetOffWorkerFunc(OffWorkerFunc func)
 {
-    offWorkerFunc_ = func;
+    nativeEngineImpl_->SetOffWorkerFunc(func);
 }
+OffWorkerFunc NativeEngine::GetOffWorkerFunc() const
+{
+    return nativeEngineImpl_->GetOffWorkerFunc();
+}
+
 // call init worker func
 bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
 {
+    InitWorkerFunc initWorkerFunc_ = nativeEngineImpl_->GetInitWorkerFunc();
     if (initWorkerFunc_ != nullptr) {
         initWorkerFunc_(engine);
         return true;
@@ -166,6 +180,7 @@ bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
 }
 bool NativeEngine::CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)
 {
+    GetAssetFunc getAssetFunc_ = nativeEngineImpl_->GetGetAssetFunc();
     if (getAssetFunc_ != nullptr) {
         getAssetFunc_(uri, content, ami);
         return true;
@@ -174,6 +189,7 @@ bool NativeEngine::CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>
 }
 bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
+    OffWorkerFunc offWorkerFunc_ = nativeEngineImpl_->GetOffWorkerFunc();
     if (offWorkerFunc_ != nullptr) {
         offWorkerFunc_(engine);
         return true;
@@ -222,6 +238,7 @@ bool NativeEngine::FinishContainerScopeFunc(int32_t id)
 #if !defined(PREVIEW)
 void NativeEngine::CallDebuggerPostTaskFunc(std::function<void()>&& task)
 {
+    DebuggerPostTask debuggerPostTaskFunc_ = nativeEngineImpl_->GetDebuggerPostTaskFunc();
     if (debuggerPostTaskFunc_ != nullptr) {
         debuggerPostTaskFunc_(std::move(task));
     }
@@ -229,7 +246,7 @@ void NativeEngine::CallDebuggerPostTaskFunc(std::function<void()>&& task)
 
 void NativeEngine::SetDebuggerPostTaskFunc(DebuggerPostTask func)
 {
-    debuggerPostTaskFunc_ = func;
+    nativeEngineImpl_->SetDebuggerPostTaskFunc(func);
 }
 #endif
 
@@ -268,9 +285,9 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     if (engine == nullptr) {
         return;
     }
-    SetInitWorkerFunc(engine->initWorkerFunc_);
-    SetGetAssetFunc(engine->getAssetFunc_);
-    SetOffWorkerFunc(engine->offWorkerFunc_);
+    SetInitWorkerFunc(engine->GetInitWorkerFunc());
+    SetGetAssetFunc(engine->GetGetAssetFunc());
+    SetOffWorkerFunc(engine->GetOffWorkerFunc());
 }
 
 NativeValue* NativeEngine::RunScript(const char* path)
