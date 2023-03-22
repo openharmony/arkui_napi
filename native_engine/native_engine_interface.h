@@ -299,14 +299,14 @@ public:
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
     void SetInitWorkerFunc(InitWorkerFunc func);
-    InitWorkerFunc GetInitWorkerFunc();
+    InitWorkerFunc GetInitWorkerFunc() const;
     void SetGetAssetFunc(GetAssetFunc func);
-    GetAssetFunc GetGetAssetFunc();
+    GetAssetFunc GetGetAssetFunc() const;
     void SetOffWorkerFunc(OffWorkerFunc func);
-    OffWorkerFunc GetOffWorkerFunc();
+    OffWorkerFunc GetOffWorkerFunc() const;
 #if !defined(PREVIEW)
     void SetDebuggerPostTaskFunc(DebuggerPostTask func);
-    DebuggerPostTask GetDebuggerPostTaskFunc();
+    DebuggerPostTask GetDebuggerPostTaskFunc() const;
 #endif
 
     // run script by path
