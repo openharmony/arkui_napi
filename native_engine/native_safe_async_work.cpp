@@ -75,7 +75,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
                                          NativeFinalize finalizeCallback,
                                          void* context,
                                          NativeThreadSafeFunctionCallJs callJsCallback)
-    :engine_(engine), func_(func), maxQueueSize_(maxQueueSize),
+    :engine_(engine), maxQueueSize_(maxQueueSize),
     threadCount_(threadCount), finalizeData_(finalizeData), finalizeCallback_(finalizeCallback),
     context_(context), callJsCallback_(callJsCallback)
 {
@@ -87,9 +87,19 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
     asyncContext_.asyncResource = asyncResource;
     asyncContext_.asyncResourceName = asyncResourceName;
+    uint32_t initialRefcount = 1;
+    if (func != nullptr) {
+        ref_ = engine->CreateReference(func, initialRefcount);
+    }
 }
 
-NativeSafeAsyncWork::~NativeSafeAsyncWork() {}
+NativeSafeAsyncWork::~NativeSafeAsyncWork()
+{
+    if (ref_ != nullptr) {
+        delete ref_;
+        ref_ = nullptr;
+    }
+}
 
 bool NativeSafeAsyncWork::Init()
 {
@@ -276,7 +286,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     void* data = nullptr;
 
     HILOG_INFO("queue size %d", (int32_t)size);
-    if (size > 0) {
+    while (size > 0) {
         data = queue_.front();
 
         // when queue is full, notify send.
@@ -284,6 +294,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
             condition_.notify_one();
         }
 
+        NativeValue* func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
