@@ -1220,7 +1220,6 @@ NAPI_EXTERN napi_status napi_reference_ref(napi_env env, napi_ref ref, uint32_t*
 {
     CHECK_ENV(env);
     CHECK_ARG(env, ref);
-    CHECK_ARG(env, result);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
     uint32_t refCount = reference->Ref();

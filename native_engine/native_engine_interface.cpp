@@ -430,7 +430,7 @@ void NativeEngineInterface::SetInitWorkerFunc(InitWorkerFunc func)
     initWorkerFunc_ = func;
 }
 
-InitWorkerFunc NativeEngineInterface::GetInitWorkerFunc()
+InitWorkerFunc NativeEngineInterface::GetInitWorkerFunc() const
 {
     return initWorkerFunc_;
 }
@@ -439,7 +439,7 @@ void NativeEngineInterface::SetGetAssetFunc(GetAssetFunc func)
 {
     getAssetFunc_ = func;
 }
-GetAssetFunc NativeEngineInterface::GetGetAssetFunc()
+GetAssetFunc NativeEngineInterface::GetGetAssetFunc() const
 {
     return getAssetFunc_;
 }
@@ -449,7 +449,7 @@ void NativeEngineInterface::SetOffWorkerFunc(OffWorkerFunc func)
     offWorkerFunc_ = func;
 }
 
-OffWorkerFunc NativeEngineInterface::GetOffWorkerFunc()
+OffWorkerFunc NativeEngineInterface::GetOffWorkerFunc() const
 {
     return offWorkerFunc_;
 }
@@ -460,7 +460,7 @@ void NativeEngineInterface::SetDebuggerPostTaskFunc(DebuggerPostTask func)
     debuggerPostTaskFunc_ = func;
 }
 
-DebuggerPostTask NativeEngineInterface::GetDebuggerPostTaskFunc()
+DebuggerPostTask NativeEngineInterface::GetDebuggerPostTaskFunc() const
 {
     return debuggerPostTaskFunc_;
 }
