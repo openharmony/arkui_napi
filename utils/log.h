@@ -17,9 +17,9 @@
 #define FOUNDATION_ACE_NAPI_UTILS_LOG_H
 
 #ifdef LINUX_PLATFORM
-#include <cstring>
 #include <cstdint>
 #endif
+#include <cstring>
 #include <string>
 
 #include "utils/macros.h"
