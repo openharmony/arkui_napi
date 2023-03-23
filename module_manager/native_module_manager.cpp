@@ -85,6 +85,7 @@ NativeModuleManager* NativeModuleManager::GetInstance()
 void NativeModuleManager::SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine)
 {
     HILOG_DEBUG("%{public}s", __func__);
+    std::lock_guard<std::mutex> lock(nativeEngineListMutex_);
     nativeEngineList_.emplace(moduleName, nativeEngine);
 }
 
