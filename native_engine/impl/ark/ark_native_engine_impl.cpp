@@ -878,8 +878,6 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     panda::JSNApi::SetBundleName(vm, panda::JSNApi::GetBundleName(const_cast<EcmaVM*>(hostVM)));
     panda::JSNApi::SetModuleName(vm, panda::JSNApi::GetModuleName(const_cast<EcmaVM*>(hostVM)));
     panda::JSNApi::SetAssetPath(vm, panda::JSNApi::GetAssetPath(const_cast<EcmaVM*>(hostVM)));
-    panda::JSNApi::SetRecordWithBundleNameTag(vm,
-        panda::JSNApi::GetRecordWithBundleNameTag(const_cast<EcmaVM*>(hostVM)));
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
