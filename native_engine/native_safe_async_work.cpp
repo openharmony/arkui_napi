@@ -87,8 +87,8 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
     asyncContext_.asyncResource = asyncResource;
     asyncContext_.asyncResourceName = asyncResourceName;
-    uint32_t initialRefcount = 1;
     if (func != nullptr) {
+        uint32_t initialRefcount = 1;
         ref_ = engine->CreateReference(func, initialRefcount);
     }
 }

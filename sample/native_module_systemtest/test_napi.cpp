@@ -7360,7 +7360,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0100, testing::e
     size_t strsize = 13;
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
-    void* contextresult = nullptr;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
@@ -7395,7 +7394,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0200, testing::e
     size_t strsize = 13;
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
-    void* contextresult = nullptr;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
@@ -7430,7 +7428,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Acquire_Threadsafe_Function_0300, testing::e
     size_t strsize = 13;
     napi_value resource_name;
     napi_threadsafe_function result = nullptr;
-    void* contextresult = nullptr;
     napi_create_string_utf8(env, "JSstringTest", strsize, &resource_name);
     napi_status threadresult = napi_create_threadsafe_function(
         env, nullptr, nullptr, resource_name, 0, 1, nullptr, nullptr, nullptr, ThreadSafeCallJs, &result);
