@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <map>
+#include <mutex>
 #include <vector>
 #include <string>
 #include <pthread.h>
@@ -95,6 +96,7 @@ private:
     std::string prefix_;
     bool isAppModule_ = false;
 
+    std::mutex nativeEngineListMutex_;
     std::map<std::string, NativeEngine*> nativeEngineList_;
     std::map<std::string, char*> appLibPathMap_;
 };
