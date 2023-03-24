@@ -35,6 +35,7 @@ std::mutex g_instanceMutex;
 NativeModuleManager::NativeModuleManager()
 {
     pthread_mutex_init(&mutex_, nullptr);
+    moduleLoadChecker_ = new ModuleLoadChecker();
 }
 
 NativeModuleManager::~NativeModuleManager()
@@ -67,7 +68,9 @@ NativeModuleManager::~NativeModuleManager()
         }
         nativeEngineList_.erase(nativeEngineList_.begin());
     }
-
+    if (moduleLoadChecker_) {
+        delete moduleLoadChecker_;
+    }
     pthread_mutex_destroy(&mutex_);
 }
 
@@ -513,7 +516,14 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
     if (!GetNativeModulePath(moduleName, path, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_WARN("get module filed %{public}s", moduleName);
+        HILOG_WARN("get module failed, moduleName = %{public}s", moduleName);
+        return nullptr;
+    }
+    if (!moduleLoadChecker_) {
+        return nullptr;
+    }
+    if (!moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+        HILOG_ERROR("module %{public}s is not allow to load", moduleName);
         return nullptr;
     }
 
@@ -616,4 +626,29 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 bool NativeModuleManager::IsExistedPath(const char* pathKey) const
 {
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
+}
+
+void NativeModuleManager::SetModuleBlocklist(
+    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
+{
+    if (!moduleLoadChecker_) {
+        return;
+    }
+    moduleLoadChecker_->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
+}
+
+void NativeModuleManager::SetProcessExtensionType(int32_t extensionType)
+{
+    if (!moduleLoadChecker_) {
+        return;
+    }
+    moduleLoadChecker_->SetProcessExtensionType(extensionType);
+}
+
+int32_t NativeModuleManager::GetProcessExtensionType()
+{
+    if (!moduleLoadChecker_) {
+        return EXTENSION_TYPE_UNSPECIFIED;
+    }
+    return moduleLoadChecker_->GetProcessExtensionType();
 }
