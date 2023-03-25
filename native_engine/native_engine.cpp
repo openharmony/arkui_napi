@@ -347,3 +347,25 @@ void NativeEngine::DeleteEngine()
         nativeEngineImpl_ = nullptr;
     }
 }
+
+void NativeEngine::SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos)
+{
+    extensionInfos_ = extensionInfos;
+}
+
+const std::unordered_map<std::string, int32_t>& NativeEngine::GetExtensionInfos()
+{
+    return extensionInfos_;
+}
+
+void NativeEngine::SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
+{
+    if (!nativeEngineImpl_) {
+        return;
+    }
+    NativeModuleManager* moduleManager = nativeEngineImpl_->GetModuleManager();
+    if (!moduleManager) {
+        return;
+    }
+    moduleManager->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
+}

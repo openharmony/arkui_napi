@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
@@ -272,6 +274,27 @@ public:
     void SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint);
     void GetInstanceData(void** data);
 
+    /**
+     * @brief Set the Extension Infos
+     *
+     * @param extensionInfos extension infos to set
+     */
+    void SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos);
+
+    /**
+     * @brief Get the Extension Infos
+     *
+     * @return extension infos
+     */
+    const std::unordered_map<std::string, int32_t>& GetExtensionInfos();
+
+    /**
+     * @brief Set the Module Blocklist
+     *
+     * @param blocklist the blocklist set to native engine
+     */
+    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
+
 protected:
     void *jsEngine_;
 
@@ -291,6 +314,7 @@ private:
     std::mutex instanceDataLock_;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
+    std::unordered_map<std::string, int32_t> extensionInfos_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */
