@@ -49,6 +49,11 @@ void* JerryScriptNativeFunction::GetInterface(int interfaceId)
                                                          : JerryScriptNativeObject::GetInterface(interfaceId);
 }
 
+NativeValue* JerryScriptNativeFunction::GetFunctionPrototype()
+{
+    return nullptr;
+}
+
 jerry_value_t JerryScriptNativeFunction::NativeFunctionCallback(const jerry_value_t function,
                                                                 const jerry_value_t thisVal,
                                                                 const jerry_value_t args[],

@@ -249,6 +249,7 @@ public:
 
     virtual bool SetProperty(const char* name, NativeValue* value) = 0;
     virtual NativeValue* GetProperty(const char* name) = 0;
+    virtual NativeValue* GetOwnProperty(const char* name) = 0;
     virtual bool HasProperty(const char* name) = 0;
     virtual bool DeleteProperty(const char* name) = 0;
 
@@ -327,6 +328,7 @@ class NativeFunction {
 public:
     static const int INTERFACE_ID = 8;
     virtual std::string GetSourceCodeInfo(ErrorPos pos) = 0;
+    virtual NativeValue* GetFunctionPrototype() = 0;
 };
 
 class NativeBigint {

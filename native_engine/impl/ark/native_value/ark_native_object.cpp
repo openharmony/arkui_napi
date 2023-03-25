@@ -326,6 +326,18 @@ NativeValue* ArkNativeObject::GetProperty(const char* name)
     return ArkNativeEngine::ArkValueToNativeValue(engine_, val);
 }
 
+NativeValue* ArkNativeObject::GetOwnProperty(const char* name)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+
+    Local<StringRef> key = StringRef::NewFromUtf8(vm, name);
+    Global<ObjectRef> obj = value_;
+    PropertyAttribute property;
+    obj->GetOwnProperty(vm, key, property);
+    return ArkNativeEngine::ArkValueToNativeValue(engine_, property.GetValue(vm));
+}
+
 bool ArkNativeObject::HasProperty(const char* name)
 {
     auto vm = engine_->GetEcmaVm();

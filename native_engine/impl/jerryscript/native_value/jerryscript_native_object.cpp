@@ -195,6 +195,11 @@ NativeValue* JerryScriptNativeObject::GetProperty(NativeValue* key)
     return JerryScriptNativeEngine::JerryValueToNativeValue(engine_, returnValue);
 }
 
+NativeValue* JerryScriptNativeObject::GetOwnProperty(const char* name)
+{
+    return nullptr;
+}
+
 bool JerryScriptNativeObject::HasProperty(NativeValue* key)
 {
     jerry_value_t returnValue = jerry_has_property(value_, *key);
