@@ -304,7 +304,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(
         strModule.find(".") == std::string::npos ?
             strModule :
             strModule.substr(0, strModule.find(".")) + "_" + strModule.substr(strModule.find(".") + 1);
-    HILOG_INFO("strCutName value is %{public}s", strModule.c_str());
+    HILOG_INFO("strCutName value is %{public}s", strCutName.c_str());
 #endif
 
     if (pthread_mutex_lock(&mutex_) != 0) {
@@ -313,7 +313,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(
     }
 
 #ifdef ANDROID_PLATFORM
-    NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str());
+    NativeModule* nativeModule = FindNativeModuleByCache(strCutName.c_str());
 #else
     std::string key(moduleName);
     isAppModule_ = isAppModule;
