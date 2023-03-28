@@ -361,6 +361,10 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     const char* soPostfix = ".dylib";
     const char* sysPrefix = "./module";
     const char* zfix = "";
+#elif defined(_ARM64_) && defined(ANDROID_PLATFORM)
+    const char* soPostfix = ".so";
+    const char* sysPrefix = "";
+    const char* zfix = "";
 #elif defined(_ARM64_) || defined(SIMULATOR)
     const char* soPostfix = ".so";
     const char* sysPrefix = "/system/lib64/module";
@@ -416,10 +420,17 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, zfix, soPostfix) == -1) {
                 return false;
             }
+#ifdef ANDROID_PLATFORM
+            if (sprintf_s(nativeModulePath[1], pathLength, "lib%s_napi%s%s",
+                dupModuleName, zfix, soPostfix) == -1) {
+                return false;
+            }
+#else
             if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s_napi%s%s",
                 prefix, dupModuleName, zfix, soPostfix) == -1) {
                 return false;
             }
+#endif
         } else {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
@@ -450,10 +461,17 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
             }
         }
         if (!isAppModule || !IsExistedPath(path)) {
+#ifdef ANDROID_PLATFORM
+            if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s%s",
+                afterDot, zfix, soPostfix) == -1) {
+                return false;
+            }
+#else
             if (sprintf_s(nativeModulePath[0], pathLength, "%s/%s/lib%s%s%s",
                 prefix, dupModuleName, afterDot, zfix, soPostfix) == -1) {
                 return false;
             }
+#endif
             if (sprintf_s(nativeModulePath[1], pathLength, "%s/%s/lib%s_napi%s%s",
                 prefix, dupModuleName, afterDot, zfix, soPostfix) == -1) {
                 return false;
