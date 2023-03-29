@@ -465,3 +465,13 @@ DebuggerPostTask NativeEngineInterface::GetDebuggerPostTaskFunc() const
     return debuggerPostTaskFunc_;
 }
 #endif
+
+void NativeEngineInterface::SetHostEngine(NativeEngine* engine)
+{
+    hostEngine_ = engine;
+}
+
+NativeEngine* NativeEngineInterface::GetHostEngine() const
+{
+    return hostEngine_;
+}

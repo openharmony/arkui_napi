@@ -250,6 +250,16 @@ void NativeEngine::SetDebuggerPostTaskFunc(DebuggerPostTask func)
 }
 #endif
 
+void NativeEngine::SetHostEngine(NativeEngine* engine)
+{
+    nativeEngineImpl_->SetHostEngine(engine);
+}
+
+NativeEngine* NativeEngine::GetHostEngine() const
+{
+    return nativeEngineImpl_->GetHostEngine();
+}
+
 void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
     nativeEngineImpl_->AddCleanupHook(fun, arg);
