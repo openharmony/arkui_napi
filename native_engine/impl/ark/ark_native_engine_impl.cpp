@@ -336,7 +336,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEngi
         Global<ObjectRef> globalExports = *exportObject;
         exports = globalExports.ToLocal(vm_);
     }
-    return exports;
+    return scope.Escape(exports);
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
@@ -373,7 +373,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEn
         Global<ObjectRef> globalExports = *exportObject;
         exports = globalExports.ToLocal(vm_);
     }
-    return exports;
+    return scope.Escape(exports);
 }
 
 void ArkNativeEngineImpl::Loop(LoopMode mode, bool needSync)
@@ -906,18 +906,18 @@ void* ArkNativeEngineImpl::CreateRuntime(NativeEngine* engine)
 
 NativeValue* ArkNativeEngineImpl::Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer)
 {
-    LocalScope scope(vm_);
     const panda::ecmascript::EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(context)->GetEcmaVm();
+    LocalScope scope(vm);
     Global<JSValueRef> arkValue = *value;
     Global<JSValueRef> arkTransfer = *transfer;
-    void* result = panda::JSNApi::SerializeValue(vm, arkValue.ToLocal(vm_), arkTransfer.ToLocal(vm_));
+    void* result = panda::JSNApi::SerializeValue(vm, arkValue.ToLocal(vm), arkTransfer.ToLocal(vm));
     return reinterpret_cast<NativeValue*>(result);
 }
 
 NativeValue* ArkNativeEngineImpl::Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder)
 {
-    LocalScope scope(vm_);
     const panda::ecmascript::EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(context)->GetEcmaVm();
+    LocalScope scope(vm);
     Local<JSValueRef> result = panda::JSNApi::DeserializeValue(vm, recorder, reinterpret_cast<void*>(context));
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), result);
 }
