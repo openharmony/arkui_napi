@@ -25,7 +25,7 @@ public:
     ~JerryScriptNativeFunction() override;
 
     void* GetInterface(int interfaceId) override;
-
+    NativeValue* GetFunctionPrototype() override;
 private:
     static jerry_value_t NativeFunctionCallback(const jerry_value_t function,
                                                 const jerry_value_t thisVal,

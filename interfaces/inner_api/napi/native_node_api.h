@@ -17,6 +17,7 @@
 #define FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H
 
 #include <iostream>
+#include <string>
 #include <vector>
 
 #include <js_native_api.h>
@@ -84,5 +85,10 @@ NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* r
 NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result);
-
+NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack);
+NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
+                                                         napi_value object,
+                                                         const char* utf8name,
+                                                         napi_value* result);
+NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

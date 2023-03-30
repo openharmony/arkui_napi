@@ -35,7 +35,7 @@ public:
 
     static void* GetNativePtrCallBack(void* data);
 
-    NativeValue* GetFunctionPrototype();
+    NativeValue* GetFunctionPrototype() override;
 
     std::string GetSourceCodeInfo(ErrorPos pos) override;
 

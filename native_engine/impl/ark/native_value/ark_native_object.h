@@ -49,6 +49,7 @@ public:
 
     bool SetProperty(NativeValue* key, NativeValue* value) override;
     NativeValue* GetProperty(NativeValue* key) override;
+    NativeValue* GetOwnProperty(const char* name) override;
     bool HasProperty(NativeValue* key) override;
     bool DeleteProperty(NativeValue* key) override;
 

@@ -521,11 +521,18 @@ NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi
 
     auto nativeValue = reinterpret_cast<NativeValue*>(object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_FUNCTION, napi_object_expected);
-
-    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-
-    auto resultValue = nativeObject->GetPrototype();
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION, napi_object_expected);
+    
+    NativeValue* resultValue = nullptr;
+    if (type == NATIVE_FUNCTION) {
+        auto nativeFunction = reinterpret_cast<NativeFunction*>
+                              (nativeValue->GetInterface(NativeFunction::INTERFACE_ID));
+        resultValue = nativeFunction->GetFunctionPrototype();
+    } else {
+        auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+        resultValue = nativeObject->GetPrototype();
+    }
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
@@ -714,6 +721,30 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
     auto resultValue = nativeObject->GetProperty(utf8name);
+
+    *result = reinterpret_cast<napi_value>(resultValue);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
+                                                         napi_value object,
+                                                         const char* utf8name,
+                                                         napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, utf8name);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(object);
+
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
+        napi_object_expected);
+
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+
+    auto resultValue = nativeObject->GetOwnProperty(utf8name);
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
@@ -2494,5 +2525,33 @@ NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value val
     auto nativeValue = reinterpret_cast<NativeValue*>(value);
 
     *result = nativeValue->IsSharedArrayBuffer();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
+{
+    CHECK_ENV(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    bool getStackSuccess = engine->BuildJsStackTrace(stack);
+    if (!getStackSuccess) {
+        HILOG_ERROR("GetStacktrace env get stack failed");
+    }
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result)
+{
+    CHECK_ENV(env);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(data);
+
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+
+    auto resultValue = nativeObject->GetEnumerablePropertyNames();
+
+    *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
