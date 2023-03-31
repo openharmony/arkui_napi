@@ -206,7 +206,7 @@ if (defined(ohos_lite)) {
     part_name = "napi"
   }
 
-  if (is_cross_platform_build && target_os == "ios") {
+  if (is_cross_platform_build) {
     ohos_source_set("ace_napi") {
       deps = [ ":ace_napi_static" ]
       public_configs = [ ":ace_napi_config" ]
@@ -260,7 +260,7 @@ if (defined(ohos_lite)) {
           [ "native_engine/impl/${engine_path}:ace_napi_impl_${engine_path}" ]
     }
 
-    if (target_os == "ios") {
+    if (is_cross_platform_build) {
       ohos_source_set(target_name) {
         public_configs = [
           "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config",
