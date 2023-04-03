@@ -273,6 +273,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEngi
     const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
     const std::string& instanceName, void** instance)
 {
+    panda::EscapeLocalScope scope(vm_);
     Local<ObjectRef> exports(JSValueRef::Undefined(vm_));
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module = moduleManager->LoadNativeModule(moduleName.c_str(), nullptr, isAppModule);
@@ -312,13 +313,14 @@ panda::Local<panda::ObjectRef> ArkNativeEngineImpl::GetModuleFromName(NativeEngi
         Global<ObjectRef> globalExports = *exportObject;
         exports = globalExports.ToLocal(vm_);
     }
-    return exports;
+    return scope.Escape(exports);
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEngine* engine,
     const std::string& moduleName, bool isAppModule, const std::string& param, const std::string& instanceName,
     void* instance, const std::string& path)
 {
+    panda::EscapeLocalScope scope(vm_);
     Local<ObjectRef> exports(JSValueRef::Undefined(vm_));
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module =
@@ -348,7 +350,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngineImpl::LoadModuleByName(ArkNativeEn
         Global<ObjectRef> globalExports = *exportObject;
         exports = globalExports.ToLocal(vm_);
     }
-    return exports;
+    return scope.Escape(exports);
 }
 
 void ArkNativeEngineImpl::Loop(LoopMode mode, bool needSync)
@@ -894,15 +896,17 @@ void* ArkNativeEngineImpl::CreateRuntime(NativeEngine* engine)
 NativeValue* ArkNativeEngineImpl::Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer)
 {
     const panda::ecmascript::EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(context)->GetEcmaVm();
-    Local<JSValueRef> arkValue = *value;
-    Local<JSValueRef> arkTransfer = *transfer;
-    void* result = panda::JSNApi::SerializeValue(vm, arkValue, arkTransfer);
+    LocalScope scope(vm);
+    Global<JSValueRef> arkValue = *value;
+    Global<JSValueRef> arkTransfer = *transfer;
+    void* result = panda::JSNApi::SerializeValue(vm, arkValue.ToLocal(vm), arkTransfer.ToLocal(vm));
     return reinterpret_cast<NativeValue*>(result);
 }
 
 NativeValue* ArkNativeEngineImpl::Deserialize(NativeEngine* engine, NativeEngine* context, NativeValue* recorder)
 {
     const panda::ecmascript::EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(context)->GetEcmaVm();
+    LocalScope scope(vm);
     Local<JSValueRef> result = panda::JSNApi::DeserializeValue(vm, recorder, reinterpret_cast<void*>(context));
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), result);
 }
@@ -1028,6 +1032,7 @@ NativeValue* ArkNativeEngineImpl::LoadArkModule(
         return nullptr;
     }
 
+    LocalScope scope(vm_);
     Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
     if (exportObj->IsNull()) {
         HILOG_ERROR("Get export object failed");
@@ -1125,6 +1130,7 @@ NativeValue* ArkNativeEngineImpl::CreateBigWords(
     }
     uint32_t size = (uint32_t)word_count;
 
+    LocalScope scope(vm_);
     Local<JSValueRef> value = BigIntRef::CreateBigWords(vm_, sign, size, words);
 
     NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
@@ -1165,15 +1171,10 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
     }
 
     ArkNativeEngineImpl* engineImpl = static_cast<ArkNativeEngineImpl*>(env->GetNativeEngineImpl());
-    Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
-    Local<JSValueRef> reason = promiseRejectInfo->GetReason();
-    panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT operation = promiseRejectInfo->GetOperation();
-
     if (engineImpl == nullptr) {
         HILOG_ERROR("engine impl is nullptr");
         return;
     }
-
     if (engineImpl->promiseRejectCallbackRef_ == nullptr || engineImpl->checkCallbackRef_ == nullptr) {
         HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
         return;
@@ -1181,6 +1182,9 @@ void ArkNativeEngineImpl::PromiseRejectCallback(void* info)
 
     panda::ecmascript::EcmaVM* vm = engineImpl->GetEcmaVm();
     LocalScope scope(vm);
+    Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
+    Local<JSValueRef> reason = promiseRejectInfo->GetReason();
+    panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT operation = promiseRejectInfo->GetOperation();
     Local<JSValueRef> type(IntegerRef::New(vm, static_cast<int32_t>(operation)));
 
     Local<JSValueRef> args[] = {type, promise, reason};
@@ -1434,6 +1438,8 @@ void ArkNativeEngineImpl::HandleUncaughtException(NativeEngine* engine)
     if (uncaughtExceptionCallback_ == nullptr) {
         return;
     }
+
+    LocalScope scope(vm_);
     Local<ObjectRef> exception = JSNApi::GetAndClearUncaughtException(vm_);
     if (!exception.IsEmpty() && !exception->IsHole()) {
         uncaughtExceptionCallback_(ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), exception));

@@ -57,6 +57,7 @@ private:
 #ifdef ENABLE_HITRACE
         if (ArkNativeEngineImpl::napiProfilerEnabled) {
             EcmaVM *vm = runtimeInfo->GetVM();
+            LocalScope scope(vm);
             Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
             Local<panda::StringRef> nameRef = fn->GetName(vm);
             char threadName[128];
