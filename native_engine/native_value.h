@@ -36,7 +36,7 @@ typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
 typedef void* (*DetachCallback)(NativeEngine* engine, void* value, void* hint);
 typedef NativeValue* (*AttachCallback)(NativeEngine* engine, void* value, void* hint);
-
+using ErrorPos = std::pair<uint32_t, uint32_t>;
 using NativeThreadSafeFunctionCallJs =
     void (*)(NativeEngine* env, NativeValue* js_callback, void* context, void* data);
 
@@ -325,6 +325,7 @@ public:
 class NativeFunction {
 public:
     static const int INTERFACE_ID = 8;
+    virtual std::string GetSourceCodeInfo(ErrorPos pos) = 0;
 };
 
 class NativeBigint {
