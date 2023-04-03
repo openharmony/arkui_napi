@@ -21,6 +21,7 @@
 class ArkNativeString : public ArkNativeValue, public NativeString {
 public:
     ArkNativeString(ArkNativeEngine* engine, const char* value, size_t length);
+    ArkNativeString(ArkNativeEngine* engine, const char16_t* value, size_t length);
     ArkNativeString(ArkNativeEngine* engine, Local<JSValueRef> value);
     ~ArkNativeString() override;
 

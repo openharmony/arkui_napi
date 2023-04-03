@@ -196,7 +196,7 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_string_utf16(
+NAPI_EXTERN napi_status napi_create_string_utf16(
     napi_env env, const char16_t* str, size_t length, napi_value* result)
 {
     CHECK_ENV(env);
@@ -437,7 +437,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_value_string_utf16(
+NAPI_EXTERN napi_status napi_get_value_string_utf16(
     napi_env env, napi_value value, char16_t* buf, size_t bufsize, size_t* result)
 {
     CHECK_ENV(env);
@@ -2319,7 +2319,7 @@ NAPI_INNER_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value a
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object, const napi_type_tag* type_tag)
+NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object, const napi_type_tag* type_tag)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, js_object);
@@ -2341,7 +2341,7 @@ NAPI_INNER_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_o
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_check_object_type_tag(
+NAPI_EXTERN napi_status napi_check_object_type_tag(
     napi_env env, napi_value js_object, const napi_type_tag* type_tag, bool* result)
 {
     CHECK_ENV(env);

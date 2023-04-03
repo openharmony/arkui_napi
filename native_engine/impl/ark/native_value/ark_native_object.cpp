@@ -376,12 +376,38 @@ NativeValue* ArkNativeObject::GetAllPropertyNames(
 
 bool ArkNativeObject::AssociateTypeTag(NapiTypeTag* typeTag)
 {
-    return true;
+    const char name[] = "ACENAPI_TYPETAG";
+    bool result = false;
+    bool hasPribate = false;
+    hasPribate = HasProperty(name);
+    if (!hasPribate) {
+        auto resultValue = engine_->CreateBigWords(
+            0, 2, reinterpret_cast<const uint64_t*>(typeTag)); // 2: Indicates that the number of elements is 2
+        result = this->SetProperty(name, resultValue);
+    }
+    return result;
 }
 
 bool ArkNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
 {
-    return true;
+    const char name[] = "ACENAPI_TYPETAG";
+    bool result = false;
+    result = this->HasProperty(name);
+    if (result) {
+        auto resultValue = this->GetProperty(name);
+        Global<JSValueRef> object = *resultValue;
+        if (object->IsBigInt()) {
+            int sign;
+            size_t size = 2; // 2: Indicates that the number of elements is 2
+            NapiTypeTag tag;
+            auto nativeBigint = reinterpret_cast<NativeBigint*>(resultValue->GetInterface(NativeBigint::INTERFACE_ID));
+            nativeBigint->GetWordsArray(&sign, &size, reinterpret_cast<uint64_t*>(&tag));
+            if (sign == 0 && ((size == 1) || (size == 2))) { // 2: Indicates that the number of elements is 2
+                result = (tag.lower == typeTag->lower && tag.upper == typeTag->upper);
+            }
+        }
+    }
+    return result;
 }
 
 void ArkNativeObject::SetModuleName(std::string moduleName)
