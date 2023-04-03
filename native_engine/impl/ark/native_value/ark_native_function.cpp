@@ -202,3 +202,27 @@ NativeValue* ArkNativeFunction::GetFunctionPrototype()
     Local<JSValueRef> prototype = func->GetFunctionPrototype(vm);
     return ArkNativeEngine::ArkValueToNativeValue(engine_, prototype);
 }
+
+std::string ArkNativeFunction::GetSourceCodeInfo(ErrorPos pos)
+{
+    if (pos.first == 0) {
+        return "";
+    }
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<FunctionRef> func = value_;
+    uint32_t line = pos.first;
+    uint32_t column = pos.second;
+    Local<panda::StringRef> sourceCode = func->GetSourceCode(vm, line);
+    std::string sourceCodeStr = sourceCode->ToString();
+    if (sourceCodeStr.empty()) {
+        return "";
+    }
+    std::string sourceCodeInfo = "SourceCode:\n";
+    sourceCodeInfo.append(sourceCodeStr).append("\n");
+    for (uint32_t k = 0; k < column - 1; k++) {
+        sourceCodeInfo.push_back(' ');
+    }
+    sourceCodeInfo.append("^\n");
+    return sourceCodeInfo;
+}
