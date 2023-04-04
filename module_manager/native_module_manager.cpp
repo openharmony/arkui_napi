@@ -303,9 +303,8 @@ NativeModule* NativeModuleManager::LoadNativeModule(
 
 #ifdef ANDROID_PLATFORM
     std::string strModule(moduleName);
-    std::string strCutName;
+    std::string strCutName = strModule;
     if (strModule.find(".") != std::string::npos) {
-        strCutName = strModule;
         char* temp = const_cast<char*>(strCutName.c_str());
         for (char* p = strchr(temp, '.'); p != nullptr; p = strchr(p + 1, '.')) {
             *p = '_';
