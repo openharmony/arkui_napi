@@ -169,7 +169,7 @@ if (defined(ohos_lite)) {
     } else if (is_cross_platform_build && target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]
       if (napi_enable_container_scope) {
-        deps += [ ":ace_container_scope" ]
+        deps += [ ":ace_container_scope_static" ]
         defines += [ "ENABLE_CONTAINER_SCOPE" ]
       }
       aosp_deps = [ "shared_library:liblog" ]

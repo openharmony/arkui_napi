@@ -83,17 +83,9 @@ template("ace_napi_impl") {
     # add for cross_platfrom_build temporarily, shall be removed after external_deps is supported
     if (is_cross_platform_build) {
       configs = [ "$ark_ets_path:ark_jsruntime_public_config" ]
-      if (target_os == "ios") {
-        deps += [ "$ark_ets_path:libark_jsruntime_static" ]
-      } else {
-        deps += [ "$ark_ets_path:libark_jsruntime" ]
-      }
+      deps += [ "$ark_ets_path:libark_jsruntime_static" ]
     } else {
-      if (target_os == "ios") {
-        external_deps += [ "ets_runtime:libark_jsruntime_static" ]
-      } else {
-        external_deps += [ "ets_runtime:libark_jsruntime" ]
-      }
+      external_deps += [ "ets_runtime:libark_jsruntime" ]
     }
 
     if (is_mingw || is_mac || is_linux) {
