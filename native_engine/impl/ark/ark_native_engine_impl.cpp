@@ -1117,6 +1117,7 @@ NativeValue* ArkNativeEngineImpl::CreateBufferExternal(
 
 NativeValue* ArkNativeEngineImpl::CreateDate(NativeEngine* engine, double value)
 {
+    LocalScope scope(vm_);
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), DateRef::New(vm_, value));
 }
 
