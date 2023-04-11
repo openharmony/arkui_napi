@@ -525,14 +525,8 @@ NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi
     RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION, napi_object_expected);
     
     NativeValue* resultValue = nullptr;
-    if (type == NATIVE_FUNCTION) {
-        auto nativeFunction = reinterpret_cast<NativeFunction*>
-                              (nativeValue->GetInterface(NativeFunction::INTERFACE_ID));
-        resultValue = nativeFunction->GetFunctionPrototype();
-    } else {
-        auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-        resultValue = nativeObject->GetPrototype();
-    }
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+    resultValue = nativeObject->GetPrototype();
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
