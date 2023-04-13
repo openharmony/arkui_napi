@@ -172,7 +172,7 @@ if (defined(ohos_lite)) {
         deps += [ ":ace_container_scope_static" ]
         defines += [ "ENABLE_CONTAINER_SCOPE" ]
       }
-      aosp_deps = [ "shared_library:liblog" ]
+      libs = [ "log" ]
     } else {
       if (is_standard_system) {
         external_deps = [
