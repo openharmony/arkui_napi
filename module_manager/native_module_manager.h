@@ -71,7 +71,8 @@ public:
     static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
-    void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath);
+    void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
+                       const bool& isSystemApp = false);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
                                    bool internal = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
@@ -108,7 +109,7 @@ private:
         const bool isAppModule);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
     LIBHANDLE LoadModuleLibrary(const char* path, const char* pathKey, const bool isAppModule);
-    void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path);
+    void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path, const bool& isSystemApp);
     bool IsExistedPath(const char* pathKey) const;
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)

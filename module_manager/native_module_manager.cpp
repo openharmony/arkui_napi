@@ -25,6 +25,9 @@
 #include "securec.h"
 #include "utils/log.h"
 
+#define NDK "ndk"
+#define ALLOW_ALL_SHARED_LIBS "allow_all_shared_libs"
+
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
 } // namespace
@@ -194,7 +197,6 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libEGL.so",
         "libGLESv3.so",
         "libhiappevent_ndk.z.so",
-        "libhilog_ndk.z.so",
         "libhuks_ndk.z.so",
         "libhukssdk.z.so",
         "libnative_drawing.so",
@@ -237,26 +239,49 @@ void NativeModuleManager::CreateSharedLibsSonames()
 }
 #endif
 
-void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const char* lib_ld_path)
+void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const char* lib_ld_path,
+                                            const bool& isSystemApp)
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     Dl_namespace current_ns;
     Dl_namespace ns;
-    std::string nsName = "arkUI_" + moduleName;
+
+    // Create module ns.
+    std::string nsName = "moduleNs_" + moduleName;
     dlns_init(&ns, nsName.c_str());
     dlns_get(nullptr, &current_ns);
     dlns_create2(&ns, lib_ld_path, 0);
-    if (!sharedLibsSonames_) {
-        CreateSharedLibsSonames();
+
+    Dl_namespace ndk_ns;
+    dlns_get(NDK, &ndk_ns);
+
+    if (isSystemApp) {
+        // System app can visit all ndk and default ns libs.
+        if (strlen(ndk_ns.name) > 0) {
+            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+        }
+    } else {
+        // Non-system app can visit all ndk ns libs and default ns shared libs.
+        if (!sharedLibsSonames_) {
+            CreateSharedLibsSonames();
+        }
+        dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
+        if (strlen(ndk_ns.name) > 0) {
+            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+        }
     }
-    dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
     nsMap_[moduleName] = ns;
+
     HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
 #endif
 }
 
-void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath)
+void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
+                                        const bool& isSystemApp)
 {
     char* tmp = new char[NAPI_PATH_MAX];
     errno_t err = EOK;
@@ -289,7 +314,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     }
 
     appLibPathMap_[moduleName] = tmp;
-    CreateLdNamespace(moduleName, tmp);
+    CreateLdNamespace(moduleName, tmp, isSystemApp);
     HILOG_INFO("create ld namespace, path: %{private}s", appLibPathMap_[moduleName]);
 }
 
