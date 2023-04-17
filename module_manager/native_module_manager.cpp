@@ -240,7 +240,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
 #endif
 
 void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const char* lib_ld_path,
-                                            const bool& isSystemApp)
+                                            [[maybe_unused]] const bool& isSystemApp)
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
@@ -256,24 +256,16 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     Dl_namespace ndk_ns;
     dlns_get(NDK, &ndk_ns);
 
-    if (isSystemApp) {
-        // System app can visit all ndk and default ns libs.
-        if (strlen(ndk_ns.name) > 0) {
-            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
-            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
-            dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
-        }
-    } else {
-        // Non-system app can visit all ndk ns libs and default ns shared libs.
-        if (!sharedLibsSonames_) {
-            CreateSharedLibsSonames();
-        }
-        dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
-        if (strlen(ndk_ns.name) > 0) {
-            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
-            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
-        }
+
+    if (!sharedLibsSonames_) {
+        CreateSharedLibsSonames();
     }
+    dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
+    if (strlen(ndk_ns.name) > 0) {
+        dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+        dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+    }
+
     nsMap_[moduleName] = ns;
 
     HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
