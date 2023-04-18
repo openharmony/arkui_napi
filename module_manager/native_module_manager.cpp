@@ -251,19 +251,33 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     std::string nsName = "moduleNs_" + moduleName;
     dlns_init(&ns, nsName.c_str());
     dlns_get(nullptr, &current_ns);
-    dlns_create2(&ns, lib_ld_path, 0);
 
     Dl_namespace ndk_ns;
     dlns_get(NDK, &ndk_ns);
 
-
-    if (!sharedLibsSonames_) {
-        CreateSharedLibsSonames();
-    }
-    dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
-    if (strlen(ndk_ns.name) > 0) {
-        dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
-        dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+    if (isSystemApp) {
+        /*
+         * The app's so may have the same name as the system library, LOCAL_NS_PREFERED means linker will check
+         * and use the app's so first.
+         */
+        dlns_create2(&ns, lib_ld_path, LOCAL_NS_PREFERED);
+        // System app can visit all ndk and default ns libs.
+        if (strlen(ndk_ns.name) > 0) {
+            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+        }
+    } else {
+        dlns_create2(&ns, lib_ld_path, 0);
+        // Non-system app can visit all ndk ns libs and default ns shared libs.
+        if (!sharedLibsSonames_) {
+            CreateSharedLibsSonames();
+        }
+        dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
+        if (strlen(ndk_ns.name) > 0) {
+            dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+        }
     }
 
     nsMap_[moduleName] = ns;
