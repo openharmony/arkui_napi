@@ -86,21 +86,21 @@ NAPI_INNER_EXTERN napi_status napi_create_external_buffer(napi_env env,
                                                           void* finalize_hint,
                                                           napi_value* result);
 
-NAPI_INNER_EXTERN napi_status napi_create_string_utf16(napi_env env,
-                                                       const char16_t* str,
-                                                       size_t length,
-                                                       napi_value* result);
+NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env,
+                                                 const char16_t* str,
+                                                 size_t length,
+                                                 napi_value* result);
 
 NAPI_INNER_EXTERN napi_status napi_get_buffer_info(napi_env env,
                                                    napi_value value,
                                                    void** data,
                                                    size_t* length);
 
-NAPI_INNER_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
-                                                          napi_value value,
-                                                          char16_t* buf,
-                                                          size_t bufsize,
-                                                          size_t* result);
+NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
+                                                    napi_value value,
+                                                    char16_t* buf,
+                                                    size_t bufsize,
+                                                    size_t* result);
 
 NAPI_INNER_EXTERN napi_status napi_is_buffer(napi_env env,
                                              napi_value value,
@@ -125,14 +125,14 @@ NAPI_EXTERN napi_status napi_object_freeze(napi_env env, napi_value object);
 NAPI_INNER_EXTERN napi_status napi_object_seal(napi_env env,
                                                napi_value object);
 
-NAPI_INNER_EXTERN napi_status napi_type_tag_object(napi_env env,
-                                                   napi_value value,
-                                                   const napi_type_tag* type_tag);
+NAPI_EXTERN napi_status napi_type_tag_object(napi_env env,
+                                             napi_value value,
+                                             const napi_type_tag* type_tag);
 
-NAPI_INNER_EXTERN napi_status napi_check_object_type_tag(napi_env env,
-                                                         napi_value value,
-                                                         const napi_type_tag* type_tag,
-                                                         bool* result);
+NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
+                                                   napi_value value,
+                                                   const napi_type_tag* type_tag,
+                                                   bool* result);
 
 NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env,
                                                  napi_value js_object,

@@ -33,6 +33,14 @@ ArkNativeString::ArkNativeString(ArkNativeEngine* engine, const char* value, siz
     Local<StringRef> object = StringRef::NewFromUtf8(vm, value, length);
     value_ = Global<StringRef>(vm, object);
 }
+ArkNativeString::ArkNativeString(ArkNativeEngine* engine, const char16_t* value, size_t length)
+    : ArkNativeString(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
+{
+    auto vm = engine->GetEcmaVm();
+    LocalScope scope(vm);
+    Local<StringRef> object = StringRef::NewFromUtf16(vm, value, length);
+    value_ = Global<StringRef>(vm, object);
+}
 ArkNativeString::ArkNativeString(ArkNativeEngine* engine, Local<JSValueRef> value) : ArkNativeValue(engine, value) {}
 
 ArkNativeString::~ArkNativeString() {}
@@ -80,7 +88,24 @@ void ArkNativeString::GetCStringLatin1(char* buffer, size_t size, size_t* length
     }
 }
 
-void ArkNativeString::GetCString16(char16_t* buffer, size_t size, size_t* length) {}
+void ArkNativeString::GetCString16(char16_t* buffer, size_t size, size_t* length)
+{
+    if (length == nullptr) {
+        return;
+    }
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<StringRef> val = value_;
+    if (buffer == nullptr) {
+        *length = val->Length();
+    } else if (size != 0) {
+        int copied = val->WriteUtf16(buffer, size - 1);
+        buffer[copied] = '\0';
+        *length = copied;
+    } else {
+        *length = 0;
+    }
+}
 
 size_t ArkNativeString::GetLength()
 {

@@ -456,7 +456,8 @@ NativeValue* ArkNativeEngineImpl::CreateString(NativeEngine* engine, const char*
 
 NativeValue* ArkNativeEngineImpl::CreateString16(NativeEngine* engine, const char16_t* value, size_t length)
 {
-    return nullptr;
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeString>(static_cast<ArkNativeEngine*>(engine), value, length);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateSymbol(NativeEngine* engine, NativeValue* value)

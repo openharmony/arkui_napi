@@ -36,6 +36,14 @@ public:
     void TearDown() override {}
 };
 
+static const napi_type_tag typeTags[5] = { // 5:array element size is 5.
+    {0xdaf987b3cc62481a, 0xb745b0497f299531},
+    {0xbb7936c374084d9b, 0xa9548d0762eeedb9},
+    {0xa5ed9ce2e4c00c38, 0},
+    {0, 0},
+    {0xa5ed9ce2e4c00c34, 0xdaf987b3cc62481a},
+};
+
 /**
  * @tc.name: UndefinedTest001
  * @tc.desc: Test undefined type.
@@ -178,6 +186,97 @@ HWTEST_F(NapiBasicTest, StringTest002, testing::ext::TestSize.Level1)
     napi_get_value_string_latin1(env, result, str.data(), strSize + 1, &strSize);
 
     ASSERT_EQ(str, "-K");
+}
+
+/**
+ * @tc.name: StringTest003
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char16_t testStr[] = u"abc56";
+    size_t testStrLength = sizeof(testStr) / sizeof(char16_t);
+    napi_value res = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &res));
+    ASSERT_CHECK_VALUE_TYPE(env, res, napi_string);
+
+    char16_t* buffer = nullptr;
+    size_t bufSize = 0;
+    size_t copied = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, res, nullptr, 0, &bufSize));
+    ASSERT_EQ(bufSize, 6);
+    buffer = new char16_t[bufSize]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, res, buffer, bufSize, &copied));
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    ASSERT_EQ(testStrLength - 1, copied);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringTest004
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char16_t testStr[] = u"abc56";
+    size_t testStrLength = sizeof(testStr) / sizeof(char16_t);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char16_t buffer[4]; // 4: char16_t type of array size
+    size_t bufferSize = 4; // 4: char16_t type of array size
+    size_t copied;
+
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, bufferSize, &copied));
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    ASSERT_EQ(copied, 3);
+}
+
+/**
+ * @tc.name: TypetagTest001
+ * @tc.desc: Test typetag type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, TypetagTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value instance = nullptr;
+    bool result;
+    for (size_t i = 0; i < 5; i++) {
+        napi_create_object(env, &instance);
+        napi_type_tag_object(env, instance, &typeTags[i]);
+        napi_check_object_type_tag(env, instance, &typeTags[i], &result);
+        ASSERT_TRUE(result);
+    }
+}
+
+/**
+ * @tc.name: TypetagTest002
+ * @tc.desc: Test typetag type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, TypetagTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    uint32_t typeIndex = 0;
+    napi_value instance = nullptr;
+    bool result;
+    napi_create_object(env, &instance);
+
+    napi_type_tag_object(env, instance, &typeTags[typeIndex]);
+    napi_check_object_type_tag(env, instance, &typeTags[typeIndex + 1], &result);
+
+    ASSERT_FALSE(result);
 }
 
 /**
