@@ -26,19 +26,7 @@
 void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
 {
     HILOG_INFO("NativeSafeAsyncWork::AsyncCallback called");
-
     NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::asyncHandler_, asyncHandler);
-    auto ret = uv_idle_start(&that->idleHandler_, IdleCallback);
-    if (ret != 0) {
-        HILOG_ERROR("uv idle start failed %d", ret);
-        return;
-    }
-}
-
-void NativeSafeAsyncWork::IdleCallback(uv_idle_t* idleHandler)
-{
-    HILOG_INFO("NativeSafeAsyncWork::IdleCallback called");
-    NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::idleHandler_, idleHandler);
 
     that->ProcessAsyncHandle();
 }
@@ -114,12 +102,6 @@ bool NativeSafeAsyncWork::Init()
     int ret = uv_async_init(loop, &asyncHandler_, AsyncCallback);
     if (ret != 0) {
         HILOG_ERROR("uv async init failed %d", ret);
-        return false;
-    }
-
-    ret = uv_idle_init(loop, &idleHandler_);
-    if (ret != 0) {
-        HILOG_ERROR("uv idle init failed %d", ret);
         uv_close(reinterpret_cast<uv_handle_t*>(&asyncHandler_), nullptr);
         return false;
     }
@@ -238,7 +220,6 @@ bool NativeSafeAsyncWork::Ref()
     }
 
     uv_ref(reinterpret_cast<uv_handle_t*>(&asyncHandler_));
-    uv_ref(reinterpret_cast<uv_handle_t*>(&idleHandler_));
 
     return true;
 }
@@ -251,7 +232,6 @@ bool NativeSafeAsyncWork::Unref()
     }
 
     uv_unref(reinterpret_cast<uv_handle_t*>(&asyncHandler_));
-    uv_unref(reinterpret_cast<uv_handle_t*>(&idleHandler_));
 
     return true;
 }
@@ -273,10 +253,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSING) {
         HILOG_ERROR("thread is closing!");
-
-        if (uv_idle_stop(&idleHandler_) != 0) {
-            HILOG_ERROR("uv idle stop failed");
-        }
 
         CloseHandles();
         return;
@@ -305,9 +281,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     }
 
     if (size == 0) {
-        if (uv_idle_stop(&idleHandler_) != 0) {
-            HILOG_ERROR("uv idle stop failed");
-        }
         if (threadCount_ == 0) {
             CloseHandles();
         }
@@ -329,12 +302,7 @@ SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
     uv_close(reinterpret_cast<uv_handle_t*>(&asyncHandler_), [](uv_handle_t* handle) {
         NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::asyncHandler_,
             reinterpret_cast<uv_async_t*>(handle));
-        // close idle handler
-        uv_close(reinterpret_cast<uv_handle_t*>(&that->idleHandler_), [](uv_handle_t* handle) {
-            NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::idleHandler_,
-                reinterpret_cast<uv_idle_t*>(handle));
-            that->CleanUp();
-        });
+        that->CleanUp();
     });
 
     return SafeAsyncCode::SAFE_ASYNC_OK;
