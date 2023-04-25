@@ -70,9 +70,9 @@
         (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, nullptr \
     }
 
-#define DECLARE_NAPI_WRITABLE_FUNCTION(name, func)                                       \
-    {                                                                                    \
-        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default_method, nullptr \
+#define DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION(name, func)                                   \
+    {                                                                                        \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default_jsproperty, nullptr \
     }
 
 #define DECLARE_NAPI_FUNCTION_WITH_DATA(name, func, data)                      \
