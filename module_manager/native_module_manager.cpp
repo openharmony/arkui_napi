@@ -171,8 +171,8 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         lastNativeModule_->getJSCode = nativeModule->getJSCode;
         lastNativeModule_->getABCCode = nativeModule->getABCCode;
         lastNativeModule_->next = nullptr;
-#ifdef IOS_PLATFORM
-        // For iOS, force make module loaded
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+        // For iOS and android, force make module loaded
         lastNativeModule_->moduleLoaded = true;
 #endif
     }
