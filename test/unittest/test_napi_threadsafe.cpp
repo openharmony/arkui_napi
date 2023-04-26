@@ -149,6 +149,12 @@ static void TsFuncFinalTotalFour(napi_env env, void* finalizeData, void* hint)
     EXPECT_EQ(callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("TsFuncFinalTotalFour end");
 }
+static void TsFuncFinalCallback(napi_env env, void* finalizeData, void* hint)
+{
+    HILOG_INFO("TsFuncFinalCallback called");
+    EXPECT_EQ(callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
+    HILOG_INFO("TsFuncFinalCallback end");
+}
 
 static void TsFuncFinalJoinThread(napi_env env, void* data, void* hint)
 {
@@ -588,7 +594,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest007, testing::ext::TestSize.Level1)
     g_finalData.id = FINAL_CB_DATA_TEST_ID;
 
     auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
-        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+        0, 1, &g_finalData, TsFuncFinalCallback, &g_jsData, TsFuncCallJsFour, &tsFunc);
     EXPECT_EQ(status, napi_ok);
 
     status = napi_ref_threadsafe_function(env, tsFunc);
@@ -615,7 +621,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest008, testing::ext::TestSize.Level1)
     g_finalData.id = FINAL_CB_DATA_TEST_ID;
 
     auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
-        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+        0, 1, &g_finalData, TsFuncFinalCallback, &g_jsData, TsFuncCallJsFour, &tsFunc);
     EXPECT_EQ(status, napi_ok);
 
     status = napi_unref_threadsafe_function(env, tsFunc);
@@ -642,7 +648,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest009, testing::ext::TestSize.Level1)
     g_finalData.id = FINAL_CB_DATA_TEST_ID;
 
     auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
-        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+        0, 1, &g_finalData, TsFuncFinalCallback, &g_jsData, TsFuncCallJsFour, &tsFunc);
     EXPECT_EQ(status, napi_ok);
 
     status = napi_unref_threadsafe_function(env, tsFunc);
@@ -673,7 +679,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest010, testing::ext::TestSize.Level1)
     g_finalData.id = FINAL_CB_DATA_TEST_ID;
 
     auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
-        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+        0, 1, &g_finalData, TsFuncFinalCallback, &g_jsData, TsFuncCallJsFour, &tsFunc);
     EXPECT_EQ(status, napi_ok);
 
     status = napi_unref_threadsafe_function(env, tsFunc);
@@ -705,7 +711,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest011, testing::ext::TestSize.Level1)
     g_finalData.id = FINAL_CB_DATA_TEST_ID;
 
     auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
-        0, 1, &g_finalData, TsFuncFinalTotalFour, &g_jsData, TsFuncCallJsFour, &tsFunc);
+        0, 1, &g_finalData, TsFuncFinalCallback, &g_jsData, TsFuncCallJsFour, &tsFunc);
     EXPECT_EQ(status, napi_ok);
 
     status = napi_ref_threadsafe_function(env, tsFunc);

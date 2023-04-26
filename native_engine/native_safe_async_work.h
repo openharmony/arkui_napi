@@ -46,7 +46,6 @@ enum class SafeAsyncStatus {
 class NativeSafeAsyncWork {
 public:
     static void AsyncCallback(uv_async_t* asyncHandler);
-    static void IdleCallback(uv_idle_t* idleHandler);
     static void CallJs(NativeEngine* engine, NativeValue* js_call_func, void* context, void* data);
 
     NativeSafeAsyncWork(NativeEngine* engine,
@@ -86,7 +85,6 @@ private:
     NativeThreadSafeFunctionCallJs callJsCallback_ = nullptr;
     NativeAsyncContext asyncContext_;
     uv_async_t asyncHandler_;
-    uv_idle_t idleHandler_;
     std::mutex mutex_;
     std::queue<void*> queue_;
     std::condition_variable condition_;

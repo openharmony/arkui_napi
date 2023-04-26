@@ -8971,8 +8971,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Ref_Threadsafe_Function_0100, testing::ext::
 
     auto ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->asyncHandler_)));
     EXPECT_EQ(ret, 1);
-    ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->idleHandler_)));
-    EXPECT_EQ(ret, 1);
 
     status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
     EXPECT_EQ(status, napi_ok);
@@ -9057,8 +9055,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Ref_Threadsafe_Function_0300, testing::ext::
 
     auto ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->asyncHandler_)));
     EXPECT_EQ(ret, 0);
-    ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->idleHandler_)));
-    EXPECT_EQ(ret, 0);
 
     status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
     EXPECT_EQ(status, napi_ok);
@@ -9093,8 +9089,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Ref_Threadsafe_Function_0400, testing::ext::
 
     auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(tsFunc);
     auto ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->asyncHandler_)));
-    EXPECT_EQ(ret, 1);
-    ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->idleHandler_)));
     EXPECT_EQ(ret, 1);
 
     status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
@@ -9135,8 +9129,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Unref_Threadsafe_Function_0100, testing::ext
     auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(tsFunc);
 
     auto ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->asyncHandler_)));
-    EXPECT_EQ(ret, 0);
-    ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->idleHandler_)));
     EXPECT_EQ(ret, 0);
 
     status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
@@ -9218,8 +9210,6 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Unref_Threadsafe_Function_0300, testing::ext
     auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(tsFunc);
 
     auto ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->asyncHandler_)));
-    EXPECT_EQ(ret, 1);
-    ret = uv_has_ref(reinterpret_cast<uv_handle_t*>(&(safeAsyncWork->idleHandler_)));
     EXPECT_EQ(ret, 1);
 
     status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
