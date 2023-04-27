@@ -226,6 +226,10 @@ public:
     virtual void SetDebuggerPostTaskFunc(DebuggerPostTask func);
     virtual void CallDebuggerPostTaskFunc(std::function<void()>&& task);
 #endif
+
+    virtual void SetHostEngine(NativeEngine* engine);
+    virtual NativeEngine* GetHostEngine() const;
+
     virtual NativeValue* CreateDate(double value) = 0;
     virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) = 0;
     using CleanupCallback = CleanupHookCallback::Callback;

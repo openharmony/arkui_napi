@@ -876,6 +876,7 @@ NativeEngine* ArkNativeEngineImpl::CreateRuntimeFunc(NativeEngine* engine, void*
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
+    arkEngine->SetHostEngine(engine);
 
     auto cleanEnv = [vm]() {
         if (vm != nullptr) {

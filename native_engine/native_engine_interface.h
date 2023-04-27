@@ -308,6 +308,8 @@ public:
     void SetDebuggerPostTaskFunc(DebuggerPostTask func);
     DebuggerPostTask GetDebuggerPostTaskFunc() const;
 #endif
+    void SetHostEngine(NativeEngine* engine);
+    NativeEngine* GetHostEngine() const;
 
     // run script by path
     NativeValue* RunScript(const char* path);
@@ -335,6 +337,7 @@ protected:
 #if !defined(PREVIEW)
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
+    NativeEngine* hostEngine_ {nullptr};
 
 private:
     bool isMainThread_ { true };
