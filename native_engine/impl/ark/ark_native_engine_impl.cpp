@@ -131,6 +131,12 @@ ArkNativeEngineImpl::ArkNativeEngineImpl(
                     module =
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
                             isAppModule, false);
+                } else if (info->GetArgsNumber() == 4) {
+                    Local<StringRef> path(info->GetCallArgRef(2));
+                    Local<StringRef> relativePath(info->GetCallArgRef(3));
+                    module =
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false,
+                            relativePath->ToString().c_str());
                 } else {
                     module = 
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false);
