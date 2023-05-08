@@ -18,6 +18,7 @@ import("//foundation/arkui/napi/napi.gni")
 config("ace_napi_ark_config") {
   include_dirs = [
     "//foundation/arkui/napi",
+    "../../../../../../foundation/arkui/napi/native_engine/impl/ark",
     "//third_party/libuv/include",
     "//commonlibrary/c_utils/base/include",
   ]

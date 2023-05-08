@@ -65,12 +65,30 @@
                   },
                   {
                     "header": {
+                      "header_base": "//foundation/arkui/napi/native_engine/",
+                      "header_files": [
+                          "native_engine.h"
+                      ]
+                    },
+                    "name": "//foundation/arkui/napi:ace_napi"
+                  },
+                  {
+                    "header": {
                       "header_base": "//foundation/arkui/ace_engine/frameworks/core/common/",
                       "header_files": [
                           "container_scope.h"
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_container_scope"
+                  },
+                  {
+                    "header": {
+                      "header_base": "//foundation/arkui/napi/native_engine/impl/ark/",
+                      "header_files": [
+                          "ark_native_engine.h"
+                      ]
+                    },
+                    "name": "//foundation/arkui/napi:ace_napi_ark"
                   }
             ],
             "test": [
