@@ -106,6 +106,8 @@ public:
     NativeValue* RunScriptPath(const char* path) override;
 
     NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
+    bool RunScriptBuffer(const std::string& path, std::unique_ptr<uint8_t[]> buffer, size_t size,
+                         bool isBundle) override;
 
     // Run buffer script
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
