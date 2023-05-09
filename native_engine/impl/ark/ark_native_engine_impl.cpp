@@ -692,6 +692,7 @@ NativeValue* ArkNativeEngineImpl::RunScriptPath(NativeEngine* engine, const char
     return CreateUndefined(engine);
 }
 
+// The security interface needs to be modified accordingly.
 NativeValue* ArkNativeEngineImpl::RunScriptBuffer(
     NativeEngine* engine, const char* path, std::vector<uint8_t>& buffer, bool isBundle)
 {
@@ -711,16 +712,16 @@ NativeValue* ArkNativeEngineImpl::RunScriptBuffer(
     return CreateUndefined(engine);
 }
 
-bool ArkNativeEngineImpl::RunScriptBuffer(NativeEngine* engine, const std::string& path,
-                                          std::unique_ptr<uint8_t[]> buffer, size_t size, bool isBundle)
+bool ArkNativeEngineImpl::RunScriptBuffer(NativeEngine* engine, const std::string& path, uint8_t* buffer,
+                                          size_t size, bool isBundle)
 {
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     bool ret = false;
     if (isBundle) {
-        ret = panda::JSNApi::Execute(vm_, std::move(buffer), size, PANDA_MAIN_FUNCTION, path);
+        ret = panda::JSNApi::ExecuteSecure(vm_, buffer, size, PANDA_MAIN_FUNCTION, path);
     } else {
-        ret = panda::JSNApi::ExecuteModuleBuffer(vm_, std::move(buffer), size, path);
+        ret = panda::JSNApi::ExecuteModuleBufferSecure(vm_, buffer, size, path);
     }
     
     if (panda::JSNApi::HasPendingException(vm_)) {
