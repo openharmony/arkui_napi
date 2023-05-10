@@ -107,7 +107,7 @@ const char* NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
     NativeModule* module = FindNativeModuleByCache(moduleName);
     if (module != nullptr) {
         char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
-        if (!GetNativeModulePath(moduleName, "default", isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+        if (!GetNativeModulePath(moduleName, "default", "", isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
             HILOG_ERROR("%{public}s, get module filed", __func__);
             return nullptr;
         }
@@ -188,7 +188,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libdl.so",
         "libm.so",
         "libz.so",
-	"libclang_rt.asan.so",
+        "libclang_rt.asan.so",
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
@@ -222,12 +222,12 @@ void NativeModuleManager::CreateSharedLibsSonames()
 
     size_t allowListLength = sizeof(allowList) / sizeof(char*);
     int32_t sharedLibsSonamesLength = 1;
-    for (int32_t i = 0; i < allowListLength; i++) {
+    for (size_t i = 0; i < allowListLength; i++) {
         sharedLibsSonamesLength += strlen(allowList[i]) + 1;
     }
     sharedLibsSonames_ = new char[sharedLibsSonamesLength];
     int32_t cursor = 0;
-    for (int32_t i = 0; i < allowListLength; i++) {
+    for (size_t i = 0; i < allowListLength; i++) {
         if (sprintf_s(sharedLibsSonames_ + cursor, sharedLibsSonamesLength - cursor, "%s:", allowList[i]) == -1) {
             delete[] sharedLibsSonames_;
             sharedLibsSonames_ = nullptr;
@@ -298,7 +298,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     }
 
     std::string tmpPath = "";
-    for (int i = 0; i < appLibPath.size(); i++) {
+    for (size_t i = 0; i < appLibPath.size(); i++) {
         if (appLibPath[i].empty()) {
             continue;
         }
@@ -324,11 +324,11 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     HILOG_INFO("create ld namespace, path: %{private}s", appLibPathMap_[moduleName]);
 }
 
-NativeModule* NativeModuleManager::LoadNativeModule(
-    const char* moduleName, const char* path, bool isAppModule, bool internal)
+NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
+    const char* path, bool isAppModule, bool internal, const char* relativePath)
 {
-    if (moduleName == nullptr) {
-        HILOG_ERROR("moduleName value is null");
+    if (moduleName == nullptr || relativePath == nullptr) {
+        HILOG_ERROR("moduleName value or relativePath is null");
         return nullptr;
     }
 
@@ -368,10 +368,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(
     if (nativeModule == nullptr) {
 #ifdef ANDROID_PLATFORM
         HILOG_INFO("not in cache: moduleName: %{public}s", strCutName.c_str());
-        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", internal, isAppModule);
+        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", relativePath, internal, isAppModule);
 #else
         HILOG_INFO("not in cache: moduleName: %{public}s", moduleName);
-        nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), internal, isAppModule);
+        nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule);
 #endif
     }
 #endif
@@ -384,29 +384,29 @@ NativeModule* NativeModuleManager::LoadNativeModule(
     return nativeModule;
 }
 
-bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char* path, bool isAppModule,
-    char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength)
+bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char* path,
+    const char* relativePath, bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength)
 {
 #ifdef WINDOWS_PLATFORM
     const char* soPostfix = ".dll";
-    const char* sysPrefix = "./module";
     const char* zfix = "";
+    std::string sysPrefix("./module");
 #elif defined(MAC_PLATFORM)
     const char* soPostfix = ".dylib";
-    const char* sysPrefix = "./module";
     const char* zfix = "";
+    std::string sysPrefix("./module");
 #elif defined(_ARM64_) || defined(SIMULATOR)
     const char* soPostfix = ".so";
-    const char* sysPrefix = "/system/lib64/module";
     const char* zfix = ".z";
+    std::string sysPrefix("/system/lib64/module");
 #elif defined(LINUX_PLATFORM)
     const char* soPostfix = ".so";
-    const char* sysPrefix = "./module";
     const char* zfix = "";
+    std::string sysPrefix("./module");
 #else
     const char* soPostfix = ".so";
-    const char* sysPrefix = "/system/lib/module";
     const char* zfix = ".z";
+    std::string sysPrefix("/system/lib/module");
 #endif
 
 #ifdef ANDROID_PLATFORM
@@ -428,7 +428,10 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
         }
 #endif
     } else {
-        prefix = sysPrefix;
+        if (relativePath[0]) {
+            sysPrefix = sysPrefix + "/" + relativePath;
+        }
+        prefix = sysPrefix.c_str();
         for (int32_t i = 0; i < lengthOfModuleName; i++) {
             dupModuleName[i] = tolower(dupModuleName[i]);
         }
@@ -562,12 +565,12 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const char* p
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(
-    const char* moduleName, const char* path, bool internal, const bool isAppModule)
+    const char* moduleName, const char* path, const char* relativePath, bool internal,  const bool isAppModule)
 {
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
-    if (!GetNativeModulePath(moduleName, path, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+    if (!GetNativeModulePath(moduleName, path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
         HILOG_WARN("get module failed, moduleName = %{public}s", moduleName);
         return nullptr;
     }
