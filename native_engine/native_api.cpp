@@ -202,7 +202,7 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
     CHECK_ENV(env);
     CHECK_ARG(env, str);
     CHECK_ARG(env, result);
-    RETURN_STATUS_IF_FALSE(env, (length == NAPI_AUTO_LENGTH) || (length <= INT_MAX && length > 0), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, (length == NAPI_AUTO_LENGTH) || (length <= INT_MAX && length >= 0), napi_invalid_arg);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
     auto resultValue = engine->CreateString16(str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);

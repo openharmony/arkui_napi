@@ -88,22 +88,25 @@ void ArkNativeString::GetCStringLatin1(char* buffer, size_t size, size_t* length
     }
 }
 
-void ArkNativeString::GetCString16(char16_t* buffer, size_t size, size_t* length)
+void ArkNativeString::GetCString16(char16_t* buffer, size_t bufSize, size_t* copyLength)
 {
-    if (length == nullptr) {
+    if (copyLength == nullptr) {
         return;
     }
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
     Global<StringRef> val = value_;
     if (buffer == nullptr) {
-        *length = val->Length();
-    } else if (size != 0) {
-        int copied = val->WriteUtf16(buffer, size - 1);
+        *copyLength = val->Length();
+    } else if (bufSize == 1) {
+        buffer[0] = '\0';
+        *copyLength = 0;
+    } else if (bufSize != 0) {
+        int copied = val->WriteUtf16(buffer, bufSize - 1); // bufSize - 1 ：reserve the position of buffer "\0"
         buffer[copied] = '\0';
-        *length = copied;
+        *copyLength = copied;
     } else {
-        *length = 0;
+        *copyLength = 0;
     }
 }
 
