@@ -1423,6 +1423,23 @@ bool ArkNativeEngineImpl::ExecutePermissionCheck()
     }
 }
 
+void ArkNativeEngineImpl::RegisterTranslateBySourceMap(SourceMapCallback callback)
+{
+    if (SourceMapCallback_ == nullptr) {
+        SourceMapCallback_ = callback;
+    }
+}
+
+std::string ArkNativeEngineImpl::ExecuteTranslateBySourceMap(const std::string& rawStack)
+{
+    if (SourceMapCallback_ != nullptr) {
+        return SourceMapCallback_(rawStack);
+    } else {
+        HILOG_WARN("SourceMapCallback_ is nullptr.");
+        return "";
+    }
+}
+
 inline void ArkNativeEngineImpl::SetModuleName(ArkNativeObject *nativeObj, std::string moduleName)
 {
 #ifdef ENABLE_HITRACE

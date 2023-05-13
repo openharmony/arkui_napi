@@ -701,6 +701,18 @@ bool ArkNativeEngine::ExecutePermissionCheck()
     return arkNativeEngineImpl->ExecutePermissionCheck();
 }
 
+void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->RegisterTranslateBySourceMap(callback);
+}
+
+std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->ExecuteTranslateBySourceMap(rawStack);
+}
+
 bool ArkNativeEngine::IsMixedDebugEnabled()
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

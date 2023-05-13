@@ -103,6 +103,7 @@ using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
+using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 
 class NAPI_EXPORT NativeEngineInterface {
 public:
@@ -298,6 +299,10 @@ public:
     
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
+
+    virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
+    virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
+
     void SetInitWorkerFunc(InitWorkerFunc func);
     InitWorkerFunc GetInitWorkerFunc() const;
     void SetGetAssetFunc(GetAssetFunc func);

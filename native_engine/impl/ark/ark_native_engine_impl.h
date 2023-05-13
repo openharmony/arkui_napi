@@ -231,7 +231,8 @@ public:
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
-
+    void RegisterTranslateBySourceMap(SourceMapCallback callback) override;
+    std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
     void AllowCrossThreadExecution() const override;
 
     NativeReference* GetPromiseRejectCallBackRef()
@@ -268,6 +269,7 @@ private:
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     static PermissionCheckCallback permissionCheckCallback_;
+    SourceMapCallback SourceMapCallback_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
     static std::string tempModuleName_;

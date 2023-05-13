@@ -525,3 +525,13 @@ bool JerryScriptNativeEngine::ExecutePermissionCheck()
     auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
     return jerryscriptNativeEngineImpl->ExecutePermissionCheck();
 }
+void JerryScriptNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    return jerryscriptNativeEngineImpl->RegisterTranslateBySourceMap(callback);
+}
+std::string JerryScriptNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)
+{
+    auto jerryscriptNativeEngineImpl = static_cast<JerryScriptNativeEngineImpl*>(nativeEngineImpl_);
+    return jerryscriptNativeEngineImpl->ExecuteTranslateBySourceMap(rawStack);
+}
