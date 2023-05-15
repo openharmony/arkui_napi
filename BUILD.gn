@@ -15,6 +15,7 @@ import("//foundation/arkui/napi/napi.gni")
 
 config("ace_napi_config") {
   include_dirs = [
+    "../../../foundation/arkui/napi/native_engine",
     "//foundation/arkui/napi",
     "//foundation/arkui/napi/interfaces/inner_api",
     "//foundation/arkui/napi/interfaces/kits",
