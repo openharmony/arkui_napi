@@ -115,6 +115,7 @@ public:
     virtual NativeValue* RunScript(NativeValue* script) = 0;
     virtual NativeValue* RunScriptPath(const char* path) = 0;
     virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
+    virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
     virtual NativeValue* DefineClass(const char* name,

@@ -89,6 +89,11 @@ public:
         return nullptr;
     }
     RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
+    virtual bool RunScriptBuffer(NativeEngine* engine, const std::string& path, uint8_t* buffer, size_t size,
+                                 bool isBundle) override
+    {
+        return false;
+    }
     virtual NativeValue* RunBufferScript(NativeEngine* engine, std::vector<uint8_t>& buffer) override;
     virtual NativeValue* RunActor(
         NativeEngine* engine, std::vector<uint8_t>& buffer, const char *descriptor) override;
