@@ -2527,10 +2527,12 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     CHECK_ENV(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    bool getStackSuccess = engine->BuildJsStackTrace(stack);
+    std::string rawStack;
+    bool getStackSuccess = engine->BuildJsStackTrace(rawStack);
     if (!getStackSuccess) {
         HILOG_ERROR("GetStacktrace env get stack failed");
     }
+    stack = engine->ExecuteTranslateBySourceMap(rawStack);
     return napi_clear_last_error(env);
 }
 

@@ -195,11 +195,14 @@ public:
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override {}
     void HandleUncaughtException(NativeEngine* engine) override {}
     void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
-    bool ExecutePermissionCheck() override
+    [[maybe_unused]]bool ExecutePermissionCheck() override
     {
         return true;
     }
-
+    [[maybe_unused]]std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override
+    {
+        return "";
+    }
     void AllowCrossThreadExecution() const override {}
 };
 

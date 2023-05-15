@@ -273,7 +273,8 @@ public:
     }
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
-
+    virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
+    virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
     // run script by path
     NativeValue* RunScript(const char* path);
 

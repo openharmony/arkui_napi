@@ -150,6 +150,8 @@ public:
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override {}
     bool ExecutePermissionCheck() override;
+    void RegisterTranslateBySourceMap(SourceMapCallback callback) override {};
+    std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
 
     void AllowCrossThreadExecution() const override {};
 };
