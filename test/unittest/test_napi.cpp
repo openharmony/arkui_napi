@@ -636,6 +636,8 @@ HWTEST_F(NapiBasicTest, PromiseTest001, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, ErrorTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
+    bool isExceptionPending = false;
+    napi_value exception = nullptr;
 
     {
         napi_value code = nullptr;
@@ -651,6 +653,11 @@ HWTEST_F(NapiBasicTest, ErrorTest001, testing::ext::TestSize.Level1)
         napi_is_error(env, error, &isError);
         ASSERT_TRUE(isError);
         napi_throw(env, error);
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_TRUE(isExceptionPending);
+        napi_get_and_clear_last_exception(env, &exception);
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_FALSE(isExceptionPending);
     }
 
     {
@@ -664,6 +671,13 @@ HWTEST_F(NapiBasicTest, ErrorTest001, testing::ext::TestSize.Level1)
         bool isError = false;
         napi_is_error(env, error, &isError);
         ASSERT_TRUE(isError);
+
+        napi_throw_range_error(env, "500", "Range error");
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_TRUE(isExceptionPending);
+        napi_get_and_clear_last_exception(env, &exception);
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_FALSE(isExceptionPending);
     }
 
     {
@@ -677,14 +691,21 @@ HWTEST_F(NapiBasicTest, ErrorTest001, testing::ext::TestSize.Level1)
         bool isError = false;
         napi_is_error(env, error, &isError);
         ASSERT_TRUE(isError);
+
+        napi_throw_type_error(env, "500", "Type error");
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_TRUE(isExceptionPending);
+        napi_get_and_clear_last_exception(env, &exception);
+        napi_is_exception_pending(env, &isExceptionPending);
+        ASSERT_FALSE(isExceptionPending);
     }
 
     napi_throw_error(env, "500", "Common error");
-    napi_throw_range_error(env, "500", "Range error");
-    napi_throw_type_error(env, "500", "Type error");
-    bool isExceptionPending = false;
     napi_is_exception_pending(env, &isExceptionPending);
     ASSERT_TRUE(isExceptionPending);
+    napi_get_and_clear_last_exception(env, &exception);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
 }
 
 /**
