@@ -670,12 +670,12 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
     }
 
     Local<JSValueRef> value = funcObj->Call(vm_, thisObj, args.data(), argc);
+    scopeManager->Close(nativeScope);
     if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException(engine);
+        HILOG_ERROR("pending exception when js function called");
         return nullptr;
     }
 
-    scopeManager->Close(nativeScope);
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), value);
 }
 
