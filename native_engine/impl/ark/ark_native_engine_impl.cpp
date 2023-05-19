@@ -618,15 +618,10 @@ bool ArkNativeEngineImpl::InitTaskPoolThread(NativeEngine* engine, NapiConcurren
 
 bool ArkNativeEngineImpl::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
 {
-    if (func == nullptr) {
-        return false;
-    }
     LocalScope scope(vm_);
     Local<JSValueRef> function = JSValueRef::Undefined(vm_);
-    if (func != nullptr) {
-        Global<JSValueRef> globalObj = *func;
-        function = globalObj.ToLocal(vm_);
-    }
+    Global<JSValueRef> globalObj = *func;
+    function = globalObj.ToLocal(vm_);
     return JSNApi::InitForConcurrentFunction(vm_, function);
 }
 
