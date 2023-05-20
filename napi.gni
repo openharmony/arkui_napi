@@ -32,3 +32,4 @@ declare_args() {
 }
 
 ark_ets_path = "//arkcompiler/ets_runtime"
+arkui_napi_path = "//foundation/arkui/napi"
