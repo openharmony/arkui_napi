@@ -93,6 +93,7 @@
             ],
             "test": [
                 "//foundation/arkui/napi:napi_packages_test",
+                "//foundation/arkui/napi/module_manager/test/unittest/module_manager_test:unittest",
                 "//foundation/arkui/napi/sample/native_module_systemtest:systemtest",
                 "//foundation/arkui/napi/test/unittest:unittest"
             ]
