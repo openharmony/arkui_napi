@@ -238,10 +238,10 @@ bool ArkNativeEngine::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCal
     return arkNativeEngineImpl->InitTaskPoolThread(this, callback);
 }
 
-bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
+bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->InitTaskPoolFunc(this, func);
+    return arkNativeEngineImpl->InitTaskPoolFunc(this, func, taskInfo);
 }
 
 NativeValue* ArkNativeEngine::CallFunction(

@@ -107,7 +107,7 @@ public:
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
-    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
                                       NativeValue* const *argv,

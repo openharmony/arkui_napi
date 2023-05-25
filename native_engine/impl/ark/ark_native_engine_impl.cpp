@@ -592,8 +592,7 @@ NativeValue* ArkNativeEngineImpl::CreateError(NativeEngine* engine, NativeValue*
     return ArkValueToNativeValue(static_cast<ArkNativeEngine*>(engine), errorVal);
 }
 
-static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success,
-    Local<JSValueRef> hint, void *data)
+static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success, void *taskInfo, void *data)
 {
     if (data == nullptr) {
         return;
@@ -606,8 +605,7 @@ static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success,
         return;
     }
 
-    concurrentCallbackFunc(engine, ArkNativeEngineImpl::ArkValueToNativeValue(engine, result),
-        success, ArkNativeEngineImpl::ArkValueToNativeValue(engine, hint));
+    concurrentCallbackFunc(engine, ArkNativeEngineImpl::ArkValueToNativeValue(engine, result), success, taskInfo);
 }
 
 bool ArkNativeEngineImpl::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
@@ -616,13 +614,12 @@ bool ArkNativeEngineImpl::InitTaskPoolThread(NativeEngine* engine, NapiConcurren
     return JSNApi::InitForConcurrentThread(vm_, ConcurrentCallbackFunc, static_cast<void *>(engine));
 }
 
-bool ArkNativeEngineImpl::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func)
+bool ArkNativeEngineImpl::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo)
 {
     LocalScope scope(vm_);
-    Local<JSValueRef> function = JSValueRef::Undefined(vm_);
     Global<JSValueRef> globalObj = *func;
-    function = globalObj.ToLocal(vm_);
-    return JSNApi::InitForConcurrentFunction(vm_, function);
+    Local<JSValueRef> function = globalObj.ToLocal(vm_);
+    return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
 }
 
 NativeValue* ArkNativeEngineImpl::CallFunction(
