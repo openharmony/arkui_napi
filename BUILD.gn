@@ -230,6 +230,7 @@ if (defined(ohos_lite)) {
         public_deps = [ "//third_party/libuv:uv" ]
       }
       subsystem_name = "arkui"
+      innerapi_tags = [ "platformsdk" ]
       part_name = "napi"
     }
   }
@@ -247,6 +248,7 @@ if (defined(ohos_lite)) {
     sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
 
     subsystem_name = "arkui"
+    innerapi_tags = [ "platformsdk_indirect" ]
     part_name = "napi"
   }
 
