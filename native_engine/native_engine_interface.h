@@ -97,8 +97,7 @@ using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
-using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result,
-    bool success, NativeValue* data);
+using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
@@ -167,7 +166,7 @@ public:
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
-    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) = 0;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
 
     virtual NativeValue* CallFunction(
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;

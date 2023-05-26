@@ -71,7 +71,7 @@ public:
     virtual NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* Message) override;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
-    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
+    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
 
     virtual NativeValue* CallFunction(NativeEngine* engine,
                                       NativeValue* thisVar,

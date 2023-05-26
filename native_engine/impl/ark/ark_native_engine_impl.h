@@ -140,7 +140,7 @@ public:
     // Create native error value
     NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) override;
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
-    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func) override;
+    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
     // Call function
     NativeValue* CallFunction(NativeEngine* engine, NativeValue* thisVar, NativeValue* function,
         NativeValue* const *argv, size_t argc) override;
