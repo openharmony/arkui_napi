@@ -94,7 +94,8 @@
             "test": [
                 "//foundation/arkui/napi:napi_packages_test",
                 "//foundation/arkui/napi/sample/native_module_systemtest:systemtest",
-                "//foundation/arkui/napi/test/unittest:unittest"
+                "//foundation/arkui/napi/test/unittest:unittest",
+                "//foundation/arkui/napi/test/fuzztest:fuzztest"
             ]
         }
     }
