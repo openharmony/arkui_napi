@@ -1664,7 +1664,7 @@ NAPI_EXTERN napi_status napi_object_freeze(napi_env env, napi_value object)
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_object_seal(napi_env env, napi_value object)
+NAPI_EXTERN napi_status napi_object_seal(napi_env env, napi_value object)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
@@ -2281,7 +2281,7 @@ NAPI_EXTERN napi_status napi_is_date(napi_env env, napi_value value, bool* resul
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value arraybuffer, bool* result)
+NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value arraybuffer, bool* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, arraybuffer);
@@ -2321,7 +2321,7 @@ NAPI_INNER_EXTERN napi_status napi_get_all_property_names(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybuffer)
+NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybuffer)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, arraybuffer);

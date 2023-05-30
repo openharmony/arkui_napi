@@ -447,6 +447,20 @@ std::string ArkNativeObject::GetModuleName()
 
 void ArkNativeObject::AddFinalizer(void* pointer, NativeFinalize cb, void* hint) {}
 
-void ArkNativeObject::Freeze() {}
+void ArkNativeObject::Freeze()
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
 
-void ArkNativeObject::Seal() {}
+    obj->Freeze(vm);
+}
+
+void ArkNativeObject::Seal()
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
+    
+    obj->Seal(vm);
+}
