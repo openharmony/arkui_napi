@@ -11,6 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+arkui_napi_path = "//foundation"
+arkui_napi_test_path = "${arkui_napi_path}/arkui/napi/test"
+foundation_arkui_path = "${arkui_napi_path}/arkui"
 napi_sources = [
   "//foundation/arkui/napi/callback_scope_manager/native_callback_scope_manager.cpp",
   "//foundation/arkui/napi/module_manager/module_load_checker.cpp",

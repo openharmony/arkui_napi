@@ -29,7 +29,7 @@ public:
 
     void GetCString(char* buffer, size_t size, size_t* length) override;
     void GetCStringLatin1(char* buffer, size_t size, size_t* length) override;
-    void GetCString16(char16_t* buffer, size_t size, size_t* length) override;
+    void GetCString16(char16_t* buffer, size_t bufSize, size_t* copyLength) override;
     size_t GetLength() override;
     size_t EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars) override;
     void EncodeWriteChinese(std::string& buffer, const char* encoding) override;
