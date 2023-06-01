@@ -273,6 +273,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
         if (!sharedLibsSonames_) {
             CreateSharedLibsSonames();
         }
+        dlns_set_namespace_allowed_libs("default", sharedLibsSonames_);
         dlns_inherit(&ns, &current_ns, sharedLibsSonames_);
         if (strlen(ndk_ns.name) > 0) {
             dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
