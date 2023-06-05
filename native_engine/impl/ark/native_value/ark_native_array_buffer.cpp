@@ -95,10 +95,21 @@ size_t ArkNativeArrayBuffer::GetLength()
 
 bool ArkNativeArrayBuffer::IsDetachedArrayBuffer()
 {
-    return true;
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ArrayBufferRef> v = value_;
+
+    return v->IsDetach();
 }
 
 bool ArkNativeArrayBuffer::DetachArrayBuffer()
 {
-    return false;
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ArrayBufferRef> v = value_;
+
+    if (!v->IsDetach()) {
+        v->Detach(vm);
+    }
+    return true;
 }
