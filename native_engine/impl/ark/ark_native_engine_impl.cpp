@@ -665,6 +665,8 @@ NativeValue* ArkNativeEngineImpl::CallFunction(
     scopeManager->Close(nativeScope);
     if (panda::JSNApi::HasPendingException(vm_)) {
         HILOG_ERROR("pending exception when js function called");
+        HILOG_ERROR("print exception info: ");
+        panda::JSNApi::PrintExceptionInfo(vm_);
         return nullptr;
     }
 
