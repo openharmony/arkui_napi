@@ -139,8 +139,10 @@ public:
     static void PromiseRejectCallback(void* values);
     // Create native error value
     NativeValue* CreateError(NativeEngine* engine, NativeValue* code, NativeValue* message) override;
+    // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    void* GetCurrentTaskInfo() const override;
     // Call function
     NativeValue* CallFunction(NativeEngine* engine, NativeValue* thisVar, NativeValue* function,
         NativeValue* const *argv, size_t argc) override;

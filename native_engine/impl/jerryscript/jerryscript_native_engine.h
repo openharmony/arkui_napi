@@ -65,6 +65,7 @@ public:
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    virtual void* GetCurrentTaskInfo() const override;
 
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,

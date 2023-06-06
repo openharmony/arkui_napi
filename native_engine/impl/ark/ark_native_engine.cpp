@@ -244,6 +244,12 @@ bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, 
     return arkNativeEngineImpl->InitTaskPoolFunc(this, func, taskInfo);
 }
 
+void* ArkNativeEngine::GetCurrentTaskInfo() const
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->GetCurrentTaskInfo();
+}
+
 NativeValue* ArkNativeEngine::CallFunction(
     NativeValue* thisVar, NativeValue* function, NativeValue* const* argv, size_t argc)
 {
