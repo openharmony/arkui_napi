@@ -27,6 +27,7 @@
 
 #include "native_value/ark_native_array.h"
 #include "native_value/ark_native_array_buffer.h"
+#include "native_value/ark_native_buffer.h"
 #include "native_value/ark_native_big_int.h"
 #include "native_value/ark_native_boolean.h"
 #include "native_value/ark_native_data_view.h"
@@ -433,6 +434,8 @@ NativeValue* ArkNativeEngine::ArkValueToNativeValue(ArkNativeEngine* engine, Loc
         result = chunk.New<ArkNativeFunction>(engine, value);
     } else if (value->IsArrayBuffer()) {
         result = chunk.New<ArkNativeArrayBuffer>(engine, value);
+    } else if (value->IsBuffer()) {
+        result = chunk.New<ArkNativeBuffer>(engine, value);
     } else if (value->IsDataView()) {
         result = chunk.New<ArkNativeDataView>(engine, value);
     } else if (value->IsTypedArray()) {
