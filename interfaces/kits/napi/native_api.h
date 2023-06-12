@@ -67,44 +67,16 @@ NAPI_INNER_EXTERN napi_status napi_add_async_cleanup_hook(
 NAPI_INNER_EXTERN napi_status napi_remove_async_cleanup_hook(
     napi_async_cleanup_hook_handle remove_handle);
 
-NAPI_INNER_EXTERN napi_status napi_create_buffer(napi_env env,
-                                                 size_t length,
-                                                 void** data,
-                                                 napi_value* result);
-
-NAPI_INNER_EXTERN napi_status napi_create_buffer_copy(napi_env env,
-                                                      size_t length,
-                                                      const void* data,
-                                                      void** result_data,
-                                                      napi_value* result);
-
-
-NAPI_INNER_EXTERN napi_status napi_create_external_buffer(napi_env env,
-                                                          size_t length,
-                                                          void* data,
-                                                          napi_finalize finalize_cb,
-                                                          void* finalize_hint,
-                                                          napi_value* result);
-
 NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env,
                                                  const char16_t* str,
                                                  size_t length,
                                                  napi_value* result);
-
-NAPI_INNER_EXTERN napi_status napi_get_buffer_info(napi_env env,
-                                                   napi_value value,
-                                                   void** data,
-                                                   size_t* length);
 
 NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
                                                     napi_value value,
                                                     char16_t* buf,
                                                     size_t bufsize,
                                                     size_t* result);
-
-NAPI_INNER_EXTERN napi_status napi_is_buffer(napi_env env,
-                                             napi_value value,
-                                             bool* result);
 
 NAPI_EXTERN napi_status napi_type_tag_object(napi_env env,
                                              napi_value value,

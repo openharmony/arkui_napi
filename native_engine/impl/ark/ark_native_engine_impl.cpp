@@ -28,6 +28,7 @@
 #include "ark_native_engine.h"
 #include "native_value/ark_native_array.h"
 #include "native_value/ark_native_array_buffer.h"
+#include "native_value/ark_native_buffer.h"
 #include "native_value/ark_native_big_int.h"
 #include "native_value/ark_native_boolean.h"
 #include "native_value/ark_native_data_view.h"
@@ -1093,18 +1094,21 @@ bool ArkNativeEngineImpl::ExecuteJsBin(const std::string& fileName)
 
 NativeValue* ArkNativeEngineImpl::CreateBuffer(NativeEngine* engine, void** value, size_t length)
 {
-    return nullptr;
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBuffer>(static_cast<ArkNativeEngine*>(engine), (uint8_t**)value, length);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateBufferCopy(NativeEngine* engine, void** value, size_t length, const void* data)
 {
-    return nullptr;
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBuffer>(static_cast<ArkNativeEngine*>(engine), (uint8_t**)value, length, (uint8_t*)data);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateBufferExternal(
     NativeEngine* engine, void* value, size_t length, NativeFinalize cb, void* hint)
 {
-    return nullptr;
+    NativeChunk& chunk = static_cast<ArkNativeEngine*>(engine)->GetNativeChunk();
+    return chunk.New<ArkNativeBuffer>(static_cast<ArkNativeEngine*>(engine), (uint8_t*)value, length, cb, hint);
 }
 
 NativeValue* ArkNativeEngineImpl::CreateDate(NativeEngine* engine, double value)

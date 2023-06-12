@@ -1553,7 +1553,7 @@ NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool*
 }
 
 EXTERN_C_START
-NAPI_INNER_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, bool* result)
+NAPI_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, bool* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -1564,7 +1564,7 @@ NAPI_INNER_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, boo
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** data, napi_value* result)
+NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** data, napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, data);
@@ -1587,7 +1587,7 @@ NAPI_INNER_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_buffer_copy(
+NAPI_EXTERN napi_status napi_create_buffer_copy(
     napi_env env, size_t length, const void* data, void** result_data, napi_value* result)
 {
     CHECK_ENV(env);
@@ -1611,7 +1611,7 @@ NAPI_INNER_EXTERN napi_status napi_create_buffer_copy(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_create_external_buffer(
+NAPI_EXTERN napi_status napi_create_external_buffer(
     napi_env env, size_t length, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
 {
     CHECK_ENV(env);
@@ -1632,21 +1632,19 @@ NAPI_INNER_EXTERN napi_status napi_create_external_buffer(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_buffer_info(napi_env env, napi_value value, void** data, size_t* length)
+NAPI_EXTERN napi_status napi_get_buffer_info(napi_env env, napi_value value, void** data, size_t* length)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = reinterpret_cast<NativeValue*>(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsArrayBuffer(), napi_status::napi_arraybuffer_expected);
 
-    auto nativeBuffer = reinterpret_cast<NativeBuffer*>(nativeValue->GetInterface(NativeBuffer::INTERFACE_ID));
-    if (data != nullptr) {
-        *data = nativeBuffer->GetBuffer();
-    }
-    if (length != nullptr) {
-        *length = nativeBuffer->GetLength();
-    }
+    auto nativeArrayBuffer =
+        reinterpret_cast<NativeArrayBuffer*>(nativeValue->GetInterface(NativeArrayBuffer::INTERFACE_ID));
+
+    *data = nativeArrayBuffer->GetBuffer();
+    *length = nativeArrayBuffer->GetLength();
     return napi_clear_last_error(env);
 }
 

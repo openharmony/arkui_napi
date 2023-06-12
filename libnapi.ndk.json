@@ -125,5 +125,10 @@
     {"name": "napi_object_freeze"},
     {"name": "napi_object_seal"},
     {"name": "napi_detach_arraybuffer"},
-    {"name": "napi_is_detached_arraybuffer"}
+    {"name": "napi_is_detached_arraybuffer"},
+    {"name": "napi_is_buffer"},
+    {"name": "napi_create_buffer"},
+    {"name": "napi_create_buffer_copy"},
+    {"name": "napi_create_external_buffer"},
+    {"name": "napi_get_buffer_info"}
 ]

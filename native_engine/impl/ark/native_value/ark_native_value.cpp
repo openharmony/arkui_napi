@@ -104,7 +104,8 @@ bool ArkNativeValue::IsArrayBuffer()
 
 bool ArkNativeValue::IsBuffer()
 {
-    return false;
+    Global<JSValueRef> value = value_;
+    return value->IsBuffer();
 }
 
 bool ArkNativeValue::IsDate()
