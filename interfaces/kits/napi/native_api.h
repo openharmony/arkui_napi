@@ -106,13 +106,6 @@ NAPI_INNER_EXTERN napi_status napi_is_buffer(napi_env env,
                                              napi_value value,
                                              bool* result);
 
-NAPI_INNER_EXTERN napi_status napi_get_all_property_names(napi_env env,
-                                                          napi_value object,
-                                                          napi_key_collection_mode key_mode,
-                                                          napi_key_filter key_filter,
-                                                          napi_key_conversion key_conversion,
-                                                          napi_value* result);
-
 NAPI_EXTERN napi_status napi_type_tag_object(napi_env env,
                                              napi_value value,
                                              const napi_type_tag* type_tag);

@@ -2300,7 +2300,7 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_all_property_names(
+NAPI_EXTERN napi_status napi_get_all_property_names(
     napi_env env, napi_value object, napi_key_collection_mode key_mode,
     napi_key_filter key_filter, napi_key_conversion key_conversion, napi_value* result)
 {
