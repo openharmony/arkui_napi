@@ -69,6 +69,7 @@
     {"name": "napi_is_date"},
     {"name": "napi_strict_equals"},
     {"name": "napi_get_property_names"},
+    {"name": "napi_get_all_property_names"},
     {"name": "napi_set_property"},
     {"name": "napi_get_property"},
     {"name": "napi_has_property"},

@@ -383,7 +383,51 @@ bool ArkNativeObject::DeletePrivateProperty(const char* name)
 NativeValue* ArkNativeObject::GetAllPropertyNames(
     napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion)
 {
-    return nullptr;
+    uint32_t filter = NATIVE_DEFAULT;
+    if (keyFilter & napi_key_writable) {
+        filter = static_cast<uint32_t>(filter | NATIVE_WRITABLE);
+    }
+    if (keyFilter & napi_key_enumerable) {
+        filter = static_cast<uint32_t>(filter | NATIVE_ENUMERABLE);
+    }
+    if (keyFilter & napi_key_configurable) {
+        filter = static_cast<uint32_t>(filter | NATIVE_CONFIGURABLE);
+    }
+    if (keyFilter & napi_key_skip_strings) {
+        filter = static_cast<uint32_t>(filter | NATIVE_KEY_SKIP_STRINGS);
+    }
+    if (keyFilter & napi_key_skip_symbols) {
+        filter = static_cast<uint32_t>(filter | NATIVE_KEY_SKIP_SYMBOLS);
+    }
+
+    switch (keyMode) {
+        case napi_key_include_prototypes:
+            filter = static_cast<uint32_t>(filter | NATIVE_KEY_INCLUDE_PROTOTYPES);
+            break;
+        case napi_key_own_only:
+            filter = static_cast<uint32_t>(filter | NATIVE_KEY_OWN_ONLY);
+            break;
+        default:
+            return nullptr;
+    }
+
+    switch (keyConversion) {
+        case napi_key_keep_numbers:
+            filter = static_cast<uint32_t>(filter | NATIVE_KEY_KEEP_NUMBERS);
+            break;
+        case napi_key_numbers_to_strings:
+            filter = static_cast<uint32_t>(filter | NATIVE_KEY_NUMBERS_TO_STRINGS);
+            break;
+        default:
+            return nullptr;
+    }
+
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> val = value_;
+    Local<ArrayRef> arrayVal = val->GetAllPropertyNames(vm, filter);
+    NativeChunk& chunk = engine_->GetNativeChunk();
+    return chunk.New<ArkNativeArray>(engine_, arrayVal);
 }
 
 bool ArkNativeObject::AssociateTypeTag(NapiTypeTag* typeTag)
