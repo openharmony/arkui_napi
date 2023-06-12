@@ -622,6 +622,11 @@ bool ArkNativeEngineImpl::InitTaskPoolFunc(NativeEngine* engine, NativeValue* fu
     return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
 }
 
+void* ArkNativeEngineImpl::GetCurrentTaskInfo() const
+{
+    return JSNApi::GetCurrentTaskInfo(vm_);
+}
+
 NativeValue* ArkNativeEngineImpl::CallFunction(
     NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc)
 {

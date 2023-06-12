@@ -167,6 +167,7 @@ public:
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
+    virtual void* GetCurrentTaskInfo() const = 0;
 
     virtual NativeValue* CallFunction(
         NativeEngine* engine, NativeValue* thisVar, NativeValue* function, NativeValue* const *argv, size_t argc) = 0;

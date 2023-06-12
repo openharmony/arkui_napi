@@ -94,8 +94,10 @@ public:
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
     // Create native error value
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
+    // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    void* GetCurrentTaskInfo() const override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
