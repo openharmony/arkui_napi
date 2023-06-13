@@ -431,7 +431,11 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 #endif
     } else {
         if (relativePath[0]) {
-            sysPrefix = sysPrefix + "/" + relativePath;
+            if (previewSearchPath_.empty()) {
+                sysPrefix = sysPrefix + "/" + relativePath;
+            } else {
+                sysPrefix = previewSearchPath_ + "/module";
+            }
         }
         prefix = sysPrefix.c_str();
         for (int32_t i = 0; i < lengthOfModuleName; i++) {
@@ -701,4 +705,9 @@ int32_t NativeModuleManager::GetProcessExtensionType()
         return EXTENSION_TYPE_UNSPECIFIED;
     }
     return moduleLoadChecker_->GetProcessExtensionType();
+}
+
+void NativeModuleManager::SetPreviewSearchPath(const std::string& previewSearchPath)
+{
+    previewSearchPath_ = previewSearchPath;
 }

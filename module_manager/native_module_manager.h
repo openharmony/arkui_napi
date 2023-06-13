@@ -99,6 +99,13 @@ public:
      */
     int32_t GetProcessExtensionType();
 
+    /**
+     * @brief Set the path for searching napi dynamic libraries, only for the previewer.
+     *
+     * @param previewSearchPath the path for searching napi dynamic libraries
+     */
+    void SetPreviewSearchPath(const std::string& previewSearchPath);
+
 private:
     NativeModuleManager();
     virtual ~NativeModuleManager();
@@ -131,6 +138,7 @@ private:
     std::map<std::string, NativeEngine*> nativeEngineList_;
     std::map<std::string, char*> appLibPathMap_;
     ModuleLoadChecker* moduleLoadChecker_ = nullptr;
+    std::string previewSearchPath_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H */
