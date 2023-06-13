@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "mock_native_module_manager.h"
+#include "module_load_checker.h"
 
 using namespace testing::ext;
 
@@ -135,6 +136,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_004, TestSize.Level1)
 
     module = moduleManager->LoadNativeModule(moduleName, nullptr, false, false, relativePath);
     EXPECT_EQ(module, &mockModule);
+    moduleManager->Register(module);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_004 end";
 }
@@ -162,4 +164,201 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_005, TestSize.Level1)
     EXPECT_EQ(module, nullptr);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_005 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_006
+ * @tc.desc: test NativeModule's SetNativeEngine function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_006, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_006 starts";
+    const char *moduleName = "moduleName_006";
+    NativeEngine* engine = nullptr;
+    NativeModuleManager moduleManager;
+    moduleManager.SetNativeEngine(moduleName, engine);
+
+    MockFindNativeModuleByCache(nullptr);
+    const char* result = moduleManager.GetModuleFileName(moduleName, true);
+    EXPECT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_006 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_007
+ * @tc.desc: test NativeModule's GetModuleFileName function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_007, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_007 starts";
+    const char *moduleName = "moduleName_007";
+    NativeModule mockModule;
+    NativeModuleManager moduleManager;
+
+    MockFindNativeModuleByCache(&mockModule);
+    const char* result = moduleManager.GetModuleFileName(moduleName, true);
+    EXPECT_TRUE(result != nullptr);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_007 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_008
+ * @tc.desc: test NativeModule's Register function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_008, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_008 starts";
+    std::string moduleName = "moduleName_008";
+    const char* libPath = nullptr;
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->Register(nullptr);
+    moduleManager->CreateSharedLibsSonames();
+    moduleManager->CreateLdNamespace(moduleName, libPath, true);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_008 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_009
+ * @tc.desc: test NativeModule's CreateLdNamespace function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_009, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_009 starts";
+    std::string moduleName = "moduleName_009";
+    const char* libPath = nullptr;
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateLdNamespace(moduleName, libPath, false);
+    std::vector<std::string> appLibPath;
+    moduleManager->SetAppLibPath(moduleName, appLibPath, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_009 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_010
+ * @tc.desc: test NativeModule's SetAppLibPath function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_010, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_010 starts";
+    std::string moduleName = "moduleName_010";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::vector<std::string> appLibPath1 = { "0", "1", "2" };
+    moduleManager->SetAppLibPath(moduleName, appLibPath1, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_010 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_011
+ * @tc.desc: test NativeModule's FindNativeModuleByDisk function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 starts";
+    const char* moduleName = "moduleName_010";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+    MockFindNativeModuleByDisk(nullptr);
+
+    EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false), nullptr);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_012
+ * @tc.desc: test NativeModule's SetProcessExtensionType function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    bool result = moduleManager->IsExistedPath(nullptr);
+    EXPECT_EQ(result, false);
+
+    MockCheckModuleLoadable(true);
+    moduleManager->SetProcessExtensionType(10);
+    int32_t result1 = moduleManager->GetProcessExtensionType();
+    EXPECT_EQ(result1, 10);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_013
+ * @tc.desc: test NativeModule's SetProcessExtensionType function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_013, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    MockCheckModuleLoadable(false);
+    moduleManager->SetProcessExtensionType(10);
+    int32_t result1 = moduleManager->GetProcessExtensionType();
+    EXPECT_EQ(result1, 10);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 end";
+}
+
+/*
+ * @tc.name: GetProcessExtensionType_001
+ * @tc.desc: test NativeModule's GetProcessExtensionType function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, GetProcessExtensionType_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleLoadCheckerTest, GetProcessExtensionType_001 starts";
+
+    std::shared_ptr<ModuleLoadChecker> moduleLoadChecker = std::make_shared<ModuleLoadChecker>();
+    ASSERT_NE(nullptr, moduleLoadChecker);
+
+    moduleLoadChecker->SetProcessExtensionType(1);
+    int32_t result = moduleLoadChecker->GetProcessExtensionType();
+    int32_t code = 1;
+    EXPECT_EQ(result, code);
+
+    GTEST_LOG_(INFO) << "ModuleLoadCheckerTest, GetProcessExtensionType_001 ends";
+}
+
+/*
+ * @tc.name: CheckModuleLoadable_002
+ * @tc.desc: test NativeModule's CheckModuleLoadable function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, CheckModuleLoadable_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleLoadCheckerTest, CheckModuleLoadable_002 starts";
+
+    std::shared_ptr<ModuleLoadChecker> moduleLoadChecker = std::make_shared<ModuleLoadChecker>();
+    ASSERT_NE(nullptr, moduleLoadChecker);
+
+    const char* moduleName = "moduleName_010";
+    bool result = moduleLoadChecker->CheckModuleLoadable(moduleName);
+    EXPECT_EQ(result, false);
+
+    GTEST_LOG_(INFO) << "ModuleLoadCheckerTest, CheckModuleLoadable_002 ends";
 }
