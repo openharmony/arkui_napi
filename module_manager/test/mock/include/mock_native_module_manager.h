@@ -25,6 +25,7 @@
 
 void MockCheckModuleLoadable(bool loadable);
 void MockFindNativeModuleByDisk(NativeModule *module);
+void MockFindNativeModuleByCache(NativeModule *module);
 void MockLoadModuleLibrary(LIBHANDLE handle);
 void MockResetModuleManagerState();
 
