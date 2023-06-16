@@ -189,9 +189,17 @@ public:
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
-    void MarkSubThread()
+    void MarkWorkerThread()
     {
-        nativeEngineImpl_->MarkSubThread();
+        nativeEngineImpl_->MarkWorkerThread();
+    }
+    void MarkTaskPoolThread()
+    {
+        nativeEngineImpl_->MarkTaskPoolThread();
+    }
+    bool IsWorkerThread() const
+    {
+        return nativeEngineImpl_->IsWorkerThread();
     }
 
     bool IsMainThread() const
