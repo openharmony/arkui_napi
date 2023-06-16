@@ -247,14 +247,22 @@ public:
 
     virtual void AllowCrossThreadExecution() const = 0;
 
-    void MarkSubThread()
+    void MarkWorkerThread()
     {
-        isMainThread_ = false;
+        jsThreadType_ = JSThreadType::WORKER_THREAD;
+    }
+    void MarkTaskPoolThread()
+    {
+        jsThreadType_ = JSThreadType::TASKPOOL_THREAD;
+    }
+    bool IsWorkerThread() const
+    {
+        return jsThreadType_ == JSThreadType::WORKER_THREAD;
     }
 
     bool IsMainThread() const
     {
-        return isMainThread_;
+        return jsThreadType_ == JSThreadType::MAIN_THREAD;
     }
 
     void SetCleanEnv(CleanEnv cleanEnv)
@@ -347,7 +355,8 @@ protected:
     NativeEngine* hostEngine_ {nullptr};
 
 private:
-    bool isMainThread_ { true };
+    enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD };
+    JSThreadType jsThreadType_ = JSThreadType::MAIN_THREAD;
 
 #if !defined(PREVIEW)
     static void UVThreadRunner(void* nativeEngine);
