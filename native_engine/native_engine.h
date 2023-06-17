@@ -310,6 +310,13 @@ public:
      */
     void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
 
+    /**
+     * @brief Set the Module Load Checker
+     *
+     * @param moduleCheckerDelegate the module checker delegate will intercept the module loading
+     */
+    void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
+
 protected:
     void *jsEngine_;
 

@@ -17,34 +17,16 @@
 
 #include "utils/log.h"
 
-void ModuleLoadChecker::SetModuleBlocklist(
-    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
-{
-    moduleBlocklist_ = std::move(blocklist);
-    HILOG_INFO("moduleBlocklist_ size = %{public}d", static_cast<int32_t>(moduleBlocklist_.size()));
-}
-
-void ModuleLoadChecker::SetProcessExtensionType(int32_t extensionType)
-{
-    processExtensionType_ = extensionType;
-}
-
-int32_t ModuleLoadChecker::GetProcessExtensionType()
-{
-    return processExtensionType_;
-}
-
 bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName)
 {
-    HILOG_INFO("check blocklist, moduleName = %{public}s, processExtensionType_ = %{public}d",
-        moduleName, static_cast<int32_t>(processExtensionType_));
-    const auto& blockListIter = moduleBlocklist_.find(processExtensionType_);
-    if (blockListIter == moduleBlocklist_.end()) {
+    if (!moduleCheckerDelegate_) {
+        HILOG_INFO("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
     }
-    auto blackList = blockListIter->second;
-    if (blackList.find(moduleName) == blackList.end()) {
-        return true;
-    }
-    return false;
+    return moduleCheckerDelegate_->CheckModuleLoadable(moduleName);
+}
+
+void ModuleLoadChecker::SetDelegate(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
+{
+    moduleCheckerDelegate_ = moduleCheckerDelegate;
 }

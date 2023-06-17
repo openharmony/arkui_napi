@@ -79,32 +79,18 @@ public:
     const char* GetModuleFileName(const char* moduleName, bool isAppModule);
 
     /**
-     * @brief Set the Module Blacklist
-     *
-     * @param blocklist the blocklist
-     */
-    void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
-
-    /**
-     * @brief Set the Process Extension Type
-     *
-     * @param extensionType extension type
-     */
-    void SetProcessExtensionType(int32_t extensionType);
-
-    /**
-     * @brief Get the Process Extension Type
-     *
-     * @return Process extension type
-     */
-    int32_t GetProcessExtensionType();
-
-    /**
      * @brief Set the path for searching napi dynamic libraries, only for the previewer.
      *
      * @param previewSearchPath the path for searching napi dynamic libraries
      */
     void SetPreviewSearchPath(const std::string& previewSearchPath);
+    
+    /**
+     * @brief Set the Module Load Checker delegate
+     * 
+     * @param moduleCheckerDelegate The Module Load Checker delegate
+     */
+    void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
 private:
     NativeModuleManager();
@@ -137,8 +123,8 @@ private:
     std::mutex nativeEngineListMutex_;
     std::map<std::string, NativeEngine*> nativeEngineList_;
     std::map<std::string, char*> appLibPathMap_;
-    ModuleLoadChecker* moduleLoadChecker_ = nullptr;
     std::string previewSearchPath_;
+    std::unique_ptr<ModuleLoadChecker> moduleLoadChecker_ = nullptr;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H */

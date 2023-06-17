@@ -385,14 +385,16 @@ const std::unordered_map<std::string, int32_t>& NativeEngine::GetExtensionInfos(
     return extensionInfos_;
 }
 
-void NativeEngine::SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
+void NativeEngine::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
     if (!nativeEngineImpl_) {
+        HILOG_ERROR("SetModuleLoadChecker failed, nativeEngineImpl_ is nullptr");
         return;
     }
     NativeModuleManager* moduleManager = nativeEngineImpl_->GetModuleManager();
     if (!moduleManager) {
+        HILOG_ERROR("SetModuleLoadChecker failed, moduleManager is nullptr");
         return;
     }
-    moduleManager->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
+    moduleManager->SetModuleLoadChecker(moduleCheckerDelegate);
 }
