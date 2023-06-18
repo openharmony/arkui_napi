@@ -216,9 +216,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libnative_media_core.so",
         "libnative_media_vdec.so",
         "libnative_media_venc.so",
-        "libnative_media_avmuxer.so",
-        "libnative_media_avdemuxer.so",
-        "libnative_media_avsource.so",
+        "libnative_media_avformat.so",
         // adaptor library
         "libohosadaptor.so",
         "libusb_ndk.z.so",
