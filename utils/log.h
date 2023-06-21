@@ -60,7 +60,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN,
 
 #define HILOG_PRINT(Level, fmt, ...)     \
     (void)OHOS::HiviewDFX::HiLog::Level( \
-        LOG_LABEL, "[%{public}s(%{public}s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__)
+        LOG_LABEL, "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
 #endif
 
