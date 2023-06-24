@@ -21,6 +21,7 @@
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #endif
+#include "module_load_checker.h"
 #include "native_engine/native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
@@ -38,7 +39,7 @@ std::mutex g_instanceMutex;
 NativeModuleManager::NativeModuleManager()
 {
     pthread_mutex_init(&mutex_, nullptr);
-    moduleLoadChecker_ = new ModuleLoadChecker();
+    moduleLoadChecker_ = std::make_unique<ModuleLoadChecker>();
 }
 
 NativeModuleManager::~NativeModuleManager()
@@ -76,9 +77,6 @@ NativeModuleManager::~NativeModuleManager()
             wraper = nullptr;
         }
         nativeEngineList_.erase(nativeEngineList_.begin());
-    }
-    if (moduleLoadChecker_) {
-        delete moduleLoadChecker_;
     }
     pthread_mutex_destroy(&mutex_);
 }
@@ -582,10 +580,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         HILOG_WARN("get module failed, moduleName = %{public}s", moduleName);
         return nullptr;
     }
-    if (!moduleLoadChecker_) {
-        return nullptr;
-    }
-    if (!moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+    if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
         HILOG_ERROR("module %{public}s is not allow to load", moduleName);
         return nullptr;
     }
@@ -684,29 +679,13 @@ bool NativeModuleManager::IsExistedPath(const char* pathKey) const
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
 }
 
-void NativeModuleManager::SetModuleBlocklist(
-    std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist)
+void NativeModuleManager::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
     if (!moduleLoadChecker_) {
+        HILOG_ERROR("SetModuleLoadChecker failed, moduleLoadChecker_ is nullptr");
         return;
     }
-    moduleLoadChecker_->SetModuleBlocklist(std::forward<decltype(blocklist)>(blocklist));
-}
-
-void NativeModuleManager::SetProcessExtensionType(int32_t extensionType)
-{
-    if (!moduleLoadChecker_) {
-        return;
-    }
-    moduleLoadChecker_->SetProcessExtensionType(extensionType);
-}
-
-int32_t NativeModuleManager::GetProcessExtensionType()
-{
-    if (!moduleLoadChecker_) {
-        return EXTENSION_TYPE_UNSPECIFIED;
-    }
-    return moduleLoadChecker_->GetProcessExtensionType();
+    moduleLoadChecker_->SetDelegate(moduleCheckerDelegate);
 }
 
 void NativeModuleManager::SetPreviewSearchPath(const std::string& previewSearchPath)

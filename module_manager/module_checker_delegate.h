@@ -13,21 +13,16 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_LOAD_CHECKER_H
-#define FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_LOAD_CHECKER_H
-
-#include "module_checker_delegate.h"
-
-#include <memory>
+#ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H
+#define FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H
 
 /**
- * @brief Module load checker. check whether module can be loaded
- * 
+ * @brief Module checker interface. check whether module can be loaded
+ *
  */
-class ModuleLoadChecker {
+class ModuleCheckerDelegate {
 public:
-    ModuleLoadChecker() = default;
-    virtual ~ModuleLoadChecker() = default;
+    virtual ~ModuleCheckerDelegate() = default;
 
     /**
      * @brief Check whether the module is allowed to be loaded
@@ -36,17 +31,7 @@ public:
      * @return true The module can be loaded
      * @return false The module cannot be loaded
      */
-    bool CheckModuleLoadable(const char* moduleName);
-
-    /**
-     * @brief Set the moudle checker delegate
-     *
-     * @param moduleCheckerDelegate
-     */
-    void SetDelegate(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
-
-private:
-    std::shared_ptr<ModuleCheckerDelegate> moduleCheckerDelegate_ = nullptr;
+    virtual bool CheckModuleLoadable(const char* moduleName) = 0;
 };
 
-#endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_LOAD_CHECKER_H */
+#endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H */
