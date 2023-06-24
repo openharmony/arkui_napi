@@ -61,7 +61,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     return g_mockFindNativeModuleByDisk;
 }
 
-LIBHANDLE NativeModuleManager::LoadModuleLibrary(const char* path, const char* pathKey, const bool isAppModule)
+LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const char* path,
+    const char* pathKey, const bool isAppModule)
 {
     GTEST_LOG_(INFO) << g_mockLoadModuleLibrary;
     return g_mockLoadModuleLibrary;
