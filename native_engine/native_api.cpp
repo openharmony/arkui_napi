@@ -2549,3 +2549,14 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, work);
+
+    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
+
+    asyncWork->QueueWithQos(qos);
+    return napi_status::napi_ok;
+}

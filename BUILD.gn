@@ -359,7 +359,10 @@ if (defined(ohos_lite)) {
 
   ohos_ndk_headers("napi_header") {
     dest_dir = "$ndk_headers_out_dir/napi"
-    sources = [ "//foundation/arkui/napi/interfaces/kits/napi/native_api.h" ]
+    sources = [
+      "interfaces/kits/napi/common.h",
+      "interfaces/kits/napi/native_api.h",
+    ]
   }
 
   group("napi_packages_ndk") {

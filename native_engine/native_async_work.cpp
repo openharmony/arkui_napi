@@ -104,6 +104,27 @@ bool NativeAsyncWork::Queue()
     return true;
 }
 
+bool NativeAsyncWork::QueueWithQos([[maybe_unused]]napi_qos_t qos)
+{
+    uv_loop_t* loop = engine_->GetUVLoop();
+    if (loop == nullptr) {
+        HILOG_ERROR("Get loop failed");
+        return false;
+    }
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "Napi queueWithQos, " + this->GetTraceDescription());
+#endif
+    int status = uv_queue_work(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback);
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
+    if (status != 0) {
+        HILOG_ERROR("uv_queue_work_with_qos failed");
+        return false;
+    }
+    return true;
+}
+
 bool NativeAsyncWork::Cancel()
 {
     int status = uv_cancel((uv_req_t*)&work_);

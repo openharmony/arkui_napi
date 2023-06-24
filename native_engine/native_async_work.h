@@ -17,6 +17,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_WORK_H
 
 #include "native_value.h"
+#include "interfaces/kits/napi/common.h"
 
 #include <mutex>
 #include <queue>
@@ -53,6 +54,7 @@ public:
 
     virtual ~NativeAsyncWork();
     virtual bool Queue();
+    virtual bool QueueWithQos(napi_qos_t qos);
     virtual bool Cancel();
     virtual std::string GetTraceDescription();
     template<typename Inner, typename Outer>
