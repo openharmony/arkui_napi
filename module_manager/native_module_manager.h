@@ -111,9 +111,10 @@ private:
     char* sharedLibsSonames_ = nullptr;
     std::map<std::string, Dl_namespace> nsMap_;
 #endif
+
+    std::mutex nativeModuleListMutex_;
     NativeModule* firstNativeModule_ = nullptr;
     NativeModule* lastNativeModule_ = nullptr;
-    char* appLibPath_ = nullptr;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;

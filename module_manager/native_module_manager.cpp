@@ -44,6 +44,7 @@ NativeModuleManager::NativeModuleManager()
 
 NativeModuleManager::~NativeModuleManager()
 {
+    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     NativeModule* nativeModule = firstNativeModule_;
     while (nativeModule != nullptr) {
         nativeModule = nativeModule->next;
@@ -55,9 +56,7 @@ NativeModuleManager::~NativeModuleManager()
     }
     firstNativeModule_ = nullptr;
     lastNativeModule_ = nullptr;
-    if (appLibPath_) {
-        delete[] appLibPath_;
-    }
+
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     if (sharedLibsSonames_) {
@@ -123,6 +122,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         return;
     }
 
+    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (firstNativeModule_ == lastNativeModule_ && lastNativeModule_ == nullptr) {
         firstNativeModule_ = new NativeModule();
         if (firstNativeModule_ == nullptr) {
@@ -159,21 +159,20 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         }
     }
 
-    if (lastNativeModule_) {
-        lastNativeModule_->version = nativeModule->version;
-        lastNativeModule_->fileName = nativeModule->fileName;
-        lastNativeModule_->isAppModule = isAppModule_;
-        lastNativeModule_->name = isAppModule_ ? moduleName : nativeModule->name;
-        lastNativeModule_->refCount = nativeModule->refCount;
-        lastNativeModule_->registerCallback = nativeModule->registerCallback;
-        lastNativeModule_->getJSCode = nativeModule->getJSCode;
-        lastNativeModule_->getABCCode = nativeModule->getABCCode;
-        lastNativeModule_->next = nullptr;
+    lastNativeModule_->version = nativeModule->version;
+    lastNativeModule_->fileName = nativeModule->fileName;
+    lastNativeModule_->isAppModule = isAppModule_;
+    lastNativeModule_->name = isAppModule_ ? moduleName : nativeModule->name;
+    lastNativeModule_->refCount = nativeModule->refCount;
+    lastNativeModule_->registerCallback = nativeModule->registerCallback;
+    lastNativeModule_->getJSCode = nativeModule->getJSCode;
+    lastNativeModule_->getABCCode = nativeModule->getABCCode;
+    lastNativeModule_->next = nullptr;
 #if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-        // For iOS and android, force make module loaded
-        lastNativeModule_->moduleLoaded = true;
+    // For iOS and android, force make module loaded
+    lastNativeModule_->moduleLoaded = true;
 #endif
-    }
+    HILOG_INFO("NativeModule Register success. module name: %{public}s", lastNativeModule_->name);
 }
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
@@ -284,7 +283,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
 
     nsMap_[moduleName] = ns;
 
-    HILOG_INFO("CreateLdNamespace success, path: %{private}s", lib_ld_path);
+    HILOG_INFO("CreateLdNamespace success, path: %{public}s", lib_ld_path);
 #endif
 }
 
@@ -323,7 +322,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
 
     appLibPathMap_[moduleName] = tmp;
     CreateLdNamespace(moduleName, tmp, isSystemApp);
-    HILOG_INFO("create ld namespace, path: %{private}s", appLibPathMap_[moduleName]);
+    HILOG_INFO("create ld namespace, path: %{public}s", appLibPathMap_[moduleName]);
 }
 
 NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
@@ -587,11 +586,11 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
 
     // load primary module path first
     char* loadPath = nativeModulePath[0];
-    HILOG_DEBUG("get primary module path: %{public}s", loadPath);
+    HILOG_DEBUG("moduleName: %{public}s. get primary module path: %{public}s", moduleName, loadPath);
     LIBHANDLE lib = LoadModuleLibrary(loadPath, path, isAppModule);
     if (lib == nullptr) {
         loadPath = nativeModulePath[1];
-        HILOG_DEBUG("primary module path load failed, try to load secondary module path: %{public}s", loadPath);
+        HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         lib = LoadModuleLibrary(loadPath, path, isAppModule);
         if (lib == nullptr) {
             HILOG_ERROR("primary and secondary module path load failed %{public}s", moduleName);
@@ -605,9 +604,10 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         moduleKey = moduleKey + '/' + moduleName;
     }
 
+    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (lastNativeModule_ && strcmp(lastNativeModule_->name, moduleKey.c_str())) {
-        HILOG_WARN(
-            "moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, lastNativeModule_->name);
+        HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
+                   moduleKey.c_str(), lastNativeModule_->name);
     }
 
     if (!internal) {
@@ -646,10 +646,13 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 {
     NativeModule* result = nullptr;
     NativeModule* preNativeModule = nullptr;
+
+    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if (!strcasecmp(temp->name, moduleName)) {
             if (strcmp(temp->name, moduleName)) {
-                HILOG_WARN("moduleName '%{public}s' does not match plugin's name '%{public}s'", moduleName, temp->name);
+                HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
+                           moduleName, temp->name);
             }
             result = temp;
             break;
