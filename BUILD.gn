@@ -377,6 +377,7 @@ if (defined(ohos_lite)) {
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
         "sample/native_module_storage:storage",
+        "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
     }
