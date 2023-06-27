@@ -14,9 +14,11 @@
  */
 
 #include "test.h"
+#include "test_common.h"
 #include "gtest/gtest.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "napi/native_common.h"
 #include "securec.h"
 #include "utils/log.h"
 
@@ -1163,4 +1165,372 @@ HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1)
     bool isSharedArrayBuffer = true;
     napi_is_shared_array_buffer(env, arrayBuffer, &isSharedArrayBuffer);
     ASSERT_EQ(isSharedArrayBuffer, false);
+}
+
+/**
+ * @tc.name: CreateBufferTest001
+ * @tc.desc: Test is CreateBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateBufferTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value buffer = nullptr;
+    void* bufferPtr = nullptr;
+    size_t bufferSize = -1;
+    napi_status creatresult = napi_create_buffer(env, bufferSize, &bufferPtr, &buffer);
+
+    ASSERT_EQ(creatresult, napi_status::napi_invalid_arg);
+    ASSERT_EQ(bufferPtr, nullptr);
+}
+
+/**
+ * @tc.name: CreateBufferTest002
+ * @tc.desc: Test is CreateBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateBufferTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value buffer = nullptr;
+    void* bufferPtr = nullptr;
+    const char* data = nullptr;
+    size_t bufferSize = -1;
+    napi_status creatresult = napi_create_buffer_copy(env, bufferSize, data, &bufferPtr, &buffer);
+
+    ASSERT_EQ(creatresult, napi_status::napi_invalid_arg);
+    ASSERT_EQ(bufferPtr, nullptr);
+}
+
+/**
+ * @tc.name: IsDetachedArrayBufferTest001
+ * @tc.desc: Test is DetachedArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, IsDetachedArrayBufferTest001, testing::ext::TestSize.Level1)
+{
+    static constexpr size_t arrayBufferSize = 1024;
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_is_detached_arraybuffer(env, arrayBuffer, &result));
+
+    auto out = napi_detach_arraybuffer(env, arrayBuffer);
+    if (out == napi_ok) {
+        arrayBufferPtr = nullptr;
+    }
+    ASSERT_EQ(out, napi_ok);
+
+    result = false;
+    ASSERT_CHECK_CALL(napi_is_detached_arraybuffer(env, arrayBuffer, &result));
+    ASSERT_TRUE(result);
+}
+
+static constexpr size_t NAPI_UT_STR_LENGTH = 30;
+
+static constexpr int32_t NAPI_UT_TEST_NUMBER = 12345;
+
+static constexpr int32_t NAPI_UT_TEST_NUMBER2 = 111111;
+
+static constexpr uint32_t NAPI_UT_ARRAY_LENGTH = 2;
+
+/**
+ * @tc.name: FreezeObjectTest001
+ * @tc.desc: Test is FreezeObject.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, FreezeObjectTest001, testing::ext::TestSize.Level1)
+{
+    constexpr int dataSize = 60;
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+
+    const char testStr[] = "1234567";
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
+    napi_set_named_property(env, object, "strAttribute", strAttribute);
+
+    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    napi_value numberAttribute = nullptr;
+    napi_create_int32(env, testNumber, &numberAttribute);
+    napi_set_named_property(env, object, "numberAttribute", numberAttribute);
+
+    ASSERT_CHECK_CALL(napi_object_freeze(env, object));
+
+    int32_t testNumber2 = NAPI_UT_TEST_NUMBER2;
+    napi_value numberAttribute2 = nullptr;
+    napi_create_int32(env, testNumber2, &numberAttribute2);
+    ASSERT_CHECK_CALL(napi_set_named_property(env, object, "test", numberAttribute2));
+
+    napi_key_collection_mode keyMode = napi_key_own_only;
+    napi_key_filter keyFilter = napi_key_all_properties;
+    napi_key_conversion keyConversion = napi_key_keep_numbers;
+    napi_value propNames = nullptr;
+    ASSERT_CHECK_CALL(napi_get_all_property_names(env, object, keyMode, keyFilter, keyConversion, &propNames));
+
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
+    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+
+    char names[2][30];
+    memset_s(names, dataSize, 0, dataSize);
+    auto ret = memcpy_s(names[0], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[1], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
+    ASSERT_EQ(ret, EOK);
+    for (uint32_t i = 0; i < arrayLength; i++) {
+        bool hasElement = false;
+        ASSERT_CHECK_CALL(napi_has_element(env, propNames, i, &hasElement));
+
+        napi_value propName = nullptr;
+        ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
+        ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
+
+        size_t testStrLength = NAPI_UT_STR_LENGTH;
+        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t outStrLength = 0;
+        memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
+        ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
+
+        int ret = strcmp(testStrInner, names[i]);
+        ASSERT_EQ(ret, 0);
+    }
+}
+
+/**
+ * @tc.name: SealObjectTest001
+ * @tc.desc: Test is SealObject.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SealObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+
+    napi_create_object(env, &object);
+
+    const char testStr[] = "1234567";
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
+    napi_set_named_property(env, object, "strAttribute", strAttribute);
+
+    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    napi_value numberAttribute = nullptr;
+    napi_create_int32(env, testNumber, &numberAttribute);
+    napi_set_named_property(env, object, "numberAttribute", numberAttribute);
+
+    ASSERT_CHECK_CALL(napi_object_seal(env, object));
+
+    bool testDeleted = false;
+    ASSERT_CHECK_CALL(napi_delete_property(env, object, strAttribute, &testDeleted));
+    ASSERT_TRUE(testDeleted);
+
+    const char modifiedStr[] = "modified";
+    napi_value modifiedValue = nullptr;
+    napi_create_string_utf8(env, modifiedStr, strlen(modifiedStr), &modifiedValue);
+    ASSERT_CHECK_CALL(napi_set_named_property(env, object, "strAttribute", modifiedValue));
+
+    napi_value strAttribute2 = nullptr;
+    napi_get_named_property(env, object, "strAttribute", &strAttribute2);
+    char buffer[NAPI_UT_STR_LENGTH] = {0};
+    size_t length = 0;
+    napi_status status = napi_get_value_string_utf8(env, strAttribute2, buffer, sizeof(buffer) - 1, &length);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(length, strlen(modifiedStr));
+    ASSERT_EQ(strcmp(buffer, modifiedStr), 0);
+
+    napi_key_collection_mode keyMode = napi_key_own_only;
+    napi_key_filter keyFilter = napi_key_all_properties;
+    napi_key_conversion keyConversion = napi_key_keep_numbers;
+    napi_value propNames = nullptr;
+    ASSERT_CHECK_CALL(napi_get_all_property_names(env, object, keyMode, keyFilter, keyConversion, &propNames));
+
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
+    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+
+    char names[2][NAPI_UT_STR_LENGTH];
+    // There are 2 elements in the string array,
+    // so the parameter is set to NAPI_UT_STR_LENGTH * 2 to clear the entire array.
+    memset_s(names, NAPI_UT_STR_LENGTH * 2, 0, NAPI_UT_STR_LENGTH * 2);
+    auto ret = memcpy_s(names[0], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[1], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
+    ASSERT_EQ(ret, EOK);
+
+    for (uint32_t i = 0; i < arrayLength; i++) {
+        bool hasElement = false;
+        ASSERT_CHECK_CALL(napi_has_element(env, propNames, i, &hasElement));
+
+        napi_value propName = nullptr;
+        ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
+        ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
+
+        size_t testStrLength = NAPI_UT_STR_LENGTH;
+        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t outStrLength = 0;
+        memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
+        ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
+
+        int ret = strcmp(testStrInner, names[i]);
+        ASSERT_EQ(ret, 0);
+    }
+}
+
+/**
+ * @tc.name: AllPropertyNamesTest001
+ * @tc.desc: Test is AllPropertyNames.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AllPropertyNamesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_key_collection_mode keyMode = napi_key_own_only;
+    napi_key_filter keyFilter = napi_key_all_properties;
+    napi_key_conversion keyConversion = napi_key_keep_numbers;
+    napi_value result = nullptr;
+    napi_value propNames = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_object(env, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+
+    const char testStr[] = "1234567";
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
+    napi_set_named_property(env, result, "strAttribute", strAttribute);
+
+    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    napi_value numberAttribute = nullptr;
+    napi_create_int32(env, testNumber, &numberAttribute);
+    napi_set_named_property(env, result, "numberAttribute", numberAttribute);
+
+    ASSERT_CHECK_CALL(napi_get_all_property_names(env, result, keyMode, keyFilter, keyConversion, &propNames));
+
+    ASSERT_CHECK_VALUE_TYPE(env, propNames, napi_object);
+    bool isArray = false;
+    ASSERT_CHECK_CALL(napi_is_array(env, propNames, &isArray));
+    ASSERT_TRUE(isArray);
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
+    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+
+    char names[2][NAPI_UT_STR_LENGTH];
+    // There are 2 elements in the string array,
+    // so the parameter is set to NAPI_UT_STR_LENGTH * 2 to clear the entire array.
+    memset_s(names, NAPI_UT_STR_LENGTH * 2, 0, NAPI_UT_STR_LENGTH * 2);
+    auto ret = memcpy_s(names[0], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[1], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
+    ASSERT_EQ(ret, EOK);
+
+    for (uint32_t i = 0; i < arrayLength; i++) {
+        bool hasElement = false;
+        ASSERT_CHECK_CALL(napi_has_element(env, propNames, i, &hasElement));
+
+        napi_value propName = nullptr;
+        ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
+        ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
+
+        size_t testStrLength = NAPI_UT_STR_LENGTH;
+        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t outStrLength = 0;
+        memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
+        ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
+
+        int ret = strcmp(testStrInner, names[i]);
+        ASSERT_EQ(ret, 0);
+    }
+}
+
+/**
+ * @tc.name: AllPropertyNamesTest002
+ * @tc.desc: Test is AllPropertyNames.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AllPropertyNamesTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_key_collection_mode keyMode = napi_key_own_only;
+    napi_key_filter keyFilter = napi_key_writable;
+    napi_key_conversion keyConversion = napi_key_keep_numbers;
+    napi_value result = nullptr;
+    napi_value propNames = nullptr;
+    // Create napi_values for 123, 456 and 789
+    napi_value unenumerAble, writAble, configurAble;
+    napi_create_int32(env, 123, &unenumerAble);
+    napi_create_int32(env, 456, &writAble);
+    napi_create_int32(env, 789, &configurAble);
+
+    napi_property_descriptor descriptors[] = {
+        {"unenumerable",
+         nullptr, nullptr, nullptr, nullptr, unenumerAble,
+         napi_default_method, nullptr},
+        {"writable",
+         nullptr, nullptr, nullptr, nullptr, writAble,
+         static_cast<napi_property_attributes>(napi_enumerable | napi_writable), nullptr},
+        {"configurable",
+         nullptr, nullptr, nullptr, nullptr, configurAble,
+         static_cast<napi_property_attributes>(napi_enumerable | napi_configurable), nullptr}
+    };
+
+    ASSERT_CHECK_CALL(napi_create_object(env, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+    ASSERT_CHECK_CALL(napi_define_properties(env, result, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+
+    const char testStr[] = "1234567";
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
+    napi_set_named_property(env, result, "strAttribute", strAttribute);
+
+    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    napi_value numberAttribute = nullptr;
+    napi_create_int32(env, testNumber, &numberAttribute);
+    napi_set_named_property(env, result, "numberAttribute", numberAttribute);
+
+    ASSERT_CHECK_CALL(napi_get_all_property_names(env, result, keyMode, keyFilter, keyConversion, &propNames));
+
+    ASSERT_CHECK_VALUE_TYPE(env, propNames, napi_object);
+    bool isArray = false;
+    ASSERT_CHECK_CALL(napi_is_array(env, propNames, &isArray));
+    ASSERT_TRUE(isArray);
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
+    ASSERT_EQ(arrayLength, 4); // 4 means array length.
+
+    char names[4][NAPI_UT_STR_LENGTH];
+    // There are 4 elements in the string array,
+    // so the parameter is set to NAPI_UT_STR_LENGTH * 4 to clear the entire array.
+    memset_s(names, NAPI_UT_STR_LENGTH * 4, 0, NAPI_UT_STR_LENGTH * 4);
+    auto ret = memcpy_s(names[0], strlen("unenumerable"), "unenumerable", strlen("unenumerable"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[1], strlen("writable"), "writable", strlen("writable"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[2], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
+    ASSERT_EQ(ret, EOK);
+    ret = memcpy_s(names[3], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
+    ASSERT_EQ(ret, EOK);
+
+    for (uint32_t i = 0; i < arrayLength; i++) {
+        bool hasElement = false;
+        ASSERT_CHECK_CALL(napi_has_element(env, propNames, i, &hasElement));
+
+        napi_value propName = nullptr;
+        ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
+        ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
+
+        size_t testStrLength = NAPI_UT_STR_LENGTH;
+        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t outStrLength = 0;
+        memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
+        ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
+
+        int ret = strcmp(testStrInner, names[i]);
+        ASSERT_EQ(ret, 0);
+    }
 }
