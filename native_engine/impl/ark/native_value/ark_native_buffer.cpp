@@ -24,6 +24,7 @@ using panda::BufferRef;
 using panda::JSValueRef;
 // The maximum length for NativaBuffer, default is 2MiB.
 static constexpr size_t K_MAX_BYTE_LENGTH = 2097152;
+static constexpr size_t BYTE_SIZE = 1048576;
 
 ArkNativeBuffer::ArkNativeBuffer(ArkNativeEngine* engine, Local<JSValueRef> value)
     : ArkNativeObject(engine, value)
@@ -34,10 +35,14 @@ ArkNativeBuffer::ArkNativeBuffer(ArkNativeEngine* engine, uint8_t** value, size_
     : ArkNativeBuffer(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
     if (!value) {
+        HILOG_ERROR("value is empty");
         return;
     }
 
     if (length > K_MAX_BYTE_LENGTH) {
+        HILOG_ERROR("Creat failed, current size: %{public}2f MiB, limit size: %{public}2f MiB",
+                    static_cast<float>(length) / static_cast<float>(BYTE_SIZE),
+                    static_cast<float>(K_MAX_BYTE_LENGTH) / static_cast<float>(BYTE_SIZE));
         *value = nullptr;
         return;
     }
@@ -53,10 +58,14 @@ ArkNativeBuffer::ArkNativeBuffer(ArkNativeEngine* engine, uint8_t** value, size_
     : ArkNativeBuffer(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
     if (!value) {
+        HILOG_ERROR("value is empty");
         return;
     }
 
     if (length > K_MAX_BYTE_LENGTH) {
+        HILOG_ERROR("Creat failed, current size: %{public}2f MiB, limit size: %{public}2f MiB",
+                    static_cast<float>(length) / static_cast<float>(BYTE_SIZE),
+                    static_cast<float>(K_MAX_BYTE_LENGTH) / static_cast<float>(BYTE_SIZE));
         *value = nullptr;
         return;
     }
@@ -78,7 +87,16 @@ ArkNativeBuffer::ArkNativeBuffer(ArkNativeEngine* engine,
                                  void* hint)
     : ArkNativeBuffer(engine, JSValueRef::Undefined(engine->GetEcmaVm()))
 {
-    if (!value || length > K_MAX_BYTE_LENGTH) {
+    if (!value) {
+        HILOG_ERROR("value is empty");
+        return;
+    }
+
+    if (length > K_MAX_BYTE_LENGTH) {
+        HILOG_ERROR("Creat failed, current size: %{public}2f MiB, limit size: %{public}2f MiB",
+                    static_cast<float>(length) / static_cast<float>(BYTE_SIZE),
+                    static_cast<float>(K_MAX_BYTE_LENGTH) / static_cast<float>(BYTE_SIZE));
+        value = nullptr;
         return;
     }
 
