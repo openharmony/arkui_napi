@@ -253,6 +253,7 @@ public:
     void CleanupHandles();
     void IncreaseWaitingRequestCounter();
     void DecreaseWaitingRequestCounter();
+
     virtual void RunCleanup();
 
     bool IsStopping() const
