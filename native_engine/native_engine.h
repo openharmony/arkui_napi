@@ -201,7 +201,10 @@ public:
     {
         return nativeEngineImpl_->IsWorkerThread();
     }
-
+    bool IsTaskPoolThread() const
+    {
+        return nativeEngineImpl_->IsTaskPoolThread();
+    }
     bool IsMainThread() const
     {
         return nativeEngineImpl_->IsMainThread();
