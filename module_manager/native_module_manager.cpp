@@ -266,6 +266,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
         if (strlen(ndk_ns.name) > 0) {
             dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&current_ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
         }
     } else {
@@ -278,6 +279,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
         if (strlen(ndk_ns.name) > 0) {
             dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+            dlns_inherit(&current_ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
         }
     }
 
