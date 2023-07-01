@@ -259,7 +259,10 @@ public:
     {
         return jsThreadType_ == JSThreadType::WORKER_THREAD;
     }
-
+    bool IsTaskPoolThread() const
+    {
+        return jsThreadType_ == JSThreadType::TASKPOOL_THREAD;
+    }
     bool IsMainThread() const
     {
         return jsThreadType_ == JSThreadType::MAIN_THREAD;
