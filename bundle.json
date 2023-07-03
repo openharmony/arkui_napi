@@ -24,10 +24,13 @@
         "ram": "10240KB",
         "deps": {
             "components": [
-                "hiviewdfx_hilog_native",
-                "hilog"
+                "ets_runtime",
+                "hilog",
+                "hitrace",
+                "init"
             ],
             "third_party": [
+                "icu",
                 "jerryscript",
                 "libuv",
                 "node",
