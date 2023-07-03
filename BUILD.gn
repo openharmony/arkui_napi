@@ -181,9 +181,9 @@ if (defined(ohos_lite)) {
     } else {
       if (is_standard_system) {
         external_deps = [
-          "hitrace_native:hitrace_meter",
-          "hitrace_native:libhitracechain",
-          "hiviewdfx_hilog_native:libhilog",
+          "hilog:libhilog",
+          "hitrace:hitrace_meter",
+          "hitrace:libhitracechain",
           "init:libbegetutil",
         ]
         defines += [ "ENABLE_HITRACE" ]
