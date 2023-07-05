@@ -48,9 +48,7 @@ NativeModuleManager::~NativeModuleManager()
     NativeModule* nativeModule = firstNativeModule_;
     while (nativeModule != nullptr) {
         nativeModule = nativeModule->next;
-        if (firstNativeModule_->isAppModule) {
-            delete[] firstNativeModule_->name;
-        }
+        delete[] firstNativeModule_->name;
         delete firstNativeModule_;
         firstNativeModule_ = nativeModule;
     }
@@ -143,26 +141,27 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     }
 
     char* moduleName;
+    auto tmp = nativeModule->name;
     if (isAppModule_) {
-        auto tmp = prefix_ + "/" + nativeModule->name;
-        moduleName = new char[NAPI_PATH_MAX];
-        errno_t err = EOK;
-        err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
-        if (err != EOK) {
-            delete[] moduleName;
-            return;
-        }
-        err = strcpy_s(moduleName, NAPI_PATH_MAX, tmp.c_str());
-        if (err != EOK) {
-            delete[] moduleName;
-            return;
-        }
+        tmp = (prefix_ + "/" + nativeModule->name).c_str();
+    }
+    moduleName = new char[NAPI_PATH_MAX];
+    errno_t err = EOK;
+    err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
+    if (err != EOK) {
+        delete[] moduleName;
+        return;
+    }
+    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmp);
+    if (err != EOK) {
+        delete[] moduleName;
+        return;
     }
 
     lastNativeModule_->version = nativeModule->version;
     lastNativeModule_->fileName = nativeModule->fileName;
     lastNativeModule_->isAppModule = isAppModule_;
-    lastNativeModule_->name = isAppModule_ ? moduleName : nativeModule->name;
+    lastNativeModule_->name = moduleName;
     lastNativeModule_->refCount = nativeModule->refCount;
     lastNativeModule_->registerCallback = nativeModule->registerCallback;
     lastNativeModule_->getJSCode = nativeModule->getJSCode;
