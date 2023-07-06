@@ -16,8 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_WORK_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_WORK_H
 
-#include "native_value.h"
 #include "interfaces/kits/napi/common.h"
+#include "native_value.h"
 
 #include <mutex>
 #include <queue>
