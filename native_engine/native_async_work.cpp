@@ -104,7 +104,7 @@ bool NativeAsyncWork::Queue()
     return true;
 }
 
-bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
+bool NativeAsyncWork::QueueWithQos([[maybe_unused]]napi_qos_t qos)
 {
     uv_loop_t* loop = engine_->GetUVLoop();
     if (loop == nullptr) {
@@ -114,7 +114,7 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi queueWithQos, " + this->GetTraceDescription());
 #endif
-    int status = uv_queue_work_with_qos(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback, uv_qos_t(qos));
+    int status = uv_queue_work(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback);
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
