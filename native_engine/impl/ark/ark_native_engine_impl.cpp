@@ -997,7 +997,7 @@ NativeValue* ArkNativeEngineImpl::RunActor(NativeEngine* engine, std::vector<uin
     LocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
-    if (panda::JSNApi::IsBundle(vm_)) {
+    if (panda::JSNApi::IsBundle(vm_) || !buffer.empty()) {
         ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
     } else {
         ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);
