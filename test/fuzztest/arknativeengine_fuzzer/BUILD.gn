@@ -20,7 +20,7 @@ import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 ##################################fuzztest#####################################
 ohos_fuzztest("ArkNativeEngineFuzzTest") {
-  module_out_path = "foundation/arkui/napi"
+  module_out_path = "arkui/napi"
 
   fuzz_config_file = "${arkui_napi_test_path}/fuzztest/arknativeengine_fuzzer"
 
