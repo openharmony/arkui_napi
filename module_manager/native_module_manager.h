@@ -76,6 +76,7 @@ public:
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
                                    bool internal = false, const char* relativePath = "");
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
+    bool UnloadNativeModule(const std::string &moduleKey);
     const char* GetModuleFileName(const char* moduleName, bool isAppModule);
 
     /**
@@ -101,9 +102,16 @@ private:
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
         bool internal, const bool isAppModule);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
-    LIBHANDLE LoadModuleLibrary(const char* path, const char* pathKey, const bool isAppModule);
+    LIBHANDLE LoadModuleLibrary(std::string &moduleKey, const char* path, const char* pathKey, const bool isAppModule);
+    bool UnloadModuleLibrary(LIBHANDLE handle);
+    bool CloseModuleLibrary(LIBHANDLE handle);
     void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path, const bool& isSystemApp);
     bool IsExistedPath(const char* pathKey) const;
+    void EmplaceModuleLib(std::string moduleKey, LIBHANDLE lib);
+    bool RemoveModuleLib(std::string moduleKey);
+    LIBHANDLE GetNativeModuleHandle(const std::string &moduleKey) const;
+    bool RemoveNativeModuleByCache(const std::string &moduleKey);
+    bool RemoveNativeModule(const std::string &moduleKey);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();
@@ -123,6 +131,10 @@ private:
 
     std::mutex nativeEngineListMutex_;
     std::map<std::string, NativeEngine*> nativeEngineList_;
+
+    mutable std::mutex moduleLibMutex_;
+    std::map<std::string, const LIBHANDLE> moduleLibMap_;
+
     std::map<std::string, char*> appLibPathMap_;
     std::string previewSearchPath_;
     std::unique_ptr<ModuleLoadChecker> moduleLoadChecker_ = nullptr;
