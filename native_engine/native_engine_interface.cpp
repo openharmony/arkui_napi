@@ -28,6 +28,7 @@
 #include "utils/log.h"
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
+static constexpr size_t DESTRUCTION_TIMEOUT = 5000;
 
 namespace {
 const char* g_errorMessages[] = {
@@ -89,7 +90,7 @@ void NativeEngineInterface::Deinit()
     HILOG_INFO("NativeEngineInterface::Deinit");
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
-    uv_run(loop_, UV_RUN_ONCE);
+    CleanUVResources();
     if (referenceManager_ != nullptr) {
         delete referenceManager_;
         referenceManager_ = nullptr;
@@ -366,6 +367,39 @@ void NativeEngineInterface::RemoveCleanupHook(CleanupCallback fun, void* arg)
     HILOG_INFO("%{public}s, end.", __func__);
 }
 
+void NativeEngineInterface::RegisterCleanupCallback(CleanupCb &cb)
+{
+    cleanupQueue_.push_back(cb);
+}
+
+void NativeEngineInterface::CleanUVResources()
+{
+    uv_timer_init(loop_, &timer_);
+    timer_.data = this;
+    uv_timer_start(&timer_, [](uv_timer_t* handle) {
+        reinterpret_cast<NativeEngineInterface*>(handle->data)->cleanupTimeout_ = true;
+    }, DESTRUCTION_TIMEOUT, 0);
+    CleanupHandles();
+    while (!cleanupQueue_.empty() && !cleanupTimeout_) {
+        for (auto iter = cleanupQueue_.begin(); iter != cleanupQueue_.end();) {
+            auto finished = (*iter)();
+            if (finished) {
+                iter = cleanupQueue_.erase(iter);
+            } else {
+                ++iter;
+            }
+        }
+        if (!cleanupQueue_.empty()) {
+            uv_run(loop_, UV_RUN_ONCE);
+        }
+    }
+    uv_close(reinterpret_cast<uv_handle_t*>(&timer_), nullptr);
+    uv_run(loop_, UV_RUN_ONCE);
+    if (cleanupTimeout_) {
+        HILOG_ERROR("cleanup uv resources timeout");
+    }
+}
+
 void NativeEngineInterface::RunCleanup()
 {
     HILOG_INFO("%{public}s, start.", __func__);
@@ -400,24 +434,21 @@ void NativeEngineInterface::RunCleanup()
 
 void NativeEngineInterface::CleanupHandles()
 {
-    HILOG_INFO("%{public}s, start.", __func__);
-    while (request_waiting_ > 0) {
-        HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__, request_waiting_);
+    while (request_waiting_.load() > 0 && !cleanupTimeout_) {
+        HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
+            request_waiting_.load(std::memory_order_relaxed));
         uv_run(loop_, UV_RUN_ONCE);
     }
-    HILOG_INFO("%{public}s, end.", __func__);
 }
 
 void NativeEngineInterface::IncreaseWaitingRequestCounter()
 {
     request_waiting_++;
-    HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__, request_waiting_);
 }
 
 void NativeEngineInterface::DecreaseWaitingRequestCounter()
 {
     request_waiting_--;
-    HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__, request_waiting_);
 }
 
 NativeEngine* NativeEngineInterface::GetRootNativeEngine(void)

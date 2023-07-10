@@ -101,6 +101,7 @@ bool NativeAsyncWork::Queue()
         HILOG_ERROR("uv_queue_work failed");
         return false;
     }
+    engine_->IncreaseWaitingRequestCounter();
     return true;
 }
 
@@ -122,6 +123,7 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
         HILOG_ERROR("uv_queue_work_with_qos failed");
         return false;
     }
+    engine_->IncreaseWaitingRequestCounter();
     return true;
 }
 
@@ -171,6 +173,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     }
 
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
+    that->engine_->DecreaseWaitingRequestCounter();
 
     NativeScopeManager* scopeManager = that->engine_->GetScopeManager();
     if (scopeManager == nullptr) {
@@ -185,7 +188,6 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     }
 
     napi_status nstatus = napi_generic_failure;
-
     switch (status) {
         case 0:
             nstatus = napi_ok;
