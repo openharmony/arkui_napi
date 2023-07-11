@@ -17,6 +17,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_INTERFACE_H
 
 #include <functional>
+#include <list>
 #include <unordered_set>
 #include <vector>
 #ifdef LINUX_PLATFORM
@@ -263,6 +264,11 @@ public:
     void CleanupHandles();
     void IncreaseWaitingRequestCounter();
     void DecreaseWaitingRequestCounter();
+    void CleanUVResources();
+
+    using CleanupCb = std::function<bool()>;
+    void RegisterCleanupCallback(CleanupCb &cb);
+
     virtual void RunCleanup();
 
     bool IsStopping() const
@@ -323,9 +329,12 @@ private:
     uv_async_t uvAsync_;
     std::unordered_set<CleanupHookCallback, CleanupHookCallback::Hash, CleanupHookCallback::Equal> cleanup_hooks_;
     uint64_t cleanup_hook_counter_ = 0;
-    int request_waiting_ = 0;
+    std::atomic_int request_waiting_ { 0 };
     std::atomic_bool isStopping_ { false };
     pthread_t tid_ = 0;
+    bool cleanupTimeout_ = false;
+    uv_timer_t timer_;
+    std::list<CleanupCb> cleanupQueue_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */
