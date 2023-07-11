@@ -528,6 +528,11 @@ void NativeEngine::DecreaseWaitingRequestCounter()
     request_waiting_--;
 }
 
+bool NativeEngine::HasWaitingRequest()
+{
+    return request_waiting_.load() != 0;
+}
+
 void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
 {
     if (engine == nullptr) {
