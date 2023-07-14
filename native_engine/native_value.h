@@ -265,6 +265,11 @@ public:
     virtual bool CheckTypeTag(NapiTypeTag* typeTag) = 0;
     virtual void Freeze() = 0;
     virtual void Seal() = 0;
+
+    virtual bool SetElement(uint32_t index, NativeValue* value) = 0;
+    virtual NativeValue* GetElement(uint32_t index) = 0;
+    virtual bool HasElement(uint32_t index) = 0;
+    virtual bool DeleteElement(uint32_t index) = 0;
 };
 
 class NativeArray {

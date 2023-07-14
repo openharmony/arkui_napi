@@ -69,6 +69,11 @@ public:
     bool CheckTypeTag(NapiTypeTag* typeTag) override;
     void SetModuleName(std::string moduleName);
     std::string GetModuleName();
+
+    bool SetElement(uint32_t index, NativeValue* value) override;
+    NativeValue* GetElement(uint32_t index) override;
+    bool HasElement(uint32_t index) override;
+    bool DeleteElement(uint32_t index) override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_NATIVE_VALUE_ARK_NATIVE_OBJECT_H */

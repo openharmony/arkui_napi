@@ -750,14 +750,17 @@ NAPI_EXTERN napi_status napi_set_element(napi_env env, napi_value object, uint32
     CHECK_ARG(env, object);
     CHECK_ARG(env, value);
 
-    auto nativeValue = reinterpret_cast<NativeValue*>(object);
-    auto elementValue = reinterpret_cast<NativeValue*>(value);
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(object);
+    NativeValue* elementValue = reinterpret_cast<NativeValue*>(value);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsArray(), napi_array_expected);
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
+        napi_object_expected);
 
-    auto nativeArray = reinterpret_cast<NativeArray*>(nativeValue->GetInterface(NativeArray::INTERFACE_ID));
+    NativeObject* nativeObject =
+        reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
-    nativeArray->SetElement(index, elementValue);
+    nativeObject->SetElement(index, elementValue);
     return napi_clear_last_error(env);
 }
 
@@ -767,13 +770,16 @@ NAPI_EXTERN napi_status napi_has_element(napi_env env, napi_value object, uint32
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
-    auto nativeValue = reinterpret_cast<NativeValue*>(object);
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsArray(), napi_array_expected);
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
+        napi_object_expected);
 
-    auto nativeArray = reinterpret_cast<NativeArray*>(nativeValue->GetInterface(NativeArray::INTERFACE_ID));
+    NativeObject* nativeObject =
+        reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
-    *result = nativeArray->HasElement(index);
+    *result = nativeObject->HasElement(index);
     return napi_clear_last_error(env);
 }
 
@@ -783,13 +789,16 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
-    auto nativeValue = reinterpret_cast<NativeValue*>(object);
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsArray(), napi_array_expected);
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
+        napi_object_expected);
 
-    auto nativeArray = reinterpret_cast<NativeArray*>(nativeValue->GetInterface(NativeArray::INTERFACE_ID));
+    NativeObject* nativeObject =
+        reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
-    auto resultValue = nativeArray->GetElement(index);
+    NativeValue* resultValue = nativeObject->GetElement(index);
 
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
@@ -800,13 +809,16 @@ NAPI_EXTERN napi_status napi_delete_element(napi_env env, napi_value object, uin
     CHECK_ENV(env);
     CHECK_ARG(env, object);
 
-    auto nativeValue = reinterpret_cast<NativeValue*>(object);
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(object);
 
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsArray(), napi_array_expected);
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
+        napi_object_expected);
 
-    auto nativeArray = reinterpret_cast<NativeArray*>(nativeValue->GetInterface(NativeArray::INTERFACE_ID));
+    NativeObject* nativeObject =
+        reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
 
-    bool deleteResult = nativeArray->DeleteElement(index);
+    bool deleteResult = nativeObject->DeleteElement(index);
     if (result) {
         *result = deleteResult;
     }

@@ -376,3 +376,28 @@ bool JerryScriptNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
     return true;
 #endif
 }
+bool JerryScriptNativeArray::SetElement(uint32_t index, NativeValue* value)
+{
+    jerry_value_t returnValue = jerry_set_property_by_index(value_, index, value_);
+    jerry_release_value(returnValue);
+    return true;
+}
+
+NativeValue* JerryScriptNativeArray::GetElement(uint32_t index)
+{
+    jerry_value_t returnValue = jerry_get_property_by_index(value_, index);
+    return JerryScriptNativeEngine::JerryValueToNativeValue(engine_, returnValue);
+}
+
+bool JerryScriptNativeArray::HasElement(uint32_t index)
+{
+    jerry_value_t returnValue = jerry_get_property_by_index(value_, index);
+    bool result = !jerry_value_is_undefined(returnValue);
+    jerry_release_value(returnValue);
+    return result;
+}
+
+bool JerryScriptNativeArray::DeleteElement(uint32_t index)
+{
+    return jerry_delete_property_by_index(value_, index);
+}
