@@ -90,6 +90,7 @@ bool NativeAsyncWork::Queue()
         HILOG_ERROR("Get loop failed");
         return false;
     }
+    engine_->IncreaseWaitingRequestCounter();
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi queue, " + this->GetTraceDescription());
 #endif
@@ -150,6 +151,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
 
     NativeScopeManager* scopeManager = that->engine_->GetScopeManager();
+    that->engine_->DecreaseWaitingRequestCounter();
     if (scopeManager == nullptr) {
         HILOG_ERROR("Get scope manager failed");
         return;
@@ -162,7 +164,6 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     }
 
     napi_status nstatus = napi_generic_failure;
-
     switch (status) {
         case 0:
             nstatus = napi_ok;
