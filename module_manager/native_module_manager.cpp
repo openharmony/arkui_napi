@@ -197,19 +197,15 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         }
     }
 
-    char* moduleName;
-    auto tmp = nativeModule->name;
-    if (isAppModule_) {
-        tmp = (prefix_ + "/" + nativeModule->name).c_str();
-    }
-    moduleName = new char[NAPI_PATH_MAX];
+    std::string tmpName = isAppModule_ ? (prefix_ + "/" + nativeModule->name) : nativeModule->name;
+    char *moduleName = new char[NAPI_PATH_MAX];
     errno_t err = EOK;
     err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
     if (err != EOK) {
         delete[] moduleName;
         return;
     }
-    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmp);
+    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmpName.c_str());
     if (err != EOK) {
         delete[] moduleName;
         return;
