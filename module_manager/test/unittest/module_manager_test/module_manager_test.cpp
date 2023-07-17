@@ -175,10 +175,12 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_005, TestSize.Level1)
 HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_006, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_006 starts";
+
+    std::string moduleKey = "this is moduleKey";
     const char *moduleName = "moduleName_006";
     NativeEngine* engine = nullptr;
     NativeModuleManager moduleManager;
-    moduleManager.SetNativeEngine(moduleName, engine);
+    moduleManager.SetNativeEngine(moduleKey, engine);
 
     MockFindNativeModuleByCache(nullptr);
     const char* result = moduleManager.GetModuleFileName(moduleName, true);
@@ -279,4 +281,126 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
 
     EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false), nullptr);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_012
+ * @tc.desc: test NativeModule's EmplaceModuleLib function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string moduleKey = "aa";
+    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
+    bool result1 = moduleManager->RemoveModuleLib(moduleKey);
+    std::string moduleKey1 = "bb";
+    bool result2 = moduleManager->RemoveModuleLib(moduleKey1);
+    EXPECT_EQ(result1, true);
+    EXPECT_EQ(result2, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_013
+ * @tc.desc: test NativeModule's RemoveNativeModule function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_013, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string moduleKey = "aa";
+    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
+    std::string moduleKey1 = "bb";
+    EXPECT_EQ(moduleManager->GetNativeModuleHandle(moduleKey1), nullptr);
+    bool result2 = moduleManager->UnloadNativeModule(moduleKey1);
+    EXPECT_EQ(result2, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_014
+ * @tc.desc: test NativeModule's RemoveNativeModule function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_014, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string moduleKey = "aa";
+    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
+    std::string moduleKey1 = "bb";
+    bool result = moduleManager->RemoveModuleLib(moduleKey1);
+    EXPECT_EQ(result, false);
+
+    bool result2 = moduleManager->RemoveNativeModule(moduleKey1);
+    EXPECT_EQ(result2, false);
+    bool result3 = moduleManager->UnloadNativeModule(moduleKey1);
+    EXPECT_EQ(result3, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_015
+ * @tc.desc: test NativeModule's UnloadNativeModule function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_015, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_015 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string moduleKey = "aa";
+    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
+    bool result = moduleManager->UnloadNativeModule(moduleKey);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_015 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_016
+ * @tc.desc: test NativeModule's UnloadModuleLibrary function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_016, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_016 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    bool result = moduleManager->UnloadModuleLibrary(nullptr);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_016 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_017
+ * @tc.desc: test NativeModule's RemoveNativeModuleByCache function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_017, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 starts";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string moduleKey = "aa";
+    bool result = moduleManager->RemoveNativeModuleByCache(moduleKey);
+    EXPECT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 end";
 }
