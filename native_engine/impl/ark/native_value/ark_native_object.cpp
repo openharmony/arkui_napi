@@ -508,3 +508,37 @@ void ArkNativeObject::Seal()
     
     obj->Seal(vm);
 }
+
+bool ArkNativeObject::SetElement(uint32_t index, NativeValue* value)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
+    Global<JSValueRef> val = *value;
+    return obj->Set(vm, index, val.ToLocal(vm));
+}
+
+NativeValue* ArkNativeObject::GetElement(uint32_t index)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
+    auto val = obj->Get(vm, index);
+    return ArkNativeEngine::ArkValueToNativeValue(engine_, val);
+}
+
+bool ArkNativeObject::HasElement(uint32_t index)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
+    return obj->Has(vm, index);
+}
+
+bool ArkNativeObject::DeleteElement(uint32_t index)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> obj = value_;
+    return obj->Delete(vm, index);
+}

@@ -93,7 +93,7 @@ bool ArkNativeValue::InstanceOf(NativeValue* obj)
 bool ArkNativeValue::IsArray()
 {
     Global<JSValueRef> value = value_;
-    return value->IsArray(engine_->GetEcmaVm());
+    return value->IsJSArray(engine_->GetEcmaVm());
 }
 
 bool ArkNativeValue::IsArrayBuffer()

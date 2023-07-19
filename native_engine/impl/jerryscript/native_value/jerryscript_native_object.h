@@ -68,6 +68,11 @@ public:
 
     void Freeze() override;
     void Seal() override;
+
+    bool SetElement(uint32_t index, NativeValue* value) override;
+    NativeValue* GetElement(uint32_t index) override;
+    bool HasElement(uint32_t index) override;
+    bool DeleteElement(uint32_t index) override;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_JERRYSCRIPT_NATIVE_VALUE_JERRYSCRIPT_NATIVE_OBJECT_H */
