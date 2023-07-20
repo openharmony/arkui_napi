@@ -100,7 +100,9 @@ void NativeModuleManager::EmplaceModuleLib(std::string moduleKey, const LIBHANDL
 {
     HILOG_DEBUG("modulekey is %{public}s", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleLibMutex_);
-    moduleLibMap_.emplace(moduleKey, lib);
+    if (lib != nullptr) {
+        moduleLibMap_.emplace(moduleKey, lib);
+    }
 }
 
 bool NativeModuleManager::RemoveModuleLib(const std::string moduleKey)
@@ -197,7 +199,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         }
     }
 
-    std::string tmpName = isAppModule_ ? (prefix_ + "/" + nativeModule->name) : nativeModule->name;
+    const char *tmpName = isAppModule_ ? (prefix_ + "/" + nativeModule->name).c_str() : nativeModule->name;
     char *moduleName = new char[NAPI_PATH_MAX];
     errno_t err = EOK;
     err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
@@ -205,7 +207,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         delete[] moduleName;
         return;
     }
-    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmpName.c_str());
+    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmpName);
     if (err != EOK) {
         delete[] moduleName;
         return;
