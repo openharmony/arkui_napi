@@ -13,176 +13,129 @@
 
 import("//foundation/arkui/napi/napi.gni")
 
-if (defined(ohos_lite)) {
-  import("//build/lite/config/component/lite_component.gni")
-  import("//build/lite/config/subsystem/aafwk/config.gni")
-  import("//build/lite/config/test.gni")
+import("//build/test.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+import("//foundation/arkui/napi/test/unittest/ut.gni")
 
-  test_output_root = "$root_out_dir/test/unittest/jsfwk"
+if (is_standard_system) {
+  module_output_path = "ace_engine/napi"
+} else {
+  module_output_path = "ace_engine_full/napi"
+}
 
-  executable("test_jerryscript_unittest") {
-    output_extension = "bin"
-    output_dir = test_output_root
+ark_support = false
 
-    include_dirs = [
-      "//commonlibrary/c_utils/base/include",
-      "//third_party/node/src",
-      "//foundation/arkui/napi",
-      "//foundation/arkui/napi/interfaces/inner_api",
-      "//foundation/arkui/napi/interfaces/kits",
-      "//third_party/googletest/include",
-      "//foundation/arkui/napi/native_engine",
-      "//foundation/arkui/napi/native_engine/impl/jerryscript",
-    ]
+foreach(item, ace_platforms) {
+  if (item.name == "ohos") {
+    engine_config = item.config
+    support_engines = engine_config.js_engines
+    foreach(engine, support_engines) {
+      if (engine.engine_name == "ark") {
+        ark_support = true
+      }
+    }
+  }
+}
+
+if (ark_support) {
+  ohos_unittest("test_ark_unittest") {
+    module_out_path = module_output_path
+
+    include_dirs = ark_include
 
     cflags = [ "-g3" ]
 
     sources = [
-      "test_jerryscript.cpp",
+      "engine/test_ark.cpp",
       "test_napi.cpp",
     ]
     sources += napi_sources
 
     defines = [ "NAPI_TEST" ]
 
-    deps = [
-      "//base//hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
-      "//foundation/arkui/napi/:ace_napi_jerryscript",
-      "//test/testfwk/developer_test/third_party/lib/cpp:gtest_main",
-      "//third_party/jerryscript/jerry-core:jerry-core_shared",
-      "//third_party/jerryscript/jerry-ext:jerry-ext_shared",
-      "//third_party/jerryscript/jerry-port/default:jerry-port-default_shared",
+    deps = ark_deps
+
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
     ]
+
+    external_deps += [ "hilog:libhilog" ]
+    external_deps += [ "ets_runtime:libark_jsruntime" ]
   }
 
-  group("unittest") {
-    deps = [ ":test_jerryscript_unittest" ]
+  ohos_unittest("test_ark_unittest_threadsafe") {
+    module_out_path = module_output_path
+
+    include_dirs = ark_include
+
+    cflags = [ "-g3" ]
+
+    sources = [
+      "engine/test_ark.cpp",
+      "test_napi_threadsafe.cpp",
+    ]
+    sources += napi_sources
+
+    defines = [ "NAPI_TEST" ]
+
+    deps = ark_deps
+    external_deps = [ "bounds_checking_function:libsec_shared" ]
+
+    external_deps += [ "hilog:libhilog" ]
+    external_deps += [ "ets_runtime:libark_jsruntime" ]
   }
-} else {
-  import("//build/test.gni")
-  import("//foundation/arkui/ace_engine/ace_config.gni")
-  import("//foundation/arkui/napi/test/unittest/ut.gni")
+}
 
-  if (is_standard_system) {
-    module_output_path = "ace_engine/napi"
-  } else {
-    module_output_path = "ace_engine_full/napi"
-  }
-
-  ark_support = false
-
-  foreach(item, ace_platforms) {
-    if (item.name == "ohos") {
-      engine_config = item.config
-      support_engines = engine_config.js_engines
-      foreach(engine, support_engines) {
-        if (engine.engine_name == "ark") {
-          ark_support = true
-        }
-      }
-    }
-  }
-
+group("unittest") {
+  testonly = true
+  deps = []
   if (ark_support) {
-    ohos_unittest("test_ark_unittest") {
-      module_out_path = module_output_path
-
-      include_dirs = ark_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "engine/test_ark.cpp",
-        "test_napi.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = ark_deps
-
-      external_deps = [
-        "bounds_checking_function:libsec_shared",
-        "c_utils:utils",
-      ]
-
-      external_deps += [ "hilog:libhilog" ]
-      external_deps += [ "ets_runtime:libark_jsruntime" ]
-    }
-
-    ohos_unittest("test_ark_unittest_threadsafe") {
-      module_out_path = module_output_path
-
-      include_dirs = ark_include
-
-      cflags = [ "-g3" ]
-
-      sources = [
-        "engine/test_ark.cpp",
-        "test_napi_threadsafe.cpp",
-      ]
-      sources += napi_sources
-
-      defines = [ "NAPI_TEST" ]
-
-      deps = ark_deps
-      external_deps = [ "bounds_checking_function:libsec_shared" ]
-
-      external_deps += [ "hilog:libhilog" ]
-      external_deps += [ "ets_runtime:libark_jsruntime" ]
-    }
-  }
-
-  group("unittest") {
-    testonly = true
-    deps = []
-    if (ark_support) {
-      deps += [
-        ":test_ark_unittest",
-        ":test_ark_unittest_threadsafe",
-      ]
-    }
-  }
-
-  #jerry tdd test for phone running
-  group("jerry_tdd_test_run") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_test" ]
-  }
-
-  #jerry es2015 test for phone running
-  group("jerry_jstest_es2015") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es2015" ]
-  }
-
-  #jerry es2015 test for host running
-  group("jerry_host_jstest_es2015") {
-    testonly = true
-    deps = [
-      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es2015",
-      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
+    deps += [
+      ":test_ark_unittest",
+      ":test_ark_unittest_threadsafe",
     ]
   }
+}
 
-  #jerry es5.1 test for phone running
-  group("jerry_jstest_es5.1") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es5.1" ]
-  }
+#jerry tdd test for phone running
+group("jerry_tdd_test_run") {
+  testonly = true
+  deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_test" ]
+}
 
-  #jerry es5.1 test for host running
-  group("jerry_host_jstest_es5.1") {
-    testonly = true
-    deps = [
-      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es5.1",
-      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
-    ]
-  }
+#jerry es2015 test for phone running
+group("jerry_jstest_es2015") {
+  testonly = true
+  deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es2015" ]
+}
 
-  #jerry tdd test for host running
-  group("jerry_tdd_host_test_run") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test" ]
-  }
+#jerry es2015 test for host running
+group("jerry_host_jstest_es2015") {
+  testonly = true
+  deps = [
+    "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es2015",
+    "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
+  ]
+}
+
+#jerry es5.1 test for phone running
+group("jerry_jstest_es5.1") {
+  testonly = true
+  deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es5.1" ]
+}
+
+#jerry es5.1 test for host running
+group("jerry_host_jstest_es5.1") {
+  testonly = true
+  deps = [
+    "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es5.1",
+    "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
+  ]
+}
+
+#jerry tdd test for host running
+group("jerry_tdd_host_test_run") {
+  testonly = true
+  deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test" ]
 }
