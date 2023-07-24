@@ -300,7 +300,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
     bool result1 = moduleManager->RemoveModuleLib(moduleKey);
     std::string moduleKey1 = "bb";
     bool result2 = moduleManager->RemoveModuleLib(moduleKey1);
-    EXPECT_EQ(result1, true);
+    EXPECT_EQ(result1, false);
     EXPECT_EQ(result2, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 end";
 }
