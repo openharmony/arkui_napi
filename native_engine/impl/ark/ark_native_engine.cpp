@@ -559,6 +559,12 @@ bool ArkNativeEngine::DeleteWorker(NativeEngine* hostEngine, NativeEngine* worke
     return false;
 }
 
+NativeEngine* ArkNativeEngine::GetWorkerVm(NativeEngine* hostEngine, uint32_t tid)
+{
+    auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
+    return arkNativeEngineImpl->GetWorkerVm(hostEngine, tid);
+}
+
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);

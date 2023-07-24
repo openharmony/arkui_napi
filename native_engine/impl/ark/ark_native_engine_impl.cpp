@@ -1291,6 +1291,12 @@ bool ArkNativeEngineImpl::DeleteWorker(NativeEngine* hostEngine, NativeEngine* w
     return false;
 }
 
+NativeEngine* ArkNativeEngineImpl::GetWorkerVm(NativeEngine* hostEngine, uint32_t tid)
+{
+    const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(hostEngine)->GetEcmaVm();
+    return reinterpret_cast<ArkNativeEngine*>(panda::DFXJSNApi::GetWorkerVm(const_cast<EcmaVM*>(hostVM), tid));
+}
+
 bool ArkNativeEngineImpl::StartHeapTracking(double timeInterval, bool isVmMode)
 {
     return DFXJSNApi::StartHeapTracking(vm_, timeInterval, isVmMode);

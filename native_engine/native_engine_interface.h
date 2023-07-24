@@ -220,6 +220,7 @@ public:
     virtual bool SuspendVM() = 0;
     virtual bool IsSuspended() = 0;
     virtual bool CheckSafepoint() = 0;
+    virtual NativeEngine* GetWorkerVm(NativeEngine* hostEngine, uint32_t tid) = 0;
 
     virtual void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
