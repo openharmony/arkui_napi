@@ -207,6 +207,7 @@ public:
     bool SuspendVM() override;
     bool IsSuspended() override;
     bool CheckSafepoint() override;
+    NativeEngine* GetWorkerVm(NativeEngine* hostEngine, uint32_t tid) override;
 
     void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) override;

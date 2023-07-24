@@ -162,6 +162,7 @@ public:
     bool SuspendVM() override;
     bool IsSuspended() override;
     bool CheckSafepoint() override;
+    NativeEngine* GetWorkerVm(NativeEngine* hostEngine, uint32_t tid) override;
 
     // isVmMode means the internal class in vm is visible.
     // isPrivate means the number and string is not visible.
