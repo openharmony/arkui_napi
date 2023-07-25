@@ -161,7 +161,7 @@ public:
     virtual bool SuspendVM() = 0;
     virtual bool IsSuspended() = 0;
     virtual bool CheckSafepoint() = 0;
-    virtual NativeEngine* GetWorkerVm(NativeEngine* hostEngine, uint32_t tid) = 0;
+    virtual NativeEngine* GetWorkerEngine(uint32_t tid) = 0;
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
@@ -170,7 +170,7 @@ public:
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) = 0;
-    virtual bool DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine) = 0;
+    virtual bool DeleteWorker(NativeEngine* workerEngine) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(const std::string &filePath) = 0;
 
