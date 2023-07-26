@@ -341,7 +341,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
 
     nsMap_[moduleName] = ns;
 
-    HILOG_INFO("CreateLdNamespace success, path: %{public}s", lib_ld_path);
+    HILOG_INFO("CreateLdNamespace success. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
 #endif
 }
 
@@ -602,6 +602,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const c
         return lib;
     }
 
+    HILOG_INFO("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, path);
 #endif
