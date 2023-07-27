@@ -550,19 +550,19 @@ bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo
     return arkNativeEngineImpl->BuildJsStackInfoList(tid, jsFrames);
 }
 
-bool ArkNativeEngine::DeleteWorker(NativeEngine* hostEngine, NativeEngine* workerEngine)
+bool ArkNativeEngine::DeleteWorker(NativeEngine* workerEngine)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    if (hostEngine != nullptr && workerEngine != nullptr) {
-        return arkNativeEngineImpl->DeleteWorker(hostEngine, workerEngine);
+    if (workerEngine != nullptr) {
+        return arkNativeEngineImpl->DeleteWorker(workerEngine);
     }
     return false;
 }
 
-NativeEngine* ArkNativeEngine::GetWorkerVm(NativeEngine* hostEngine, uint32_t tid)
+NativeEngine* ArkNativeEngine::GetWorkerEngine(uint32_t tid)
 {
     auto arkNativeEngineImpl = static_cast<ArkNativeEngineImpl*>(nativeEngineImpl_);
-    return arkNativeEngineImpl->GetWorkerVm(hostEngine, tid);
+    return arkNativeEngineImpl->GetWorkerEngine(tid);
 }
 
 bool ArkNativeEngine::StartHeapTracking(double timeInterval, bool isVmMode)
