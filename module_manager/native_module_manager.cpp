@@ -199,7 +199,9 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         }
     }
 
-    const char *tmpName = isAppModule_ ? (prefix_ + "/" + nativeModule->name).c_str() : nativeModule->name;
+    const char *nativeModuleName = nativeModule->name == nullptr ? "" : nativeModule->name;
+    std::string appName = prefix_ + "/" + nativeModuleName;
+    const char *tmpName = isAppModule_ ? appName.c_str() : nativeModuleName;
     char *moduleName = new char[NAPI_PATH_MAX];
     errno_t err = EOK;
     err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
