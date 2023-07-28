@@ -21,7 +21,6 @@
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
 #include "hitrace_meter.h"
-#include "ark_native_engine_impl.h"
 #endif
 
 class ArkNativeFunction : public ArkNativeObject, public NativeFunction {
@@ -55,7 +54,7 @@ private:
     static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
     {
 #ifdef ENABLE_HITRACE
-        if (ArkNativeEngineImpl::napiProfilerEnabled) {
+        if (ArkNativeEngine::napiProfilerEnabled) {
             EcmaVM *vm = runtimeInfo->GetVM();
             LocalScope scope(vm);
             Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
@@ -70,7 +69,7 @@ private:
     static inline void FinishNapiProfilerTrace()
     {
 #ifdef ENABLE_HITRACE
-        if (ArkNativeEngineImpl::napiProfilerEnabled) {
+        if (ArkNativeEngine::napiProfilerEnabled) {
             FinishTrace(HITRACE_TAG_ACE);
         }
 #endif
