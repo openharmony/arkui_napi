@@ -191,6 +191,7 @@ char* NativeModuleManager::FormatString()
         "libhukssdk.z.so",
         "libnative_drawing.so",
         "libnative_window.so",
+        "libnative_buffer.so",
         "libnative_vsync.so",
         "libOpenSLES.so",
         "libpixelmap_ndk.z.so",
