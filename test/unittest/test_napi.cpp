@@ -22,6 +22,12 @@
 #include "securec.h"
 #include "utils/log.h"
 
+static constexpr int THREAD_PAUSE_THREE = 300 * 1000; // 300 ms
+static constexpr int THREAD_PAUSE_ONE = 100 * 1000; // 100 ms
+static constexpr int MAX_BUFFER_SIZE = 2;
+static constexpr int BUFFER_SIZE_FIVE = 5;
+static constexpr size_t TEST_STR_LENGTH = 30;
+
 class NapiBasicTest : public NativeEngineTest {
 public:
     static void SetUpTestCase()
@@ -360,7 +366,7 @@ HWTEST_F(NapiBasicTest, ObjectTest001, testing::ext::TestSize.Level1)
     ASSERT_TRUE(isArray);
     uint32_t arrayLength = 0;
     ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
-    ASSERT_EQ(arrayLength, (uint32_t)2);
+    ASSERT_EQ(arrayLength, static_cast<uint32_t>(2));
 
     for (uint32_t i = 0; i < arrayLength; i++) {
         bool hasElement = false;
@@ -378,6 +384,88 @@ HWTEST_F(NapiBasicTest, ObjectTest001, testing::ext::TestSize.Level1)
         napi_get_property(env, result, propName, &propValue);
         ASSERT_TRUE(propValue != nullptr);
     }
+}
+
+/**
+ * @tc.name: ObjectTest002
+ * @tc.desc: Test Object Type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    napi_value messageKey = nullptr;
+    const char* messageKeyStr = "message";
+    napi_create_string_latin1(env, messageKeyStr, strlen(messageKeyStr), &messageKey);
+    napi_value messageValue = nullptr;
+    const char* messageValueStr = "OK";
+    napi_create_string_latin1(env, messageValueStr, strlen(messageValueStr), &messageValue);
+    napi_set_property(env, result, messageKey, messageValue);
+
+    napi_value propValue = nullptr;
+    napi_get_property(env, result, messageKey, &propValue);
+    ASSERT_TRUE(propValue != nullptr);
+
+    napi_delete_property(env, result, messageKey, nullptr);
+    bool resultVal = true;
+    napi_has_property(env, result, messageKey, &resultVal);
+    ASSERT_FALSE(resultVal);
+
+    napi_value newKey = nullptr;
+    const char* newKeyStr = "new";
+    napi_create_string_latin1(env, newKeyStr, strlen(newKeyStr), &newKey);
+    int32_t testnumber = 12345;
+    napi_value numberValue = nullptr;
+    napi_create_int32(env, testnumber, &numberValue);
+    napi_set_property(env, result, newKey, numberValue);
+
+    napi_value propNames = nullptr;
+    napi_get_property_names(env, result, &propNames);
+    uint32_t arrayLength = 0;
+    napi_get_array_length(env, propNames, &arrayLength);
+    ASSERT_EQ(arrayLength, static_cast<uint32_t>(1));
+}
+
+/**
+ * @tc.name: ObjectTest003
+ * @tc.desc: Test Object Type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value funcAttribute = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &funcAttribute);
+
+    napi_value funcKey = nullptr;
+    const char* funcKeyStr = "func";
+    napi_create_string_latin1(env, funcKeyStr, strlen(funcKeyStr), &funcKey);
+    napi_status status = napi_set_property(env, result, funcKey, funcAttribute);
+    ASSERT_EQ(status, napi_status::napi_ok);
+
+    bool isFuncExist = false;
+    ASSERT_CHECK_CALL(napi_has_property(env, result, funcKey, &isFuncExist));
+    ASSERT_TRUE(isFuncExist);
+
+    napi_value propFuncValue = nullptr;
+    napi_get_property_names(env, result, &propFuncValue);
+    uint32_t arrayLength = 0;
+    napi_get_array_length(env, propFuncValue, &arrayLength);
+    ASSERT_EQ(arrayLength, static_cast<uint32_t>(1));
+
+    bool isFuncDelete = false;
+    ASSERT_CHECK_CALL(napi_delete_property(env, result, funcKey, &isFuncDelete));
+    ASSERT_TRUE(isFuncDelete);
 }
 
 /**
@@ -448,6 +536,152 @@ HWTEST_F(NapiBasicTest, FunctionTest001, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: FunctionTest002
+ * @tc.desc: Test function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, FunctionTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value fn;
+    const char data[] = "data";
+    napi_status status = napi_create_function(nullptr, nullptr, 0, nullptr, nullptr, &fn);
+    ASSERT_EQ(status, napi_invalid_arg);
+    status = napi_create_function(env, nullptr, 0, nullptr, nullptr, &fn);
+    ASSERT_EQ(status, napi_invalid_arg);
+    status = napi_create_function(env, nullptr, 0, func, (void*)data, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+    status = napi_create_function(env, nullptr, 0, func, nullptr, &fn);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_create_function(env, nullptr, 0, func, (void*)data, &fn);
+    ASSERT_EQ(status, napi_ok);
+}
+
+/**
+ * @tc.name: FunctionTest003
+ * @tc.desc: Test function type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, FunctionTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar;
+        napi_value* argv = nullptr;
+        size_t argc = 0;
+        void* innerData = nullptr;
+
+        napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
+        if (argc > 0) {
+            argv = new napi_value[argc];
+        }
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, &innerData);
+        napi_value result;
+        if (argv) {
+            result = argv[0];
+            delete[] argv;
+        } else {
+            napi_get_undefined(env, &result);
+        }
+        return result;
+    };
+
+    napi_value fn;
+    napi_value funcResultValue;
+    napi_value recv;
+    napi_value jsNumber;
+    const static char data[] = "data";
+    napi_status status = napi_create_function(env, nullptr, 0, func, (void*)data, &fn);
+    ASSERT_EQ(napi_ok, status);
+
+    const int32_t testNumber = 1;
+    napi_create_int32(env, testNumber, &jsNumber);
+    napi_value argv[] = { jsNumber };
+    napi_get_undefined(env, &recv);
+    status = napi_call_function(env, recv, fn, 1, argv, &funcResultValue);
+    ASSERT_EQ(status, napi_ok);
+
+    int32_t cNumber;
+    napi_get_value_int32(env, funcResultValue, &cNumber);
+    ASSERT_EQ(cNumber, testNumber);
+
+    status = napi_call_function(env, nullptr, fn, 1, argv, &funcResultValue);
+    ASSERT_EQ(status, napi_ok);
+
+    status = napi_call_function(env, nullptr, nullptr, 1, argv, &funcResultValue);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_call_function(env, nullptr, nullptr, 0, nullptr, &funcResultValue);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_call_function(env, nullptr, fn, 1, argv, nullptr);
+    ASSERT_EQ(status, napi_ok);
+}
+
+static napi_value TestCreateFunc(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_create_object(env, &result);
+    return result;
+}
+
+/**
+ * @tc.name: FunctionTest004
+ * @tc.desc: Test the second parameter as null
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, FunctionTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value funcValue = nullptr;
+    napi_create_function(env, nullptr, NAPI_AUTO_LENGTH, TestCreateFunc, nullptr, &funcValue);
+    ASSERT_NE(funcValue, nullptr);
+
+    napi_value recv = nullptr;
+    napi_get_undefined(env, &recv);
+    ASSERT_NE(recv, nullptr);
+    napi_value funcResultValue = nullptr;
+    napi_call_function(env, recv, funcValue, 0, nullptr, &funcResultValue);
+    ASSERT_NE(funcResultValue, nullptr);
+}
+
+static napi_value TestCallFunc(napi_env env, napi_callback_info info)
+{
+    napi_value error = nullptr;
+    napi_throw_error(env, "500", "Common error");
+    return error;
+}
+
+/**
+ * @tc.name: FunctionTest005
+ * @tc.desc: Test callfunction throw error
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, FunctionTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value funcValue = nullptr;
+    napi_value exception = nullptr;
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, TestCallFunc, nullptr, &funcValue);
+    ASSERT_NE(funcValue, nullptr);
+
+    napi_value recv = nullptr;
+    napi_get_undefined(env, &recv);
+    ASSERT_NE(recv, nullptr);
+    napi_value funcResultValue = nullptr;
+    bool isExceptionPending = false;
+    napi_call_function(env, recv, funcValue, 0, nullptr, &funcResultValue);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_TRUE(isExceptionPending);
+
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
+/**
  * @tc.name: ArrayTest001
  * @tc.desc: Test array type.
  * @tc.type: FUNC
@@ -471,7 +705,7 @@ HWTEST_F(NapiBasicTest, ArrayTest001, testing::ext::TestSize.Level1) {
     uint32_t arrayLength = 0;
     napi_get_array_length(env, array, &arrayLength);
 
-    ASSERT_EQ(arrayLength, (uint32_t) 10);
+    ASSERT_EQ(arrayLength, static_cast<uint32_t>(10));
 
     for (size_t i = 0; i < arrayLength; i++) {
         bool hasIndex = false;
@@ -601,32 +835,93 @@ HWTEST_F(NapiBasicTest, PromiseTest001, testing::ext::TestSize.Level1)
     {
         napi_deferred deferred = nullptr;
         napi_value promise = nullptr;
-        napi_create_promise(env, &deferred, &promise);
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
         ASSERT_NE(deferred, nullptr);
         ASSERT_NE(promise, nullptr);
 
         bool isPromise = false;
-        napi_is_promise(env, promise, &isPromise);
+        ASSERT_CHECK_CALL(napi_is_promise(env, promise, &isPromise));
         ASSERT_TRUE(isPromise);
 
         napi_value undefined = nullptr;
         napi_get_undefined(env, &undefined);
-        napi_resolve_deferred(env, deferred, undefined);
+        ASSERT_CHECK_CALL(napi_resolve_deferred(env, deferred, undefined));
     }
     {
         napi_deferred deferred = nullptr;
         napi_value promise = nullptr;
-        napi_create_promise(env, &deferred, &promise);
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
         ASSERT_NE(deferred, nullptr);
         ASSERT_NE(promise, nullptr);
 
         bool isPromise = false;
-        napi_is_promise(env, promise, &isPromise);
+        ASSERT_CHECK_CALL(napi_is_promise(env, promise, &isPromise));
         ASSERT_TRUE(isPromise);
 
         napi_value undefined = nullptr;
         napi_get_undefined(env, &undefined);
-        napi_reject_deferred(env, deferred, undefined);
+        ASSERT_CHECK_CALL(napi_reject_deferred(env, deferred, undefined));
+    }
+}
+
+/**
+ * @tc.name: PromiseTest002
+ * @tc.desc: Test promise type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, PromiseTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        napi_status status = napi_create_promise(nullptr, &deferred, &promise);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_create_promise(env, nullptr, &promise);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_create_promise(env, &deferred, nullptr);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+    }
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+
+        bool isPromise = false;
+        napi_status status = napi_is_promise(nullptr, promise, &isPromise);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_is_promise(env, nullptr, &isPromise);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_is_promise(env, promise, nullptr);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+    }
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+
+        napi_value undefined = nullptr;
+        napi_get_undefined(env, &undefined);
+        napi_status status = napi_resolve_deferred(nullptr, deferred, undefined);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_resolve_deferred(env, nullptr, undefined);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_resolve_deferred(env, deferred, nullptr);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+    }
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+
+        napi_value undefined = nullptr;
+        napi_get_undefined(env, &undefined);
+        napi_status status = napi_reject_deferred(nullptr, deferred, undefined);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_reject_deferred(env, nullptr, undefined);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
+        status = napi_reject_deferred(env, deferred, nullptr);
+        ASSERT_EQ(status, napi_status::napi_invalid_arg);
     }
 }
 
@@ -728,10 +1023,10 @@ HWTEST_F(NapiBasicTest, ReferenceTest001, testing::ext::TestSize.Level1)
     uint32_t resultRefCount = 0;
 
     napi_reference_ref(env, resultRef, &resultRefCount);
-    ASSERT_EQ(resultRefCount, (uint32_t)2);
+    ASSERT_EQ(resultRefCount, static_cast<uint32_t>(2));
 
     napi_reference_unref(env, resultRef, &resultRefCount);
-    ASSERT_EQ(resultRefCount, (uint32_t)1);
+    ASSERT_EQ(resultRefCount, static_cast<uint32_t>(1));
 
     napi_value refValue = nullptr;
     napi_get_reference_value(env, resultRef, &refValue);
@@ -822,15 +1117,15 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
         auto asyncWorkContext = new AsyncWorkContext();
         napi_value resourceName = nullptr;
         napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
-        napi_create_async_work(
+        ASSERT_CHECK_CALL(napi_create_async_work(
             env, nullptr, resourceName, [](napi_env value, void* data) {},
             [](napi_env env, napi_status status, void* data) {
                 AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-                napi_delete_async_work(env, asyncWorkContext->work);
+                ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
                 delete asyncWorkContext;
             },
-            asyncWorkContext, &asyncWorkContext->work);
-        napi_queue_async_work(env, asyncWorkContext->work);
+            asyncWorkContext, &asyncWorkContext->work));
+        ASSERT_CHECK_CALL(napi_queue_async_work(env, asyncWorkContext->work));
     }
     {
         auto asyncWorkContext = new AsyncWorkContext();
@@ -845,8 +1140,139 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
             },
             asyncWorkContext, &asyncWorkContext->work);
         napi_queue_async_work(env, asyncWorkContext->work);
-        napi_cancel_async_work(env, asyncWorkContext->work);
+        ASSERT_CHECK_CALL(napi_cancel_async_work(env, asyncWorkContext->work));
     }
+}
+
+/**
+ * @tc.name: AsyncWorkTest002
+ * @tc.desc: Test async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {
+            // Simulate long-term running tasks.
+            usleep(THREAD_PAUSE_THREE);
+        },
+        [](napi_env env, napi_status status, void* data) {
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            ASSERT_EQ(status, napi_status::napi_cancelled);
+            napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+        },
+        asyncWorkContext, &asyncWorkContext->work);
+    napi_queue_async_work(env, asyncWorkContext->work);
+
+    // Sleep for a short duration to allow the async work to start executing.
+    usleep(THREAD_PAUSE_ONE);
+    napi_cancel_async_work(env, asyncWorkContext->work);
+}
+
+/**
+ * @tc.name: AsyncWorkTest003
+ * @tc.desc: Test async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AsyncWorkTest003, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    std::unique_ptr<AsyncWorkContext> asyncWorkContext = std::make_unique<AsyncWorkContext>();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(
+        env, nullptr, nullptr, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {},
+        asyncWorkContext.get(), &asyncWorkContext->work);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_create_async_work(
+        env, nullptr, resourceName, nullptr,
+        [](napi_env env, napi_status status, void* data) {},
+        asyncWorkContext.get(), &asyncWorkContext->work);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        nullptr,
+        asyncWorkContext.get(), &asyncWorkContext->work);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {},
+        nullptr, &asyncWorkContext->work);
+    ASSERT_EQ(status, napi_ok);
+
+    status = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {},
+        asyncWorkContext.get(), nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: AsyncWorkTest004
+ * @tc.desc: Test async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AsyncWorkTest004, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            AsyncWorkContext* asyncWorkContext = reinterpret_cast<AsyncWorkContext*>(data);
+            ASSERT_NE(asyncWorkContext, nullptr);
+            delete asyncWorkContext;
+        },
+        nullptr, &asyncWorkContext->work);
+    napi_delete_async_work(env, asyncWorkContext->work);
+}
+
+/**
+ * @tc.name: AsyncWorkTest005
+ * @tc.desc: Test async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, AsyncWorkTest005, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            AsyncWorkContext* asyncWorkContext = reinterpret_cast<AsyncWorkContext*>(data);
+            ASSERT_NE(asyncWorkContext, nullptr);
+            delete asyncWorkContext;
+        },
+        asyncWorkContext, &asyncWorkContext->work);
+    napi_status status = napi_queue_async_work(env, asyncWorkContext->work);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_queue_async_work(env, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
 }
 
 /**
@@ -1205,6 +1631,42 @@ HWTEST_F(NapiBasicTest, CreateBufferTest002, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: CreateBufferTest003
+ * @tc.desc: Test is CreateBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateBufferTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value buffer = nullptr;
+    void* bufferPtr = nullptr;
+    size_t bufferSize = 1;
+    napi_status creatresult = napi_create_buffer(env, bufferSize, &bufferPtr, &buffer);
+    ASSERT_EQ(creatresult, napi_status::napi_ok);
+    creatresult = napi_create_buffer(env, bufferSize, nullptr, &buffer);
+    ASSERT_EQ(creatresult, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateBufferTest004
+ * @tc.desc: Test is CreateBufferCopy.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateBufferTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value buffer = nullptr;
+    void* bufferPtr = nullptr;
+    const char* data = nullptr;
+    size_t bufferSize = 1;
+    napi_status creatresult = napi_create_buffer_copy(env, bufferSize, nullptr, &bufferPtr, &buffer);
+    ASSERT_EQ(creatresult, napi_status::napi_invalid_arg);
+    creatresult = napi_create_buffer_copy(env, bufferSize, data, &bufferPtr, nullptr);
+    ASSERT_EQ(creatresult, napi_status::napi_invalid_arg);
+}
+
+/**
  * @tc.name: IsDetachedArrayBufferTest001
  * @tc.desc: Test is DetachedArrayBuffer.
  * @tc.type: FUNC
@@ -1231,14 +1693,6 @@ HWTEST_F(NapiBasicTest, IsDetachedArrayBufferTest001, testing::ext::TestSize.Lev
     ASSERT_TRUE(result);
 }
 
-static constexpr size_t NAPI_UT_STR_LENGTH = 30;
-
-static constexpr int32_t NAPI_UT_TEST_NUMBER = 12345;
-
-static constexpr int32_t NAPI_UT_TEST_NUMBER2 = 111111;
-
-static constexpr uint32_t NAPI_UT_ARRAY_LENGTH = 2;
-
 /**
  * @tc.name: FreezeObjectTest001
  * @tc.desc: Test is FreezeObject.
@@ -1256,14 +1710,14 @@ HWTEST_F(NapiBasicTest, FreezeObjectTest001, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
     napi_set_named_property(env, object, "strAttribute", strAttribute);
 
-    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    int32_t testNumber = 1;
     napi_value numberAttribute = nullptr;
     napi_create_int32(env, testNumber, &numberAttribute);
     napi_set_named_property(env, object, "numberAttribute", numberAttribute);
 
     ASSERT_CHECK_CALL(napi_object_freeze(env, object));
 
-    int32_t testNumber2 = NAPI_UT_TEST_NUMBER2;
+    int32_t testNumber2 = 0;
     napi_value numberAttribute2 = nullptr;
     napi_create_int32(env, testNumber2, &numberAttribute2);
     ASSERT_CHECK_CALL(napi_set_named_property(env, object, "test", numberAttribute2));
@@ -1276,7 +1730,7 @@ HWTEST_F(NapiBasicTest, FreezeObjectTest001, testing::ext::TestSize.Level1)
 
     uint32_t arrayLength = 0;
     ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
-    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+    ASSERT_EQ(arrayLength, MAX_BUFFER_SIZE);
 
     char names[2][30];
     memset_s(names, dataSize, 0, dataSize);
@@ -1292,8 +1746,8 @@ HWTEST_F(NapiBasicTest, FreezeObjectTest001, testing::ext::TestSize.Level1)
         ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
         ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
 
-        size_t testStrLength = NAPI_UT_STR_LENGTH;
-        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t testStrLength = TEST_STR_LENGTH;
+        char testStrInner[TEST_STR_LENGTH + 1];
         size_t outStrLength = 0;
         memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
         ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
@@ -1320,7 +1774,7 @@ HWTEST_F(NapiBasicTest, SealObjectTest001, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
     napi_set_named_property(env, object, "strAttribute", strAttribute);
 
-    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    int32_t testNumber = 1;
     napi_value numberAttribute = nullptr;
     napi_create_int32(env, testNumber, &numberAttribute);
     napi_set_named_property(env, object, "numberAttribute", numberAttribute);
@@ -1338,7 +1792,7 @@ HWTEST_F(NapiBasicTest, SealObjectTest001, testing::ext::TestSize.Level1)
 
     napi_value strAttribute2 = nullptr;
     napi_get_named_property(env, object, "strAttribute", &strAttribute2);
-    char buffer[NAPI_UT_STR_LENGTH] = {0};
+    char buffer[TEST_STR_LENGTH] = {0};
     size_t length = 0;
     napi_status status = napi_get_value_string_utf8(env, strAttribute2, buffer, sizeof(buffer) - 1, &length);
     ASSERT_EQ(status, napi_ok);
@@ -1353,12 +1807,12 @@ HWTEST_F(NapiBasicTest, SealObjectTest001, testing::ext::TestSize.Level1)
 
     uint32_t arrayLength = 0;
     ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
-    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+    ASSERT_EQ(arrayLength, MAX_BUFFER_SIZE);
 
-    char names[2][NAPI_UT_STR_LENGTH];
+    char names[2][TEST_STR_LENGTH];
     // There are 2 elements in the string array,
-    // so the parameter is set to NAPI_UT_STR_LENGTH * 2 to clear the entire array.
-    memset_s(names, NAPI_UT_STR_LENGTH * 2, 0, NAPI_UT_STR_LENGTH * 2);
+    // so the parameter is set to TEST_STR_LENGTH * 2 to clear the entire array.
+    memset_s(names, TEST_STR_LENGTH * 2, 0, TEST_STR_LENGTH * 2);
     auto ret = memcpy_s(names[0], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
     ASSERT_EQ(ret, EOK);
     ret = memcpy_s(names[1], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
@@ -1372,8 +1826,8 @@ HWTEST_F(NapiBasicTest, SealObjectTest001, testing::ext::TestSize.Level1)
         ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
         ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
 
-        size_t testStrLength = NAPI_UT_STR_LENGTH;
-        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t testStrLength = TEST_STR_LENGTH;
+        char testStrInner[TEST_STR_LENGTH + 1];
         size_t outStrLength = 0;
         memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
         ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
@@ -1405,7 +1859,7 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest001, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
     napi_set_named_property(env, result, "strAttribute", strAttribute);
 
-    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    int32_t testNumber = 1;
     napi_value numberAttribute = nullptr;
     napi_create_int32(env, testNumber, &numberAttribute);
     napi_set_named_property(env, result, "numberAttribute", numberAttribute);
@@ -1418,12 +1872,12 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest001, testing::ext::TestSize.Level1)
     ASSERT_TRUE(isArray);
     uint32_t arrayLength = 0;
     ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
-    ASSERT_EQ(arrayLength, NAPI_UT_ARRAY_LENGTH);
+    ASSERT_EQ(arrayLength, MAX_BUFFER_SIZE);
 
-    char names[2][NAPI_UT_STR_LENGTH];
+    char names[2][TEST_STR_LENGTH];
     // There are 2 elements in the string array,
-    // so the parameter is set to NAPI_UT_STR_LENGTH * 2 to clear the entire array.
-    memset_s(names, NAPI_UT_STR_LENGTH * 2, 0, NAPI_UT_STR_LENGTH * 2);
+    // so the parameter is set to TEST_STR_LENGTH * 2 to clear the entire array.
+    memset_s(names, TEST_STR_LENGTH * 2, 0, TEST_STR_LENGTH * 2);
     auto ret = memcpy_s(names[0], strlen("strAttribute"), "strAttribute", strlen("strAttribute"));
     ASSERT_EQ(ret, EOK);
     ret = memcpy_s(names[1], strlen("numberAttribute"), "numberAttribute", strlen("numberAttribute"));
@@ -1437,8 +1891,8 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest001, testing::ext::TestSize.Level1)
         ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
         ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
 
-        size_t testStrLength = NAPI_UT_STR_LENGTH;
-        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t testStrLength = TEST_STR_LENGTH;
+        char testStrInner[TEST_STR_LENGTH + 1];
         size_t outStrLength = 0;
         memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
         ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
@@ -1488,7 +1942,7 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest002, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, testStr, strlen(testStr), &strAttribute);
     napi_set_named_property(env, result, "strAttribute", strAttribute);
 
-    int32_t testNumber = NAPI_UT_TEST_NUMBER;
+    int32_t testNumber = 1;
     napi_value numberAttribute = nullptr;
     napi_create_int32(env, testNumber, &numberAttribute);
     napi_set_named_property(env, result, "numberAttribute", numberAttribute);
@@ -1503,10 +1957,10 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest002, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_array_length(env, propNames, &arrayLength));
     ASSERT_EQ(arrayLength, 4); // 4 means array length.
 
-    char names[4][NAPI_UT_STR_LENGTH];
+    char names[4][TEST_STR_LENGTH];
     // There are 4 elements in the string array,
-    // so the parameter is set to NAPI_UT_STR_LENGTH * 4 to clear the entire array.
-    memset_s(names, NAPI_UT_STR_LENGTH * 4, 0, NAPI_UT_STR_LENGTH * 4);
+    // so the parameter is set to TEST_STR_LENGTH * 4 to clear the entire array.
+    memset_s(names, TEST_STR_LENGTH * 4, 0, TEST_STR_LENGTH * 4);
     auto ret = memcpy_s(names[0], strlen("unenumerable"), "unenumerable", strlen("unenumerable"));
     ASSERT_EQ(ret, EOK);
     ret = memcpy_s(names[1], strlen("writable"), "writable", strlen("writable"));
@@ -1524,8 +1978,8 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest002, testing::ext::TestSize.Level1)
         ASSERT_CHECK_CALL(napi_get_element(env, propNames, i, &propName));
         ASSERT_CHECK_VALUE_TYPE(env, propName, napi_string);
 
-        size_t testStrLength = NAPI_UT_STR_LENGTH;
-        char testStrInner[NAPI_UT_STR_LENGTH + 1];
+        size_t testStrLength = TEST_STR_LENGTH;
+        char testStrInner[TEST_STR_LENGTH + 1];
         size_t outStrLength = 0;
         memset_s(testStrInner, testStrLength + 1, 0, testStrLength + 1);
         ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, propName, testStrInner, testStrLength, &outStrLength));
@@ -1533,4 +1987,598 @@ HWTEST_F(NapiBasicTest, AllPropertyNamesTest002, testing::ext::TestSize.Level1)
         int ret = strcmp(testStrInner, names[i]);
         ASSERT_EQ(ret, 0);
     }
+}
+
+/**
+ * @tc.name: StringUtf16Test001
+ * @tc.desc: Test is Chinese space character special character truncation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char16_t testStr[] = u"中文,English,123456,！@#$%$#^%&12345     ";
+    int testStrLength = static_cast<int>(std::char_traits<char16_t>::length(testStr));
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char16_t* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char16_t[bufferSize + 1] { 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, bufferSize + 1, &strLength));
+    for (int i = 0; i < testStrLength; i++) {
+        ASSERT_EQ(testStr[i], buffer[i]);
+    }
+    ASSERT_EQ(testStrLength, strLength);
+    delete[] buffer;
+    buffer = nullptr;
+
+    char16_t* bufferShort = nullptr;
+    int bufferShortSize = 3;
+    bufferShort = new char16_t[bufferShortSize] { 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, bufferShort, bufferShortSize, &strLength));
+    for (int i = 0; i < bufferShortSize; i++) {
+        if (i == (bufferShortSize - 1)) {
+            ASSERT_EQ(0, bufferShort[i]);
+        } else {
+            ASSERT_EQ(testStr[i], bufferShort[i]);
+        }
+    }
+    ASSERT_EQ(strLength, MAX_BUFFER_SIZE);
+    delete[] bufferShort;
+    bufferShort = nullptr;
+}
+
+/**
+ * @tc.name: StringUtf16Test002
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test002, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char16_t testStr[] = u"ut.utf16test.napi.!@#%中^&*()6666";
+    int testStrLength = static_cast<int>(std::char_traits<char16_t>::length(testStr));
+    napi_value result = nullptr;
+    {
+        napi_status ret = napi_create_string_utf16(env, nullptr, testStrLength, &result);
+        ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+    }
+    {
+        napi_status ret = napi_create_string_utf16(env, testStr, (size_t)INT_MAX + 1, &result);
+        ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+    }
+}
+
+/**
+ * @tc.name: StringUtf16Test003
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test003, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char16_t testStr[] = u"ut.utf16test.napi.!@#$%^&*123";
+    size_t testStrLength = static_cast<size_t>(std::char_traits<char16_t>::length(testStr));
+    char16_t buffer[] = u"12345";
+    size_t bufferSize = 0;
+    size_t copied = 0;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, bufferSize, &copied));
+
+    for (size_t i = 0; i < MAX_BUFFER_SIZE; i++) {
+        ASSERT_NE(buffer[i], testStr[i]);
+    }
+}
+
+/**
+ * @tc.name: StringUtf16Test004
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test004, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char16_t buffer[BUFFER_SIZE_FIVE];
+    int testStrLength = static_cast<int>(std::char_traits<char16_t>::length(buffer));
+    size_t copied;
+    int64_t testValue = INT64_MAX;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_bigint_int64(env, testValue, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_bigint);
+
+    napi_status ret = napi_get_value_string_utf16(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_string_expected);
+}
+
+/**
+ * @tc.name: StringUtf16Test005
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test005, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char16_t testStr[] = u"ut.utf16test.napi.!@#$%^&*123";
+    int testStrLength = static_cast<int>(std::char_traits<char16_t>::length(testStr));
+    char16_t buffer[testStrLength];
+    size_t copied;
+    napi_value result = nullptr;
+
+    napi_status ret = napi_get_value_string_utf16(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: StringUtf16Test006
+ * @tc.desc: Test string length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf16Test006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char16_t testStr[] = u"ut.utf16test.napi.!@#$%^&*123";
+    size_t testStrLength = static_cast<size_t>(std::char_traits<char16_t>::length(testStr));
+    size_t copied = 0;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, nullptr, testStrLength, &copied));
+
+    ASSERT_EQ(testStrLength, copied);
+}
+
+/**
+ * @tc.name: StringUtf8Test001
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf8Test001, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.utf8test.napi.!@#%中^&*()6666";
+    size_t testStrLength = strlen(testStr);
+
+    napi_status ret = napi_create_string_utf8(env, testStr, testStrLength, nullptr);
+    ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: StringUtf8Test002
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf8Test002, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char buffer[BUFFER_SIZE_FIVE] = { 0 };
+    size_t testStrLength = strlen(buffer);
+    size_t copied;
+    napi_value result = nullptr;
+    napi_get_boolean(env, true, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_boolean);
+
+    napi_status ret = napi_get_value_string_utf8(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_string_expected);
+}
+
+/**
+ * @tc.name: StringUtf8Test003
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf8Test003, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.utf8test.napi.!@#$%^&*123";
+    size_t testStrLength = strlen(testStr);
+    char buffer[testStrLength];
+    size_t copied;
+    napi_value result = nullptr;
+
+    napi_status ret = napi_get_value_string_utf8(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: StringUtf8Test004
+ * @tc.desc: Test string length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringUtf8Test004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.utf8test.napi.!@#$%^&*123";
+    size_t testStrLength = strlen(testStr);
+    size_t copied = 0;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, testStrLength, &copied));
+
+    ASSERT_EQ(testStrLength, copied);
+}
+
+/**
+ * @tc.name: StringLatin1Test001
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.latin1test.napi.!@#%^&*()6666";
+    size_t testStrLength = strlen(testStr);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STREQ(testStr, buffer);
+    ASSERT_EQ(testStrLength, strLength);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringLatin1Test002
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.latin1test.中文测试";
+    size_t testStrLength = strlen(testStr);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STRNE(testStr, buffer);
+    ASSERT_GT(testStrLength, strLength);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringLatin1Test003
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test003, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value result = nullptr;
+
+    const char testStr[] = "ut.latin1test.napi.!@#%^&*()6666";
+    size_t testStrLength = strlen(testStr);
+
+    napi_status ret = napi_create_string_latin1(env, nullptr, testStrLength, &result);
+    ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: StringLatin1Test004
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test004, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value result = nullptr;
+
+    const char testStr[] = "ut.latin1test.napi.!@#%^&*()6666";
+
+    napi_status ret = napi_create_string_latin1(env, testStr, 0, &result);
+    ASSERT_EQ(ret, napi_status::napi_ok);
+
+    size_t bufferSize = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, nullptr, 0, &bufferSize));
+    ASSERT_EQ(bufferSize, 0);
+}
+
+/**
+ * @tc.name: StringLatin1Test005
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test005, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char buffer[BUFFER_SIZE_FIVE] = { 0 };
+    size_t testStrLength = strlen(buffer);
+    size_t copied;
+    napi_value result = nullptr;
+    napi_get_boolean(env, true, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_boolean);
+
+    napi_status ret = napi_get_value_string_latin1(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_string_expected);
+}
+
+/**
+ * @tc.name: StringLatin1Test006
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test006, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.latin1test.napi.!@#$%^&*123";
+    size_t testStrLength = strlen(testStr);
+    char buffer[testStrLength];
+    size_t copied;
+    napi_value result = nullptr;
+
+    napi_status ret = napi_get_value_string_latin1(env, result, buffer, testStrLength, &copied);
+    ASSERT_EQ(ret, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: StringLatin1Test007
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringLatin1Test007, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "ut.latin1test.napi.!@#$%^&*123";
+    size_t testStrLength = strlen(testStr);
+    size_t copied = 0;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_CALL(napi_get_value_string_latin1(env, result, nullptr, testStrLength, &copied));
+
+    ASSERT_EQ(testStrLength, copied);
+}
+
+/**
+ * @tc.name: ToStringTest001
+ * @tc.desc: Test string type of str.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "中文,English,123456,!@#$%$#^%&";
+    size_t testStrLength = strlen(testStr);
+    napi_value str = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, testStrLength, &str));
+    ASSERT_CHECK_VALUE_TYPE(env, str, napi_string);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, str, &result));
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STREQ(testStr, buffer);
+    ASSERT_EQ(testStrLength, strLength);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest002
+ * @tc.desc: Test string type of undefined.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value argument;
+    napi_get_undefined(env, &argument);
+    ASSERT_CHECK_VALUE_TYPE(env, argument, napi_undefined);
+
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
+
+    const char expected[] = "undefined";
+    size_t expectedLength = strlen(expected);
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize);
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength);
+    ASSERT_EQ(expectedLength, strLength);
+    ASSERT_STREQ(expected, buffer);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest003
+ * @tc.desc: Test string type of null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value argument;
+    napi_get_null(env, &argument);
+    ASSERT_CHECK_VALUE_TYPE(env, argument, napi_null);
+
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
+
+    const char expected[] = "null";
+    size_t expectedLength = strlen(expected);
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize);
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength);
+    ASSERT_EQ(expectedLength, strLength);
+    ASSERT_STREQ(expected, buffer);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest004
+ * @tc.desc: Test string type of bool.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value argument;
+    napi_get_boolean(env, true, &argument);
+    ASSERT_CHECK_VALUE_TYPE(env, argument, napi_boolean);
+
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
+
+    const char expected[] = "true";
+    size_t expectedLength = strlen(expected);
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize);
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength);
+    ASSERT_EQ(expectedLength, strLength);
+    ASSERT_STREQ(expected, buffer);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest005
+ * @tc.desc: Test string type of number.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value argument;
+    double number = 0.1;
+    napi_create_double(env, number, &argument);
+    ASSERT_CHECK_VALUE_TYPE(env, argument, napi_number);
+
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
+
+    double numberValue;
+    napi_get_value_double(env, argument, &numberValue);
+    std::string expected = std::to_string(numberValue);
+    // Remove excess '0' after delimiter
+    while (!expected.empty() && expected.back() == '0')
+    {
+        expected.pop_back();
+    }
+
+    size_t expectedLength = expected.length();
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize);
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength);
+    ASSERT_EQ(expectedLength, strLength);
+    ASSERT_STREQ(expected.c_str(), buffer);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest006
+ * @tc.desc: Test string type of bigint.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int64_t testValue = INT64_MAX;
+    napi_value argument;
+    bool flag = false;
+    ASSERT_CHECK_CALL(napi_create_bigint_int64(env, testValue, &argument));
+    ASSERT_CHECK_VALUE_TYPE(env, argument, napi_bigint);
+
+    napi_value result;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
+
+    int64_t numberValue = 0;
+    ASSERT_CHECK_CALL(napi_get_value_bigint_int64(env, argument, &numberValue, &flag));
+    ASSERT_EQ(numberValue, INT64_MAX);
+    ASSERT_TRUE(flag);
+    std::string expected = std::to_string(numberValue);
+
+    size_t expectedLength = expected.length();
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize);
+    ASSERT_GT(bufferSize, 0);
+    buffer = new char[bufferSize + 1]{ 0 };
+    napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength);
+    ASSERT_EQ(expectedLength, strLength);
+    ASSERT_STREQ(expected.c_str(), buffer);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: ToStringTest007
+ * @tc.desc: Test string type of symbol.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "testSymbol";
+    size_t testStrLength = strlen(testStr);
+    napi_value testSymbol = nullptr;
+    napi_create_string_utf8(env, testStr, testStrLength, &testSymbol);
+    napi_value symbolVal = nullptr;
+    napi_create_symbol(env, testSymbol, &symbolVal);
+    ASSERT_CHECK_VALUE_TYPE(env, symbolVal, napi_symbol);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_coerce_to_string(env, symbolVal, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
+}
+
+/**
+ * @tc.name: ToStringTest001
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToStringTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result;
+    napi_status status = napi_coerce_to_string(env, nullptr, &result);
+    ASSERT_EQ(status, napi_status::napi_invalid_arg);
 }

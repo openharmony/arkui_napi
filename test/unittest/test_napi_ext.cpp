@@ -142,49 +142,6 @@ HWTEST_F(NapiExtTest, IsBufferTest002, testing::ext::TestSize.Level1)
     ASSERT_EQ(isBuffer, false);
 }
 
-/**
- * @tc.name: StringTestAce
- * @tc.desc: Test string type.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiExtTest, StringTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    const char16_t testStr[] = u"中文,English,123456,!@#$%$#^%&12345";
-    int testStrLength = static_cast<int>(std::char_traits<char16_t>::length(testStr));
-    napi_value result = nullptr;
-    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
-    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
-
-    char16_t* buffer = nullptr;
-    size_t bufferSize = 0;
-    size_t strLength = 0;
-    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, nullptr, 0, &bufferSize));
-    ASSERT_GT(bufferSize, (size_t)0);
-    buffer = new char16_t[bufferSize + 1] { 0 };
-    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, bufferSize + 1, &strLength));
-    for (int i = 0; i < testStrLength; i++) {
-        ASSERT_EQ(testStr[i], buffer[i]);
-    }
-    ASSERT_EQ(testStrLength, strLength);
-    delete[] buffer;
-    buffer = nullptr;
-    char16_t* bufferShort = nullptr;
-    int bufferShortSize = 3;
-    bufferShort = new char16_t[bufferShortSize] { 0 };
-    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, bufferShort, bufferShortSize, &strLength));
-    for (int i = 0; i < bufferShortSize; i++) {
-        if (i == (bufferShortSize - 1)) {
-            ASSERT_EQ(0, bufferShort[i]);
-        } else {
-            ASSERT_EQ(testStr[i], bufferShort[i]);
-        }
-    }
-    ASSERT_EQ(testStrLength, strLength);
-    delete[] bufferShort;
-    bufferShort = nullptr;
-}
-
 #if  (defined(FOR_JERRYSCRIPT_TEST)) &&  (JERRY_API_MINOR_VERSION <= 3)
     // jerryscript 2.3 do nothing
 #else
