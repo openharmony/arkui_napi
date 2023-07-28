@@ -23,16 +23,54 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "native_engine/native_engine.h"
 
+namespace panda::ecmascript {
+struct JsFrameInfo {
+    std::string functionName;
+    std::string fileName;
+    std::string pos;
+    uintptr_t* nativePointer = nullptr;
+};
+}
+using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
+
 using panda::ecmascript::EcmaVM;
 using panda::Local;
 using panda::LocalScope;
 using panda::JSValueRef;
+using panda::JSNApi;
+using panda::DFXJSNApi;
+class ArkNativeObject;
+class SerializationData {
+public:
+    SerializationData() : data_(nullptr), size_(0) {}
+    ~SerializationData() = default;
+
+    uint8_t* GetData() const
+    {
+        return data_.get();
+    }
+    size_t GetSize() const
+    {
+        return size_;
+    }
+
+private:
+    struct DataDeleter {
+        void operator()(uint8_t* p) const
+        {
+            free(p);
+        }
+    };
+
+    std::unique_ptr<uint8_t, DataDeleter> data_;
+    size_t size_;
+};
 
 class ArkNativeEngine : public NativeEngine {
+friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
     ArkNativeEngine(EcmaVM* vm, void* jsEngine);
-    ArkNativeEngine(NativeEngineInterface* engineImpl, void* jsEngine, bool isAppModule);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -174,6 +212,7 @@ public:
     bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) override;
+
     bool DeleteWorker(NativeEngine* workerEngine) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;
@@ -190,6 +229,7 @@ public:
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
 
     void AllowCrossThreadExecution() const override;
+    static void PromiseRejectCallback(void* values);
 
     // debugger
     bool IsMixedDebugEnabled();
@@ -207,5 +247,36 @@ public:
         const std::string& instanceName, void** instance);
 
     NativeChunk& GetNativeChunk();
+    NativeReference* GetPromiseRejectCallBackRef()
+    {
+        return promiseRejectCallbackRef_;
+    }
+    NapiConcurrentCallback GetConcurrentCallbackFunc()
+    {
+        return concurrentCallbackFunc_;
+    }
+
+    NativeReference* GetCheckCallbackRef()
+    {
+        return checkCallbackRef_;
+    }
+
+    static bool napiProfilerEnabled;
+
+private:
+    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
+
+    EcmaVM* vm_ = nullptr;
+    panda::LocalScope topScope_;
+    NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
+    NativeReference* promiseRejectCallbackRef_ { nullptr };
+    NativeReference* checkCallbackRef_ { nullptr };
+    std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
+    static PermissionCheckCallback permissionCheckCallback_;
+    UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    SourceMapCallback SourceMapCallback_ { nullptr };
+    inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
+    static bool napiProfilerParamReaded;
+    static std::string tempModuleName_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

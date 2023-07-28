@@ -14,8 +14,46 @@
  */
 
 #include "native_engine.h"
-#include "native_engine/native_engine_interface.h"
 #include "utils/log.h"
+
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
+#include <sys/epoll.h>
+#endif
+
+#ifdef IOS_PLATFORM
+#include <sys/event.h>
+#endif
+
+#include <uv.h>
+
+constexpr size_t NAME_BUFFER_SIZE = 64;
+//static constexpr size_t DESTRUCTION_TIMEOUT = 5000;
+
+namespace {
+const char* g_errorMessages[] = {
+    nullptr,
+    "Invalid parameter",
+    "Need object",
+    "Need string",
+    "Need string or symbol",
+    "Need function",
+    "Need number",
+    "Need boolean",
+    "Need array",
+    "Generic failure",
+    "An exception is blocking",
+    "Asynchronous work cancelled",
+    "Escape called twice",
+    "Handle scope mismatch",
+    "Callback scope mismatch",
+    "Asynchronous work queue is full",
+    "Asynchronous work handle is closing",
+    "Need bigint",
+    "Need date",
+    "Need arraybuffer",
+    "Need detachable arraybuffer",
+};
+} // namespace
 
 static GetContainerScopeIdCallback getContainerScopeIdFunc_;
 static ContainerScopeCallback initContainerScopeFunc_;
@@ -29,149 +67,313 @@ NativeEngine::~NativeEngine()
     FinalizerInstanceData();
 }
 
+void NativeEngine::Init()
+{
+    HILOG_INFO("NativeEngine::Init");
+    moduleManager_ = NativeModuleManager::GetInstance();
+    referenceManager_ = new NativeReferenceManager();
+    scopeManager_ = new NativeScopeManager();
+    callbackScopeManager_ = new NativeCallbackScopeManager();
+    loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        return;
+    }
+    tid_ = pthread_self();
+    uv_async_init(loop_, &uvAsync_, nullptr);
+    uv_sem_init(&uvSem_, 0);
+}
+
+void NativeEngine::Deinit()
+{
+    HILOG_INFO("NativeEngine::Deinit");
+    uv_sem_destroy(&uvSem_);
+    uv_close((uv_handle_t*)&uvAsync_, nullptr);
+    if (referenceManager_ != nullptr) {
+        delete referenceManager_;
+        referenceManager_ = nullptr;
+    }
+    if (scopeManager_ != nullptr) {
+        delete scopeManager_;
+        scopeManager_ = nullptr;
+    }
+
+    SetStopping(true);
+    uv_loop_delete(loop_);
+    loop_ = nullptr;
+}
+
 NativeScopeManager* NativeEngine::GetScopeManager()
 {
-    return nativeEngineImpl_->GetScopeManager();
+    return scopeManager_;
 }
 
 NativeReferenceManager* NativeEngine::GetReferenceManager()
 {
-    return nativeEngineImpl_->GetReferenceManager();
+    return referenceManager_;
 }
 
 NativeModuleManager* NativeEngine::GetModuleManager()
 {
-    return nativeEngineImpl_->GetModuleManager();
+    return moduleManager_;
 }
 
 NativeCallbackScopeManager* NativeEngine::GetCallbackScopeManager()
 {
-    return nativeEngineImpl_->GetCallbackScopeManager();
+    return callbackScopeManager_;
 }
 
 uv_loop_t* NativeEngine::GetUVLoop() const
 {
-    return nativeEngineImpl_->GetUVLoop();
+    return loop_;
 }
 
 pthread_t NativeEngine::GetTid() const
 {
-    return nativeEngineImpl_->GetTid();
+    return tid_;
 }
 
 bool NativeEngine::ReinitUVLoop()
 {
-    return nativeEngineImpl_->ReinitUVLoop();
+    if (loop_ != nullptr) {
+        uv_sem_destroy(&uvSem_);
+        uv_close((uv_handle_t*)&uvAsync_, nullptr);
+        uv_run(loop_, UV_RUN_ONCE);
+        uv_loop_delete(loop_);
+    }
+
+    loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        return false;
+    }
+    tid_ = pthread_self();
+    uv_async_init(loop_, &uvAsync_, nullptr);
+    uv_sem_init(&uvSem_, 0);
+    return true;
 }
 
 void NativeEngine::Loop(LoopMode mode, bool needSync)
 {
-    nativeEngineImpl_->Loop(mode, needSync);
+    bool more = true;
+    switch (mode) {
+        case LoopMode::LOOP_DEFAULT:
+            more = uv_run(loop_, UV_RUN_DEFAULT);
+            break;
+        case LoopMode::LOOP_ONCE:
+            more = uv_run(loop_, UV_RUN_ONCE);
+            break;
+        case LoopMode::LOOP_NOWAIT:
+            more = uv_run(loop_, UV_RUN_NOWAIT);
+            break;
+        default:
+            return;
+    }
+    if (more == false) {
+        uv_loop_alive(loop_);
+    }
+
+    if (needSync) {
+        uv_sem_post(&uvSem_);
+    }
 }
 
 NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResource, NativeValue* asyncResourceName,
     NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
-    return nativeEngineImpl_->CreateAsyncWork(this, asyncResource, asyncResourceName, execute, complete, data);
+    (void)asyncResource;
+    (void)asyncResourceName;
+    char name[NAME_BUFFER_SIZE] = {0};
+    if (asyncResourceName != nullptr) {
+        auto nativeString = reinterpret_cast<NativeString*>(
+            asyncResourceName->GetInterface(NativeString::INTERFACE_ID));
+        size_t strLength = 0;
+        nativeString->GetCString(name, NAME_BUFFER_SIZE, &strLength);
+    }
+    return new NativeAsyncWork(this, execute, complete, name, data);
 }
 
 NativeAsyncWork* NativeEngine::CreateAsyncWork(const std::string& asyncResourceName, NativeAsyncExecuteCallback execute,
     NativeAsyncCompleteCallback complete, void* data)
 {
-    return nativeEngineImpl_->CreateAsyncWork(this, asyncResourceName, execute, complete, data);
+    return new NativeAsyncWork(this, execute, complete, asyncResourceName, data);
 }
 
 NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
     NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
     NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback)
 {
-    return nativeEngineImpl_->CreateSafeAsyncWork(this, func, asyncResource, asyncResourceName, maxQueueSize,
-        threadCount, finalizeData, finalizeCallback, context, callJsCallback);
+    return new NativeSafeAsyncWork(this, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
+        finalizeData, finalizeCallback, context, callJsCallback);
 }
 
 NativeErrorExtendedInfo* NativeEngine::GetLastError()
 {
-    return nativeEngineImpl_->GetLastError();
+    return &lastError_;
 }
 
 void NativeEngine::SetLastError(int errorCode, uint32_t engineErrorCode, void* engineReserved)
 {
-    nativeEngineImpl_->SetLastError(errorCode, engineErrorCode, engineReserved);
+    lastError_.errorCode = errorCode;
+    lastError_.engineErrorCode = engineErrorCode;
+    lastError_.message = g_errorMessages[lastError_.errorCode];
+    lastError_.reserved = engineReserved;
 }
 
 void NativeEngine::ClearLastError()
 {
-    nativeEngineImpl_->ClearLastError();
+    lastError_.errorCode = 0;
+    lastError_.engineErrorCode = 0;
+    lastError_.message = nullptr;
+    lastError_.reserved = nullptr;
 }
 
 void NativeEngine::EncodeToUtf8(
     NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
-    nativeEngineImpl_->EncodeToUtf8(nativeValue, buffer, written, bufferSize, nchars);
+    if (nativeValue == nullptr || nchars == nullptr || written == nullptr) {
+        HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
+        return;
+    }
+
+    auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+    if (nativeString == nullptr) {
+        HILOG_ERROR("nativeValue GetInterface is nullptr");
+        return;
+    }
+    *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
 }
 
 void NativeEngine::EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding)
 {
-    nativeEngineImpl_->EncodeToChinese(nativeValue, buffer, encoding);
+    if (nativeValue == nullptr) {
+        HILOG_ERROR("NativeEngine is nullptr");
+        return;
+    }
+
+    auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+    if (nativeString == nullptr) {
+        HILOG_ERROR("nativeValue GetInterface is nullptr");
+        return;
+    }
+    nativeString->EncodeWriteChinese(buffer, encoding.c_str());
 }
 
 #if !defined(PREVIEW)
 void NativeEngine::CheckUVLoop()
 {
-    nativeEngineImpl_->CheckUVLoop();
+    checkUVLoop_ = true;
+    uv_thread_create(&uvThread_, NativeEngine::UVThreadRunner, this);
+}
+
+void NativeEngine::UVThreadRunner(void* nativeEngine)
+{
+    std::string name("UVLoop");
+#ifdef IOS_PLATFORM
+    pthread_setname_np(name.c_str());
+#else
+    pthread_setname_np(pthread_self(), name.c_str());
+#endif
+    auto engine = static_cast<NativeEngine*>(nativeEngine);
+    engine->PostLoopTask();
+    while (engine->checkUVLoop_) {
+        int32_t fd = uv_backend_fd(engine->loop_);
+        int32_t timeout = uv_backend_timeout(engine->loop_);
+        int32_t result = -1;
+#ifdef IOS_PLATFORM
+        struct kevent events[1];
+        struct timespec spec;
+        static const int32_t mSec = 1000;
+        static const int32_t uSec = 1000000;
+        if (timeout != -1) {
+            spec.tv_sec = timeout / mSec;
+            spec.tv_nsec = (timeout % mSec) * uSec;
+        }
+        result = kevent(fd, NULL, 0, events, 1, timeout == -1 ? NULL : &spec);
+
+#else
+        struct epoll_event ev;
+        result = epoll_wait(fd, &ev, 1, timeout);
+#endif
+
+        if (!engine->checkUVLoop_) {
+            HILOG_INFO("break thread after epoll wait");
+            break;
+        }
+        if (result >= 0) {
+            engine->PostLoopTask();
+        } else {
+            HILOG_ERROR("epoll wait fail: result: %{public}d, errno: %{public}d", result, errno);
+        }
+        if (!engine->checkUVLoop_) {
+            HILOG_INFO("break thread after post loop task");
+            break;
+        }
+    }
 }
 
 void NativeEngine::CancelCheckUVLoop()
 {
-    nativeEngineImpl_->CancelCheckUVLoop();
+    checkUVLoop_ = false;
+    RunCleanup();
+    uv_async_send(&uvAsync_);
+    uv_sem_post(&uvSem_);
+    uv_thread_join(&uvThread_);
+}
+
+void NativeEngine::PostLoopTask()
+{
+    postTask_(true);
+    uv_sem_wait(&uvSem_);
 }
 #endif
 
 void NativeEngine::SetPostTask(PostTask postTask)
 {
-    nativeEngineImpl_->SetPostTask(postTask);
+    postTask_ = postTask;
 }
 
 void NativeEngine::TriggerPostTask()
 {
-    nativeEngineImpl_->TriggerPostTask();
+    if (postTask_ == nullptr) {
+        HILOG_ERROR("postTask_ is nullptr");
+        return;
+    }
+    postTask_(false);
 }
 
 void* NativeEngine::GetJsEngine()
 {
-    return nativeEngineImpl_->GetJsEngine();
+    return jsEngine_;
 }
 
 // register init worker func
 void NativeEngine::SetInitWorkerFunc(InitWorkerFunc func)
 {
-    nativeEngineImpl_->SetInitWorkerFunc(func);
+    initWorkerFunc_ = func;
 }
 InitWorkerFunc NativeEngine::GetInitWorkerFunc() const
 {
-    return nativeEngineImpl_->GetInitWorkerFunc();
+    return initWorkerFunc_;
 }
 void NativeEngine::SetGetAssetFunc(GetAssetFunc func)
 {
-    nativeEngineImpl_->SetGetAssetFunc(func);
+    getAssetFunc_ = func;
 }
 GetAssetFunc NativeEngine::GetGetAssetFunc() const
 {
-    return nativeEngineImpl_->GetGetAssetFunc();
+    return getAssetFunc_;
 }
 void NativeEngine::SetOffWorkerFunc(OffWorkerFunc func)
 {
-    nativeEngineImpl_->SetOffWorkerFunc(func);
+    offWorkerFunc_ = func;
 }
 OffWorkerFunc NativeEngine::GetOffWorkerFunc() const
 {
-    return nativeEngineImpl_->GetOffWorkerFunc();
+    return offWorkerFunc_;
 }
 
 // call init worker func
 bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
 {
-    InitWorkerFunc initWorkerFunc_ = nativeEngineImpl_->GetInitWorkerFunc();
     if (initWorkerFunc_ != nullptr) {
         initWorkerFunc_(engine);
         return true;
@@ -180,7 +382,6 @@ bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
 }
 bool NativeEngine::CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)
 {
-    GetAssetFunc getAssetFunc_ = nativeEngineImpl_->GetGetAssetFunc();
     if (getAssetFunc_ != nullptr) {
         getAssetFunc_(uri, content, ami);
         return true;
@@ -189,7 +390,6 @@ bool NativeEngine::CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>
 }
 bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
-    OffWorkerFunc offWorkerFunc_ = nativeEngineImpl_->GetOffWorkerFunc();
     if (offWorkerFunc_ != nullptr) {
         offWorkerFunc_(engine);
         return true;
@@ -238,7 +438,6 @@ bool NativeEngine::FinishContainerScopeFunc(int32_t id)
 #if !defined(PREVIEW)
 void NativeEngine::CallDebuggerPostTaskFunc(std::function<void()>&& task)
 {
-    DebuggerPostTask debuggerPostTaskFunc_ = nativeEngineImpl_->GetDebuggerPostTaskFunc();
     if (debuggerPostTaskFunc_ != nullptr) {
         debuggerPostTaskFunc_(std::move(task));
     }
@@ -246,48 +445,87 @@ void NativeEngine::CallDebuggerPostTaskFunc(std::function<void()>&& task)
 
 void NativeEngine::SetDebuggerPostTaskFunc(DebuggerPostTask func)
 {
-    nativeEngineImpl_->SetDebuggerPostTaskFunc(func);
+    debuggerPostTaskFunc_ = func;
 }
 #endif
 
 void NativeEngine::SetHostEngine(NativeEngine* engine)
 {
-    nativeEngineImpl_->SetHostEngine(engine);
+    hostEngine_ = engine;
 }
 
 NativeEngine* NativeEngine::GetHostEngine() const
 {
-    return nativeEngineImpl_->GetHostEngine();
+    return hostEngine_;
 }
 
 void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
-    nativeEngineImpl_->AddCleanupHook(fun, arg);
+    HILOG_INFO("%{public}s, start.", __func__);
+    auto insertion_info = cleanup_hooks_.emplace(CleanupHookCallback { fun, arg, cleanup_hook_counter_++ });
+    if (insertion_info.second != true) {
+        HILOG_ERROR("AddCleanupHook Failed.");
+    }
+    HILOG_INFO("%{public}s, end.", __func__);
 }
 
 void NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
 {
-    nativeEngineImpl_->RemoveCleanupHook(fun, arg);
+    HILOG_INFO("%{public}s, start.", __func__);
+    CleanupHookCallback hook { fun, arg, 0 };
+    cleanup_hooks_.erase(hook);
+    HILOG_INFO("%{public}s, end.", __func__);
 }
 
 void NativeEngine::RunCleanup()
 {
-    nativeEngineImpl_->RunCleanup();
+    HILOG_INFO("%{public}s, start.", __func__);
+    CleanupHandles();
+    // sync clean up
+    while (!cleanup_hooks_.empty()) {
+        HILOG_INFO("NativeEngineInterface::RunCleanup cleanup_hooks is not empty");
+        // Copy into a vector, since we can't sort an unordered_set in-place.
+        std::vector<CleanupHookCallback> callbacks(cleanup_hooks_.begin(), cleanup_hooks_.end());
+        // We can't erase the copied elements from `cleanup_hooks_` yet, because we
+        // need to be able to check whether they were un-scheduled by another hook.
+
+        std::sort(callbacks.begin(), callbacks.end(), [](const CleanupHookCallback& a, const CleanupHookCallback& b) {
+            // Sort in descending order so that the most recently inserted callbacks are run first.
+            return a.insertion_order_counter_ > b.insertion_order_counter_;
+        });
+        HILOG_INFO(
+            "NativeEngineInterface::RunCleanup cleanup_hooks callbacks size:%{public}d", (int32_t)callbacks.size());
+        for (const CleanupHookCallback& cb : callbacks) {
+            if (cleanup_hooks_.count(cb) == 0) {
+                // This hook was removed from the `cleanup_hooks_` set during another
+                // hook that was run earlier. Nothing to do here.
+                continue;
+            }
+            cb.fn_(cb.arg_);
+            cleanup_hooks_.erase(cb);
+        }
+        CleanupHandles();
+    }
+    HILOG_INFO("%{public}s, end.", __func__);
 }
 
 void NativeEngine::CleanupHandles()
 {
-    nativeEngineImpl_->CleanupHandles();
+    while (request_waiting_.load() > 0 && !cleanupTimeout_) {
+        HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
+            request_waiting_.load(std::memory_order_relaxed));
+        uv_run(loop_, UV_RUN_ONCE);
+    }
 }
 
 void NativeEngine::IncreaseWaitingRequestCounter()
 {
-    nativeEngineImpl_->IncreaseWaitingRequestCounter();
+    request_waiting_++;
 }
 
 void NativeEngine::DecreaseWaitingRequestCounter()
 {
-    nativeEngineImpl_->DecreaseWaitingRequestCounter();
+    request_waiting_--;
 }
 
 void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
@@ -311,11 +549,6 @@ NativeValue* NativeEngine::RunScript(const char* path)
     }
     HILOG_INFO("asset size is %{public}zu", scriptContent.size());
     return RunActor(scriptContent, ami.c_str());
-}
-
-NativeEngineInterface* NativeEngine::GetNativeEngineImpl()
-{
-    return nativeEngineImpl_;
 }
 
 void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint)
@@ -352,10 +585,10 @@ void NativeEngine::FinalizerInstanceData(void)
 const char* NativeEngine::GetModuleFileName()
 {
     HILOG_INFO("%{public}s, start.", __func__);
-    NativeModuleManager* moduleManager = nativeEngineImpl_->GetModuleManager();
+    NativeModuleManager* moduleManager = GetModuleManager();
     HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
     if (moduleManager != nullptr) {
-        const char* moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), isAppModule_);
+        const char* moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), false);
         HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName);
         return moduleFileName;
     }
@@ -365,14 +598,6 @@ const char* NativeEngine::GetModuleFileName()
 void NativeEngine::SetModuleFileName(std::string& moduleName)
 {
     moduleName_ = moduleName;
-}
-
-void NativeEngine::DeleteEngine()
-{
-    if (nativeEngineImpl_) {
-        delete nativeEngineImpl_;
-        nativeEngineImpl_ = nullptr;
-    }
 }
 
 void NativeEngine::SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos)
@@ -387,11 +612,7 @@ const std::unordered_map<std::string, int32_t>& NativeEngine::GetExtensionInfos(
 
 void NativeEngine::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
-    if (!nativeEngineImpl_) {
-        HILOG_ERROR("SetModuleLoadChecker failed, nativeEngineImpl_ is nullptr");
-        return;
-    }
-    NativeModuleManager* moduleManager = nativeEngineImpl_->GetModuleManager();
+    NativeModuleManager* moduleManager = GetModuleManager();
     if (!moduleManager) {
         HILOG_ERROR("SetModuleLoadChecker failed, moduleManager is nullptr");
         return;
