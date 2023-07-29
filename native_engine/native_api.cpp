@@ -2495,11 +2495,7 @@ NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, nap
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     NativeValue* resultValue = nullptr;
-    if (engine->ExecutePermissionCheck()) {
-        resultValue = engine->RunScript(path);
-    } else {
-        HILOG_ERROR("napi_run_script_path permission denied");
-    }
+    resultValue = engine->RunScript(path);
     *result = reinterpret_cast<napi_value>(resultValue);
     return napi_clear_last_error(env);
 }
