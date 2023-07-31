@@ -995,11 +995,6 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
         for (i = 0; (i < *argc) && (i < info->argc); i++) {
             argv[i] = reinterpret_cast<napi_value>(info->argv[i]);
         }
-        auto engine = reinterpret_cast<NativeEngine*>(env);
-        auto undefined = engine->CreateUndefined();
-        for (; i < *argc; i++) {
-            argv[i] = reinterpret_cast<napi_value>(undefined);
-        }
         *argc = i;
     }
 
@@ -1091,10 +1086,6 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
         napi_object_expected);
 
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-    // If we've already wrapped this object, we error out.
-    if (nativeObject->GetNativePointer() != nullptr) {
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
     if (result != nullptr) {
         nativeObject->SetNativePointer(
             native_object, callback, finalize_hint, reinterpret_cast<NativeReference**>(result));
@@ -2393,12 +2384,11 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(
     CHECK_ARG(env, result);
 
     auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
-    if (nativeValue->TypeOf() != NATIVE_OBJECT) {
-        *result = false;
-    } else {
-        auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-        *result = nativeObject->CheckTypeTag((NapiTypeTag*)type_tag);
-    }
+
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+    *result = nativeObject->CheckTypeTag((NapiTypeTag*)type_tag);
     return napi_clear_last_error(env);
 }
 

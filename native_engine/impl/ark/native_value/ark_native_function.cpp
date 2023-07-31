@@ -18,7 +18,6 @@
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-#include "securec.h"
 #include "utils/log.h"
 
 using panda::ArrayRef;
@@ -63,15 +62,8 @@ ArkNativeFunction::ArkNativeFunction(ArkNativeEngine* engine,
                                                 }
                                              },
                                              reinterpret_cast<void*>(funcInfo), true);
-    size_t nameLength = std::min(length, strlen(name));
-    char newName[nameLength + 1];
-    if (strncpy_s(newName, nameLength + 1, name, nameLength) != EOK) {
-        HILOG_ERROR("ArkNativeFunction strncpy_s failed");
-        return;
-    } else {
-        Local<StringRef> fnName = StringRef::NewFromUtf8(vm, newName);
-        fn->SetName(vm, fnName);
-    }
+    Local<StringRef> fnName = StringRef::NewFromUtf8(vm, name);
+    fn->SetName(vm, fnName);
 
     Global<JSValueRef> globalFn(vm, fn);
     value_ = globalFn;
