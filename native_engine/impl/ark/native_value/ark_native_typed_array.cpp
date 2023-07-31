@@ -119,7 +119,7 @@ size_t ArkNativeTypedArray::GetLength()
     LocalScope scope(vm);
     Global<TypedArrayRef> value = value_;
 
-    return value->ArrayLength(vm);
+    return value->ByteLength(vm);
 }
 
 NativeValue* ArkNativeTypedArray::GetArrayBuffer()
