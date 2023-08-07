@@ -63,6 +63,10 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
 
 NativeEngine::~NativeEngine()
 {
+    HILOG_INFO("NativeEngine::~NativeEngine");
+    if (cleanEnv_ != nullptr) {
+        cleanEnv_();
+    }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
 }
