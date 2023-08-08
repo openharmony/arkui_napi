@@ -523,7 +523,7 @@ NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi
 
     NativeValueType type = nativeValue->TypeOf();
     RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION, napi_object_expected);
-    
+
     NativeValue* resultValue = nullptr;
     auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
     resultValue = nativeObject->GetPrototype();
@@ -1240,9 +1240,14 @@ NAPI_EXTERN napi_status napi_delete_reference(napi_env env, napi_ref ref)
     CHECK_ARG(env, ref);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
+    uint32_t refCount = reference->GetRefCount();
 
-    delete reference;
-    reference = nullptr;
+    if (refCount > 0 || reference->GetFinalRun()) {
+        delete reference;
+        reference = nullptr;
+    } else {
+        reference->SetDeleteSelf();
+    }
 
     return napi_clear_last_error(env);
 }

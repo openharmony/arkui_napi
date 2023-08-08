@@ -42,6 +42,9 @@ public:
     NativeValue* Get() override;
     void* GetData() override;
     operator NativeValue*() override;
+    void SetDeleteSelf() override;
+    uint32_t GetRefCount() override;
+    bool GetFinalRun() override;
 
 private:
     ArkNativeEngine* engine_;
@@ -49,6 +52,7 @@ private:
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
     bool hasDelete_ {false};
+    bool finalRun_ {false};
 
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId_ = -1;

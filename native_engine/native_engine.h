@@ -391,6 +391,8 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
+private:
+    void StartCleanupTimer();
 protected:
     void *jsEngine_;
     void* jsEngineInterface_;
@@ -445,7 +447,6 @@ private:
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;
     uv_timer_t timer_;
-//    std::list<CleanupCb> cleanupQueue_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */
