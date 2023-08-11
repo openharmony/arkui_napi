@@ -224,7 +224,8 @@ public:
     virtual bool SuspendVM() = 0;
     virtual bool IsSuspended() = 0;
     virtual bool CheckSafepoint() = 0;
-    virtual NativeEngine* GetWorkerEngine(uint32_t tid) = 0;
+    virtual bool SuspendVMById(uint32_t tid) = 0;
+    virtual void ResumeVMById(uint32_t tid) = 0;
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;

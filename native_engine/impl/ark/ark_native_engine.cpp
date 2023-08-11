@@ -674,13 +674,23 @@ NativeValue* ArkNativeEngine::RunScriptPath(const char* path)
     return CreateUndefined();
 }
 
-NativeEngine* ArkNativeEngine::GetWorkerEngine(uint32_t tid)
+bool ArkNativeEngine::SuspendVMById(uint32_t tid)
 {
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
-    return reinterpret_cast<ArkNativeEngine*>(panda::DFXJSNApi::GetWorkerVm(vm_, tid));
+    return DFXJSNApi::SuspendVMById(vm_, tid);
 #else
     HILOG_WARN("ARK does not support dfx on windows");
-    return nullptr;
+    return false;
+#endif
+}
+
+void ArkNativeEngine::ResumeVMById(uint32_t tid)
+{
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    DFXJSNApi::ResumeVMById(vm_, tid);
+#else
+    HILOG_WARN("ARK does not support dfx on windows");
+    return;
 #endif
 }
 

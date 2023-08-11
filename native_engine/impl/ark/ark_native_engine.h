@@ -200,7 +200,8 @@ public:
     bool SuspendVM() override;
     bool IsSuspended() override;
     bool CheckSafepoint() override;
-    NativeEngine* GetWorkerEngine(uint32_t tid) override;
+    bool SuspendVMById(uint32_t tid) override;
+    void ResumeVMById(uint32_t tid) override;
 
     // isVmMode means the internal class in vm is visible.
     // isPrivate means the number and string is not visible.
