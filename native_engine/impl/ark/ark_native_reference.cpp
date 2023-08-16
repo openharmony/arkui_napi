@@ -128,6 +128,7 @@ void ArkNativeReference::FinalizeCallback()
     callback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
+    finalRun_ = true;
 
     if (deleteSelf_ && !hasDelete_) {
         delete this;
@@ -144,4 +145,19 @@ void ArkNativeReference::NativeFinalizeCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
     that->FinalizeCallback();
+}
+
+void ArkNativeReference::SetDeleteSelf()
+{
+    deleteSelf_ = true;
+}
+
+uint32_t ArkNativeReference::GetRefCount()
+{
+    return refCount_;
+}
+
+bool ArkNativeReference::GetFinalRun()
+{
+    return finalRun_;
 }

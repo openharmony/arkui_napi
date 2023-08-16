@@ -27,7 +27,7 @@
 #include <uv.h>
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
-//static constexpr size_t DESTRUCTION_TIMEOUT = 5000;
+static constexpr size_t DESTRUCTION_TIMEOUT = 5000;
 
 namespace {
 const char* g_errorMessages[] = {
@@ -92,6 +92,7 @@ void NativeEngine::Deinit()
     HILOG_INFO("NativeEngine::Deinit");
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
+    RunCleanup();
     if (referenceManager_ != nullptr) {
         delete referenceManager_;
         referenceManager_ = nullptr;
@@ -481,13 +482,24 @@ void NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
     HILOG_INFO("%{public}s, end.", __func__);
 }
 
+void NativeEngine::StartCleanupTimer()
+{
+    uv_timer_init(loop_, &timer_);
+    timer_.data = this;
+    uv_timer_start(&timer_, [](uv_timer_t* handle) {
+        reinterpret_cast<NativeEngine*>(handle->data)->cleanupTimeout_ = true;
+        uv_close(reinterpret_cast<uv_handle_t*>(handle), nullptr);
+    }, DESTRUCTION_TIMEOUT, 0);
+}
+
 void NativeEngine::RunCleanup()
 {
-    HILOG_INFO("%{public}s, start.", __func__);
+    HILOG_DEBUG("%{public}s, start.", __func__);
+    StartCleanupTimer();
     CleanupHandles();
     // sync clean up
     while (!cleanup_hooks_.empty()) {
-        HILOG_INFO("NativeEngineInterface::RunCleanup cleanup_hooks is not empty");
+        HILOG_DEBUG("NativeEngine::RunCleanup cleanup_hooks is not empty");
         // Copy into a vector, since we can't sort an unordered_set in-place.
         std::vector<CleanupHookCallback> callbacks(cleanup_hooks_.begin(), cleanup_hooks_.end());
         // We can't erase the copied elements from `cleanup_hooks_` yet, because we
@@ -497,8 +509,8 @@ void NativeEngine::RunCleanup()
             // Sort in descending order so that the most recently inserted callbacks are run first.
             return a.insertion_order_counter_ > b.insertion_order_counter_;
         });
-        HILOG_INFO(
-            "NativeEngineInterface::RunCleanup cleanup_hooks callbacks size:%{public}d", (int32_t)callbacks.size());
+        HILOG_DEBUG(
+            "NativeEngine::RunCleanup cleanup_hooks callbacks size:%{public}d", (int32_t)callbacks.size());
         for (const CleanupHookCallback& cb : callbacks) {
             if (cleanup_hooks_.count(cb) == 0) {
                 // This hook was removed from the `cleanup_hooks_` set during another
@@ -510,7 +522,10 @@ void NativeEngine::RunCleanup()
         }
         CleanupHandles();
     }
-    HILOG_INFO("%{public}s, end.", __func__);
+    if (cleanupTimeout_) {
+        HILOG_ERROR("RunCleanup timeout");
+    }
+    HILOG_DEBUG("%{public}s, end.", __func__);
 }
 
 void NativeEngine::CleanupHandles()
