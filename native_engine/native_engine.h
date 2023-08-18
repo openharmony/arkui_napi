@@ -171,6 +171,8 @@ public:
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
+    virtual bool HasPendingJob() = 0;
+    virtual bool IsProfiling() = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
 
     virtual NativeValue* CallFunction(NativeValue* thisVar,
@@ -275,6 +277,19 @@ public:
         return jsThreadType_ == JSThreadType::MAIN_THREAD;
     }
 
+    void IncreaseSubEnvCounter()
+    {
+        subEnvCounter_++;
+    }
+    void DecreaseSubEnvCounter()
+    {
+        subEnvCounter_--;
+    }
+    bool HasSubEnv()
+    {
+        return subEnvCounter_.load() != 0;
+    }
+
     void SetCleanEnv(CleanEnv cleanEnv)
     {
         cleanEnv_ = cleanEnv;
@@ -318,6 +333,7 @@ public:
     void CleanupHandles();
     void IncreaseWaitingRequestCounter();
     void DecreaseWaitingRequestCounter();
+    bool HasWaitingRequest();
 
     virtual void RunCleanup();
 
@@ -445,6 +461,7 @@ private:
     std::unordered_set<CleanupHookCallback, CleanupHookCallback::Hash, CleanupHookCallback::Equal> cleanup_hooks_;
     uint64_t cleanup_hook_counter_ = 0;
     std::atomic_int request_waiting_ { 0 };
+    std::atomic_int subEnvCounter_ { 0 };
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;
     uv_timer_t timer_;

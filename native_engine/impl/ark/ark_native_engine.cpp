@@ -601,6 +601,16 @@ bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, 
     return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
 }
 
+bool ArkNativeEngine::HasPendingJob()
+{
+    return JSNApi::HasPendingJob(vm_);
+}
+
+bool ArkNativeEngine::IsProfiling()
+{
+    return JSNApi::IsProfiling(vm_);
+}
+
 void* ArkNativeEngine::GetCurrentTaskInfo() const
 {
     return JSNApi::GetCurrentTaskInfo(vm_);

@@ -135,6 +135,8 @@ public:
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    bool HasPendingJob() override;
+    bool IsProfiling() override;
     void* GetCurrentTaskInfo() const override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
