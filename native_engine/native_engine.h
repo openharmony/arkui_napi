@@ -71,6 +71,10 @@ enum class DumpFormat {
     JSON, BINARY, OTHER
 };
 
+enum class WorkerVersion {
+    NONE, OLD, NEW
+};
+
 class CleanupHookCallback {
 public:
     using Callback = void (*)(void*);
@@ -277,6 +281,15 @@ public:
         return jsThreadType_ == JSThreadType::MAIN_THREAD;
     }
 
+    bool CheckAndSetWorkerVersion(WorkerVersion expected, WorkerVersion desired)
+    {
+        return workerVersion_.compare_exchange_strong(expected, desired);
+    }
+    bool IsTargetWorkerVersion(WorkerVersion target) const
+    {
+        return workerVersion_.load() == target;
+    }
+
     void IncreaseSubEnvCounter()
     {
         subEnvCounter_++;
@@ -444,8 +457,11 @@ private:
     std::unordered_map<std::string, int32_t> extensionInfos_;
     uv_sem_t uvSem_;
 
+    // the old worker api use before api9, the new worker api start with api9
     enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD };
     JSThreadType jsThreadType_ = JSThreadType::MAIN_THREAD;
+    // current is hostengine, can create old worker, new worker, or no workers on hostengine
+    std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
 
 #if !defined(PREVIEW)
     static void UVThreadRunner(void* nativeEngine);
