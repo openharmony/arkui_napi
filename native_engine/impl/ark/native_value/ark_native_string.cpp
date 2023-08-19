@@ -50,6 +50,14 @@ void* ArkNativeString::GetInterface(int interfaceId)
     return (NativeString::INTERFACE_ID == interfaceId) ? (NativeString*)this : nullptr;
 }
 
+std::string ArkNativeString::GetPrintString()
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<StringRef> val = value_;
+    return val->ToString();
+}
+
 void ArkNativeString::GetCString(char* buffer, size_t size, size_t* length)
 {
     if (length == nullptr) {
