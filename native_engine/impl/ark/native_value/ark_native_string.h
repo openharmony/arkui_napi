@@ -27,6 +27,7 @@ public:
 
     void* GetInterface(int interfaceId) override;
 
+    std::string GetPrintString() override;
     void GetCString(char* buffer, size_t size, size_t* length) override;
     void GetCStringLatin1(char* buffer, size_t size, size_t* length) override;
     void GetCString16(char16_t* buffer, size_t bufSize, size_t* copyLength) override;

@@ -210,6 +210,7 @@ class NativeString {
 public:
     static const int INTERFACE_ID = 2;
 
+    virtual std::string GetPrintString() = 0;
     virtual void GetCString(char* buffer, size_t size, size_t* length) = 0;
     virtual size_t GetLength() = 0;
     virtual size_t EncodeWriteUtf8(char* buffer, size_t bufferSize, int32_t* nchars) = 0;
