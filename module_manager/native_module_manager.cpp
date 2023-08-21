@@ -18,6 +18,12 @@
 #include <dirent.h>
 #include <mutex>
 
+#ifdef ANDROID_PLATFORM
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#endif
+
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #endif
@@ -547,13 +553,28 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
             if (sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", dupModuleName, soPostfix) == -1) {
                 return false;
             }
+#elif defined(ANDROID_PLATFORM)
+            std::istringstream iss(prefix);
+            std::string libPath;
+            while (std::getline(iss, libPath, ':')) {
+                std::ifstream dupModuleFile(libPath + "/lib" + dupModuleName + soPostfix);
+                std::ifstream moduleFile(libPath + "/lib" + moduleName + soPostfix);
+                if(dupModuleFile.good() || moduleFile.good()) {
+                    break;
+                }
+            }
+            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", libPath.c_str(),
+                dupModuleName, soPostfix) == -1) {
+                return false;
+            }
 #else
             if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", prefix, dupModuleName, soPostfix) == -1) {
                 return false;
             }
 #endif
 #ifdef ANDROID_PLATFORM
-            if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s", prefix, moduleName, soPostfix) == -1) {
+            if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s", libPath.c_str(),
+                moduleName, soPostfix) == -1) {
                 return false;
             }
 #endif
