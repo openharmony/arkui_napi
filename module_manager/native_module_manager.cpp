@@ -238,10 +238,8 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->getJSCode = nativeModule->getJSCode;
     lastNativeModule_->getABCCode = nativeModule->getABCCode;
     lastNativeModule_->next = nullptr;
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    // For iOS and android, force make module loaded
     lastNativeModule_->moduleLoaded = true;
-#endif
+
     HILOG_INFO("NativeModule Register success. module name is '%{public}s'", lastNativeModule_->name);
 }
 
