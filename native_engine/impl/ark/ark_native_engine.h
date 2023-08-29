@@ -70,7 +70,7 @@ class ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
-    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    NAPI_EXPORT ArkNativeEngine(EcmaVM* vm, void* jsEngine);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -181,7 +181,7 @@ public:
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
-    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
+    NAPI_EXPORT static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;

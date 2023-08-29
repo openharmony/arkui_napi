@@ -23,79 +23,62 @@ if (is_standard_system) {
   module_output_path = "ace_engine_full/napi"
 }
 
-ark_support = false
+ohos_unittest("test_ark_unittest") {
+  module_out_path = module_output_path
 
-foreach(item, ace_platforms) {
-  if (item.name == "ohos") {
-    engine_config = item.config
-    support_engines = engine_config.js_engines
-    foreach(engine, support_engines) {
-      if (engine.engine_name == "ark") {
-        ark_support = true
-      }
-    }
-  }
+  include_dirs = ark_include
+
+  cflags = [ "-g3" ]
+
+  sources = [
+    "engine/test_ark.cpp",
+    "test_napi.cpp",
+  ]
+
+  defines = [ "NAPI_TEST" ]
+
+  deps = ark_deps
+
+  deps += [ "../..:ace_napi" ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+  ]
+
+  external_deps += [ "hilog:libhilog" ]
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
 }
 
-if (ark_support) {
-  ohos_unittest("test_ark_unittest") {
-    module_out_path = module_output_path
+ohos_unittest("test_ark_unittest_threadsafe") {
+  module_out_path = module_output_path
 
-    include_dirs = ark_include
+  include_dirs = ark_include
 
-    cflags = [ "-g3" ]
+  cflags = [ "-g3" ]
 
-    sources = [
-      "engine/test_ark.cpp",
-      "test_napi.cpp",
-    ]
-    sources += napi_sources
+  sources = [
+    "engine/test_ark.cpp",
+    "test_napi_threadsafe.cpp",
+  ]
 
-    defines = [ "NAPI_TEST" ]
+  defines = [ "NAPI_TEST" ]
 
-    deps = ark_deps
+  deps = ark_deps
+  deps += [ "../..:ace_napi" ]
 
-    external_deps = [
-      "bounds_checking_function:libsec_shared",
-      "c_utils:utils",
-    ]
+  external_deps = [ "bounds_checking_function:libsec_shared" ]
 
-    external_deps += [ "hilog:libhilog" ]
-    external_deps += [ "ets_runtime:libark_jsruntime" ]
-  }
-
-  ohos_unittest("test_ark_unittest_threadsafe") {
-    module_out_path = module_output_path
-
-    include_dirs = ark_include
-
-    cflags = [ "-g3" ]
-
-    sources = [
-      "engine/test_ark.cpp",
-      "test_napi_threadsafe.cpp",
-    ]
-    sources += napi_sources
-
-    defines = [ "NAPI_TEST" ]
-
-    deps = ark_deps
-    external_deps = [ "bounds_checking_function:libsec_shared" ]
-
-    external_deps += [ "hilog:libhilog" ]
-    external_deps += [ "ets_runtime:libark_jsruntime" ]
-  }
+  external_deps += [ "hilog:libhilog" ]
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
 }
 
 group("unittest") {
   testonly = true
-  deps = []
-  if (ark_support) {
-    deps += [
-      ":test_ark_unittest",
-      ":test_ark_unittest_threadsafe",
-    ]
-  }
+  deps = [
+    ":test_ark_unittest",
+    ":test_ark_unittest_threadsafe",
+  ]
 }
 
 #jerry tdd test for phone running

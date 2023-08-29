@@ -11,27 +11,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-arkui_napi_path = "//foundation"
-arkui_napi_test_path = "${arkui_napi_path}/arkui/napi/test"
-foundation_arkui_path = "${arkui_napi_path}/arkui"
+napi_path = "//foundation//arkui/napi"
+ets_runtime_path = "//arkcompiler/ets_runtime"
+
 napi_sources = [
-  "//foundation/arkui/napi/callback_scope_manager/native_callback_scope_manager.cpp",
-  "//foundation/arkui/napi/module_manager/module_load_checker.cpp",
-  "//foundation/arkui/napi/module_manager/native_module_manager.cpp",
-  "//foundation/arkui/napi/native_engine/native_api.cpp",
-  "//foundation/arkui/napi/native_engine/native_async_work.cpp",
-  "//foundation/arkui/napi/native_engine/native_engine.cpp",
-  "//foundation/arkui/napi/native_engine/native_node_api.cpp",
-  "//foundation/arkui/napi/native_engine/native_safe_async_work.cpp",
-  "//foundation/arkui/napi/reference_manager/native_reference_manager.cpp",
-  "//foundation/arkui/napi/scope_manager/native_scope_manager.cpp",
-  "//foundation/arkui/napi/utils/log.cpp",
+  "$napi_path/callback_scope_manager/native_callback_scope_manager.cpp",
+  "$napi_path/module_manager/module_load_checker.cpp",
+  "$napi_path/module_manager/native_module_manager.cpp",
+  "$napi_path/native_engine/impl/ark/ark_native_deferred.cpp",
+  "$napi_path/native_engine/impl/ark/ark_native_engine.cpp",
+  "$napi_path/native_engine/impl/ark/ark_native_reference.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_array.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_array_buffer.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_big_int.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_boolean.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_buffer.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_data_view.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_date.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_external.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_function.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_number.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_object.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_string.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_typed_array.cpp",
+  "$napi_path/native_engine/impl/ark/native_value/ark_native_value.cpp",
+  "$napi_path/native_engine/native_api.cpp",
+  "$napi_path/native_engine/native_async_work.cpp",
+  "$napi_path/native_engine/native_engine.cpp",
+  "$napi_path/native_engine/native_node_api.cpp",
+  "$napi_path/native_engine/native_safe_async_work.cpp",
+  "$napi_path/reference_manager/native_reference_manager.cpp",
+  "$napi_path/scope_manager/native_scope_manager.cpp",
+  "$napi_path/utils/log.cpp",
 ]
 
 declare_args() {
   napi_enable_container_scope = true
   napi_enable_memleak_debug = true
 }
-
-ark_ets_path = "//arkcompiler/ets_runtime"
-arkui_napi_path = "//foundation/arkui/napi"
