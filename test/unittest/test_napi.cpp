@@ -52,6 +52,141 @@ static const napi_type_tag typeTags[5] = { // 5:array element size is 5.
     {0xa5ed9ce2e4c00c34, 0xdaf987b3cc62481a},
 };
 
+static void* TestDetachCallback(napi_env env, void* nativeObject, void* hint)
+{
+    HILOG_INFO("this is detach callback");
+    return nativeObject;
+}
+
+static napi_value TestAttachCallback(napi_env env, void* nativeObject, void* hint)
+{
+    HILOG_INFO("this is attach callback");
+    napi_value object = nullptr;
+    napi_value number = nullptr;
+    uint32_t data = 0;
+    if (hint != nullptr) {
+        object = reinterpret_cast<napi_value>(nativeObject);
+        data = 2000;
+        napi_create_uint32(env, data, &number);
+    } else {
+        napi_create_object(env, &object);
+        data = 1000;
+        napi_create_uint32(env, data, &number);
+    }
+    napi_set_named_property(env, object, "number", number);
+    return object;
+}
+
+/**
+ * @tc.name: ToNativeBindingObjectTest001
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_status status = napi_coerce_to_native_binding_object(
+        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), nullptr);
+    ASSERT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: ToNativeBindingObjectTest002
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_coerce_to_native_binding_object(
+        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), nullptr);
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    napi_value data = nullptr;
+    napi_serialize(env, object, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    napi_value result = nullptr;
+    napi_deserialize(env, data, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+    napi_value number = nullptr;
+    napi_get_named_property(env, result, "number", &number);
+    ASSERT_CHECK_VALUE_TYPE(env, number, napi_number);
+    uint32_t numData = 0;
+    napi_get_value_uint32(env, number, &numData);
+    ASSERT_EQ(numData, 1000);
+}
+
+/**
+ * @tc.name: ToNativeBindingObjectTest003
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_status status = napi_coerce_to_native_binding_object(
+        env, object, TestDetachCallback, TestAttachCallback, nullptr, nullptr);
+    ASSERT_EQ(status, napi_status::napi_invalid_arg);
+    status = napi_coerce_to_native_binding_object(
+        env, object, nullptr, nullptr, reinterpret_cast<void*>(object), nullptr);
+    ASSERT_EQ(status, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: ToNativeBindingObjectTest003
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value hint = nullptr;
+    napi_create_object(env, &hint);
+    napi_status status = napi_coerce_to_native_binding_object(env, object,
+        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), reinterpret_cast<void*>(hint));
+    ASSERT_EQ(status, napi_status::napi_ok);
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    napi_value data = nullptr;
+    napi_serialize(env, object, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    napi_value result = nullptr;
+    napi_deserialize(env, data, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+    napi_value number = nullptr;
+    napi_get_named_property(env, result, "number", &number);
+    ASSERT_CHECK_VALUE_TYPE(env, number, napi_number);
+    uint32_t numData = 0;
+    napi_get_value_uint32(env, number, &numData);
+    ASSERT_EQ(numData, 2000);
+}
+
+static void NativeFinalizeCallback(napi_env env, void* data, void* hint)
+{
+    HILOG_INFO("this is nativeFinalize callback");
+}
+
+/**
+ * @tc.name: NativePointerTest001
+ * @tc.desc: Test set nativePointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NativePointerTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    ASSERT_CHECK_CALL(napi_set_native_pointer(env, object, nullptr, NativeFinalizeCallback, nullptr, nullptr, 0));
+}
+
 /**
  * @tc.name: UndefinedTest001
  * @tc.desc: Test undefined type.

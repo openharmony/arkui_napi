@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 
-#include "../../../third_party/node/src/js_native_api.h"
+#include "interfaces/inner_api/napi/native_node_api.h"
 
 class NativeValue;
 class NativeEngine;
@@ -31,11 +31,11 @@ struct NativeCallbackInfo;
 
 typedef NativeValue* (*NativeCallback)(NativeEngine* engine, NativeCallbackInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
-
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
 typedef void* (*DetachCallback)(NativeEngine* engine, void* value, void* hint);
 typedef NativeValue* (*AttachCallback)(NativeEngine* engine, void* value, void* hint);
+
 using ErrorPos = std::pair<uint32_t, uint32_t>;
 using NativeThreadSafeFunctionCallJs =
     void (*)(NativeEngine* env, NativeValue* js_callback, void* context, void* data);
@@ -226,13 +226,16 @@ public:
     static const auto PANDA_MODULE_NAME_LEN = 32;
 
     virtual bool ConvertToNativeBindingObject(
-        void* engine, DetachCallback detach, AttachCallback attach, void *object, void *hint) = 0;
+        void* engine, DetachCallback detach, AttachCallback attach, void* object, void* hint) = 0;
+    virtual bool ConvertToNativeBindingObject(
+        void* engine, NapiDetachCallback detach, NapiAttachCallback attach, void* object, void* hint) = 0;
     virtual void SetNativePointer(void* pointer, NativeFinalize cb,
         void* hint, NativeReference** reference = nullptr, size_t nativeBindingSize = 0) = 0;
+    virtual void SetNativePointer(void* pointer, NapiNativeFinalize cb,
+        void* hint, NativeReference** reference, size_t nativeBindingSize) = 0;
     virtual void* GetNativePointer() = 0;
     virtual void SetNativeBindingPointer(
         void* enginePointer, void* objPointer, void* hint, void* detachData = nullptr, void* attachData = nullptr) = 0;
-    virtual void* GetNativeBindingPointer(uint32_t index) = 0;
 
     virtual void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) = 0;
 

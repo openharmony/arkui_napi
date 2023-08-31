@@ -30,11 +30,23 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        NativeFinalize callback,
                                        void* data,
                                        void* hint)
+    : ArkNativeReference::ArkNativeReference(engine, value, initialRefcount, deleteSelf, callback, nullptr, data, hint)
+{}
+
+ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
+                                       NativeValue* value,
+                                       uint32_t initialRefcount,
+                                       bool deleteSelf,
+                                       NativeFinalize callback,
+                                       NapiNativeFinalize napiCallback,
+                                       void* data,
+                                       void* hint)
     : engine_(engine),
       value_(Global<JSValueRef>(engine->GetEcmaVm(), JSValueRef::Undefined(engine->GetEcmaVm()))),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
       callback_(callback),
+      napiCallback_(napiCallback),
       data_(data),
       hint_(hint)
 {
@@ -125,7 +137,11 @@ void ArkNativeReference::FinalizeCallback()
     if (callback_ != nullptr) {
         callback_(engine_, data_, hint_);
     }
+    if (napiCallback_ != nullptr) {
+        napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);
+    }
     callback_ = nullptr;
+    napiCallback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
     finalRun_ = true;
