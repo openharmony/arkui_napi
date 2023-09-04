@@ -772,6 +772,9 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string &moduleKey
 
     NativeModule* nativeModule = firstNativeModule_;
     if (!strcasecmp(nativeModule->name, moduleKey.c_str())) {
+        if (firstNativeModule_ == lastNativeModule_) {
+            lastNativeModule_ = nullptr;
+        }
         firstNativeModule_ = firstNativeModule_->next;
         delete[] nativeModule->name;
         delete nativeModule;
@@ -784,6 +787,9 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string &moduleKey
     NativeModule* curr = prev->next;
     while (curr != nullptr) {
         if (!strcasecmp(curr->name, moduleKey.c_str())) {
+            if (curr == lastNativeModule_) {
+                lastNativeModule_ = prev;
+            }
             prev->next = curr->next;
             delete[] curr->name;
             delete curr;
