@@ -113,6 +113,7 @@ using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
+using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 
 class NAPI_EXPORT NativeEngine {
 public:
@@ -383,6 +384,7 @@ public:
     virtual bool ExecutePermissionCheck() = 0;
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
     virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
+    virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     // run script by path
     NativeValue* RunScript(const char* path);
 
