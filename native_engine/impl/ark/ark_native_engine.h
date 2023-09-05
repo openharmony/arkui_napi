@@ -132,7 +132,6 @@ public:
     // Create native reference
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
-    bool IsExceptionPending() const override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime(bool isLimitedWorker = false) override;
     panda::Local<panda::ObjectRef> LoadArkModule(const void *buffer, int32_t len, const std::string& fileName);
