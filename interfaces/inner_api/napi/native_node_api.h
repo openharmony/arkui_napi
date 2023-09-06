@@ -20,12 +20,15 @@
 #include <string>
 #include <vector>
 
-#include <js_native_api.h>
-#include <node_api.h>
-
-#include "napi/native_common.h"
+#include "../../../third_party/node/src/js_native_api.h"
+#include "../../../third_party/node/src/node_api.h"
+#include "native_common.h"
 
 typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
+typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
+typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint); // hint: detach params
+typedef napi_value (*NapiAttachCallback)(napi_env env, void* nativeObject, void* hint); // hint: attach params
+
 typedef struct napi_module_with_js {
     int nm_version = 0;
     unsigned int nm_flags = 0;
@@ -91,4 +94,17 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          const char* utf8name,
                                                          napi_value* result);
 NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result);
+NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
+                                                             napi_value native_object,
+                                                             NapiDetachCallback detach,
+                                                             NapiAttachCallback attach,
+                                                             void* object,
+                                                             void* hint);
+NAPI_EXTERN napi_status napi_set_native_pointer(napi_env env,
+                                                napi_value native_object,
+                                                void* pointer,
+                                                NapiNativeFinalize cb,
+                                                void* hint,
+                                                napi_ref* reference,
+                                                size_t nativeBindingSize);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

@@ -2568,3 +2568,48 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_
     asyncWork->QueueWithQos(qos);
     return napi_status::napi_ok;
 }
+
+NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
+                                                             napi_value native_object,
+                                                             NapiDetachCallback detach,
+                                                             NapiAttachCallback attach,
+                                                             void* object,
+                                                             void* hint)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, detach);
+    CHECK_ARG(env, attach);
+    CHECK_ARG(env, object);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto nativeValue = reinterpret_cast<NativeValue*>(native_object);
+    NativeValueType type = nativeValue->TypeOf();
+    RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION, napi_object_expected);
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+    bool success = nativeObject->ConvertToNativeBindingObject(engine, detach, attach, object, hint);
+    if (success) {
+        return napi_clear_last_error(env);
+    }
+    return napi_status::napi_generic_failure;
+}
+
+NAPI_EXTERN napi_status napi_set_native_pointer(napi_env env,
+                                                napi_value native_object,
+                                                void* pointer,
+                                                NapiNativeFinalize cb,
+                                                void* hint,
+                                                napi_ref* reference,
+                                                size_t nativeBindingSize)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, native_object);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(native_object);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
+
+    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
+    auto nativeReference = reinterpret_cast<NativeReference**>(reference);
+    nativeObject->SetNativePointer(pointer, cb, hint, nativeReference, nativeBindingSize);
+    return napi_clear_last_error(env);
+}

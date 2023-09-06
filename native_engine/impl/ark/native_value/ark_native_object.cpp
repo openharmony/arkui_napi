@@ -69,23 +69,68 @@ Local<JSValueRef> ArkNativeObject::AttachFuncCallback(void* engine, void* buffer
 ArkNativeObject::~ArkNativeObject() {}
 
 bool ArkNativeObject::ConvertToNativeBindingObject(
-    void* engine, DetachCallback detachData, AttachCallback attachData, void *object, void *hint)
+    void* engine, DetachCallback detachData, AttachCallback attachData, void* object, void* hint)
 {
     if (detachData == nullptr || (attachData == nullptr || object == nullptr)) {
         HILOG_ERROR("ConvertToNativeBindingObject params has nullptr");
         return false;
     }
+    return ConvertToNativeBindingObjectUtil(
+        engine, reinterpret_cast<void*>(detachData), reinterpret_cast<void*>(attachData), object, hint);
+}
+
+bool ArkNativeObject::ConvertToNativeBindingObject(
+    void* engine, NapiDetachCallback detachData, NapiAttachCallback attachData, void* object, void* hint)
+{
+    return ConvertToNativeBindingObjectUtil(
+        engine, reinterpret_cast<void*>(detachData), reinterpret_cast<void*>(attachData), object, hint);
+}
+
+bool ArkNativeObject::ConvertToNativeBindingObjectUtil(
+    void* engine, void* detach, void* attach, void* object, void* hint)
+{
     auto vm = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
     Global<ObjectRef> obj = value_;
     bool res = obj->Set(vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
-    this->SetNativeBindingPointer(
-        engine, object, hint, reinterpret_cast<void *>(detachData), reinterpret_cast<void *>(attachData));
+    this->SetNativeBindingPointer(engine, object, hint, detach, attach);
     return res;
 }
 
 void* ArkNativeObject::GetInterface(int interfaceId)
 {
     return (NativeObject::INTERFACE_ID == interfaceId) ? (NativeObject*)this : nullptr;
+}
+
+void ArkNativeObject::SetNativePointer(void* pointer, NapiNativeFinalize cb, void* hint,
+    NativeReference** reference, size_t nativeBindingSize)
+{
+    auto vm = engine_->GetEcmaVm();
+    LocalScope scope(vm);
+    Global<ObjectRef> value = value_;
+
+    Local<StringRef> key = StringRef::GetNapiWrapperString(vm);
+    if (pointer == nullptr && value->Has(vm, key)) {
+        Local<ObjectRef> wrapper = value->Get(vm, key);
+        auto ref = reinterpret_cast<ArkNativeReference*>(wrapper->GetNativePointerField(0));
+        // Try to remove native pointer from ArrayDataList
+        ASSERT(nativeBindingSize == 0);
+        wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, nativeBindingSize);
+        value->Delete(vm, key);
+        delete ref;
+    } else {
+        Local<ObjectRef> object = ObjectRef::New(vm);
+        ArkNativeReference* ref = nullptr;
+        if (reference != nullptr) {
+            ref = new ArkNativeReference(engine_, this, 1, false, nullptr, cb, pointer, hint);
+            *reference = ref;
+        } else {
+            ref = new ArkNativeReference(engine_, this, 0, true, nullptr, cb, pointer, hint);
+        }
+        object->SetNativePointerFieldCount(1);
+        object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
+        PropertyAttribute attr(object, true, false, true);
+        value->DefineProperty(vm, key, attr);
+    }
 }
 
 void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* hint,
@@ -137,7 +182,7 @@ void* ArkNativeObject::GetNativePointer()
 }
 
 void ArkNativeObject::SetNativeBindingPointer(
-    void *enginePointer, void *objPointer, void *hint, void *detachData, void *attachData)
+    void* enginePointer, void* objPointer, void* hint, void* detachData, void* attachData)
 {
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
@@ -150,19 +195,6 @@ void ArkNativeObject::SetNativeBindingPointer(
     object->SetNativePointerField(2, hint, nullptr, nullptr); // 2 : hint
     object->SetNativePointerField(3, detachData, nullptr, nullptr); // 3 : detachData
     object->SetNativePointerField(4, attachData, nullptr, nullptr); // 4 : attachData
-}
-
-void* ArkNativeObject::GetNativeBindingPointer(uint32_t index)
-{
-    auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Global<ObjectRef> value = value_;
-    uint32_t paramCount = static_cast<uint32_t>(value->GetNativePointerFieldCount());
-    if (index >= paramCount) {
-        HILOG_ERROR("index more than nativebindingpointer count");
-        return nullptr;
-    }
-    return value->GetNativePointerField(index);
 }
 
 NativeValue* ArkNativeObject::GetPropertyNames()

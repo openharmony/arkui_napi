@@ -140,9 +140,9 @@ public:
     void* GetCurrentTaskInfo() const override;
     // Call function
     NativeValue* CallFunction(NativeValue* thisVar,
-                                      NativeValue* function,
-                                      NativeValue* const* argv,
-                                      size_t argc) override;
+                              NativeValue* function,
+                              NativeValue* const* argv,
+                              size_t argc) override;
     // Run script
     NativeValue* RunScript(NativeValue* script) override;
     NativeValue* RunScriptPath(const char* path) override;

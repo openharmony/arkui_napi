@@ -35,6 +35,14 @@ public:
                        NativeFinalize callback = nullptr,
                        void* data = nullptr,
                        void* hint = nullptr);
+    ArkNativeReference(ArkNativeEngine* engine,
+                       NativeValue* value,
+                       uint32_t initialRefcount,
+                       bool deleteSelf,
+                       NativeFinalize callback,
+                       NapiNativeFinalize napiCallback,
+                       void* data,
+                       void* hint);
     ~ArkNativeReference() override;
 
     uint32_t Ref() override;
@@ -59,6 +67,7 @@ private:
 #endif
 
     NativeFinalize callback_ = nullptr;
+    NapiNativeFinalize napiCallback_ = nullptr;
     void* data_ = nullptr;
     void* hint_ = nullptr;
 
