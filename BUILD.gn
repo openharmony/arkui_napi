@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/ohos.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/napi.gni")
 
 config("ace_napi_config") {
@@ -27,9 +29,6 @@ config("ace_napi_config") {
 config("module_manager_config") {
   include_dirs = [ "../../../foundation/arkui/napi/module_manager" ]
 }
-
-import("//build/ohos.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 
 ohos_source_set("ace_napi_static") {
   defines = []
@@ -103,7 +102,7 @@ ohos_source_set("ace_napi_static") {
     "//third_party/bounds_checking_function:libsec_static",
     "//third_party/libuv:uv",
   ]
-
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
   # Use static libuv for cross build
   if (is_cross_platform_build) {
     deps -= [ "//third_party/libuv:uv" ]
@@ -120,12 +119,14 @@ if (is_cross_platform_build) {
   ohos_source_set("ace_napi") {
     deps = [ ":ace_napi_static" ]
     public_configs = [ ":ace_napi_config" ]
+    deps += [ "$ark_ets_path:libark_jsruntime_static" ]
     subsystem_name = "arkui"
     part_name = "napi"
   }
 } else {
   ohos_shared_library("ace_napi") {
     deps = [ ":ace_napi_static" ]
+    external_deps = [ "ets_runtime:libark_jsruntime" ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
@@ -179,6 +180,7 @@ template("ace_napi_lib") {
       public_configs =
           [ "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config" ]
       deps = deps_
+      deps += [ "$ark_ets_path:libark_jsruntime_static" ]
       if (defined(use_icu) && use_icu) {
         deps += [
           "//third_party/icu/icu4c:static_icui18n",
@@ -200,7 +202,7 @@ template("ace_napi_lib") {
       if (target_name == "ark" || target_name == "quickjs") {
         deps -= [ "//third_party/libuv:uv" ]
       }
-
+      external_deps = [ "ets_runtime:libark_jsruntime" ]
       subsystem_name = "arkui"
       part_name = "napi"
     }
