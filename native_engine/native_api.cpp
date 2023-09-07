@@ -2593,23 +2593,3 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     }
     return napi_status::napi_generic_failure;
 }
-
-NAPI_EXTERN napi_status napi_set_native_pointer(napi_env env,
-                                                napi_value native_object,
-                                                void* pointer,
-                                                NapiNativeFinalize cb,
-                                                void* hint,
-                                                napi_ref* reference,
-                                                size_t nativeBindingSize)
-{
-    CHECK_ENV(env);
-    CHECK_ARG(env, native_object);
-
-    auto nativeValue = reinterpret_cast<NativeValue*>(native_object);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
-
-    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-    auto nativeReference = reinterpret_cast<NativeReference**>(reference);
-    nativeObject->SetNativePointer(pointer, cb, hint, nativeReference, nativeBindingSize);
-    return napi_clear_last_error(env);
-}

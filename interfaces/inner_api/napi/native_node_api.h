@@ -100,11 +100,4 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              NapiAttachCallback attach,
                                                              void* object,
                                                              void* hint);
-NAPI_EXTERN napi_status napi_set_native_pointer(napi_env env,
-                                                napi_value native_object,
-                                                void* pointer,
-                                                NapiNativeFinalize cb,
-                                                void* hint,
-                                                napi_ref* reference,
-                                                size_t nativeBindingSize);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
