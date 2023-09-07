@@ -28,8 +28,13 @@ class NativeReference;
 
 struct NativePropertyDescriptor;
 struct NativeCallbackInfo;
+struct NapiNativeCallbackInfo;
+
+static constexpr size_t MAX_BYTE_LENGTH = 2097152;
+static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
 
 typedef NativeValue* (*NativeCallback)(NativeEngine* engine, NativeCallbackInfo*);
+typedef napi_value (*NapiNativeCallback)(NativeEngine* engine, NapiNativeCallbackInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
@@ -68,6 +73,21 @@ struct NativeCallbackInfo {
     NativeValue* thisVar = nullptr;
     NativeValue* function = nullptr;
     NativeFunctionInfo* functionInfo = nullptr;
+};
+
+struct NapiNativeFunctionInfo {
+    static NapiNativeFunctionInfo* CreateNewInstance() { return new NapiNativeFunctionInfo(); }
+    NativeEngine* engine = nullptr;
+    NapiNativeCallback callback = nullptr;
+    void* data = nullptr;
+};
+
+struct NapiNativeCallbackInfo {
+    size_t argc = 0;
+    napi_value* argv = nullptr;
+    napi_value thisVar = nullptr;
+    napi_value function = nullptr;
+    NapiNativeFunctionInfo* functionInfo = nullptr;
 };
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);

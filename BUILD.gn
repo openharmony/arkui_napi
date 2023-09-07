@@ -13,7 +13,7 @@
 
 import("//build/ohos.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
-import("napi.gni")
+import("//foundation/arkui/napi/napi.gni")
 
 config("ace_napi_config") {
   include_dirs = [
@@ -88,9 +88,12 @@ ohos_source_set("ace_napi_static") {
     }
   }
 
-  configs = [ "//third_party/icu/icu4c:icu_config" ]
-
-  # Use static libuv and icu for cross build
+  deps += [
+    "//third_party/bounds_checking_function:libsec_static",
+    "//third_party/libuv:uv",
+  ]
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
+  # Use static libuv for cross build
   if (is_cross_platform_build) {
     deps += [
       "${ets_runtime_path}:libark_jsruntime_static",
@@ -119,12 +122,14 @@ if (is_cross_platform_build) {
   ohos_source_set("ace_napi") {
     deps = [ ":ace_napi_static" ]
     public_configs = [ ":ace_napi_config" ]
+    deps += [ "$ark_ets_path:libark_jsruntime_static" ]
     subsystem_name = "arkui"
     part_name = "napi"
   }
 } else {
   ohos_shared_library("ace_napi") {
     deps = [ ":ace_napi_static" ]
+    external_deps = [ "ets_runtime:libark_jsruntime" ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
@@ -163,6 +168,83 @@ ohos_source_set("ace_container_scope_static") {
   configs = [ "$ace_root:ace_config" ]
 
   sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
+}
+
+template("ace_napi_lib") {
+  forward_variables_from(invoker, "*")
+  if (defined(use_js_debug) && use_js_debug) {
+    deps_ = [
+      "native_engine/impl/${engine_path}:ace_napi_impl_${engine_path}_debug",
+    ]
+  } else {
+    deps_ = [ "native_engine/impl/${engine_path}:ace_napi_impl_${engine_path}" ]
+  }
+
+  if (is_cross_platform_build) {
+    ohos_source_set(target_name) {
+      public_configs =
+          [ "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config" ]
+      deps = deps_
+      deps += [ "$ark_ets_path:libark_jsruntime_static" ]
+      if (defined(use_icu) && use_icu) {
+        deps += [
+          "//third_party/icu/icu4c:static_icui18n",
+          "//third_party/icu/icu4c:static_icuuc",
+        ]
+      }
+      subsystem_name = "arkui"
+      part_name = "napi"
+    }
+  } else {
+    ohos_shared_library(target_name) {
+      public_configs =
+          [ "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config" ]
+      deps = deps_
+      if (defined(use_icu) && use_icu) {
+        deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
+      }
+
+      if (target_name == "ark" || target_name == "quickjs") {
+        deps -= [ "//third_party/libuv:uv" ]
+      }
+      external_deps = [ "ets_runtime:libark_jsruntime" ]
+      subsystem_name = "arkui"
+      part_name = "napi"
+    }
+  }
+}
+napi_libs = []
+
+foreach(item, ace_platforms) {
+  if (item.name == "ohos" || is_cross_platform_build) {
+    engine_config = {
+    }
+    support_engines = {
+    }
+    engine_config = item.config
+    support_engines = engine_config.js_engines
+    foreach(engine, support_engines) {
+      if (engine.engine_name != "ark") {
+        ace_napi_lib("ace_napi_${engine.engine_path}") {
+          engine_path = engine.engine_path
+        }
+        napi_libs += [ ":ace_napi_${engine.engine_path}" ]
+        if (defined(engine.have_debug) && engine.have_debug) {
+          ace_napi_lib("ace_napi_${engine.engine_path}_debug") {
+            engine_path = engine.engine_path
+            use_js_debug = true
+          }
+          napi_libs += [ ":ace_napi_${engine.engine_path}_debug" ]
+        }
+      } else if (engine.engine_name == "ark") {
+        ace_napi_lib("ace_napi_${engine.engine_name}") {
+          engine_path = engine.engine_name
+          use_icu = true
+        }
+        napi_libs += [ ":ace_napi_${engine.engine_name}" ]
+      }
+    }
+  }
 }
 
 group("napi_packages") {

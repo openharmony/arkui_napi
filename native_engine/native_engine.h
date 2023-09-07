@@ -38,6 +38,10 @@
 #include "scope_manager/native_scope_manager.h"
 #include "utils/macros.h"
 
+namespace panda::ecmascript {
+    class EcmaVM;
+}
+
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
 typedef struct uv_loop_s uv_loop_t;
@@ -113,6 +117,7 @@ using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
+using EcmaVM = panda::ecmascript::EcmaVM;
 
 class NAPI_EXPORT NativeEngine {
 public:
@@ -137,6 +142,7 @@ public:
 #endif
     virtual void* GetJsEngine();
 
+    virtual const EcmaVM* GetEcmaVm() const = 0;
     virtual NativeValue* GetGlobal() = 0;
 
     virtual NativeValue* CreateNull() = 0;
