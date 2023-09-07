@@ -33,7 +33,7 @@ struct JsFrameInfo {
 }
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
-using panda::ecmascript::EcmaVM;
+//using EcmaVM = panda::ecmascript::EcmaVM;
 using panda::Local;
 using panda::LocalScope;
 using panda::JSValueRef;
@@ -78,7 +78,7 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    const EcmaVM* GetEcmaVm() const;
+    const EcmaVM* GetEcmaVm() const override;
 
     void Loop(LoopMode mode, bool needSync = false) override;
 
