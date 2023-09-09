@@ -193,7 +193,7 @@ void ArkNativeString::EncodeWriteChinese(std::string& buffer, const char* encodi
             tempBuf.clear();
             pos = 0;
         }
-        str->WriteUtf8((tempBuf.data() + pos), pos + 2); // 2 : expression backward shift.
+        str->WriteUtf8((tempBuf.data() + pos), pos + len + 1);
         pos += len;
     }
     if (pos > 0) {
