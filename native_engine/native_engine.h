@@ -370,6 +370,7 @@ public:
     virtual void NotifyIdleStatusControl(std::function<void(bool)> callback) = 0;
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
+    virtual void NotifyForceExpandState(int32_t value) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 
