@@ -1084,11 +1084,21 @@ NativeValue* ArkNativeEngine::ArkValueToNativeValue(ArkNativeEngine* engine, Loc
     return result;
 }
 
+napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
+{
+    return reinterpret_cast<napi_value>(ValueToNativeValue(value));
+}
+
 NativeValue* ArkNativeEngine::ValueToNativeValue(JSValueWrapper& value)
 {
     LocalScope scope(vm_);
     Global<JSValueRef> arkValue = value;
     return ArkValueToNativeValue(this, arkValue.ToLocal(vm_));
+}
+
+napi_value ArkNativeEngine::ArkValueToNapiValue(napi_env env, Local<JSValueRef> value)
+{
+    return reinterpret_cast<napi_value>(ArkValueToNativeValue(reinterpret_cast<ArkNativeEngine*>(env), value));
 }
 
 bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)

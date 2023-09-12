@@ -183,7 +183,9 @@ public:
 
     static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
+    napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
+    napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
