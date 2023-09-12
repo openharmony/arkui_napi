@@ -34,7 +34,7 @@ static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
 
 typedef NativeValue* (*NativeCallback)(NativeEngine* engine, NativeCallbackInfo*);
-typedef napi_value (*NapiNativeCallback)(NativeEngine* engine, NapiNativeCallbackInfo*);
+typedef napi_value (*NapiNativeCallback)(napi_env env, NapiNativeCallbackInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
@@ -77,7 +77,7 @@ struct NativeCallbackInfo {
 
 struct NapiNativeFunctionInfo {
     static NapiNativeFunctionInfo* CreateNewInstance() { return new NapiNativeFunctionInfo(); }
-    NativeEngine* engine = nullptr;
+    napi_env env = nullptr;
     NapiNativeCallback callback = nullptr;
     void* data = nullptr;
 };

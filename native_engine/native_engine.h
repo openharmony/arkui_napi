@@ -457,6 +457,9 @@ protected:
 #endif
     NativeEngine* hostEngine_ {nullptr};
 
+public:
+    uint64_t openHandleScopes_ = 0;
+
 private:
     std::string moduleName_;
     std::mutex instanceDataLock_;
