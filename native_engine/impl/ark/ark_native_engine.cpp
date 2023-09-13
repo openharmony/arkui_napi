@@ -723,7 +723,7 @@ bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, 
     } else {
         ret = panda::JSNApi::ExecuteModuleBufferSecure(vm_, buffer, size, path);
     }
-    
+
     if (panda::JSNApi::HasPendingException(vm_)) {
         HandleUncaughtException();
         return false;
@@ -798,11 +798,7 @@ NativeValue* ArkNativeEngine::CreateInstance(NativeValue* constructor, NativeVal
 NativeReference* ArkNativeEngine::CreateReference(NativeValue* value, uint32_t initialRefcount,
     NativeFinalize callback, void* data, void* hint)
 {
-    if (initialRefcount == 0) {
-        return new ArkNativeReference(this, value, initialRefcount, true);
-    } else {
-        return new ArkNativeReference(this, value, initialRefcount, false);
-    }
+    return new ArkNativeReference(this, value, initialRefcount, false);
 }
 
 bool ArkNativeEngine::IsExceptionPending() const
