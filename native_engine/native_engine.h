@@ -40,7 +40,6 @@
 
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
-
 typedef struct uv_loop_s uv_loop_t;
 
 struct NativeErrorExtendedInfo {
@@ -257,7 +256,9 @@ public:
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
+    virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
+
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
