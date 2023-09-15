@@ -177,3 +177,9 @@ bool ArkNativeReference::GetFinalRun()
 {
     return finalRun_;
 }
+
+napi_value ArkNativeReference::GetNapiValue()
+{
+    NativeValue* result = Get();
+    return reinterpret_cast<napi_value>(result);
+}

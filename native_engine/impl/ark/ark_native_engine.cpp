@@ -76,6 +76,14 @@ bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
 
+Local<JSValueRef> NapiValueToLocalValue(napi_value v)
+{
+    auto nativeValue = reinterpret_cast<NativeValue*>(v);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(nativeValue->GetEngine());
+    Global<JSValueRef> result = *nativeValue;
+    return result.ToLocal(engine->GetEcmaVm());
+}
+
 struct MoudleNameLocker {
     explicit MoudleNameLocker(std::string moduleName)
     {

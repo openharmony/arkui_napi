@@ -39,7 +39,11 @@ using panda::LocalScope;
 using panda::JSValueRef;
 using panda::JSNApi;
 using panda::DFXJSNApi;
+
 class ArkNativeObject;
+
+Local<JSValueRef> NapiValueToLocalValue(napi_value v);
+
 class SerializationData {
 public:
     SerializationData() : data_(nullptr), size_(0) {}
@@ -185,7 +189,7 @@ public:
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
-    napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
+    static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
