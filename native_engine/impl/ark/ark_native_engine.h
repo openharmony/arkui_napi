@@ -47,6 +47,9 @@ enum class ForceExpandState : int32_t {
 };
 
 class ArkNativeObject;
+
+Local<JSValueRef> NapiValueToLocalValue(napi_value v);
+
 class SerializationData {
 public:
     SerializationData() : data_(nullptr), size_(0) {}
@@ -190,7 +193,9 @@ public:
 
     static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
+    napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
+    static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
@@ -253,6 +258,7 @@ public:
     bool ExecutePermissionCheck() override;
     void RegisterTranslateBySourceMap(SourceMapCallback callback) override;
     std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
+        void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) override;
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);

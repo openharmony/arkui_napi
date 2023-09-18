@@ -70,6 +70,8 @@ public:
 
     bool StrictEquals(NativeValue* value) override;
 
+    NativeEngine* GetEngine() override;
+
     // value_ in NativeValue should not be replaced directly.
     // If you must replace it, you should use this method.
     void UpdateValue(Local<JSValueRef> value);

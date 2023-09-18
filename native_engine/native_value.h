@@ -185,6 +185,8 @@ public:
 
     virtual bool StrictEquals(NativeValue* value) = 0;
 
+    virtual NativeEngine* GetEngine() = 0;
+
 protected:
     JSValueWrapper value_;
 };

@@ -53,6 +53,7 @@ public:
     void SetDeleteSelf() override;
     uint32_t GetRefCount() override;
     bool GetFinalRun() override;
+    napi_value GetNapiValue() override;
 
 private:
     ArkNativeEngine* engine_;
