@@ -20,20 +20,20 @@ ohos_unittest("module_manager_test") {
   module_out_path = module_output_path
 
   sources = [
-    "${arkui_napi_path}/module_manager/test/mock/src/mock_native_module_manager.cpp",
-    "${arkui_napi_path}/module_manager/test/unittest/module_manager_test/module_manager_test.cpp",
+    "../../mock/src/mock_native_module_manager.cpp",
+    "module_manager_test.cpp",
   ]
 
   include_dirs = [
-    "${arkui_napi_path}",
-    "${arkui_napi_path}/module_manager",
-    "${arkui_napi_path}/module_manager/test/mock/include",
+    "../../../..",
+    "../../..",
+    "../../mock/include",
   ]
 
   cflags = []
 
   deps = [
-    "${arkui_napi_path}:ace_napi",
+    "../../../..:ace_napi",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]

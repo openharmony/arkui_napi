@@ -11,103 +11,102 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//foundation/arkui/napi/napi.gni")
+import("//build/ohos.gni")
+import("//foundation/arkui/ace_engine/ace_config.gni")
+import("napi.gni")
 
 config("ace_napi_config") {
   include_dirs = [
-    "../../../foundation/arkui/napi/native_engine",
-    "//foundation/arkui/napi",
-    "//foundation/arkui/napi/interfaces/inner_api",
-    "//foundation/arkui/napi/interfaces/kits",
+    ".",
+    "interfaces/inner_api",
+    "interfaces/kits",
+    "native_engine",
+    "native_engine/impl/ark",
     "//third_party/libuv/include",
     "//third_party/node/src",
   ]
+  defines = []
+  cflags_cc = []
+  if (is_mingw || is_mac || is_linux) {
+    defines += [ "PREVIEW" ]
+  }
+
+  if (current_os == "ohos" && current_cpu == "x86_64") {
+    defines += [ "SIMULATOR" ]
+  }
+  if (is_ohos) {
+    defines += [ "OHOS_PLATFORM" ]
+  } else if (is_mingw) {
+    defines += [ "WINDOWS_PLATFORM" ]
+    cflags_cc += [ "-std=c++17" ]
+  } else if (is_mac) {
+    defines += [ "MAC_PLATFORM" ]
+  } else if (is_linux) {
+    defines += [ "LINUX_PLATFORM" ]
+    cflags_cc += [ "-std=c++17" ]
+  } else if (is_cross_platform_build && target_os == "ios") {
+    defines += [ "IOS_PLATFORM" ]
+  } else if (is_cross_platform_build && target_os == "android") {
+    defines += [ "ANDROID_PLATFORM" ]
+  }
 }
 
 config("module_manager_config") {
-  include_dirs = [ "../../../foundation/arkui/napi/module_manager" ]
+  include_dirs = [ "module_manager" ]
 }
-
-import("//build/ohos.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 
 ohos_source_set("ace_napi_static") {
   defines = []
   public_configs = [ ":ace_napi_config" ]
   deps = []
-
-  include_dirs = [
-    "../../../napi",
-    "../../../napi/interfaces/inner_api",
-    "../../../napi/interfaces/kits",
-    "//third_party/libuv/include",
-    "//third_party/node/src",
-    "../../../base/include",
-  ]
+  external_deps = []
 
   sources = napi_sources
 
   if (current_cpu == "arm64") {
     defines += [ "_ARM64_" ]
   }
-  if (current_os == "ohos" && current_cpu == "x86_64") {
-    defines += [ "SIMULATOR" ]
-  }
-  if (use_mingw_win || use_mac || use_linux) {
-    defines += [ "PREVIEW" ]
-  }
-  if (use_mingw_win) {
-    defines += [ "WINDOWS_PLATFORM" ]
-  } else if (use_mac) {
-    defines += [ "MAC_PLATFORM" ]
-  } else if (use_linux) {
-    defines += [ "LINUX_PLATFORM" ]
-  } else if (is_cross_platform_build && target_os == "ios") {
-    defines += [ "IOS_PLATFORM" ]
-    if (napi_enable_container_scope) {
-      deps += [ ":ace_container_scope_static" ]
-      defines += [ "ENABLE_CONTAINER_SCOPE" ]
-    }
-  } else if (is_cross_platform_build && target_os == "android") {
-    defines += [ "ANDROID_PLATFORM" ]
-    if (napi_enable_container_scope) {
-      deps += [ ":ace_container_scope_static" ]
-      defines += [ "ENABLE_CONTAINER_SCOPE" ]
-    }
-    libs = [ "log" ]
-  } else {
-    if (is_standard_system) {
-      external_deps = [
-        "hilog:libhilog",
-        "hitrace:hitrace_meter",
-        "hitrace:libhitracechain",
-        "init:libbegetutil",
-      ]
-      defines += [ "ENABLE_HITRACE" ]
-      if (product_name != "ohos-sdk") {
-        if (napi_enable_container_scope) {
-          if (target_os == "ios") {
-            deps += [ ":ace_container_scope_static" ]
-          } else {
-            deps += [ ":ace_container_scope" ]
-          }
-          defines += [ "ENABLE_CONTAINER_SCOPE" ]
-        }
-      }
-    } else {
-      external_deps = [ "hilog:libhilog" ]
-    }
-  }
-
-  deps += [
-    "//third_party/bounds_checking_function:libsec_static",
-    "//third_party/libuv:uv",
-  ]
-
-  # Use static libuv for cross build
   if (is_cross_platform_build) {
-    deps -= [ "//third_party/libuv:uv" ]
-    deps += [ "//third_party/libuv:uv_static" ]
+    if (napi_enable_container_scope) {
+      deps += [ ":ace_container_scope_static" ]
+      defines += [ "ENABLE_CONTAINER_SCOPE" ]
+    }
+    if (target_os == "android") {
+      libs = [ "log" ]
+    }
+  } else if (!is_mingw && !is_mac && !is_linux && is_ohos_standard_system) {
+    external_deps += [
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "hitrace:libhitracechain",
+      "init:libbegetutil",
+    ]
+    defines += [ "ENABLE_HITRACE" ]
+    if (product_name != "ohos-sdk" && napi_enable_container_scope) {
+      deps += [ ":ace_container_scope" ]
+      defines += [ "ENABLE_CONTAINER_SCOPE" ]
+    }
+  }
+
+  configs = [ "//third_party/icu/icu4c:icu_config" ]
+
+  # Use static libuv and icu for cross build
+  if (is_cross_platform_build) {
+    deps += [
+      "${ets_runtime_path}:libark_jsruntime_static",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/icu/icu4c:static_icui18n",
+      "//third_party/icu/icu4c:static_icuuc",
+      "//third_party/libuv:uv_static",
+    ]
+    configs += [ "${ets_runtime_path}:ark_jsruntime_public_config" ]
+  } else {
+    deps += [
+      "//third_party/icu/icu4c:shared_icui18n",
+      "//third_party/icu/icu4c:shared_icuuc",
+      "//third_party/libuv:uv",
+    ]
+    external_deps += [ "ets_runtime:libark_jsruntime" ]
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
@@ -130,9 +129,11 @@ if (is_cross_platform_build) {
       ":ace_napi_config",
       ":module_manager_config",
     ]
-    if (!is_cross_platform_build) {
-      public_deps = [ "//third_party/libuv:uv" ]
-    }
+    public_deps = [
+      "//third_party/bounds_checking_function:libsec_shared",
+      "//third_party/libuv:uv",
+    ]
+
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
     part_name = "napi"
@@ -164,85 +165,8 @@ ohos_source_set("ace_container_scope_static") {
   sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
 }
 
-template("ace_napi_lib") {
-  forward_variables_from(invoker, "*")
-  if (defined(use_js_debug) && use_js_debug) {
-    deps_ = [
-      "native_engine/impl/${engine_path}:ace_napi_impl_${engine_path}_debug",
-    ]
-  } else {
-    deps_ = [ "native_engine/impl/${engine_path}:ace_napi_impl_${engine_path}" ]
-  }
-
-  if (is_cross_platform_build) {
-    ohos_source_set(target_name) {
-      public_configs =
-          [ "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config" ]
-      deps = deps_
-      if (defined(use_icu) && use_icu) {
-        deps += [
-          "//third_party/icu/icu4c:static_icui18n",
-          "//third_party/icu/icu4c:static_icuuc",
-        ]
-      }
-      subsystem_name = "arkui"
-      part_name = "napi"
-    }
-  } else {
-    ohos_shared_library(target_name) {
-      public_configs =
-          [ "native_engine/impl/${engine_path}:ace_napi_${engine_path}_config" ]
-      deps = deps_
-      if (defined(use_icu) && use_icu) {
-        deps += [ "//third_party/icu/icu4c:shared_icuuc" ]
-      }
-
-      if (target_name == "ark" || target_name == "quickjs") {
-        deps -= [ "//third_party/libuv:uv" ]
-      }
-
-      subsystem_name = "arkui"
-      part_name = "napi"
-    }
-  }
-}
-napi_libs = []
-
-foreach(item, ace_platforms) {
-  if (item.name == "ohos" || is_cross_platform_build) {
-    engine_config = {
-    }
-    support_engines = {
-    }
-    engine_config = item.config
-    support_engines = engine_config.js_engines
-    foreach(engine, support_engines) {
-      if (engine.engine_name != "ark") {
-        ace_napi_lib("ace_napi_${engine.engine_path}") {
-          engine_path = engine.engine_path
-        }
-        napi_libs += [ ":ace_napi_${engine.engine_path}" ]
-        if (defined(engine.have_debug) && engine.have_debug) {
-          ace_napi_lib("ace_napi_${engine.engine_path}_debug") {
-            engine_path = engine.engine_path
-            use_js_debug = true
-          }
-          napi_libs += [ ":ace_napi_${engine.engine_path}_debug" ]
-        }
-      } else if (engine.engine_name == "ark") {
-        ace_napi_lib("ace_napi_${engine.engine_name}") {
-          engine_path = engine.engine_name
-          use_icu = true
-        }
-        napi_libs += [ ":ace_napi_${engine.engine_name}" ]
-      }
-    }
-  }
-}
-
 group("napi_packages") {
   deps = [ ":ace_napi" ]
-  deps += napi_libs
 }
 
 ohos_ndk_library("libnapi_ndk") {
