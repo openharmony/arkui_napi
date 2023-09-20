@@ -29,6 +29,9 @@ public:
         return nullptr;
     }
     virtual operator NativeValue*() = 0;
+    virtual void SetDeleteSelf() = 0;
+    virtual uint32_t GetRefCount() = 0;
+    virtual bool GetFinalRun() = 0;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H */
