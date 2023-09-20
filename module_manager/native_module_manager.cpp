@@ -415,10 +415,19 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
 #ifdef ANDROID_PLATFORM
     std::string strModule(moduleName);
     std::string strCutName = strModule;
-    if (strModule.find(".") != std::string::npos) {
-        char* temp = const_cast<char*>(strCutName.c_str());
-        for (char* p = strchr(temp, '.'); p != nullptr; p = strchr(p + 1, '.')) {
-            *p = '_';
+    if (path != nullptr) {
+        if (IsExistedPath(path)) {
+            strModule = path;
+        }
+        prefix_ = "default";
+        strModule = prefix_ + '/' + moduleName;
+    } else {
+        path = "default";
+        if (strModule.find(".") != std::string::npos) {
+            char* temp = const_cast<char*>(strCutName.c_str());
+            for (char* p = strchr(temp, '.'); p != nullptr; p = strchr(p + 1, '.')) {
+                *p = '_';
+            }
         }
     }
 #endif
@@ -447,7 +456,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     if (nativeModule == nullptr) {
 #ifdef ANDROID_PLATFORM
         HILOG_WARN("module '%{public}s' does not in cache", strCutName.c_str());
-        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), "default", relativePath, internal, isAppModule);
+        nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule);
 #else
         HILOG_WARN("module '%{public}s' does not in cache", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule);
@@ -737,8 +746,11 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             return nullptr;
         }
 
-        // replace '.' with '_'
+        // replace '.' and '/' with '_'
         for (char* p = strchr(symbol, '.'); p != nullptr; p = strchr(p + 1, '.')) {
+            *p = '_';
+        }
+        for (char* p = strchr(symbol, '/'); p != nullptr; p = strchr(p + 1, '/')) {
             *p = '_';
         }
 
