@@ -655,19 +655,29 @@ bool ArkNativeEngine::InitTaskPoolFunc(napi_env env, napi_value func, void* task
     return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
 }
 
-bool ArkNativeEngine::HasPendingJob()
+bool ArkNativeEngine::HasPendingJob() const
 {
     return JSNApi::HasPendingJob(vm_);
 }
 
-bool ArkNativeEngine::IsProfiling()
+bool ArkNativeEngine::IsProfiling() const
 {
     return JSNApi::IsProfiling(vm_);
+}
+
+bool ArkNativeEngine::IsExecutingPendingJob() const
+{
+    return panda::JSNApi::IsExecutingPendingJob(vm_);
 }
 
 void* ArkNativeEngine::GetCurrentTaskInfo() const
 {
     return JSNApi::GetCurrentTaskInfo(vm_);
+}
+
+void ArkNativeEngine::TerminateExecution() const
+{
+    DFXJSNApi::TerminateExecution(vm_);
 }
 
 NativeValue* ArkNativeEngine::CallFunction(
@@ -1538,7 +1548,7 @@ void ArkNativeEngine::HandleUncaughtException()
     if (!exception.IsEmpty() && !exception->IsHole()) {
         if (uncaughtExceptionCallback_ != nullptr) {
             uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
-        } 
+        }
         if (napiUncaughtExceptionCallback_ != nullptr) {
             napiUncaughtExceptionCallback_(ArkValueToNapiValue(reinterpret_cast<napi_env>(this), exception));
         }
