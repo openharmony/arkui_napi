@@ -40,6 +40,12 @@ using panda::JSValueRef;
 using panda::JSNApi;
 using panda::DFXJSNApi;
 
+enum class ForceExpandState : int32_t {
+    FINISH_COLD_START = 0,
+    START_HIGH_SENSITIVE,
+    FINISH_HIGH_SENSITIVE,
+};
+
 class ArkNativeObject;
 
 Local<JSValueRef> NapiValueToLocalValue(napi_value v);
@@ -236,6 +242,7 @@ public:
     void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
     void NotifyIdleTime(int idleMicroSec) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
+    void NotifyForceExpandState(int32_t value) override;
 
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);

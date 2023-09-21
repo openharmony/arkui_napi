@@ -1352,6 +1352,24 @@ void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
 {
     DFXJSNApi::NotifyMemoryPressure(vm_, inHighMemoryPressure);
 }
+
+void ArkNativeEngine::NotifyForceExpandState(int32_t value)
+{
+    switch (ForceExpandState(value)) {
+        case ForceExpandState::FINISH_COLD_START:
+            DFXJSNApi::NotifyFinishColdStart(vm_, true);
+            break;
+        case ForceExpandState::START_HIGH_SENSITIVE:
+            DFXJSNApi::NotifyHighSensitive(vm_, true);
+            break;
+        case ForceExpandState::FINISH_HIGH_SENSITIVE:
+            DFXJSNApi::NotifyHighSensitive(vm_, false);
+            break;
+        default:
+            HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
+            break;
+    }
+}
 #else
 void ArkNativeEngine::PrintStatisticResult()
 {
@@ -1402,6 +1420,11 @@ void ArkNativeEngine::NotifyIdleTime([[maybe_unused]] int idleMicroSec)
 }
 
 void ArkNativeEngine::NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPressure)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
+void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] int32_t value)
 {
     HILOG_WARN("ARK does not support dfx on windows");
 }
