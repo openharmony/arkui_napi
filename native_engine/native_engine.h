@@ -44,7 +44,6 @@ namespace panda::ecmascript {
 
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
-
 typedef struct uv_loop_s uv_loop_t;
 
 struct NativeErrorExtendedInfo {
@@ -117,6 +116,7 @@ using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
+using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 
 class NAPI_EXPORT NativeEngine {
@@ -262,7 +262,9 @@ public:
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
+    virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
+
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
@@ -389,6 +391,7 @@ public:
     virtual bool ExecutePermissionCheck() = 0;
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
     virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
+    virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     // run script by path
     NativeValue* RunScript(const char* path);
 
@@ -453,6 +456,9 @@ protected:
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
     NativeEngine* hostEngine_ {nullptr};
+
+public:
+    uint64_t openHandleScopes_ = 0;
 
 private:
     std::string moduleName_;

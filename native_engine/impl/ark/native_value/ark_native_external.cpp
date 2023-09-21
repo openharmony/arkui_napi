@@ -14,7 +14,7 @@
  */
 
 #include "ark_native_external.h"
-#include "ark_native_reference.h"
+#include "native_engine/native_reference.h"
 #include "utils/log.h"
 
 using panda::NativePointerRef;

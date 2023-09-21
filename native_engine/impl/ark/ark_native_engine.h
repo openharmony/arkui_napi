@@ -33,13 +33,14 @@ struct JsFrameInfo {
 }
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
-//using EcmaVM = panda::ecmascript::EcmaVM;
-using panda::Local;
 using panda::LocalScope;
-using panda::JSValueRef;
 using panda::JSNApi;
 using panda::DFXJSNApi;
+
 class ArkNativeObject;
+
+Local<JSValueRef> NapiValueToLocalValue(napi_value v);
+
 class SerializationData {
 public:
     SerializationData() : data_(nullptr), size_(0) {}
@@ -70,7 +71,7 @@ class ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
-    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    NAPI_EXPORT ArkNativeEngine(EcmaVM* vm, void* jsEngine);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -181,9 +182,11 @@ public:
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
-    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
+    NAPI_EXPORT static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
+    napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
+    static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
@@ -245,6 +248,7 @@ public:
     bool ExecutePermissionCheck() override;
     void RegisterTranslateBySourceMap(SourceMapCallback callback) override;
     std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
+        void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) override;
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);

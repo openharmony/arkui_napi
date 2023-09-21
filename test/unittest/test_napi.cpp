@@ -169,24 +169,6 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Lev
     ASSERT_EQ(numData, 2000);
 }
 
-static void NativeFinalizeCallback(napi_env env, void* data, void* hint)
-{
-    HILOG_INFO("this is nativeFinalize callback");
-}
-
-/**
- * @tc.name: NativePointerTest001
- * @tc.desc: Test set nativePointer.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, NativePointerTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    napi_value object = nullptr;
-    napi_create_object(env, &object);
-    ASSERT_CHECK_CALL(napi_set_native_pointer(env, object, nullptr, NativeFinalizeCallback, nullptr, nullptr, 0));
-}
-
 /**
  * @tc.name: UndefinedTest001
  * @tc.desc: Test undefined type.

@@ -16,7 +16,7 @@
 #include "ark_native_engine.h"
 
 #include "ark_native_deferred.h"
-#include "ark_native_reference.h"
+#include "native_reference.h"
 #include "scope_manager/native_scope_manager.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -75,6 +75,14 @@ std::string ArkNativeEngine::tempModuleName_ {""};
 bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
+
+Local<JSValueRef> NapiValueToLocalValue(napi_value v)
+{
+    auto nativeValue = reinterpret_cast<NativeValue*>(v);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(nativeValue->GetEngine());
+    Global<JSValueRef> result = *nativeValue;
+    return result.ToLocal(engine->GetEcmaVm());
+}
 
 struct MoudleNameLocker {
     explicit MoudleNameLocker(std::string moduleName)
@@ -808,7 +816,8 @@ NativeValue* ArkNativeEngine::CreateInstance(NativeValue* constructor, NativeVal
 NativeReference* ArkNativeEngine::CreateReference(NativeValue* value, uint32_t initialRefcount,
     NativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, value, initialRefcount, false);
+    Global<JSValueRef> arkValue = *value;
+    return new NativeReference(this, arkValue.ToLocal(vm_), initialRefcount, false);
 }
 
 bool ArkNativeEngine::IsExceptionPending() const
@@ -1084,11 +1093,21 @@ NativeValue* ArkNativeEngine::ArkValueToNativeValue(ArkNativeEngine* engine, Loc
     return result;
 }
 
+napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
+{
+    return reinterpret_cast<napi_value>(ValueToNativeValue(value));
+}
+
 NativeValue* ArkNativeEngine::ValueToNativeValue(JSValueWrapper& value)
 {
     LocalScope scope(vm_);
     Global<JSValueRef> arkValue = value;
     return ArkValueToNativeValue(this, arkValue.ToLocal(vm_));
+}
+
+napi_value ArkNativeEngine::ArkValueToNapiValue(napi_env env, Local<JSValueRef> value)
+{
+    return reinterpret_cast<napi_value>(ArkValueToNativeValue(reinterpret_cast<ArkNativeEngine*>(env), value));
 }
 
 bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
@@ -1434,6 +1453,11 @@ void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
     if (SourceMapCallback_ == nullptr) {
         SourceMapCallback_ = callback;
     }
+}
+
+void ArkNativeEngine::RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback)
+{
+    panda::JSNApi::SetSourceMapTranslateCallback(vm_, callback);
 }
 
 std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)

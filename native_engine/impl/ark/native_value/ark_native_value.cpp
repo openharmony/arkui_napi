@@ -304,3 +304,8 @@ bool ArkNativeValue::IsSharedArrayBuffer()
     Global<JSValueRef> value = value_;
     return value->IsSharedArrayBuffer();
 }
+
+NativeEngine* ArkNativeValue::GetEngine()
+{
+    return engine_;
+}

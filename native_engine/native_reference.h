@@ -18,20 +18,64 @@
 
 #include "native_engine/native_value.h"
 
+class NativeEngine;
+
+namespace panda {
+    class JSValueRef;
+    template<typename T> class Local;
+}
+
+using JSValueRef = panda::JSValueRef;
+template<typename T> using Local = panda::Local<T>;
+
 class NativeReference {
 public:
-    virtual ~NativeReference() {}
-    virtual uint32_t Ref() = 0;
-    virtual uint32_t Unref() = 0;
-    virtual NativeValue* Get() = 0;
-    virtual void* GetData()
-    {
-        return nullptr;
-    }
-    virtual operator NativeValue*() = 0;
-    virtual void SetDeleteSelf() = 0;
-    virtual uint32_t GetRefCount() = 0;
-    virtual bool GetFinalRun() = 0;
+    NativeReference(NativeEngine* engine,
+                       Local<JSValueRef> value,
+                       uint32_t initialRefcount,
+                       bool deleteSelf,
+                       NativeFinalize callback = nullptr,
+                       void* data = nullptr,
+                       void* hint = nullptr);
+    NativeReference(NativeEngine* engine,
+                       Local<JSValueRef> value,
+                       uint32_t initialRefcount,
+                       bool deleteSelf,
+                       NativeFinalize callback,
+                       NapiNativeFinalize napiCallback,
+                       void* data,
+                       void* hint);
+     ~NativeReference();
+     uint32_t Ref();
+     uint32_t Unref();
+     NativeValue* Get();
+     void* GetData();
+     operator NativeValue*();
+     void SetDeleteSelf();
+     uint32_t GetRefCount();
+     bool GetFinalRun();
+     napi_value GetNapiValue();
+private:
+    NativeEngine* engine_;
+    JSValueWrapper value_;
+    uint32_t refCount_ {0};
+    bool deleteSelf_ {false};
+    bool hasDelete_ {false};
+    bool finalRun_ {false};
+
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t scopeId_ = -1;
+#endif
+
+    NativeFinalize callback_ = nullptr;
+    NapiNativeFinalize napiCallback_ = nullptr;
+    void* data_ = nullptr;
+    void* hint_ = nullptr;
+
+    void FinalizeCallback();
+
+    static void FreeGlobalCallBack(void* ref);
+    static void NativeFinalizeCallBack(void* ref);
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H */

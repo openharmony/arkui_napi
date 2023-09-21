@@ -45,4 +45,15 @@ struct NativePropertyDescriptor {
     void* data = nullptr;
 };
 
+struct Napi_NativePropertyDescriptor {
+    const char* utf8name = nullptr;
+    napi_value name = nullptr;
+    NapiNativeCallback method = nullptr;
+    NapiNativeCallback getter = nullptr;
+    NapiNativeCallback setter = nullptr;
+    napi_value value = nullptr;
+    uint32_t attributes = NATIVE_DEFAULT;
+    void* data = nullptr;
+};
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_PROPERTY_H */

@@ -274,7 +274,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
-            CallJs(engine_, func_, context_, data);
+            CallJs(engine_, reinterpret_cast<NativeValue*>(func_), context_, data);
         }
         queue_.pop();
         size--;

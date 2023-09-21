@@ -16,9 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H
 
-#include "native_engine.h"
-
 #include "napi/native_api.h"
+#include "native_engine.h"
 
 static inline napi_status napi_clear_last_error(napi_env env)
 {

@@ -22,16 +22,14 @@ import("//foundation/arkui/napi/napi.gni")
 ohos_fuzztest("ArkNativeEngineFuzzTest") {
   module_out_path = "arkui/napi"
 
-  fuzz_config_file = "${arkui_napi_test_path}/fuzztest/arknativeengine_fuzzer"
+  fuzz_config_file = "."
 
   sources = [ "arknativeengine_fuzzer.cpp" ]
 
-  sources += napi_sources
-
-  configs = [ "${foundation_arkui_path}/napi:ace_napi_config" ]
+  configs = [ "../../..:ace_napi_config" ]
 
   deps = [
-    "${foundation_arkui_path}/napi:ace_napi_ark",
+    "../../..:ace_napi",
     "//third_party/libuv:uv",
   ]
 

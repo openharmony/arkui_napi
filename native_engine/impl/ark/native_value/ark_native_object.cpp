@@ -19,7 +19,7 @@
 #include "ark_native_array.h"
 #include "ark_native_external.h"
 #include "ark_native_function.h"
-#include "ark_native_reference.h"
+#include "native_engine/native_reference.h"
 #include "ark_native_string.h"
 
 #include "native_engine/native_property.h"
@@ -111,7 +111,7 @@ void ArkNativeObject::SetNativePointer(void* pointer, NapiNativeFinalize cb, voi
     Local<StringRef> key = StringRef::GetNapiWrapperString(vm);
     if (pointer == nullptr && value->Has(vm, key)) {
         Local<ObjectRef> wrapper = value->Get(vm, key);
-        auto ref = reinterpret_cast<ArkNativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
         // Try to remove native pointer from ArrayDataList
         ASSERT(nativeBindingSize == 0);
         wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, nativeBindingSize);
@@ -119,12 +119,12 @@ void ArkNativeObject::SetNativePointer(void* pointer, NapiNativeFinalize cb, voi
         delete ref;
     } else {
         Local<ObjectRef> object = ObjectRef::New(vm);
-        ArkNativeReference* ref = nullptr;
+        NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = new ArkNativeReference(engine_, this, 1, false, nullptr, cb, pointer, hint);
+            ref = new NativeReference(engine_, value.ToLocal(vm), 1, false, nullptr, cb, pointer, hint);
             *reference = ref;
         } else {
-            ref = new ArkNativeReference(engine_, this, 0, true, nullptr, cb, pointer, hint);
+            ref = new NativeReference(engine_, value.ToLocal(vm), 0, true, nullptr, cb, pointer, hint);
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
@@ -143,7 +143,7 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
     Local<StringRef> key = StringRef::GetNapiWrapperString(vm);
     if (pointer == nullptr && value->Has(vm, key)) {
         Local<ObjectRef> wrapper = value->Get(vm, key);
-        auto ref = reinterpret_cast<ArkNativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
         // Try to remove native pointer from ArrayDataList
         ASSERT(nativeBindingSize == 0);
         wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, nativeBindingSize);
@@ -151,12 +151,12 @@ void ArkNativeObject::SetNativePointer(void* pointer, NativeFinalize cb, void* h
         delete ref;
     } else {
         Local<ObjectRef> object = ObjectRef::New(vm);
-        ArkNativeReference* ref = nullptr;
+        NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = new ArkNativeReference(engine_, this, 1, false, cb, pointer, hint);
+            ref = new NativeReference(engine_, value.ToLocal(vm), 1, false, cb, pointer, hint);
             *reference = ref;
         } else {
-            ref = new ArkNativeReference(engine_, this, 0, true, cb, pointer, hint);
+            ref = new NativeReference(engine_, value.ToLocal(vm), 0, true, cb, pointer, hint);
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
@@ -175,7 +175,7 @@ void* ArkNativeObject::GetNativePointer()
     void* result = nullptr;
     if (val->IsObject()) {
         Local<ObjectRef> ext(val);
-        auto ref = reinterpret_cast<ArkNativeReference*>(ext->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
         result = ref != nullptr ? ref->GetData() : nullptr;
     }
     return result;

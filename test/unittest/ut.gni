@@ -40,7 +40,7 @@ common_deps = [
 ]
 
 ark_deps = common_deps
-ark_deps += [ "//foundation/arkui/napi:ace_napi_ark" ]
+ark_deps += [ "//foundation/arkui/napi:ace_napi" ]
 
 jerryscript_deps = common_deps
 jerryscript_deps += [

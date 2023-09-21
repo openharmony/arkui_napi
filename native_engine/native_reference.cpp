@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include "ark_native_engine.h"
-
-#include "ark_native_reference.h"
+#include "native_engine/native_reference.h"
+#include "native_engine/native_engine.h"
+#include "ecmascript/napi/include/jsnapi.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
@@ -23,18 +23,21 @@
 
 #include "utils/log.h"
 
-ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       NativeValue* value,
+using panda::LocalScope;
+using panda::Global;
+
+NativeReference::NativeReference(NativeEngine* engine,
+                                       Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
                                        void* data,
                                        void* hint)
-    : ArkNativeReference::ArkNativeReference(engine, value, initialRefcount, deleteSelf, callback, nullptr, data, hint)
+    : NativeReference::NativeReference(engine, value, initialRefcount, deleteSelf, callback, nullptr, data, hint)
 {}
 
-ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       NativeValue* value,
+NativeReference::NativeReference(NativeEngine* engine,
+                                       Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
@@ -50,13 +53,13 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       data_(data),
       hint_(hint)
 {
-    Global<JSValueRef> oldValue = *value;
+    Global<JSValueRef> oldValue(engine->GetEcmaVm(), value);
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
     Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
-        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
+        newValue.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -71,68 +74,71 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
     }
 }
 
-ArkNativeReference::~ArkNativeReference()
+NativeReference::~NativeReference()
 {
     if (deleteSelf_ && engine_->GetReferenceManager()) {
         engine_->GetReferenceManager()->ReleaseHandler(this);
     }
-    if (value_.IsEmpty()) {
+    Global<JSValueRef> Value = value_;
+    if (Value.IsEmpty()) {
         return;
     }
     hasDelete_ = true;
-    value_.FreeGlobalHandleAddr();
+    Value.FreeGlobalHandleAddr();
     FinalizeCallback();
 }
 
-uint32_t ArkNativeReference::Ref()
+uint32_t NativeReference::Ref()
 {
     ++refCount_;
     if (refCount_ == 1) {
-        value_.ClearWeak();
+        Global<JSValueRef> Value = value_;
+        Value.ClearWeak();
     }
     return refCount_;
 }
 
-uint32_t ArkNativeReference::Unref()
+uint32_t NativeReference::Unref()
 {
     if (refCount_ == 0) {
         return refCount_;
     }
     --refCount_;
-    if (value_.IsEmpty()) {
+    Global<JSValueRef> Value = value_;
+    if (Value.IsEmpty()) {
         return refCount_;
     }
     if (refCount_ == 0) {
-        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
+        Value.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
     return refCount_;
 }
 
-NativeValue* ArkNativeReference::Get()
+NativeValue* NativeReference::Get()
 {
-    if (value_.IsEmpty()) {
+    Global<JSValueRef> Value = value_;
+    if (Value.IsEmpty()) {
         return nullptr;
     }
     auto vm = engine_->GetEcmaVm();
     LocalScope scope(vm);
-    Local<JSValueRef> value = value_.ToLocal(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
     OHOS::Ace::ContainerScope containerScope(scopeId_);
 #endif
-    return ArkNativeEngine::ArkValueToNativeValue(engine_, value);
+    return engine_->ValueToNativeValue(value_);
 }
 
-ArkNativeReference::operator NativeValue*()
+NativeReference::operator NativeValue*()
 {
     return Get();
 }
 
-void* ArkNativeReference::GetData()
+void* NativeReference::GetData()
 {
     return data_;
 }
 
-void ArkNativeReference::FinalizeCallback()
+void NativeReference::FinalizeCallback()
 {
     if (callback_ != nullptr) {
         callback_(engine_, data_, hint_);
@@ -151,29 +157,36 @@ void ArkNativeReference::FinalizeCallback()
     }
 }
 
-void ArkNativeReference::FreeGlobalCallBack(void* ref)
+void NativeReference::FreeGlobalCallBack(void* ref)
 {
-    auto that = reinterpret_cast<ArkNativeReference*>(ref);
-    that->value_.FreeGlobalHandleAddr();
+    auto that = reinterpret_cast<NativeReference*>(ref);
+    Global<JSValueRef> Value = that->value_;
+    Value.FreeGlobalHandleAddr();
 }
 
-void ArkNativeReference::NativeFinalizeCallBack(void* ref)
+void NativeReference::NativeFinalizeCallBack(void* ref)
 {
-    auto that = reinterpret_cast<ArkNativeReference*>(ref);
+    auto that = reinterpret_cast<NativeReference*>(ref);
     that->FinalizeCallback();
 }
 
-void ArkNativeReference::SetDeleteSelf()
+void NativeReference::SetDeleteSelf()
 {
     deleteSelf_ = true;
 }
 
-uint32_t ArkNativeReference::GetRefCount()
+uint32_t NativeReference::GetRefCount()
 {
     return refCount_;
 }
 
-bool ArkNativeReference::GetFinalRun()
+bool NativeReference::GetFinalRun()
 {
     return finalRun_;
+}
+
+napi_value NativeReference::GetNapiValue()
+{
+    NativeValue* result = Get();
+    return reinterpret_cast<napi_value>(result);
 }

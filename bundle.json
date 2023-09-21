@@ -83,15 +83,6 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_container_scope"
-                  },
-                  {
-                    "header": {
-                      "header_base": "//foundation/arkui/napi/native_engine/impl/ark/",
-                      "header_files": [
-                          "ark_native_engine.h"
-                      ]
-                    },
-                    "name": "//foundation/arkui/napi:ace_napi_ark"
                   }
             ],
             "test": [

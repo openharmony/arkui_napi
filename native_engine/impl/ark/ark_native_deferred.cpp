@@ -22,7 +22,7 @@
 #include "ark_native_deferred.h"
 
 using panda::Global;
-using panda::Local;
+//using panda::Local;
 using panda::JSValueRef;
 ArkNativeDeferred::ArkNativeDeferred(ArkNativeEngine* engine, Local<PromiseCapabilityRef> deferred)
     : engine_(engine), deferred_(engine->GetEcmaVm(), deferred)
