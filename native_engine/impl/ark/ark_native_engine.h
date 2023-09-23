@@ -144,7 +144,9 @@ public:
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
     bool HasPendingJob() override;
     bool IsProfiling() override;
     void* GetCurrentTaskInfo() const override;
