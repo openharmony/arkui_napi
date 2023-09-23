@@ -236,7 +236,7 @@ public:
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false) = 0;
+        bool isPrivate = false, bool isFullGC = true) = 0;
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) = 0;
@@ -368,6 +368,7 @@ public:
     virtual size_t GetArrayBufferSize() = 0;
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
+    virtual size_t GetHeapLimitSize() = 0;
     virtual void NotifyApplicationState(bool inBackground) = 0;
     virtual void NotifyIdleStatusControl(std::function<void(bool)> callback) = 0;
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
