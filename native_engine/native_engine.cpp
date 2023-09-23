@@ -231,9 +231,9 @@ void NativeEngine::ClearLastError()
     lastError_.reserved = nullptr;
 }
 
-void NativeEngine::EncodeToUtf8(
-    NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
+void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
     if (nativeValue == nullptr || nchars == nullptr || written == nullptr) {
         HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
         return;
@@ -247,8 +247,9 @@ void NativeEngine::EncodeToUtf8(
     *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
 }
 
-void NativeEngine::EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding)
+void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
 {
+    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
     if (nativeValue == nullptr) {
         HILOG_ERROR("NativeEngine is nullptr");
         return;
