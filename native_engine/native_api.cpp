@@ -53,6 +53,7 @@ using panda::TypedArrayRef;
 using panda::NativePointerRef;
 using panda::JsiRuntimeCallInfo;
 using panda::PropertyAttribute;
+static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 
 class HandleScopeWrapper {
 public:
@@ -1409,21 +1410,17 @@ Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNat
                                                     reinterpret_cast<void*>(funcInfo), true);
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
     fn->SetName(vm, fnName);
-
-//    auto classPrototype = classConstructor->GetFunctionPrototype();
     Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
     Local<panda::ObjectRef> fnObj = fn->ToObject(vm);
     for (size_t i = 0; i < length; i++) {
         if (properties[i].attributes & NATIVE_STATIC) {
-//            classConstructor->DefineProperty(properties[i]);
             NapiDefineProperty(env, fnObj, properties[i]);
         } else {
             if (classPrototype->IsNull()) {
                 HILOG_ERROR("ArkNativeEngineImpl::Class's prototype is null");
                 continue;
             }
-            // ArkNativeObject* arkNativeobj = static_cast<ArkNativeObject*>(classPrototype);
-            // SetModuleName(arkNativeobj, className);
+
             NapiDefineProperty(env, classPrototype, properties[i]);
         }
     }
@@ -1577,7 +1574,6 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
 
     auto nativeObject = nativeValue->ToObject(vm);
 
-//    *result = nativeObject->GetNativePointer();
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
 
@@ -1596,13 +1592,6 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
-    // auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
-
-    // NativeValueType type = nativeValue->TypeOf();
-    // RETURN_STATUS_IF_FALSE(env, type == NATIVE_OBJECT || type == NATIVE_FUNCTION,
-    //     napi_object_expected);
-
-    // auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     auto nativeValue = LocalValueFromJsValue(js_object);
@@ -1621,8 +1610,6 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
         *result = ref != nullptr ? ref->GetData() : nullptr;
     }
 
-
-//    nativeObject->SetNativePointer(nullptr, nullptr, nullptr);
     size_t nativeBindingSize = 0;
     if (nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper =val;
@@ -2574,7 +2561,16 @@ NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_r
     auto rejectCallbackRef = reinterpret_cast<NativeReference*>(ref);
     auto checkCallbackRef = reinterpret_cast<NativeReference*>(checkRef);
 
-    engine->SetPromiseRejectCallback(rejectCallbackRef, checkCallbackRef);
+    if (rejectCallbackRef == nullptr || checkCallbackRef == nullptr) {
+        HILOG_ERROR("rejectCallbackRef or checkCallbackRef is nullptr");
+    }
+    else {
+        engine->SetPromiseRejectCallBackRef(rejectCallbackRef);
+        engine->SetCheckCallbackRef(checkCallbackRef);
+        panda::JSNApi::SetHostPromiseRejectionTracker(const_cast<EcmaVM*>(engine->GetEcmaVm()), engine->GetPromiseRejectCallback(),
+                                            reinterpret_cast<void*>(engine));
+    }
+    
     return napi_clear_last_error(env);
 }
 
@@ -2586,11 +2582,21 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto scriptValue = reinterpret_cast<NativeValue*>(script);
-    RETURN_STATUS_IF_FALSE(env, scriptValue->TypeOf() == NATIVE_STRING, napi_status::napi_string_expected);
-    auto resultValue = engine->RunScript(scriptValue);
-    *result = reinterpret_cast<napi_value>(resultValue);
-    return napi_clear_last_error(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+
+    auto scriptValue = LocalValueFromJsValue(script);
+    RETURN_STATUS_IF_FALSE(env, scriptValue->IsString(), napi_status::napi_string_expected);
+    
+    std::vector<uint8_t> scriptContent;
+    std::string path = panda::JSNApi::GetAssetPath(vm);
+    std::string ami;
+    if (!engine->CallGetAssetFunc(path, scriptContent, ami)) {
+        HILOG_ERROR("Get asset error");
+        *result = nullptr;
+    }
+    HILOG_INFO("asset size is %{public}zu", scriptContent.size());
+  
+    return napi_run_actor(env, scriptContent, ami.c_str(), result);
 }
 
 // Runnint a buffer script, only used in ark
@@ -2600,9 +2606,26 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    NativeValue* resultValue = engine->RunBufferScript(buffer);
-    *result = reinterpret_cast<napi_value>(resultValue);
-    return napi_clear_last_error(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+
+    panda::JSExecutionScope executionScope(vm);
+    LocalScope scope(vm);
+    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
+    if (panda::JSNApi::HasPendingException(vm)) {
+        if (engine->GetNapiUncaughtExceptionCallback() != nullptr) {
+            LocalScope scope(vm);
+            Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm);
+            auto value = JsValueFromLocalValue(exception);
+            if (!exception.IsEmpty() && !exception->IsHole()) {
+                engine->GetNapiUncaughtExceptionCallback()(value);
+            }
+        }
+        *result = nullptr;
+    }
+
+    Local<PrimitiveRef> value = JSValueRef::Undefined(vm);
+    *result = JsValueFromLocalValue(value);
+    return napi_clear_last_error(env); 
 }
 
 NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffer,
@@ -2610,10 +2633,35 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffe
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
+
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto resultValue = engine->RunActor(buffer, descriptor);
-    *result = reinterpret_cast<napi_value>(resultValue);
-    return napi_clear_last_error(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    
+    panda::JSExecutionScope executionScope(vm);
+    LocalScope scope(vm);
+    std::string desc(descriptor);
+    [[maybe_unused]] bool ret = false;
+
+    if (panda::JSNApi::IsBundle(vm) || !buffer.empty()) {
+        ret = panda::JSNApi::Execute(vm, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
+    } else {
+        ret = panda::JSNApi::Execute(vm, desc, PANDA_MAIN_FUNCTION);
+    }
+    if (panda::JSNApi::HasPendingException(vm)) {
+        if (engine->GetNapiUncaughtExceptionCallback() != nullptr) {
+            LocalScope scope(vm);
+            Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm);
+            auto value = JsValueFromLocalValue(exception);
+            if (!exception.IsEmpty() && !exception->IsHole()) {
+                engine->GetNapiUncaughtExceptionCallback()(value);
+            }
+        }
+        *result = nullptr;
+    }
+
+    Local<PrimitiveRef> value = JSValueRef::Undefined(vm);
+    *result = JsValueFromLocalValue(value);
+    return napi_clear_last_error(env); 
 }
 
 // Memory management

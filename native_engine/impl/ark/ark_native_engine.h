@@ -37,6 +37,12 @@ using panda::LocalScope;
 using panda::JSNApi;
 using panda::DFXJSNApi;
 
+enum class ForceExpandState : int32_t {
+    FINISH_COLD_START = 0,
+    START_HIGH_SENSITIVE,
+    FINISH_HIGH_SENSITIVE,
+};
+
 class ArkNativeObject;
 
 Local<JSValueRef> NapiValueToLocalValue(napi_value v);
@@ -233,6 +239,7 @@ public:
     void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
     void NotifyIdleTime(int idleMicroSec) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
+    void NotifyForceExpandState(int32_t value) override;
 
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);
@@ -254,10 +261,17 @@ public:
         const std::string& instanceName, void** instance);
 
     NativeChunk& GetNativeChunk();
+
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
     }
+
+    void SetPromiseRejectCallBackRef(NativeReference* rejectCallbackRef) override
+    {
+        promiseRejectCallbackRef_ = rejectCallbackRef;
+    }
+
     NapiConcurrentCallback GetConcurrentCallbackFunc()
     {
         return concurrentCallbackFunc_;
@@ -266,6 +280,26 @@ public:
     NativeReference* GetCheckCallbackRef()
     {
         return checkCallbackRef_;
+    }
+
+    void SetCheckCallbackRef(NativeReference* checkCallbackRef) override
+    {
+        checkCallbackRef_ = checkCallbackRef;
+    }
+
+    UncaughtExceptionCallback GetUncaughtExceptionCallback() override
+    {
+        return uncaughtExceptionCallback_;
+    }
+
+    NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() override
+    {
+        return napiUncaughtExceptionCallback_;
+    }
+
+    void* GetPromiseRejectCallback() override
+    {
+        return reinterpret_cast<void*>(PromiseRejectCallback);
     }
 
     static bool napiProfilerEnabled;
@@ -281,6 +315,7 @@ private:
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;

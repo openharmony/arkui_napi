@@ -253,7 +253,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSING) {
         HILOG_ERROR("thread is closing!");
-
         CloseHandles();
         return;
     }

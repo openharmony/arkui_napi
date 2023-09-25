@@ -1353,6 +1353,24 @@ void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
 {
     DFXJSNApi::NotifyMemoryPressure(vm_, inHighMemoryPressure);
 }
+
+void ArkNativeEngine::NotifyForceExpandState(int32_t value)
+{
+    switch (ForceExpandState(value)) {
+        case ForceExpandState::FINISH_COLD_START:
+            DFXJSNApi::NotifyFinishColdStart(vm_, true);
+            break;
+        case ForceExpandState::START_HIGH_SENSITIVE:
+            DFXJSNApi::NotifyHighSensitive(vm_, true);
+            break;
+        case ForceExpandState::FINISH_HIGH_SENSITIVE:
+            DFXJSNApi::NotifyHighSensitive(vm_, false);
+            break;
+        default:
+            HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
+            break;
+    }
+}
 #else
 void ArkNativeEngine::PrintStatisticResult()
 {
@@ -1406,6 +1424,11 @@ void ArkNativeEngine::NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPre
 {
     HILOG_WARN("ARK does not support dfx on windows");
 }
+
+void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] int32_t value)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
 #endif
 
 void ArkNativeEngine::RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback)
@@ -1416,13 +1439,13 @@ void ArkNativeEngine::RegisterUncaughtExceptionHandler(UncaughtExceptionCallback
 
 void ArkNativeEngine::HandleUncaughtException()
 {
-    if (uncaughtExceptionCallback_ == nullptr) {
+    if (napiUncaughtExceptionCallback_ == nullptr) {
         return;
     }
     LocalScope scope(vm_);
     Local<ObjectRef> exception = JSNApi::GetAndClearUncaughtException(vm_);
     if (!exception.IsEmpty() && !exception->IsHole()) {
-        uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
+        napiUncaughtExceptionCallback_(reinterpret_cast<napi_value>(*exception));
     }
 }
 

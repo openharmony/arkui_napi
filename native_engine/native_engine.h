@@ -113,6 +113,7 @@ using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
+using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
@@ -378,6 +379,7 @@ public:
     virtual void NotifyIdleStatusControl(std::function<void(bool)> callback) = 0;
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
+    virtual void NotifyForceExpandState(int32_t value) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 
@@ -392,6 +394,11 @@ public:
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
     virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
     virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
+    virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
+    virtual void SetCheckCallbackRef(NativeReference*) = 0;
+    virtual UncaughtExceptionCallback GetUncaughtExceptionCallback() = 0;
+    virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
+    virtual void* GetPromiseRejectCallback() = 0;
     // run script by path
     NativeValue* RunScript(const char* path);
 

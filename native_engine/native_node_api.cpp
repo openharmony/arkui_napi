@@ -471,12 +471,9 @@ NAPI_INNER_EXTERN napi_status napi_async_init(
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, result);
 
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
-
     auto async_context = new NativeAsyncContext();
-    async_context->asyncResource = asyncResource;
-    async_context->asyncResourceName = asyncResourceName;
+    async_context->napiAsyncResource = async_resource;
+    async_context->napiAsyncResourceName = async_resource_name;
 
     *result = reinterpret_cast<napi_async_context>(async_context);
 
