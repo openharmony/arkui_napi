@@ -1109,6 +1109,30 @@ napi_value ArkNativeEngine::ArkValueToNapiValue(napi_env env, Local<JSValueRef> 
     return reinterpret_cast<napi_value>(ArkValueToNativeValue(reinterpret_cast<ArkNativeEngine*>(env), value));
 }
 
+std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
+{
+    if (value == nullptr || pos.first == 0) {
+        return "";
+    }
+
+    LocalScope scope(vm_);
+    Local<panda::FunctionRef> func = NapiValueToLocalValue(value);
+    uint32_t line = pos.first;
+    uint32_t column = pos.second;
+    Local<panda::StringRef> sourceCode = func->GetSourceCode(vm_, line);
+    std::string sourceCodeStr = sourceCode->ToString();
+    if (sourceCodeStr.empty()) {
+        return "";
+    }
+    std::string sourceCodeInfo = "SourceCode:\n";
+    sourceCodeInfo.append(sourceCodeStr).append("\n");
+    for (uint32_t k = 0; k < column - 1; k++) {
+        sourceCodeInfo.push_back(' ');
+    }
+    sourceCodeInfo.append("^\n");
+    return sourceCodeInfo;
+}
+
 bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
 {
     panda::JSExecutionScope executionScope(vm_);

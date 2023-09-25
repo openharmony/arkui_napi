@@ -197,6 +197,8 @@ public:
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
     static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
+     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
+
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
