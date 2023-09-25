@@ -592,9 +592,8 @@ static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success, void 
     if (concurrentCallbackFunc == nullptr) {
         return;
     }
-    concurrentCallbackFunc(reinterpret_cast<napi_env>(engine),
-                           reinterpret_cast<napi_value>(ArkNativeEngine::ArkValueToNativeValue(engine, result)),
-                           success, taskInfo);
+    napi_env env = reinterpret_cast<napi_env>(engine);
+    concurrentCallbackFunc(env, ArkNativeEngine::ArkValueToNapiValue(env, result), success, taskInfo);
 }
 
 bool ArkNativeEngine::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
