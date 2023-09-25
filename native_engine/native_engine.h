@@ -259,6 +259,8 @@ public:
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
 
+    virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
+
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
