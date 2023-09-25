@@ -373,6 +373,7 @@ public:
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
     virtual void NotifyForceExpandState(int32_t value) = 0;
+    virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 

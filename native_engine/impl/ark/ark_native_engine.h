@@ -247,6 +247,8 @@ public:
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);
 
+    void SetMockModuleList(const std::map<std::string, std::string> &list) override;
+
     // debugger
     bool IsMixedDebugEnabled();
     void NotifyNativeCalling(const void *nativeAddress);

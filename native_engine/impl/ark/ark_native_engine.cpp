@@ -1430,6 +1430,11 @@ void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] int32_t value)
 }
 #endif
 
+void ArkNativeEngine::SetMockModuleList(const std::map<std::string, std::string> &list)
+{
+    JSNApi::SetMockModuleList(vm_, list);
+}
+
 void ArkNativeEngine::RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback)
 {
     JSNApi::EnableUserUncaughtErrorHandler(vm_);
