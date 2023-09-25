@@ -110,7 +110,7 @@ using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using PermissionCheckCallback = std::function<bool()>;
-using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
+using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 
@@ -174,7 +174,9 @@ public:
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
+    virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
     virtual bool HasPendingJob() = 0;
     virtual bool IsProfiling() = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
@@ -251,8 +253,8 @@ public:
     void ClearLastError();
     virtual bool IsExceptionPending() const = 0;
     virtual NativeValue* GetAndClearLastException() = 0;
-    void EncodeToUtf8(NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
-    void EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding);
+    void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
+    void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
