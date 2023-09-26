@@ -244,9 +244,8 @@ void* NativeSafeAsyncWork::GetContext()
 void NativeSafeAsyncWork::ProcessAsyncHandle()
 {
     HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
-
+    
     auto scopeManager = engine_->GetScopeManager();
-
     if (scopeManager == nullptr) {
         HILOG_ERROR("scope manager is null");
         return;
@@ -265,20 +264,15 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     }
 
     size_t size = queue_.size();
-    void* data = nullptr;
-
     HILOG_INFO("queue size %d", (int32_t)size);
-
+    void* data = nullptr;
     auto nativeScope = scopeManager->Open();
-
     while (size > 0) {
         data = queue_.front();
-
         // when queue is full, notify send.
         if (size == maxQueueSize_ && maxQueueSize_ > 0) {
             condition_.notify_one();
         }
-
         NativeValue* func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
@@ -289,12 +283,9 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         size--;
     }
 
-    if (size == 0) {
-        if (threadCount_ == 0) {
-            CloseHandles();
-        }
+    if (size == 0 && threadCount_ == 0) {
+        CloseHandles();
     }
-
     scopeManager->Close(nativeScope);
 }
 
