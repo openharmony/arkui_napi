@@ -1481,15 +1481,26 @@ void ArkNativeEngine::RegisterUncaughtExceptionHandler(UncaughtExceptionCallback
     uncaughtExceptionCallback_ = callback;
 }
 
+void ArkNativeEngine::RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback)
+{
+    JSNApi::EnableUserUncaughtErrorHandler(vm_);
+    napiUncaughtExceptionCallback_ = callback;
+}
+
 void ArkNativeEngine::HandleUncaughtException()
 {
-    if (uncaughtExceptionCallback_ == nullptr) {
+    if (uncaughtExceptionCallback_ == nullptr && napiUncaughtExceptionCallback_ == nullptr) {
         return;
     }
     LocalScope scope(vm_);
     Local<ObjectRef> exception = JSNApi::GetAndClearUncaughtException(vm_);
     if (!exception.IsEmpty() && !exception->IsHole()) {
-        uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
+        if (uncaughtExceptionCallback_ != nullptr) {
+            uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
+        } 
+        if (napiUncaughtExceptionCallback_ != nullptr) {
+            napiUncaughtExceptionCallback_(ArkValueToNapiValue(reinterpret_cast<napi_env>(this), exception));
+        }
     }
 }
 

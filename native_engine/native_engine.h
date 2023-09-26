@@ -109,6 +109,7 @@ using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
+using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
@@ -382,6 +383,7 @@ public:
     void RegisterWorkerFunction(const NativeEngine* engine);
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
+    virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
     virtual bool HasPendingException()
     {

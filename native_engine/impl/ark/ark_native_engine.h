@@ -258,6 +258,7 @@ public:
     void NotifyNativeCalling(const void *nativeAddress);
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
+    void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
@@ -297,6 +298,7 @@ private:
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
     UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+    NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
