@@ -246,7 +246,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
 
     auto scopeManager = engine_->GetScopeManager();
-
     if (scopeManager == nullptr) {
         HILOG_ERROR("scope manager is null");
         return;
@@ -289,10 +288,8 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         size--;
     }
 
-    if (size == 0) {
-        if (threadCount_ == 0) {
-            CloseHandles();
-        }
+    if (size == 0 && threadCount_ == 0) {
+        CloseHandles();
     }
 
     scopeManager->Close(nativeScope);
