@@ -115,7 +115,7 @@ using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
-using NapiConcurrentCallback = void (*)(NativeEngine* engine, NativeValue* result, bool success, void* data);
+using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
@@ -181,7 +181,9 @@ public:
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
+    virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
+    virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
     virtual bool HasPendingJob() = 0;
     virtual bool IsProfiling() = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
@@ -258,13 +260,15 @@ public:
     void ClearLastError();
     virtual bool IsExceptionPending() const = 0;
     virtual NativeValue* GetAndClearLastException() = 0;
-    void EncodeToUtf8(NativeValue* nativeValue, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
-    void EncodeToChinese(NativeValue* nativeValue, std::string& buffer, const std::string& encoding);
+    void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
+    void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
+
+    virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
 
     virtual bool TriggerFatalException(NativeValue* error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
@@ -380,10 +384,12 @@ public:
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
     virtual void NotifyForceExpandState(int32_t value) = 0;
+    virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
 
     virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
+    virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
     virtual bool HasPendingException()
     {

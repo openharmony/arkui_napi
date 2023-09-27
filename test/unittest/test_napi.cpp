@@ -1545,8 +1545,10 @@ HWTEST_F(NapiBasicTest, IsCallableTest001, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
 {
+    napi_env env = (napi_env)engine_;
     std::string str = "encode";
-    auto testStr = engine_->CreateString(str.c_str(), str.length());
+    napi_value testStr = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &testStr);
     char* buffer = new char[str.length()];
     size_t bufferSize = str.length();
     int32_t written = 0;
@@ -1558,7 +1560,8 @@ HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
     delete[] buffer;
 
     str = "encode\xc2\xab\xe2\x98\x80";
-    testStr = engine_->CreateString(str.c_str(), str.length());
+    testStr = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &testStr);
     buffer = new char[str.length()];
     bufferSize = str.length();
     ASSERT_EQ(memset_s(buffer, str.length(), 0, str.length()), EOK);
@@ -1586,7 +1589,8 @@ HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
     delete[] buffer;
 
     str = "encode\xc2\xab\xe2\x98\x80t";
-    testStr = engine_->CreateString(str.c_str(), str.length());
+    testStr = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &testStr);
     buffer = new char[str.length()];
     bufferSize = str.length();
     ASSERT_EQ(memset_s(buffer, str.length(), 0, str.length()), EOK);
@@ -1597,7 +1601,8 @@ HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
     delete[] buffer;
 
     str = "";
-    testStr = engine_->CreateString(str.c_str(), str.length());
+    testStr = nullptr;
+    napi_create_string_utf8(env, str.c_str(), str.length(), &testStr);
     buffer = new char[str.length() + 1];
     bufferSize = str.length() + 1;
     ASSERT_EQ(memset_s(buffer, str.length(), 0, str.length()), EOK);

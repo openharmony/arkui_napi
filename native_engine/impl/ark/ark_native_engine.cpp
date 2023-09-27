@@ -592,10 +592,17 @@ static void ConcurrentCallbackFunc(Local<JSValueRef> result, bool success, void 
     if (concurrentCallbackFunc == nullptr) {
         return;
     }
-    concurrentCallbackFunc(engine, ArkNativeEngine::ArkValueToNativeValue(engine, result), success, taskInfo);
+    napi_env env = reinterpret_cast<napi_env>(engine);
+    concurrentCallbackFunc(env, ArkNativeEngine::ArkValueToNapiValue(env, result), success, taskInfo);
 }
 
 bool ArkNativeEngine::InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback)
+{
+    concurrentCallbackFunc_ = callback;
+    return JSNApi::InitForConcurrentThread(vm_, ConcurrentCallbackFunc, static_cast<void *>(this));
+}
+
+bool ArkNativeEngine::InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback)
 {
     concurrentCallbackFunc_ = callback;
     return JSNApi::InitForConcurrentThread(vm_, ConcurrentCallbackFunc, static_cast<void *>(this));
@@ -605,6 +612,15 @@ bool ArkNativeEngine::InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, 
 {
     LocalScope scope(vm_);
     Global<JSValueRef> globalObj = *func;
+    Local<JSValueRef> function = globalObj.ToLocal(vm_);
+    return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
+}
+
+bool ArkNativeEngine::InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo)
+{
+    LocalScope scope(vm_);
+    NativeValue* funcVal = reinterpret_cast<NativeValue*>(func);
+    Global<JSValueRef> globalObj = *funcVal;
     Local<JSValueRef> function = globalObj.ToLocal(vm_);
     return JSNApi::InitForConcurrentFunction(vm_, function, taskInfo);
 }
@@ -1110,6 +1126,30 @@ napi_value ArkNativeEngine::ArkValueToNapiValue(napi_env env, Local<JSValueRef> 
     return reinterpret_cast<napi_value>(ArkValueToNativeValue(reinterpret_cast<ArkNativeEngine*>(env), value));
 }
 
+std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
+{
+    if (value == nullptr || pos.first == 0) {
+        return "";
+    }
+
+    LocalScope scope(vm_);
+    Local<panda::FunctionRef> func = NapiValueToLocalValue(value);
+    uint32_t line = pos.first;
+    uint32_t column = pos.second;
+    Local<panda::StringRef> sourceCode = func->GetSourceCode(vm_, line);
+    std::string sourceCodeStr = sourceCode->ToString();
+    if (sourceCodeStr.empty()) {
+        return "";
+    }
+    std::string sourceCodeInfo = "SourceCode:\n";
+    sourceCodeInfo.append(sourceCodeStr).append("\n");
+    for (uint32_t k = 0; k < column - 1; k++) {
+        sourceCodeInfo.push_back(' ');
+    }
+    sourceCodeInfo.append("^\n");
+    return sourceCodeInfo;
+}
+
 bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
 {
     panda::JSExecutionScope executionScope(vm_);
@@ -1431,21 +1471,37 @@ void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] int32_t value)
 }
 #endif
 
+void ArkNativeEngine::SetMockModuleList(const std::map<std::string, std::string> &list)
+{
+    JSNApi::SetMockModuleList(vm_, list);
+}
+
 void ArkNativeEngine::RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback)
 {
     JSNApi::EnableUserUncaughtErrorHandler(vm_);
     uncaughtExceptionCallback_ = callback;
 }
 
+void ArkNativeEngine::RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback)
+{
+    JSNApi::EnableUserUncaughtErrorHandler(vm_);
+    napiUncaughtExceptionCallback_ = callback;
+}
+
 void ArkNativeEngine::HandleUncaughtException()
 {
-    if (napiUncaughtExceptionCallback_ == nullptr) {
+    if (uncaughtExceptionCallback_ == nullptr && napiUncaughtExceptionCallback_ == nullptr) {
         return;
     }
     LocalScope scope(vm_);
     Local<ObjectRef> exception = JSNApi::GetAndClearUncaughtException(vm_);
     if (!exception.IsEmpty() && !exception->IsHole()) {
-        napiUncaughtExceptionCallback_(reinterpret_cast<napi_value>(*exception));
+        if (uncaughtExceptionCallback_ != nullptr) {
+            uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
+        } 
+        if (napiUncaughtExceptionCallback_ != nullptr) {
+            napiUncaughtExceptionCallback_(ArkValueToNapiValue(reinterpret_cast<napi_env>(this), exception));
+        }
     }
 }
 

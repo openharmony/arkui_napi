@@ -141,7 +141,9 @@ public:
     NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
+    bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+    bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
     bool HasPendingJob() override;
     bool IsProfiling() override;
     void* GetCurrentTaskInfo() const override;
@@ -194,6 +196,8 @@ public:
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
     static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
+     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
+
     bool ExecuteJsBin(const std::string& fileName);
     panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
@@ -244,11 +248,14 @@ public:
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);
 
+    void SetMockModuleList(const std::map<std::string, std::string> &list) override;
+
     // debugger
     bool IsMixedDebugEnabled();
     void NotifyNativeCalling(const void *nativeAddress);
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
+    void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
