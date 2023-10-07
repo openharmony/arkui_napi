@@ -245,6 +245,12 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 {
     HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
 
+    auto scopeManager = engine_->GetScopeManager();
+    if (scopeManager == nullptr) {
+        HILOG_ERROR("scope manager is null");
+        return;
+    }
+
     std::unique_lock<std::mutex> lock(mutex_);
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
         HILOG_ERROR("Process failed, thread is closed!");
@@ -253,7 +259,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSING) {
         HILOG_ERROR("thread is closing!");
-
         CloseHandles();
         return;
     }
@@ -262,6 +267,9 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     void* data = nullptr;
 
     HILOG_INFO("queue size %d", (int32_t)size);
+
+    auto nativeScope = scopeManager->Open();
+
     while (size > 0) {
         data = queue_.front();
 
@@ -280,11 +288,11 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         size--;
     }
 
-    if (size == 0) {
-        if (threadCount_ == 0) {
-            CloseHandles();
-        }
+    if (size == 0 && threadCount_ == 0) {
+        CloseHandles();
     }
+
+    scopeManager->Close(nativeScope);
 }
 
 SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
