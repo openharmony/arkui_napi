@@ -124,15 +124,15 @@ if (is_cross_platform_build) {
   }
 } else {
   ohos_shared_library("ace_napi") {
-    deps = [ ":ace_napi_static" ]
+    deps = [
+      ":ace_napi_static",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
     ]
-    public_deps = [
-      "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libuv:uv",
-    ]
+    public_deps = [ "//third_party/libuv:uv" ]
 
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
