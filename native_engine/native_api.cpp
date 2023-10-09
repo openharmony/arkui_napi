@@ -1095,7 +1095,7 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     return fn;
 }
 
-bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_NativePropertyDescriptor propertyDescriptor)
+bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiNativePropertyDescriptor propertyDescriptor)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -1164,7 +1164,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
     Local<panda::ObjectRef> nativeObject = nativeValue->ToObject(vm);
 
     for (size_t i = 0; i < property_count; i++) {
-        Napi_NativePropertyDescriptor property;
+        NapiNativePropertyDescriptor property;
         property.utf8name = properties[i].utf8name;
         property.name = properties[i].name;
         property.method = reinterpret_cast<NapiNativeCallback>(properties[i].method);
@@ -1385,7 +1385,7 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
 }
 
 Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
-    void* data, const Napi_NativePropertyDescriptor* properties, size_t length)
+    void* data, const NapiNativePropertyDescriptor* properties, size_t length)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
@@ -1447,7 +1447,7 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
     CHECK_ARG(env, result);
 
     auto callback = reinterpret_cast<NapiNativeCallback>(constructor);
-    auto nativeProperties = reinterpret_cast<const Napi_NativePropertyDescriptor*>(properties);
+    auto nativeProperties = reinterpret_cast<const NapiNativePropertyDescriptor*>(properties);
 
     size_t nameLength = std::min(length, strlen(utf8name));
     char newName[nameLength + 1];

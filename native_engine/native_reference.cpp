@@ -14,13 +14,12 @@
  */
 
 #include "native_engine/native_reference.h"
-#include "native_engine/native_engine.h"
-#include "ecmascript/napi/include/jsnapi.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-
+#include "ecmascript/napi/include/jsnapi.h"
+#include "native_engine/native_engine.h"
 #include "utils/log.h"
 
 using panda::LocalScope;
@@ -79,12 +78,12 @@ NativeReference::~NativeReference()
     if (deleteSelf_ && engine_->GetReferenceManager()) {
         engine_->GetReferenceManager()->ReleaseHandler(this);
     }
-    Global<JSValueRef> Value = value_;
-    if (Value.IsEmpty()) {
+    Global<JSValueRef> value = value_;
+    if (value.IsEmpty()) {
         return;
     }
     hasDelete_ = true;
-    Value.FreeGlobalHandleAddr();
+    value.FreeGlobalHandleAddr();
     FinalizeCallback();
 }
 
@@ -92,8 +91,8 @@ uint32_t NativeReference::Ref()
 {
     ++refCount_;
     if (refCount_ == 1) {
-        Global<JSValueRef> Value = value_;
-        Value.ClearWeak();
+        Global<JSValueRef> value = value_;
+        value.ClearWeak();
     }
     return refCount_;
 }
@@ -104,20 +103,20 @@ uint32_t NativeReference::Unref()
         return refCount_;
     }
     --refCount_;
-    Global<JSValueRef> Value = value_;
-    if (Value.IsEmpty()) {
+    Global<JSValueRef> value = value_;
+    if (value.IsEmpty()) {
         return refCount_;
     }
     if (refCount_ == 0) {
-        Value.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
+        value.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
     return refCount_;
 }
 
 NativeValue* NativeReference::Get()
 {
-    Global<JSValueRef> Value = value_;
-    if (Value.IsEmpty()) {
+    Global<JSValueRef> value = value_;
+    if (value.IsEmpty()) {
         return nullptr;
     }
     auto vm = engine_->GetEcmaVm();
@@ -160,8 +159,8 @@ void NativeReference::FinalizeCallback()
 void NativeReference::FreeGlobalCallBack(void* ref)
 {
     auto that = reinterpret_cast<NativeReference*>(ref);
-    Global<JSValueRef> Value = that->value_;
-    Value.FreeGlobalHandleAddr();
+    Global<JSValueRef> value = that->value_;
+    value.FreeGlobalHandleAddr();
 }
 
 void NativeReference::NativeFinalizeCallBack(void* ref)

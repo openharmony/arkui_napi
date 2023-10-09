@@ -119,22 +119,20 @@ if (is_cross_platform_build) {
   ohos_source_set("ace_napi") {
     deps = [ ":ace_napi_static" ]
     public_configs = [ ":ace_napi_config" ]
-    deps += [ "$ark_ets_path:libark_jsruntime_static" ]
     subsystem_name = "arkui"
     part_name = "napi"
   }
 } else {
   ohos_shared_library("ace_napi") {
-    deps = [ ":ace_napi_static" ]
-    external_deps = [ "ets_runtime:libark_jsruntime" ]
+    deps = [
+      ":ace_napi_static",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
     ]
-    public_deps = [
-      "//third_party/bounds_checking_function:libsec_shared",
-      "//third_party/libuv:uv",
-    ]
+    public_deps = [ "//third_party/libuv:uv" ]
 
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
