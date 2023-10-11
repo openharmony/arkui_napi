@@ -48,7 +48,7 @@ enum class ForceExpandState : int32_t {
 
 class ArkNativeObject;
 
-Local<JSValueRef> NapiValueToLocalValue(napi_value v);
+NAPI_EXPORT Local<JSValueRef> NapiValueToLocalValue(napi_value v);
 
 class SerializationData {
 public:
@@ -84,7 +84,7 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    const EcmaVM* GetEcmaVm() const;
+    NAPI_EXPORT const EcmaVM* GetEcmaVm() const;
 
     void Loop(LoopMode mode, bool needSync = false) override;
 
@@ -166,7 +166,7 @@ public:
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
     NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
     // Set lib path
-    void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
+    NAPI_EXPORT void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     // Define native class
     NativeValue* DefineClass(const char* name,
                              NativeCallback callback,
@@ -197,12 +197,12 @@ public:
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
-    static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
+    NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
      std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
 
-    bool ExecuteJsBin(const std::string& fileName);
-    panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
+    NAPI_EXPORT bool ExecuteJsBin(const std::string& fileName);
+    NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
     bool TriggerFatalException(NativeValue* error) override;
