@@ -2596,3 +2596,18 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     }
     return napi_status::napi_generic_failure;
 }
+
+NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
+                                              napi_value value,
+                                              std::string& result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+
+    auto nativeValue = reinterpret_cast<NativeValue*>(value);
+    if (nativeValue->TypeOf() == NATIVE_STRING) {
+        auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+        result = nativeString->GetPrintString();
+    }
+    return napi_clear_last_error(env);
+}
