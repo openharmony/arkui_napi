@@ -103,6 +103,14 @@ void NativeEngine::Deinit()
     }
 
     SetStopping(true);
+
+    // clear timer
+    if (uv_is_active(reinterpret_cast<uv_handle_t*>(&timer_))) {
+        uv_timer_stop(&timer_);
+        uv_close(reinterpret_cast<uv_handle_t*>(&timer_), nullptr);
+    }
+
+    while (uv_run(loop_, UV_RUN_NOWAIT) != 0) {}
     uv_loop_delete(loop_);
     loop_ = nullptr;
 }
