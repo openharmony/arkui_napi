@@ -100,4 +100,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              NapiAttachCallback attach,
                                                              void* object,
                                                              void* hint);
+NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
+                                              napi_value value,
+                                              std::string& result);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
