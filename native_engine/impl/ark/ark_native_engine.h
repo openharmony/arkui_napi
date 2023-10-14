@@ -16,7 +16,15 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H
 
+#include <memory>
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#include <sys/wait.h>
+#endif
+#include <unistd.h>
 #include <unordered_map>
+#include <mutex>
+#include <thread>
+#include <iostream>
 
 #include "ark_headers.h"
 #include "ecmascript/napi/include/jsnapi.h"
@@ -227,7 +235,7 @@ public:
         DumpFormat dumpFormat = DumpFormat::JSON) override;
     // Dump the file into faultlog for heap leak.
     void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false) override;
+        bool isPrivate = false, bool isFullGC = true) override;
     bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) override;
@@ -242,6 +250,7 @@ public:
     size_t GetArrayBufferSize() override;
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
+    size_t GetHeapLimitSize() override;
     void NotifyApplicationState(bool inBackground) override;
     void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
     void NotifyIdleTime(int idleMicroSec) override;
@@ -255,6 +264,9 @@ public:
 
     // debugger
     bool IsMixedDebugEnabled();
+    void JsHeapStart();
+    uint64_t GetCurrentTickMillseconds();
+    void JudgmentDump(size_t limitSize);
     void NotifyNativeCalling(const void *nativeAddress);
 
     void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
@@ -303,5 +315,7 @@ private:
     inline void SetModuleName(ArkNativeObject *nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
     static std::string tempModuleName_;
+    std::once_flag flag_;
+    std::unique_ptr<std::thread> threadJsHeap_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
