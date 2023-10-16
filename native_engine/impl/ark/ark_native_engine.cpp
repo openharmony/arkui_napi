@@ -78,6 +78,7 @@ static uint64_t g_lastHeapDumpTime = 0;
 static bool g_debugLeak = OHOS::system::GetBoolParameter("debug.arkengine.tags.enableleak", false);
 static constexpr uint64_t HEAP_DUMP_REPORT_INTERVAL = 24 * 3600 * 1000;
 static bool g_needStop = false;
+static constexpr uint64_t SEC_TO_MILSEC = 1000;
 #endif
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
@@ -1661,9 +1662,12 @@ void ArkNativeEngine::JsHeapStart()
         HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
     }
     while (!g_needStop) {
-        size_t ret = g_checkInterval;
-        while (ret > 0) {
-            ret = sleep(ret);
+        uint64_t lastCheckTime = GetCurrentTickMillseconds();
+        while (GetCurrentTickMillseconds() - lastCheckTime < g_checkInterval * SEC_TO_MILSEC) {
+            if (g_needStop) {
+                return;
+            }
+            sleep(1);
         }
         size_t limitSize = GetHeapLimitSize();
         JudgmentDump(limitSize);
