@@ -2436,12 +2436,14 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env, napi_value js_obj
     auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     RETURN_STATUS_IF_FALSE(env, nativeValue->TypeOf() == NATIVE_OBJECT, napi_object_expected);
-    auto nativeObject = reinterpret_cast<NativeObject*>(nativeValue->GetInterface(NativeObject::INTERFACE_ID));
-    nativeObject->AddFinalizer(native_object, callback, finalize_hint);
+    NativeReference* reference = nullptr;
     if (result != nullptr) {
         auto engine = reinterpret_cast<NativeEngine*>(env);
-        auto reference = engine->CreateReference(nativeValue, 1, callback, native_object, finalize_hint);
+        reference = engine->CreateReference(nativeValue, 1, callback, native_object, finalize_hint);
         *result = reinterpret_cast<napi_ref>(reference);
+    } else {
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        reference = engine->CreateReference(nativeValue, 0, callback, native_object, finalize_hint);
     }
     return napi_clear_last_error(env);
 }
