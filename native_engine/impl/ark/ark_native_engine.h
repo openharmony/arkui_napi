@@ -25,6 +25,7 @@
 #include <mutex>
 #include <thread>
 #include <iostream>
+#include <condition_variable>
 
 #include "ark_headers.h"
 #include "ecmascript/napi/include/jsnapi.h"
@@ -303,6 +304,7 @@ private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
 
     EcmaVM* vm_ = nullptr;
+    bool needStop_ = false;
     panda::LocalScope topScope_;
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
@@ -317,5 +319,7 @@ private:
     static std::string tempModuleName_;
     std::once_flag flag_;
     std::unique_ptr<std::thread> threadJsHeap_;
+    std::mutex lock_;
+    std::condition_variable condition_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

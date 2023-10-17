@@ -77,7 +77,6 @@ static bool g_enableProperty = OHOS::system::GetBoolParameter("persist.ark.leak.
 static uint64_t g_lastHeapDumpTime = 0;
 static bool g_debugLeak = OHOS::system::GetBoolParameter("debug.arkengine.tags.enableleak", false);
 static constexpr uint64_t HEAP_DUMP_REPORT_INTERVAL = 24 * 3600 * 1000;
-static bool g_needStop = false;
 static constexpr uint64_t SEC_TO_MILSEC = 1000;
 #endif
 #ifdef ENABLE_HITRACE
@@ -324,7 +323,8 @@ ArkNativeEngine::~ArkNativeEngine()
     }
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
     // Free threadJsHeap_
-    g_needStop = true;
+    needStop_ = true;
+    condition_.notify_all();
     if (threadJsHeap_->joinable()) {
         threadJsHeap_->join();
     }
@@ -1661,13 +1661,11 @@ void ArkNativeEngine::JsHeapStart()
     if (pthread_setname_np(pthread_self(), "JsHeapThread") != 0) {
         HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
     }
-    while (!g_needStop) {
-        uint64_t lastCheckTime = GetCurrentTickMillseconds();
-        while (GetCurrentTickMillseconds() - lastCheckTime < g_checkInterval * SEC_TO_MILSEC) {
-            if (g_needStop) {
-                return;
-            }
-            sleep(1);
+    while (!needStop_) {
+        std::unique_lock<std::mutex> lock(lock_);
+        condition_.wait_for(lock, std::chrono::milliseconds(g_checkInterval * SEC_TO_MILSEC));
+        if (needStop_) {
+            return;
         }
         size_t limitSize = GetHeapLimitSize();
         JudgmentDump(limitSize);
