@@ -85,11 +85,11 @@ private:
     size_t size_;
 };
 
-class ArkNativeEngine : public NativeEngine {
+class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
-    NAPI_EXPORT ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -202,13 +202,13 @@ public:
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
-    NAPI_EXPORT static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
+    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
     NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
-     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
+    std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
 
     NAPI_EXPORT bool ExecuteJsBin(const std::string& fileName);
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
