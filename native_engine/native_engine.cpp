@@ -27,7 +27,7 @@
 #include <uv.h>
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
-static constexpr size_t DESTRUCTION_TIMEOUT = 5000;
+static constexpr size_t DESTRUCTION_TIMEOUT = 3000;
 
 namespace {
 const char* g_errorMessages[] = {
@@ -104,13 +104,6 @@ void NativeEngine::Deinit()
 
     SetStopping(true);
 
-    // clear timer
-    if (uv_is_active(reinterpret_cast<uv_handle_t*>(&timer_))) {
-        uv_timer_stop(&timer_);
-        uv_close(reinterpret_cast<uv_handle_t*>(&timer_), nullptr);
-    }
-
-    while (uv_run(loop_, UV_RUN_NOWAIT) != 0) {}
     uv_loop_delete(loop_);
     loop_ = nullptr;
 }
@@ -327,7 +320,6 @@ void NativeEngine::UVThreadRunner(void* nativeEngine)
 void NativeEngine::CancelCheckUVLoop()
 {
     checkUVLoop_ = false;
-    RunCleanup();
     uv_async_send(&uvAsync_);
     uv_sem_post(&uvSem_);
     uv_thread_join(&uvThread_);
@@ -496,9 +488,10 @@ void NativeEngine::StartCleanupTimer()
     uv_timer_init(loop_, &timer_);
     timer_.data = this;
     uv_timer_start(&timer_, [](uv_timer_t* handle) {
+        HILOG_DEBUG("NativeEngine:: timer is end with timeout.");
         reinterpret_cast<NativeEngine*>(handle->data)->cleanupTimeout_ = true;
-        uv_close(reinterpret_cast<uv_handle_t*>(handle), nullptr);
     }, DESTRUCTION_TIMEOUT, 0);
+    uv_unref(reinterpret_cast<uv_handle_t*>(&timer_));
 }
 
 void NativeEngine::RunCleanup()
@@ -531,6 +524,12 @@ void NativeEngine::RunCleanup()
         }
         CleanupHandles();
     }
+
+    while (uv_run(loop_, UV_RUN_NOWAIT) != 0 && !cleanupTimeout_) {}
+    uv_timer_stop(&timer_);
+    uv_close(reinterpret_cast<uv_handle_t*>(&timer_), nullptr);
+    uv_run(loop_, UV_RUN_ONCE);
+
     if (cleanupTimeout_) {
         HILOG_ERROR("RunCleanup timeout");
     }
