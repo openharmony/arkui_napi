@@ -12,6 +12,7 @@
 # limitations under the License.
 import("//build/ohos.gni")
 ohos_shared_library("systemtestnapi") {
+  testonly = true
   public_configs = [ "//foundation/arkui/napi/:ace_napi_config" ]
 
   include_dirs = [
