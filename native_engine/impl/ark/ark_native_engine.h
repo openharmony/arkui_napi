@@ -81,11 +81,11 @@ private:
     size_t size_;
 };
 
-class ArkNativeEngine : public NativeEngine {
+class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
-    NAPI_EXPORT ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -152,7 +152,7 @@ public:
     NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
-    NAPI_EXPORT static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
+    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
@@ -279,6 +279,7 @@ private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
 
     EcmaVM* vm_ = nullptr;
+    bool needStop_ = false;
     panda::LocalScope topScope_;
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
@@ -293,5 +294,7 @@ private:
     static std::string tempModuleName_;
     std::once_flag flag_;
     std::unique_ptr<std::thread> threadJsHeap_;
+    std::mutex lock_;
+    std::condition_variable condition_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
