@@ -44,8 +44,6 @@ public:
     void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) override;
     void Freeze() override;
     void Seal() override;
-    NativeValue* GetPropertyNames() override;
-    NativeValue* GetEnumerablePropertyNames() override;
 
     NativeValue* GetPrototype() override;
 
@@ -67,11 +65,8 @@ public:
     bool HasPrivateProperty(const char* name) override;
     bool DeletePrivateProperty(const char* name) override;
 
-    NativeValue* GetAllPropertyNames(
-        napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion) override;
-    bool AssociateTypeTag(NapiTypeTag* typeTag) override;
     bool CheckTypeTag(NapiTypeTag* typeTag) override;
-    void SetModuleName(std::string moduleName);
+
     std::string GetModuleName();
 
     bool SetElement(uint32_t index, NativeValue* value) override;

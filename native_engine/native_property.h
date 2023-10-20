@@ -45,7 +45,7 @@ struct NativePropertyDescriptor {
     void* data = nullptr;
 };
 
-struct NapiNativePropertyDescriptor {
+struct Napi_NativePropertyDescriptor {
     const char* utf8name = nullptr;
     napi_value name = nullptr;
     NapiNativeCallback method = nullptr;

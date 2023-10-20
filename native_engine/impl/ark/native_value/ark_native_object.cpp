@@ -16,11 +16,8 @@
 #include "ark_native_object.h"
 
 #include "ark_headers.h"
-#include "ark_native_array.h"
-#include "ark_native_external.h"
 #include "ark_native_function.h"
 #include "native_engine/native_reference.h"
-#include "ark_native_string.h"
 
 #include "native_engine/native_property.h"
 
@@ -195,26 +192,6 @@ void ArkNativeObject::SetNativeBindingPointer(
     object->SetNativePointerField(2, hint, nullptr, nullptr); // 2 : hint
     object->SetNativePointerField(3, detachData, nullptr, nullptr); // 3 : detachData
     object->SetNativePointerField(4, attachData, nullptr, nullptr); // 4 : attachData
-}
-
-NativeValue* ArkNativeObject::GetPropertyNames()
-{
-    auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Global<ObjectRef> val = value_;
-    Local<ArrayRef> arrayVal = val->GetOwnPropertyNames(vm);
-    NativeChunk& chunk = engine_->GetNativeChunk();
-    return chunk.New<ArkNativeArray>(engine_, arrayVal);
-}
-
-NativeValue* ArkNativeObject::GetEnumerablePropertyNames()
-{
-    auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Global<ObjectRef> val = value_;
-    Local<ArrayRef> arrayVal = val->GetOwnEnumerablePropertyNames(vm);
-    NativeChunk& chunk = engine_->GetNativeChunk();
-    return chunk.New<ArkNativeArray>(engine_, arrayVal);
 }
 
 NativeValue* ArkNativeObject::GetPrototype()
@@ -412,70 +389,6 @@ bool ArkNativeObject::DeletePrivateProperty(const char* name)
     return false;
 }
 
-NativeValue* ArkNativeObject::GetAllPropertyNames(
-    napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion)
-{
-    uint32_t filter = NATIVE_DEFAULT;
-    if (keyFilter & napi_key_writable) {
-        filter = static_cast<uint32_t>(filter | NATIVE_WRITABLE);
-    }
-    if (keyFilter & napi_key_enumerable) {
-        filter = static_cast<uint32_t>(filter | NATIVE_ENUMERABLE);
-    }
-    if (keyFilter & napi_key_configurable) {
-        filter = static_cast<uint32_t>(filter | NATIVE_CONFIGURABLE);
-    }
-    if (keyFilter & napi_key_skip_strings) {
-        filter = static_cast<uint32_t>(filter | NATIVE_KEY_SKIP_STRINGS);
-    }
-    if (keyFilter & napi_key_skip_symbols) {
-        filter = static_cast<uint32_t>(filter | NATIVE_KEY_SKIP_SYMBOLS);
-    }
-
-    switch (keyMode) {
-        case napi_key_include_prototypes:
-            filter = static_cast<uint32_t>(filter | NATIVE_KEY_INCLUDE_PROTOTYPES);
-            break;
-        case napi_key_own_only:
-            filter = static_cast<uint32_t>(filter | NATIVE_KEY_OWN_ONLY);
-            break;
-        default:
-            return nullptr;
-    }
-
-    switch (keyConversion) {
-        case napi_key_keep_numbers:
-            filter = static_cast<uint32_t>(filter | NATIVE_KEY_KEEP_NUMBERS);
-            break;
-        case napi_key_numbers_to_strings:
-            filter = static_cast<uint32_t>(filter | NATIVE_KEY_NUMBERS_TO_STRINGS);
-            break;
-        default:
-            return nullptr;
-    }
-
-    auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Global<ObjectRef> val = value_;
-    Local<ArrayRef> arrayVal = val->GetAllPropertyNames(vm, filter);
-    NativeChunk& chunk = engine_->GetNativeChunk();
-    return chunk.New<ArkNativeArray>(engine_, arrayVal);
-}
-
-bool ArkNativeObject::AssociateTypeTag(NapiTypeTag* typeTag)
-{
-    const char name[] = "ACENAPI_TYPETAG";
-    bool result = false;
-    bool hasPribate = false;
-    hasPribate = HasProperty(name);
-    if (!hasPribate) {
-        auto resultValue = engine_->CreateBigWords(
-            0, 2, reinterpret_cast<const uint64_t*>(typeTag)); // 2: Indicates that the number of elements is 2
-        result = this->SetProperty(name, resultValue);
-    }
-    return result;
-}
-
 bool ArkNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
 {
     const char name[] = "ACENAPI_TYPETAG";
@@ -496,14 +409,6 @@ bool ArkNativeObject::CheckTypeTag(NapiTypeTag* typeTag)
         }
     }
     return result;
-}
-
-void ArkNativeObject::SetModuleName(std::string moduleName)
-{
-    NativeChunk& chunk = engine_->GetNativeChunk();
-    NativeValue* moduleValue = chunk.New<ArkNativeString>(engine_, moduleName.c_str(),
-        moduleName.size());
-    this->SetProperty(ArkNativeObject::PANDA_MODULE_NAME, moduleValue);
 }
 
 std::string ArkNativeObject::GetModuleName()

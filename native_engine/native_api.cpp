@@ -334,7 +334,7 @@ NAPI_EXTERN napi_status napi_create_symbol(napi_env env, napi_value description,
 }
 
 static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
-    {
+{
 #ifdef ENABLE_HITRACE
 //        if (ArkNativeEngine::napiProfilerEnabled) {
             EcmaVM *vm = runtimeInfo->GetVM();
@@ -346,16 +346,16 @@ static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo
             StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
 //        }
 #endif
-    }
+}
 
-    static inline void FinishNapiProfilerTrace()
-    {
+static inline void FinishNapiProfilerTrace()
+{
 #ifdef ENABLE_HITRACE
 //        if (ArkNativeEngine::napiProfilerEnabled) {
             FinishTrace(HITRACE_TAG_ACE);
 //        }
 #endif
-    }
+}
 
 Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 {
@@ -1095,7 +1095,7 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     return fn;
 }
 
-bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiNativePropertyDescriptor propertyDescriptor)
+bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_NativePropertyDescriptor propertyDescriptor)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -1164,7 +1164,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
     Local<panda::ObjectRef> nativeObject = nativeValue->ToObject(vm);
 
     for (size_t i = 0; i < property_count; i++) {
-        NapiNativePropertyDescriptor property;
+        Napi_NativePropertyDescriptor property;
         property.utf8name = properties[i].utf8name;
         property.name = properties[i].name;
         property.method = reinterpret_cast<NapiNativeCallback>(properties[i].method);
@@ -1385,7 +1385,7 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
 }
 
 Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
-    void* data, const NapiNativePropertyDescriptor* properties, size_t length)
+    void* data, const Napi_NativePropertyDescriptor* properties, size_t length)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
@@ -1447,7 +1447,7 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
     CHECK_ARG(env, result);
 
     auto callback = reinterpret_cast<NapiNativeCallback>(constructor);
-    auto nativeProperties = reinterpret_cast<const NapiNativePropertyDescriptor*>(properties);
+    auto nativeProperties = reinterpret_cast<const Napi_NativePropertyDescriptor*>(properties);
 
     size_t nameLength = std::min(length, strlen(utf8name));
     char newName[nameLength + 1];
@@ -3262,16 +3262,17 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env, napi_value js_obj
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, finalize_cb);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
-    auto obj = nativeValue->ToObject(vm);
-//    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+    NativeReference* reference = nullptr;
     if (result != nullptr) {
-        NativeReference* ref = nullptr;
-        ref = new NativeReference(engine, obj, 1, false, nullptr, nullptr, nullptr, nullptr);
-        *result = reinterpret_cast<napi_ref>(ref);
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        reference = new NativeReference(engine, nativeValue, 1, false, callback, native_object, finalize_hint);
+        *result = reinterpret_cast<napi_ref>(reference);
+    } else {
+        auto engine = reinterpret_cast<NativeEngine*>(env);
+        reference = new NativeReference(engine, nativeValue, 0, true, callback, native_object, finalize_hint);
     }
     return napi_clear_last_error(env);
 }

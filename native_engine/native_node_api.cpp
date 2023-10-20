@@ -13,12 +13,26 @@
  * limitations under the License.
  */
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
 #include "native_engine/native_engine.h"
 #include "utils/log.h"
 
+using panda::StringRef;
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
+
+inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+{
+    return reinterpret_cast<napi_value>(*local);
+}
+
+inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+{
+    Local<panda::JSValueRef> local;
+    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    return local;
+}
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
 {
@@ -103,13 +117,19 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
+    auto asyncResource = LocalValueFromJsValue(async_resource);
+    auto asyncResourceName = LocalValueFromJsValue(async_resource_name);
     auto asyncExecute = reinterpret_cast<NativeAsyncExecuteCallback>(execute);
     auto asyncComplete = reinterpret_cast<NativeAsyncCompleteCallback>(complete);
-
-    auto asyncWork = engine->CreateAsyncWork(asyncResource, asyncResourceName, asyncExecute, asyncComplete, data);
-
+     (void)asyncResource;
+     (void)asyncResourceName;
+     char name[64] = {0}; // 64:NAME_BUFFER_SIZE
+     if (!asyncResourceName->IsNull()) {
+        auto nativeString = asyncResourceName->ToString(engine->GetEcmaVm());
+        int copied = nativeString->WriteUtf8(name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
+        name[copied] = '\0';
+    }
+    auto asyncWork  = new NativeAsyncWork(engine, asyncExecute, asyncComplete, name, data);
     *result = reinterpret_cast<napi_async_work>(asyncWork);
     return napi_status::napi_ok;
 }

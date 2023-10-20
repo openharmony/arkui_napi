@@ -148,35 +148,9 @@ public:
 
     virtual NativeValue* CreateNull() = 0;
     virtual NativeValue* CreateUndefined() = 0;
-    virtual NativeValue* CreateBoolean(bool value) = 0;
-    virtual NativeValue* CreateNumber(int32_t value) = 0;
-    virtual NativeValue* CreateNumber(uint32_t value) = 0;
-    virtual NativeValue* CreateNumber(int64_t value) = 0;
-    virtual NativeValue* CreateNumber(double value) = 0;
-    virtual NativeValue* CreateBigInt(int64_t value) = 0;
-    virtual NativeValue* CreateBigInt(uint64_t value) = 0;
-    virtual NativeValue* CreateString(const char* value, size_t length) = 0;
-    virtual NativeValue* CreateString16(const char16_t* value, size_t length) = 0;
-
     virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
-    virtual NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint,
-        size_t nativeBindingSize = 0) = 0;
-
     virtual NativeValue* CreateObject() = 0;
     virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
-    virtual NativeValue* CreateArray(size_t length) = 0;
-    virtual NativeValue* CreateBuffer(void** value, size_t length) = 0;
-    virtual NativeValue* CreateBufferCopy(void** value, size_t length, const void* data) = 0;
-    virtual NativeValue* CreateBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint) = 0;
-    virtual NativeValue* CreateArrayBuffer(void** value, size_t length) = 0;
-    virtual NativeValue* CreateArrayBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint) = 0;
-
-    virtual NativeValue* CreateTypedArray(NativeTypedArrayType type,
-                                          NativeValue* value,
-                                          size_t length,
-                                          size_t offset) = 0;
-    virtual NativeValue* CreateDataView(NativeValue* value, size_t length, size_t offset) = 0;
-    virtual NativeValue* CreatePromise(NativeDeferred** deferred) = 0;
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
     virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
@@ -198,11 +172,6 @@ public:
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
-    virtual NativeValue* DefineClass(const char* name,
-                                     NativeCallback callback,
-                                     void* data,
-                                     const NativePropertyDescriptor* properties,
-                                     size_t length) = 0;
 
     virtual NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const *argv, size_t argc) = 0;
 
@@ -245,7 +214,7 @@ public:
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON) = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false) = 0;
+        bool isPrivate = false, bool isFullGC = true) = 0;
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) = 0;
@@ -350,8 +319,6 @@ public:
     virtual void SetHostEngine(NativeEngine* engine);
     virtual NativeEngine* GetHostEngine() const;
 
-    virtual NativeValue* CreateDate(double value) = 0;
-    virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) = 0;
     using CleanupCallback = CleanupHookCallback::Callback;
     virtual void AddCleanupHook(CleanupCallback fun, void* arg);
     virtual void RemoveCleanupHook(CleanupCallback fun, void* arg);
@@ -379,6 +346,7 @@ public:
     virtual size_t GetArrayBufferSize() = 0;
     virtual size_t GetHeapTotalSize() = 0;
     virtual size_t GetHeapUsedSize() = 0;
+    virtual size_t GetHeapLimitSize() = 0;
     virtual void NotifyApplicationState(bool inBackground) = 0;
     virtual void NotifyIdleStatusControl(std::function<void(bool)> callback) = 0;
     virtual void NotifyIdleTime(int idleMicroSec) = 0;

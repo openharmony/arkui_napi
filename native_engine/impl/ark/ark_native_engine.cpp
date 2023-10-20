@@ -25,19 +25,8 @@
 
 #include "native_engine/native_property.h"
 
-#include "native_value/ark_native_array.h"
-#include "native_value/ark_native_array_buffer.h"
-#include "native_value/ark_native_buffer.h"
-#include "native_value/ark_native_big_int.h"
-#include "native_value/ark_native_boolean.h"
-#include "native_value/ark_native_data_view.h"
-#include "native_value/ark_native_external.h"
 #include "native_value/ark_native_function.h"
-#include "native_value/ark_native_number.h"
 #include "native_value/ark_native_object.h"
-#include "native_value/ark_native_string.h"
-#include "native_value/ark_native_typed_array.h"
-#include "native_value/ark_native_date.h"
 
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
@@ -66,7 +55,23 @@ using panda::SymbolRef;
 using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
+using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
+static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
+static const auto PANDA_MODULE_NAME_LEN = 32;
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+static constexpr uint32_t DEC_TO_INT = 100;
+static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
+static constexpr int TIME_OUT = 20;
+static size_t g_checkInterval = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.checkinterval", 60);
+static constexpr int DEFAULT_SLEEP_TIME = 100000; //poll every 0.1s
+static bool g_enableProperty = OHOS::system::GetBoolParameter("persist.ark.leak.enableproperty", true);
+static uint64_t g_lastHeapDumpTime = 0;
+static bool g_debugLeak = OHOS::system::GetBoolParameter("debug.arkengine.tags.enableleak", false);
+static constexpr uint64_t HEAP_DUMP_REPORT_INTERVAL = 24 * 3600 * 1000;
+static bool g_needStop = false;
+static constexpr uint64_t SEC_TO_MILSEC = 1000;
+#endif
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 #endif
@@ -84,6 +89,18 @@ Local<JSValueRef> NapiValueToLocalValue(napi_value v)
     return result.ToLocal(engine->GetEcmaVm());
 }
 
+inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+{
+    return reinterpret_cast<napi_value>(*local);
+}
+
+inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+{
+    Local<panda::JSValueRef> local;
+    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    return local;
+}
+
 struct MoudleNameLocker {
     explicit MoudleNameLocker(std::string moduleName)
     {
@@ -98,6 +115,16 @@ struct MoudleNameLocker {
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEngine), vm_(vm), topScope_(vm)
 {
     HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    if (g_enableProperty) {
+        std::call_once(flag_, [this] {
+            if (threadJsHeap_ == nullptr) {
+                threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
+                HILOG_ERROR("JsHeapStart is OK");
+            }
+        });
+    }
+#endif
 #ifdef ENABLE_HITRACE
     if (!ArkNativeEngine::napiProfilerParamReaded) {
         char napiProfilerParam[NAPI_PROFILER_PARAM_SIZE] = {0};
@@ -187,7 +214,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                             return scope.Escape(exports);
                         }
                         NativeScope* nativeScope = scopeManager->Open();
-                        NativeValue* exportObject = arkNativeEngine->CreateObject();
+                        Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
                         if (!arkNativeEngine) {
                             HILOG_ERROR("init module failed");
                             scopeManager->Close(nativeScope);
@@ -196,14 +223,13 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
 #ifdef ENABLE_HITRACE
                         StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
 #endif
-                        ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
                         arkNativeEngine->SetModuleName(exportObj, module->name);
-                        module->registerCallback(arkNativeEngine, exportObject);
+                        module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
+                                                JsValueFromLocalValue(exportObj));
 #ifdef ENABLE_HITRACE
                         FinishTrace(HITRACE_TAG_ACE);
 #endif
-                        Global<JSValueRef> globalExports = *exportObject;
-                        exports = globalExports.ToLocal(ecmaVm);
+                        exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                         scopeManager->Close(nativeScope);
                     } else {
@@ -241,18 +267,17 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                         return scope.Escape(exports);
                     }
                     NativeScope* nativeScope = scopeManager->Open();
-                    NativeValue* exportObject = arkNativeEngine->CreateObject();
-                    if (exportObject != nullptr) {
+                    Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
+                    if (!exportObj->IsNull()) {
                         if (!arkNativeEngine) {
                             HILOG_ERROR("exportObject is nullptr");
                             scopeManager->Close(nativeScope);
                             return scope.Escape(exports);
                         }
-                        ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
                         arkNativeEngine->SetModuleName(exportObj, module->name);
-                        module->registerCallback(arkNativeEngine, exportObject);
-                        Global<JSValueRef> globalExports = *exportObject;
-                        exports = globalExports.ToLocal(ecmaVm);
+                        module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
+                                                JsValueFromLocalValue(exportObj));
+                        exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                         scopeManager->Close(nativeScope);
                     } else {
@@ -299,11 +324,217 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    // Free threadJsHeap_
+    g_needStop = true;
+    if (threadJsHeap_->joinable()) {
+        threadJsHeap_->join();
+    }
+#endif
 }
 
 const EcmaVM* ArkNativeEngine::GetEcmaVm() const
 {
     return vm_;
+}
+
+static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
+{
+#ifdef ENABLE_HITRACE
+        if (ArkNativeEngine::napiProfilerEnabled) {
+            EcmaVM *vm = runtimeInfo->GetVM();
+            LocalScope scope(vm);
+            Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+            Local<panda::StringRef> nameRef = fn->GetName(vm);
+            char threadName[128];
+            prctl(PR_GET_NAME, threadName);
+            StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+        }
+#endif
+}
+
+static inline void FinishNapiProfilerTrace()
+{
+#ifdef ENABLE_HITRACE
+    if (ArkNativeEngine::napiProfilerEnabled) {
+        FinishTrace(HITRACE_TAG_ACE);
+    }
+#endif
+}
+
+Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
+{
+    EcmaVM *vm = runtimeInfo->GetVM();
+    panda::EscapeLocalScope scope(vm);
+    auto info = reinterpret_cast<NapiNativeFunctionInfo*>(runtimeInfo->GetData());
+    auto engine = reinterpret_cast<NativeEngine*>(info->env);
+    auto cb = info->callback;
+    if (engine == nullptr) {
+        HILOG_ERROR("native engine is null");
+        return JSValueRef::Undefined(vm);
+    }
+
+    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
+    NapiNativeCallbackInfo cbInfo = { 0 };
+    StartNapiProfilerTrace(runtimeInfo);
+    cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
+    cbInfo.function = JsValueFromLocalValue(runtimeInfo->GetNewTargetRef());
+    cbInfo.argc = static_cast<size_t>(runtimeInfo->GetArgsNumber());
+    cbInfo.argv = nullptr;
+    cbInfo.functionInfo = info;
+    if (cbInfo.argc > 0) {
+        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+            cbInfo.argv = new napi_value [cbInfo.argc];
+        }
+        for (size_t i = 0; i < cbInfo.argc; i++) {
+            cbInfo.argv[i] = JsValueFromLocalValue(runtimeInfo->GetCallArgRef(i));
+        }
+    }
+
+    if (JSNApi::IsMixedDebugEnabled(vm)) {
+        JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
+    }
+
+    napi_value result = nullptr;
+    if (cb != nullptr) {
+        result = cb(info->env, &cbInfo);
+    }
+
+    if (cbInfo.argv != nullptr) {
+        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+            delete[] cbInfo.argv;
+        }
+        cbInfo.argv = nullptr;
+    }
+
+    Local<panda::JSValueRef> localRet = panda::JSValueRef::Undefined(vm);
+    if (result != nullptr) {
+        localRet = LocalValueFromJsValue(result);
+    }
+
+    FinishNapiProfilerTrace();
+    if (localRet.IsEmpty()) {
+        return JSValueRef::Undefined(vm);
+    }
+    return localRet;
+}
+
+Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name, NapiNativeCallback cb, void* value)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    NapiNativeFunctionInfo* funcInfo = NapiNativeFunctionInfo::CreateNewInstance();
+    if (funcInfo == nullptr) {
+        HILOG_ERROR("funcInfo is nullptr");
+        return JSValueRef::Undefined(vm);
+    }
+    funcInfo->env = env;
+    funcInfo->callback = cb;
+    funcInfo->data = value;
+
+    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
+                                             [](void* externalPointer, void* data) {
+                                                auto info = reinterpret_cast<NapiNativeFunctionInfo*>(data);
+                                                if (info != nullptr) {
+                                                    delete info;
+                                                }
+                                             },
+                                             reinterpret_cast<void*>(funcInfo), true);
+    Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, name);
+    fn->SetName(vm, fnName);
+    return fn;
+}
+
+Local<JSValueRef> GetProperty(EcmaVM* vm, Local<panda::ObjectRef> &obj, const char* name)
+{
+
+    Local<StringRef> key = StringRef::NewFromUtf8(vm, name);
+    Local<JSValueRef> val = obj->Get(vm, key);
+    return val;
+}
+
+void GetCString(EcmaVM* vm, Local<StringRef> str, char* buffer, size_t size, size_t* length)
+{
+    if (length == nullptr) {
+        return;
+    }
+    if (buffer == nullptr) {
+        *length = str->Utf8Length(vm) - 1;
+    } else if (size != 0) {
+        int copied = str->WriteUtf8(buffer, size - 1, true) - 1;
+        buffer[copied] = '\0';
+        *length = copied;
+    } else {
+        *length = 0;
+    }
+}
+
+std::string NapiGetModuleName(napi_env env, Local<panda::ObjectRef> &obj)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    std::string moduleName("");
+    auto nativeModuleName = GetProperty(vm, obj, PANDA_MODULE_NAME);
+    if (nativeModuleName->IsString()) {
+        char arrayName[PANDA_MODULE_NAME_LEN] = {0};
+        size_t len = 0;
+        GetCString(vm, nativeModuleName, arrayName, PANDA_MODULE_NAME_LEN, &len);
+        moduleName += arrayName;
+        moduleName += ".";
+    }
+    return moduleName;
+}
+
+bool NapiNativeDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_NativePropertyDescriptor propertyDescriptor)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    bool result = false;
+    Local<panda::StringRef> propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
+
+    bool writable = (propertyDescriptor.attributes & NATIVE_WRITABLE) != 0;
+    bool enumable = (propertyDescriptor.attributes & NATIVE_ENUMERABLE) != 0;
+    bool configable = (propertyDescriptor.attributes & NATIVE_CONFIGURABLE) != 0;
+
+    std::string fullName("");
+#ifdef ENABLE_HITRACE
+    fullName += NapiGetModuleName(env, obj);
+#endif
+    if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
+        Local<panda::JSValueRef> localGetter = panda::JSValueRef::Undefined(vm);
+        Local<panda::JSValueRef> localSetter = panda::JSValueRef::Undefined(vm);
+
+        if (propertyDescriptor.getter != nullptr) {
+            fullName += "getter";
+            localGetter = NapiNativeCreateFunction(env, fullName.c_str(),
+                                             propertyDescriptor.getter, propertyDescriptor.data);
+        }
+        if (propertyDescriptor.setter != nullptr) {
+            fullName += "setter";
+            localSetter = NapiNativeCreateFunction(env, fullName.c_str(),
+                                             propertyDescriptor.setter, propertyDescriptor.data);
+        }
+
+        PropertyAttribute attr(panda::JSValueRef::Undefined(vm), false, enumable, configable);
+        result = obj->SetAccessorProperty(vm, propertyName, localGetter, localSetter, attr);
+    } else if (propertyDescriptor.method != nullptr) {
+        fullName += propertyDescriptor.utf8name;
+        Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
+                                             propertyDescriptor.method, propertyDescriptor.data);
+        PropertyAttribute attr(cbObj, writable, enumable, configable);
+        result = obj->DefineProperty(vm, propertyName, attr);
+    } else {
+        Local<panda::JSValueRef> val = LocalValueFromJsValue(propertyDescriptor.value);
+
+        PropertyAttribute attr(val, writable, enumable, configable);
+        result = obj->DefineProperty(vm, propertyName, attr);
+    }
+    Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
+    if (!excep.IsNull()) {
+        HILOG_ERROR("ArkNativeObject::DefineProperty occur Exception");
+        panda::JSNApi::GetAndClearUncaughtException(vm);
+    }
+    return result;
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
@@ -315,25 +546,27 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     NativeModule* module = moduleManager->LoadNativeModule(moduleName.c_str(), nullptr, isAppModule);
     if (module != nullptr) {
-        NativeChunk& chunk = GetNativeChunk();
-        NativeValue* idValue = chunk.New<ArkNativeString>(this, id.c_str(), id.size());
-        NativeValue* paramValue = chunk.New<ArkNativeString>(this, param.c_str(), param.size());
-        NativeValue* exportObject = chunk.New<ArkNativeObject>(this);
-
-        NativePropertyDescriptor idProperty, paramProperty;
+        Local<StringRef> idStr = StringRef::NewFromUtf8(vm_, id.c_str(), id.size());
+        napi_value idValue = JsValueFromLocalValue(idStr);
+        Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
+        napi_value paramValue = JsValueFromLocalValue(paramStr);
+        Local<ObjectRef> exportObj = ObjectRef::New(vm_);
+        Napi_NativePropertyDescriptor idProperty, paramProperty;
         idProperty.utf8name = "id";
         idProperty.value = idValue;
         paramProperty.utf8name = "param";
         paramProperty.value = paramValue;
 
-        ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
+#ifdef ENABLE_HITRACE
+    if (ArkNativeEngine::napiProfilerEnabled) {
         SetModuleName(exportObj, module->name);
-        exportObj->DefineProperty(idProperty);
-        exportObj->DefineProperty(paramProperty);
+    }
+#endif
+        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, idProperty);
+        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
         MoudleNameLocker nameLocker(module->name);
-        module->registerCallback(this, exportObject);
-
-        napi_value nExport = reinterpret_cast<napi_value>(exportObject);
+        module->registerCallback(reinterpret_cast<napi_env>(this), JsValueFromLocalValue(exportObj));
+        napi_value nExport = JsValueFromLocalValue(exportObj);
         napi_value exportInstance = nullptr;
         napi_status status = napi_get_named_property(
             reinterpret_cast<napi_env>(this), nExport, instanceName.c_str(), &exportInstance);
@@ -345,9 +578,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
         if (status != napi_ok) {
             HILOG_ERROR("GetModuleFromName napi_unwrap status != napi_ok");
         }
-
-        Global<ObjectRef> globalExports = *exportObject;
-        exports = globalExports.ToLocal(vm_);
+        exports = exportObj;
     }
     return scope.Escape(exports);
 }
@@ -361,29 +592,40 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
     NativeModule* module =
         moduleManager->LoadNativeModule(moduleName.c_str(), path.empty() ? nullptr : path.c_str(), isAppModule);
     if (module != nullptr) {
-        NativeValue* exportObject = new ArkNativeObject(this);
-        ArkNativeObject* exportObj = reinterpret_cast<ArkNativeObject*>(exportObject);
-
-        NativePropertyDescriptor paramProperty, instanceProperty;
-
-        NativeValue* paramValue =
-            new ArkNativeString(this, param.c_str(), param.size());
+        Local<ObjectRef> exportObj = ObjectRef::New(vm_);
+        Napi_NativePropertyDescriptor paramProperty, instanceProperty;
+        Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
+        napi_value paramValue = JsValueFromLocalValue(paramStr);
         paramProperty.utf8name = "param";
         paramProperty.value = paramValue;
+        Local<ObjectRef> instanceValue = ObjectRef::New(vm_);
+        Global<ObjectRef> value(vm_, instanceValue);
+        Local<StringRef> key = StringRef::GetNapiWrapperString(vm_);
+        if (instance == nullptr && value->Has(vm_, key)) {
+            Local<ObjectRef> wrapper = value->Get(vm_, key);
+            auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+            wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, 0);
+            value->Delete(vm_, key);
+            delete ref;
+        } else {
+            Local<ObjectRef> object = ObjectRef::New(vm_);
+            NativeReference* ref = nullptr;
+            ref = new NativeReference(this, value.ToLocal(vm_), 0, true, nullptr, instance, nullptr);
 
-        auto instanceValue = new ArkNativeObject(this);
-        instanceValue->SetNativePointer(instance, nullptr, nullptr);
+            object->SetNativePointerFieldCount(1);
+            object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
+            PropertyAttribute attr(object, true, false, true);
+            value->DefineProperty(vm_, key, attr);
+        }
         instanceProperty.utf8name = instanceName.c_str();
-        instanceProperty.value = instanceValue;
-
+        instanceProperty.value = JsValueFromLocalValue(instanceValue);
         SetModuleName(exportObj, module->name);
-        exportObj->DefineProperty(paramProperty);
-        exportObj->DefineProperty(instanceProperty);
+        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
+        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, instanceProperty);
 
         MoudleNameLocker nameLocker(module->name);
-        module->registerCallback(this, exportObject);
-        Global<ObjectRef> globalExports = *exportObject;
-        exports = globalExports.ToLocal(vm_);
+        module->registerCallback(reinterpret_cast<napi_env>(this), JsValueFromLocalValue(exportObj));
+        exports = exportObj;
     }
     return scope.Escape(exports);
 }
@@ -395,11 +637,13 @@ void ArkNativeEngine::Loop(LoopMode mode, bool needSync)
     panda::JSNApi::ExecutePendingJob(vm_);
 }
 
-inline void ArkNativeEngine::SetModuleName(ArkNativeObject *nativeObj, std::string moduleName)
+inline void ArkNativeEngine::SetModuleName(Local<ObjectRef> &nativeObj, std::string moduleName)
 {
 #ifdef ENABLE_HITRACE
     if (ArkNativeEngine::napiProfilerEnabled) {
-        nativeObj->SetModuleName(moduleName);
+        Local<StringRef> moduleNameStr = StringRef::NewFromUtf8(vm_, moduleName.c_str(), moduleName.size());
+        Local<StringRef> key = StringRef::NewFromUtf8(vm_, NativeObject::PANDA_MODULE_NAME);
+        nativeObj->Set(vm_, key, moduleNameStr);
     }
 #endif
 }
@@ -425,63 +669,12 @@ NativeValue* ArkNativeEngine::CreateUndefined()
     return GetNativeChunk().New<ArkNativeValue>(this, value);
 }
 
-NativeValue* ArkNativeEngine::CreateBoolean(bool value)
-{
-    return GetNativeChunk().New<ArkNativeBoolean>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateNumber(int32_t value)
-{
-    return GetNativeChunk().New<ArkNativeNumber>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateNumber(uint32_t value)
-{
-    return GetNativeChunk().New<ArkNativeNumber>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateNumber(int64_t value)
-{
-    return GetNativeChunk().New<ArkNativeNumber>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateNumber(double value)
-{
-    return GetNativeChunk().New<ArkNativeNumber>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateBigInt(int64_t value)
-{
-    return GetNativeChunk().New<ArkNativeBigInt>(this, value);
-}
-
-NativeValue* ArkNativeEngine::CreateBigInt(uint64_t value)
-{
-    return GetNativeChunk().New<ArkNativeBigInt>(this, value, true);
-}
-
-NativeValue* ArkNativeEngine::CreateString(const char* value, size_t length)
-{
-    return GetNativeChunk().New<ArkNativeString>(this, value, length);
-}
-
-NativeValue* ArkNativeEngine::CreateString16(const char16_t* value, size_t length)
-{
-    return GetNativeChunk().New<ArkNativeString>(this, value, length);
-}
-
 NativeValue* ArkNativeEngine::CreateSymbol(NativeValue* value)
 {
     LocalScope scope(vm_);
     Global<StringRef> str = *value;
     Local<SymbolRef> symbol = SymbolRef::New(vm_, str.ToLocal(vm_));
     return GetNativeChunk().New<ArkNativeValue>(this, symbol);
-}
-
-NativeValue* ArkNativeEngine::CreateExternal(void* value, NativeFinalize callback, void* hint,
-    size_t nativeBindingSize)
-{
-    return GetNativeChunk().New<ArkNativeExternal>(this, value, callback, hint, nativeBindingSize);
 }
 
 NativeValue* ArkNativeEngine::CreateObject()
@@ -492,82 +685,6 @@ NativeValue* ArkNativeEngine::CreateObject()
 NativeValue* ArkNativeEngine::CreateFunction(const char* name, size_t length, NativeCallback cb, void* value)
 {
     return GetNativeChunk().New<ArkNativeFunction>(this, name, length, cb, value);
-}
-
-NativeValue* ArkNativeEngine::CreateArray(size_t length)
-{
-    return GetNativeChunk().New<ArkNativeArray>(this, length);
-}
-
-NativeValue* ArkNativeEngine::CreateArrayBuffer(void** value, size_t length)
-{
-    return GetNativeChunk().New<ArkNativeArrayBuffer>(this, (uint8_t**)value, length);
-}
-
-NativeValue* ArkNativeEngine::CreateArrayBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint)
-{
-    return GetNativeChunk().New<ArkNativeArrayBuffer>(this, (uint8_t*)value, length, cb, hint);
-}
-
-NativeValue* ArkNativeEngine::CreateTypedArray(
-    NativeTypedArrayType type, NativeValue* value, size_t length, size_t offset)
-{
-    LocalScope scope(vm_);
-    Global<ArrayBufferRef> globalBuffer = *value;
-    Local<ArrayBufferRef> buffer = globalBuffer.ToLocal(vm_);
-    Local<TypedArrayRef> typedArray(JSValueRef::Undefined(vm_));
-
-    switch (type) {
-        case NATIVE_INT8_ARRAY:
-            typedArray = panda::Int8ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_UINT8_ARRAY:
-            typedArray = panda::Uint8ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_UINT8_CLAMPED_ARRAY:
-            typedArray = panda::Uint8ClampedArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_INT16_ARRAY:
-            typedArray = panda::Int16ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_UINT16_ARRAY:
-            typedArray = panda::Uint16ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_INT32_ARRAY:
-            typedArray = panda::Int32ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_UINT32_ARRAY:
-            typedArray = panda::Uint32ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_FLOAT32_ARRAY:
-            typedArray = panda::Float32ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_FLOAT64_ARRAY:
-            typedArray = panda::Float64ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_BIGINT64_ARRAY:
-            typedArray = panda::BigInt64ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        case NATIVE_BIGUINT64_ARRAY:
-            typedArray = panda::BigUint64ArrayRef::New(vm_, buffer, offset, length);
-            break;
-        default:
-            return nullptr;
-    }
-    return GetNativeChunk().New<ArkNativeTypedArray>(this, typedArray);
-}
-
-NativeValue* ArkNativeEngine::CreateDataView(NativeValue* value, size_t length, size_t offset)
-{
-    return GetNativeChunk().New<ArkNativeDataView>(this, value, length, offset);
-}
-
-NativeValue* ArkNativeEngine::CreatePromise(NativeDeferred** deferred)
-{
-    LocalScope scope(vm_);
-    Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
-    *deferred = new ArkNativeDeferred(this, capability);
-    return GetNativeChunk().New<ArkNativeObject>(this, capability->GetPromise(vm_));
 }
 
 NativeValue* ArkNativeEngine::CreateError(NativeValue* code, NativeValue* message)
@@ -773,36 +890,6 @@ void ArkNativeEngine::SetPackagePath(const std::string appLibPathKey, const std:
     }
 }
 
-NativeValue* ArkNativeEngine::DefineClass(const char* name, NativeCallback callback,
-    void* data, const NativePropertyDescriptor* properties, size_t length)
-{
-    LocalScope scope(vm_);
-    std::string className(name);
-    if (ArkNativeEngine::napiProfilerEnabled) {
-        className = ArkNativeEngine::tempModuleName_ + "." + name;
-    }
-    NativeChunk& chunk = GetNativeChunk();
-    auto classConstructor = chunk.New<ArkNativeFunction>(this, className.c_str(), callback, data);
-    SetModuleName(classConstructor, className);
-    auto classPrototype = classConstructor->GetFunctionPrototype();
-
-    for (size_t i = 0; i < length; i++) {
-        if (properties[i].attributes & NATIVE_STATIC) {
-            classConstructor->DefineProperty(properties[i]);
-        } else {
-            if (classPrototype == nullptr) {
-                HILOG_ERROR("ArkNativeEngineImpl::Class's prototype is null");
-                continue;
-            }
-            ArkNativeObject* arkNativeobj = static_cast<ArkNativeObject*>(classPrototype);
-            SetModuleName(arkNativeobj, className);
-            arkNativeobj->DefineProperty(properties[i]);
-        }
-    }
-
-    return classConstructor;
-}
-
 NativeValue* ArkNativeEngine::CreateInstance(NativeValue* constructor, NativeValue* const *argv, size_t argc)
 {
     if (constructor == nullptr) {
@@ -833,7 +920,7 @@ NativeReference* ArkNativeEngine::CreateReference(NativeValue* value, uint32_t i
     NativeFinalize callback, void* data, void* hint)
 {
     Global<JSValueRef> arkValue = *value;
-    return new NativeReference(this, arkValue.ToLocal(vm_), initialRefcount, false);
+    return new NativeReference(this, arkValue.ToLocal(vm_), initialRefcount, false, callback, data, hint);
 }
 
 bool ArkNativeEngine::IsExceptionPending() const
@@ -1078,31 +1165,31 @@ NativeValue* ArkNativeEngine::ArkValueToNativeValue(ArkNativeEngine* engine, Loc
     if (value->IsNull() || value->IsUndefined() || value->IsSymbol()) {
         result = chunk.New<ArkNativeValue>(engine, value);
     } else if (value->IsNumber()) {
-        result = chunk.New<ArkNativeNumber>(engine, value);
+//        result = chunk.New<ArkNativeNumber>(engine, value);
     } else if (value->IsString()) {
-        result = chunk.New<ArkNativeString>(engine, value);
+//        result = chunk.New<ArkNativeString>(engine, value);
     } else if (value->IsArray(engine->GetEcmaVm())) {
-        result = chunk.New<ArkNativeArray>(engine, value);
+//        result = chunk.New<ArkNativeArray>(engine, value);
     } else if (value->IsFunction()) {
         result = chunk.New<ArkNativeFunction>(engine, value);
     } else if (value->IsArrayBuffer()) {
-        result = chunk.New<ArkNativeArrayBuffer>(engine, value);
+//        result = chunk.New<ArkNativeArrayBuffer>(engine, value);
     } else if (value->IsBuffer()) {
-        result = chunk.New<ArkNativeBuffer>(engine, value);
+//        result = chunk.New<ArkNativeBuffer>(engine, value);
     } else if (value->IsDataView()) {
-        result = chunk.New<ArkNativeDataView>(engine, value);
+//        result = chunk.New<ArkNativeDataView>(engine, value);
     } else if (value->IsTypedArray()) {
-        result = chunk.New<ArkNativeTypedArray>(engine, value);
+//        result = chunk.New<ArkNativeTypedArray>(engine, value);
     } else if (value->IsNativePointer()) {
-        result = chunk.New<ArkNativeExternal>(engine, value);
+//        result = chunk.New<ArkNativeExternal>(engine, value);
     } else if (value->IsDate()) {
-        result = chunk.New<ArkNativeDate>(engine, value);
+//        result = chunk.New<ArkNativeDate>(engine, value);
     } else if (value->IsBigInt()) {
-        result = chunk.New<ArkNativeBigInt>(engine, value);
+//       result = chunk.New<ArkNativeBigInt>(engine, value);
     } else if (value->IsObject() || value->IsPromise()) {
         result = chunk.New<ArkNativeObject>(engine, value);
     } else if (value->IsBoolean()) {
-        result = chunk.New<ArkNativeBoolean>(engine, value);
+//        result = chunk.New<ArkNativeBoolean>(engine, value);
     } else {
         result = chunk.New<ArkNativeValue>(engine, value);
     }
@@ -1156,41 +1243,6 @@ bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
     LocalScope scope(vm_);
     bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);
     return ret;
-}
-
-NativeValue* ArkNativeEngine::CreateBuffer(void** value, size_t length)
-{
-    return GetNativeChunk().New<ArkNativeBuffer>(this, (uint8_t**)value, length);
-}
-
-NativeValue* ArkNativeEngine::CreateBufferCopy(void** value, size_t length, const void* data)
-{
-    return GetNativeChunk().New<ArkNativeBuffer>(this, (uint8_t**)value, length, (uint8_t*)data);
-}
-
-NativeValue* ArkNativeEngine::CreateBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint)
-{
-    return GetNativeChunk().New<ArkNativeBuffer>(this, (uint8_t*)value, length, cb, hint);
-}
-
-NativeValue* ArkNativeEngine::CreateDate(double value)
-{
-    LocalScope scope(vm_);
-    return ArkValueToNativeValue(this, DateRef::New(vm_, value));
-}
-
-NativeValue* ArkNativeEngine::CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words)
-{
-    constexpr int bigintMod = 2; // 2 : used for even number judgment
-    bool sign = false;
-    if ((sign_bit % bigintMod) == 1) {
-        sign = true;
-    }
-    uint32_t size = (uint32_t)word_count;
-
-    LocalScope scope(vm_);
-    Local<JSValueRef> value = BigIntRef::CreateBigWords(vm_, sign, size, words);
-    return GetNativeChunk().New<ArkNativeBigInt>(this, value);
 }
 
 bool ArkNativeEngine::TriggerFatalException(NativeValue* error)
@@ -1264,10 +1316,10 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate)
+void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
 {
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate);
+        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate, false, isFullGC);
     }
     if (dumpFormat == DumpFormat::BINARY) {
         DFXJSNApi::DumpHeapSnapshot(vm_, 1, isVmMode, isPrivate);
@@ -1374,6 +1426,11 @@ size_t ArkNativeEngine::GetHeapUsedSize()
     return DFXJSNApi::GetHeapUsedSize(vm_);
 }
 
+size_t ArkNativeEngine::GetHeapLimitSize()
+{
+    return DFXJSNApi::GetHeapLimitSize(vm_);
+}
+
 void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
@@ -1440,6 +1497,12 @@ size_t ArkNativeEngine::GetHeapTotalSize()
 }
 
 size_t ArkNativeEngine::GetHeapUsedSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetHeapLimitSize()
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return 0;
@@ -1563,3 +1626,74 @@ void ArkNativeEngine::AllowCrossThreadExecution() const
 {
     JSNApi::AllowCrossThreadExecution(vm_);
 }
+
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+uint64_t ArkNativeEngine::GetCurrentTickMillseconds()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+void ArkNativeEngine::JudgmentDump(size_t limitSize)
+{
+    if (!limitSize) {
+        return;
+    }
+    size_t nowPrecent = GetHeapUsedSize() * DEC_TO_INT / limitSize;
+    if (g_debugLeak || (nowPrecent >= g_threshold && (g_lastHeapDumpTime == 0 ||
+        GetCurrentTickMillseconds() - g_lastHeapDumpTime > HEAP_DUMP_REPORT_INTERVAL))) {
+        HILOG_INFO("dumpheapSnapshot ready");
+        int pid = -1;
+        DFXJSNApi::GetHeapPrepare(vm_);
+        time_t startTime = time(nullptr);
+        g_lastHeapDumpTime = GetCurrentTickMillseconds();
+        if((pid = fork()) < 0) {
+            HILOG_ERROR("ready dumpheapSnapshot Fork error, err:%{public}d", errno);
+            sleep(g_checkInterval);
+            return;
+        }
+        if (pid == 0) {
+            AllowCrossThreadExecution();
+            DumpHeapSnapshot(true, DumpFormat::JSON, false, false);
+            HILOG_INFO("dumpheapSnapshot successful, now you can check some file");
+            _exit(0);
+        }
+        while (true) {
+            int status = 0;
+            pid_t p = waitpid(pid, &status, 0);
+            if (p < 0) {
+                HILOG_ERROR("dumpheapSnapshot Waitpid return p=%{public}d, err:%{public}d", p, errno);
+                break;
+            }
+            if (p == pid) {
+                HILOG_ERROR("dumpheapSnapshot dump process exited status is %{public}d", status);
+                break;
+            }
+            if (time(nullptr) > startTime + TIME_OUT) {
+                HILOG_ERROR("time out to wait child process, killing forkpid %{public}d", pid);
+                kill(pid, SIGKILL);
+                break;
+            }
+            usleep(DEFAULT_SLEEP_TIME);
+        }
+    }
+}
+
+void ArkNativeEngine::JsHeapStart()
+{
+    if (pthread_setname_np(pthread_self(), "JsHeapThread") != 0) {
+        HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
+    }
+    while (!g_needStop) {
+        uint64_t lastCheckTime = GetCurrentTickMillseconds();
+        while (GetCurrentTickMillseconds() - lastCheckTime < g_checkInterval * SEC_TO_MILSEC) {
+            if (g_needStop) {
+                return;
+            }
+            sleep(1);
+        }
+        size_t limitSize = GetHeapLimitSize();
+        JudgmentDump(limitSize);
+    }
+}
+#endif

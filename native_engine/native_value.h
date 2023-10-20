@@ -261,9 +261,6 @@ public:
 
     virtual void AddFinalizer(void* pointer, NativeFinalize cb, void* hint) = 0;
 
-    virtual NativeValue* GetPropertyNames() = 0;
-    virtual NativeValue* GetEnumerablePropertyNames() = 0;
-
     virtual NativeValue* GetPrototype() = 0;
 
     virtual bool DefineProperty(NativePropertyDescriptor propertyDescriptor) = 0;
@@ -284,10 +281,6 @@ public:
     virtual bool HasPrivateProperty(const char* name) = 0;
     virtual bool DeletePrivateProperty(const char* name) = 0;
 
-    virtual NativeValue* GetAllPropertyNames(
-        napi_key_collection_mode keyMode, napi_key_filter keyFilter, napi_key_conversion keyConversion) = 0;
-
-    virtual bool AssociateTypeTag(NapiTypeTag* typeTag) = 0;
     virtual bool CheckTypeTag(NapiTypeTag* typeTag) = 0;
     virtual void Freeze() = 0;
     virtual void Seal() = 0;
@@ -351,7 +344,6 @@ public:
 
     virtual void* GetBuffer() = 0;
     virtual size_t GetLength() = 0;
-    virtual NativeValue* GetArrayBuffer() = 0;
     virtual size_t GetOffset() = 0;
 };
 
