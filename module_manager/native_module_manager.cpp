@@ -403,15 +403,43 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     HILOG_INFO("create ld namespace, path: %{public}s", appLibPathMap_[moduleName]);
 }
 
+bool NativeModuleManager::CheckModuleRestricted(const std::string& moduleName)
+{
+    const std::string whiteList[] = {
+        "worker",
+    };
+
+    size_t listLen = sizeof(whiteList) / sizeof(whiteList[0]);
+    for (size_t i = 0; i < listLen; ++i) {
+        if (moduleName == whiteList[i]) {
+            HILOG_DEBUG("module %{public}s found in whitelist", moduleName.c_str());
+            return false;
+        }
+    }
+
+    HILOG_DEBUG("module %{public}s does not found in whitelist", moduleName.c_str());
+    return true;
+}
+
 NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
-    const char* path, bool isAppModule, bool internal, const char* relativePath)
+    const char* path, bool isAppModule, bool internal, const char* relativePath, bool isModuleRestricted)
 {
     if (moduleName == nullptr || relativePath == nullptr) {
         HILOG_ERROR("moduleName or relativePath is nullptr");
         return nullptr;
     }
 
-    HILOG_DEBUG("moduleName is %{public}s, path is %{public}s", moduleName, path);
+    HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, isModuleRestricted is %{public}d",
+                moduleName, path, isModuleRestricted);
+
+    // we only check system so in restricted runtime.
+    if (isModuleRestricted == true && isAppModule == false) {
+        if (CheckModuleRestricted(moduleName) == true) {
+            HILOG_WARN("module is not allowed to load.");
+            return nullptr;
+        }
+    }
+
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
         !moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
         HILOG_INFO("Block module name: %{public}s", moduleName);
@@ -437,10 +465,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     }
 #endif
 
-    if (pthread_mutex_lock(&mutex_) != 0) {
-        HILOG_ERROR("pthread_mutex_lock is failed");
-        return nullptr;
-    }
+    (void)pthread_mutex_lock(&mutex_);
 
 #ifdef ANDROID_PLATFORM
     NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str());
@@ -469,10 +494,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     }
 #endif
 
-    if (pthread_mutex_unlock(&mutex_) != 0) {
-        HILOG_ERROR("pthread_mutex_unlock is failed");
-        return nullptr;
-    }
+    (void) pthread_mutex_unlock(&mutex_);
 
     HILOG_DEBUG("load native module %{public}s", (nativeModule == nullptr) ? "failed" : "success");
     return nativeModule;
