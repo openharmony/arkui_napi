@@ -15,7 +15,6 @@
 
 #include "ark_native_engine.h"
 
-#include "ark_native_deferred.h"
 #include "native_reference.h"
 #include "scope_manager/native_scope_manager.h"
 

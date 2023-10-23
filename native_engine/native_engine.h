@@ -29,7 +29,6 @@
 #include "callback_scope_manager/native_callback_scope_manager.h"
 #include "module_manager/native_module_manager.h"
 #include "native_engine/native_async_work.h"
-#include "native_engine/native_deferred.h"
 #include "native_engine/native_reference.h"
 #include "native_engine/native_safe_async_work.h"
 #include "native_engine/native_value.h"
