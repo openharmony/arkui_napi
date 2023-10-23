@@ -570,7 +570,7 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
 }
 
-NativeValue* NativeEngine::RunScript(const char* path)
+napi_value NativeEngine::RunScript(const char* path)
 {
     std::vector<uint8_t> scriptContent;
     std::string pathStr(path);

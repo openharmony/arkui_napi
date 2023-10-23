@@ -51,8 +51,6 @@ enum class ForceExpandState : int32_t {
     FINISH_HIGH_SENSITIVE,
 };
 
-class ArkNativeObject;
-
 NAPI_EXPORT Local<JSValueRef> NapiValueToLocalValue(napi_value v);
 
 class SerializationData {
@@ -94,20 +92,20 @@ public:
     void Loop(LoopMode mode, bool needSync = false) override;
 
     // Get global native object value
-    NativeValue* GetGlobal() override;
+ //   NativeValue* GetGlobal() override;
     // Create native null value
-    NativeValue* CreateNull() override;
+//   NativeValue* CreateNull() override;
     // Create native undefined value
-    NativeValue* CreateUndefined() override;
+//    NativeValue* CreateUndefined() override;
     // Create native symbol value
-    NativeValue* CreateSymbol(NativeValue* value) override;
+//    NativeValue* CreateSymbol(NativeValue* value) override;
     // Create native object value
-    NativeValue* CreateObject() override;
+//    NativeValue* CreateObject() override;
     // Create native function value
-    NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
+//    NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
     // Create native error value
-    NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
+//    NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
@@ -117,20 +115,20 @@ public:
     bool IsProfiling() override;
     void* GetCurrentTaskInfo() const override;
     // Call function
-    NativeValue* CallFunction(NativeValue* thisVar,
+    NativeValue* CallFunction(napi_value thisVar,
                               NativeValue* function,
                               NativeValue* const* argv,
                               size_t argc) override;
     // Run script
-    NativeValue* RunScript(NativeValue* script) override;
-    NativeValue* RunScriptPath(const char* path) override;
+//    NativeValue* RunScript(NativeValue* script) override;
+    void* RunScriptPath(const char* path) override;
 
-    NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
-    bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
+     NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
+     bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
 
     // Run buffer script
     NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
-    NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
+    napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
     // Set lib path
     NAPI_EXPORT void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const* argv, size_t argc) override;
@@ -146,10 +144,10 @@ public:
     bool Throw(NativeErrorType type, const char* code, const char* message) override;
 
     void* CreateRuntime() override;
-    NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
-    NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
-    void DeleteSerializationData(NativeValue* value) const override;
-    NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
+//    NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
+ //   NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
+ //   void DeleteSerializationData(NativeValue* value) const override;
+//    NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
     static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
@@ -274,6 +272,8 @@ public:
     }
 
     static bool napiProfilerEnabled;
+
+    static void* GetNativePtrCallBack(void* data);
 
 private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);

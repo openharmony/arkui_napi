@@ -143,15 +143,15 @@ public:
     virtual void* GetJsEngine();
 
     virtual const EcmaVM* GetEcmaVm() const = 0;
-    virtual NativeValue* GetGlobal() = 0;
+  //  virtual NativeValue* GetGlobal() = 0;
 
-    virtual NativeValue* CreateNull() = 0;
-    virtual NativeValue* CreateUndefined() = 0;
-    virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
-    virtual NativeValue* CreateObject() = 0;
-    virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
+  //  virtual NativeValue* CreateNull() = 0;
+  //  virtual NativeValue* CreateUndefined() = 0;
+//    virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
+//    virtual NativeValue* CreateObject() = 0;
+//    virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
-    virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
+//    virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
@@ -161,16 +161,16 @@ public:
     virtual bool IsProfiling() = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
 
-    virtual NativeValue* CallFunction(NativeValue* thisVar,
+    virtual NativeValue* CallFunction(napi_value thisVar,
                                       NativeValue* function,
                                       NativeValue* const *argv,
                                       size_t argc) = 0;
-    virtual NativeValue* RunScript(NativeValue* script) = 0;
-    virtual NativeValue* RunScriptPath(const char* path) = 0;
-    virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
-    virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
+//    virtual NativeValue* RunScript(NativeValue* script) = 0;
+    virtual void* RunScriptPath(const char* path) = 0;
+     virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
+     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
-    virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
+    virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
 
     virtual NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const *argv, size_t argc) = 0;
 
@@ -195,10 +195,10 @@ public:
     virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
 
     virtual void* CreateRuntime() = 0;
-    virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
-    virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
-    virtual void DeleteSerializationData(NativeValue* value) const = 0;
-    virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
+//    virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
+//    virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
+//    virtual void DeleteSerializationData(NativeValue* value) const = 0;
+//    virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
@@ -373,7 +373,7 @@ public:
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
     // run script by path
-    NativeValue* RunScript(const char* path);
+    napi_value RunScript(const char* path);
 
     const char* GetModuleFileName();
 

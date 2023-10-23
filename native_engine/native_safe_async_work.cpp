@@ -40,7 +40,9 @@ void NativeSafeAsyncWork::CallJs(NativeEngine* engine, NativeValue* js_call_func
         return;
     }
 
-    auto value = engine->CreateUndefined();
+//    auto value = engine->CreateUndefined();
+    napi_value value = nullptr;
+    napi_get_undefined(reinterpret_cast<napi_env>(engine), &value);
     if (value == nullptr) {
         HILOG_ERROR("CreateUndefined failed");
         return;
