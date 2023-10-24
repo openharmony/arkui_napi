@@ -46,12 +46,12 @@ enum class SafeAsyncStatus {
 class NativeSafeAsyncWork {
 public:
     static void AsyncCallback(uv_async_t* asyncHandler);
-    static void CallJs(NativeEngine* engine, NativeValue* js_call_func, void* context, void* data);
+    static void CallJs(NativeEngine* engine, napi_value js_call_func, void* context, void* data);
 
     NativeSafeAsyncWork(NativeEngine* engine,
-                        NativeValue* func,
-                        NativeValue* asyncResource,
-                        NativeValue* asyncResourceName,
+                        napi_value func,
+                        napi_value asyncResource,
+                        napi_value asyncResourceName,
                         size_t maxQueueSize,
                         size_t threadCount,
                         void* finalizeData,

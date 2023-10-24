@@ -34,16 +34,16 @@ class NativeEngine;
 #define NATIVE_DEFAULT_METHOD NATIVE_WRITABLE | NATIVE_CONFIGURABLE,
 #define NATIVE_DEFAULT_PROPERTY NATIVE_WRITABLE | NATIVE_ENUMERABLE | NATIVE_CONFIGURABLE
 
-struct NativePropertyDescriptor {
-    const char* utf8name = nullptr;
-    NativeValue* name = nullptr;
-    NativeCallback method = nullptr;
-    NativeCallback getter = nullptr;
-    NativeCallback setter = nullptr;
-    NativeValue* value = nullptr;
-    uint32_t attributes = NATIVE_DEFAULT;
-    void* data = nullptr;
-};
+// struct NativePropertyDescriptor {
+//     const char* utf8name = nullptr;
+//     NativeValue* name = nullptr;
+//     NativeCallback method = nullptr;
+//     NativeCallback getter = nullptr;
+//     NativeCallback setter = nullptr;
+//     NativeValue* value = nullptr;
+//     uint32_t attributes = NATIVE_DEFAULT;
+//     void* data = nullptr;
+// };
 
 struct Napi_NativePropertyDescriptor {
     const char* utf8name = nullptr;

@@ -15,6 +15,8 @@
 
 #include "native_engine.h"
 #include "utils/log.h"
+#include "unicode/ucnv.h"
+#include "ecmascript/napi/include/jsnapi.h"
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <sys/epoll.h>
@@ -29,6 +31,9 @@
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr size_t DESTRUCTION_TIMEOUT = 3000;
 
+using panda::LocalScope;
+using panda::StringRef;
+using panda::ObjectRef;
 namespace {
 const char* g_errorMessages[] = {
     nullptr,
@@ -76,7 +81,7 @@ void NativeEngine::Init()
     HILOG_INFO("NativeEngine::Init");
     moduleManager_ = NativeModuleManager::GetInstance();
     referenceManager_ = new NativeReferenceManager();
-    scopeManager_ = new NativeScopeManager();
+//    scopeManager_ = new NativeScopeManager();
     callbackScopeManager_ = new NativeCallbackScopeManager();
     loop_ = uv_loop_new();
     if (loop_ == nullptr) {
@@ -97,10 +102,10 @@ void NativeEngine::Deinit()
         delete referenceManager_;
         referenceManager_ = nullptr;
     }
-    if (scopeManager_ != nullptr) {
-        delete scopeManager_;
-        scopeManager_ = nullptr;
-    }
+    // if (scopeManager_ != nullptr) {
+    //     delete scopeManager_;
+    //     scopeManager_ = nullptr;
+    // }
 
     SetStopping(true);
 
@@ -108,10 +113,10 @@ void NativeEngine::Deinit()
     loop_ = nullptr;
 }
 
-NativeScopeManager* NativeEngine::GetScopeManager()
-{
-    return scopeManager_;
-}
+// NativeScopeManager* NativeEngine::GetScopeManager()
+// {
+//     return scopeManager_;
+// }
 
 NativeReferenceManager* NativeEngine::GetReferenceManager()
 {
@@ -182,17 +187,54 @@ void NativeEngine::Loop(LoopMode mode, bool needSync)
     }
 }
 
-NativeAsyncWork* NativeEngine::CreateAsyncWork(NativeValue* asyncResource, NativeValue* asyncResourceName,
+inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+{
+    return reinterpret_cast<napi_value>(*local);
+}
+
+inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+{
+    Local<panda::JSValueRef> local;
+    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    return local;
+}
+
+// NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,
+//     NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
+// {
+//     (void)asyncResource;
+//     (void)asyncResourceName;
+//     char name[NAME_BUFFER_SIZE] = {0};
+//     if (asyncResourceName != nullptr) {
+//         auto nativeString = LocalValueFromJsValue(asyncResourceName);
+//         size_t strLength = 0;
+//         nativeString->GetCString(name, NAME_BUFFER_SIZE, &strLength);
+//     }
+//     return new NativeAsyncWork(this, execute, complete, name, data);
+// }
+
+NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,
     NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
     (void)asyncResource;
     (void)asyncResourceName;
     char name[NAME_BUFFER_SIZE] = {0};
     if (asyncResourceName != nullptr) {
-        auto nativeString = reinterpret_cast<NativeString*>(
-            asyncResourceName->GetInterface(NativeString::INTERFACE_ID));
+        auto val = LocalValueFromJsValue(asyncResourceName);
         size_t strLength = 0;
-        nativeString->GetCString(name, NAME_BUFFER_SIZE, &strLength);
+        auto vm = GetEcmaVm();
+        LocalScope scope(vm);
+        auto str = val->ToString(vm);
+        char* buffer = name;
+        if (buffer == nullptr) {
+            strLength = str->Utf8Length(vm) - 1;
+        } else if (NAME_BUFFER_SIZE != 0) {
+            int copied = str->WriteUtf8(buffer, NAME_BUFFER_SIZE - 1, true) - 1;
+            buffer[copied] = '\0';
+            strLength = copied;
+        } else {
+            strLength = 0;
+        }
     }
     return new NativeAsyncWork(this, execute, complete, name, data);
 }
@@ -203,8 +245,8 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(const std::string& asyncResourceN
     return new NativeAsyncWork(this, execute, complete, asyncResourceName, data);
 }
 
-NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
-    NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
+NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(napi_value func, napi_value asyncResource,
+    napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
     NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback)
 {
     return new NativeSafeAsyncWork(this, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
@@ -232,36 +274,134 @@ void NativeEngine::ClearLastError()
     lastError_.reserved = nullptr;
 }
 
+// void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
+// {
+//     NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
+//     if (nativeValue == nullptr || nchars == nullptr || written == nullptr) {
+//         HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
+//         return;
+//     }
+
+//     auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+//     if (nativeString == nullptr) {
+//         HILOG_ERROR("nativeValue GetInterface is nullptr");
+//         return;
+//     }
+//     *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
+// }
+
 void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
-    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
-    if (nativeValue == nullptr || nchars == nullptr || written == nullptr) {
+    auto nativeValue = LocalValueFromJsValue(value);
+    if (nativeValue->IsNull() || nchars == nullptr || written == nullptr) {
         HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
         return;
     }
 
-    auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-    if (nativeString == nullptr) {
-        HILOG_ERROR("nativeValue GetInterface is nullptr");
+    auto vm = GetEcmaVm();
+    LocalScope scope(vm);
+    auto nativeString = nativeValue->ToString(vm);
+    if (!nativeString->IsString()) {
+        HILOG_ERROR("nativeValue not is string");
         return;
     }
-    *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
+
+    if (buffer == nullptr) {
+        HILOG_ERROR("buffer is null");
+    }
+
+    int32_t length = nativeString->Length();
+    int32_t pos = 0;
+    int32_t writableSize = static_cast<int32_t>(bufferSize);
+    int32_t i = 0;
+    Local<ObjectRef> strObj = nativeValue->ToObject(vm);
+    for (; i < length; i++) {
+        Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
+        int32_t len = str->Utf8Length(vm) - 1;
+        if (len > writableSize) {
+            break;
+        }
+        str->WriteUtf8((buffer + pos), writableSize);
+        writableSize -= len;
+        pos += len;
+    }
+    *nchars = i;
+    HILOG_DEBUG("EncodeWriteUtf8 the result of buffer: %{public}s", buffer);
+    *written = pos;
 }
+
+// void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
+// {
+//     NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
+//     if (nativeValue == nullptr) {
+//         HILOG_ERROR("NativeEngine is nullptr");
+//         return;
+//     }
+
+//     auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
+//     if (nativeString == nullptr) {
+//         HILOG_ERROR("nativeValue GetInterface is nullptr");
+//         return;
+//     }
+//     nativeString->EncodeWriteChinese(buffer, encoding.c_str());
+// }
 
 void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
 {
-    NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
-    if (nativeValue == nullptr) {
-        HILOG_ERROR("NativeEngine is nullptr");
-        return;
-    }
-
-    auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-    if (nativeString == nullptr) {
+    auto nativeValue = LocalValueFromJsValue(value);
+    if (nativeValue->IsNull()) {
         HILOG_ERROR("nativeValue GetInterface is nullptr");
         return;
     }
-    nativeString->EncodeWriteChinese(buffer, encoding.c_str());
+
+    auto vm = GetEcmaVm();
+    LocalScope scope(vm);
+    auto nativeString = nativeValue->ToString(vm);
+    if (!nativeString->IsString()) {
+        HILOG_ERROR("nativeValue not is string");
+        return;
+    }
+
+    auto encode = encoding.c_str();
+    if (encode == nullptr) {
+        HILOG_ERROR("encoding is nullptr");
+        return;
+    }
+
+    int32_t length = nativeString->Length();
+    int32_t pos = 0;
+    const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
+    std::string tempBuf = "";
+    tempBuf.resize(writableSize + 1);
+    UErrorCode ErrorCode = U_ZERO_ERROR;
+    const char* encFrom = "utf8";
+    Local<ObjectRef> strObj = nativeValue->ToObject(vm);
+    for (int32_t i = 0; i < length; i++) {
+        Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
+        int32_t len = str->Utf8Length(vm) - 1;
+        if ((pos + len) >= writableSize) {
+            char outBuf[writableSize] = {0};
+            ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
+            if (ErrorCode != U_ZERO_ERROR) {
+                HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+                return;
+            }
+            buffer += outBuf;
+            tempBuf.clear();
+            pos = 0;
+        }
+        str->WriteUtf8((tempBuf.data() + pos), pos + len + 1);
+        pos += len;
+    }
+    if (pos > 0) {
+        char outBuf[writableSize] = {0};
+        ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
+        if (ErrorCode != U_ZERO_ERROR) {
+            HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+            return;
+        }
+        buffer += outBuf;
+    }
 }
 
 #if !defined(PREVIEW)

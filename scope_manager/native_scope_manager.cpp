@@ -35,10 +35,10 @@
 
 #include "utils/log.h"
 
-struct NativeHandle {
-    NativeValue* value = nullptr;
-    NativeHandle* sibling = nullptr;
-};
+// struct NativeHandle {
+//     NativeValue* value = nullptr;
+//     NativeHandle* sibling = nullptr;
+// };
 
 #ifdef ENABLE_MEMLEAK_DEBUG
 using OHOS::system::GetIntParameter;
@@ -161,167 +161,167 @@ static bool BackTrace(const std::vector<struct StructVma>& vmas)
 }
 #endif
 
-NativeScopeManager::NativeScopeManager()
-{
-    root_ = NativeScope::CreateNewInstance();
-    current_ = root_;
-#ifdef ENABLE_MEMLEAK_DEBUG
-    if (NativeScopeManager::DEBUG_MEMLEAK != 0 && NativeScopeManager::vmas == nullptr) {
-        ResetVmas(NativeScopeManager::vmas);
-    }
-#endif
-}
+// NativeScopeManager::NativeScopeManager()
+// {
+//     root_ = NativeScope::CreateNewInstance();
+//     current_ = root_;
+// #ifdef ENABLE_MEMLEAK_DEBUG
+//     if (NativeScopeManager::DEBUG_MEMLEAK != 0 && NativeScopeManager::vmas == nullptr) {
+//         ResetVmas(NativeScopeManager::vmas);
+//     }
+// #endif
+// }
 
-NativeScopeManager::~NativeScopeManager()
-{
-    NativeScope* scope = root_;
-    while (scope != nullptr) {
-        NativeScope* tempScope = scope->child;
-        NativeHandle* handle = scope->handlePtr;
-        while (handle != nullptr) {
-            NativeHandle* tempHandle = handle->sibling;
-            nativeChunk_.Delete(handle->value);
-            nativeChunk_.Delete(handle);
-            handle = tempHandle;
-        }
-        delete scope;
-        scope = tempScope;
-    }
-    root_ = nullptr;
-    current_ = nullptr;
-}
+// NativeScopeManager::~NativeScopeManager()
+// {
+//     NativeScope* scope = root_;
+//     while (scope != nullptr) {
+//         NativeScope* tempScope = scope->child;
+//         NativeHandle* handle = scope->handlePtr;
+//         while (handle != nullptr) {
+//             NativeHandle* tempHandle = handle->sibling;
+//             nativeChunk_.Delete(handle->value);
+//             nativeChunk_.Delete(handle);
+//             handle = tempHandle;
+//         }
+//         delete scope;
+//         scope = tempScope;
+//     }
+//     root_ = nullptr;
+//     current_ = nullptr;
+// }
 
-NativeScope* NativeScopeManager::Open()
-{
-    if (current_ == nullptr) {
-        HILOG_ERROR("current scope is null when open scope");
-        return nullptr;
-    }
+// NativeScope* NativeScopeManager::Open()
+// {
+//     if (current_ == nullptr) {
+//         HILOG_ERROR("current scope is null when open scope");
+//         return nullptr;
+//     }
 
-    auto scope = new NativeScope();
-    nativeChunk_.PushChunkStats(current_);
-    if (scope != nullptr) {
-        current_->child = scope;
-        scope->parent = current_;
-        current_ = scope;
-    }
+//     auto scope = new NativeScope();
+//     nativeChunk_.PushChunkStats(current_);
+//     if (scope != nullptr) {
+//         current_->child = scope;
+//         scope->parent = current_;
+//         current_ = scope;
+//     }
 
-    return scope;
-}
+//     return scope;
+// }
 
-void NativeScopeManager::Close(NativeScope* scope, bool needReset)
-{
-    if ((scope == nullptr) || (scope == root_)) {
-        return;
-    }
-    bool alreadyPop = false;
-    if (scope == current_) {
-        current_ = scope->parent;
-    } else {
-        nativeChunk_.RemoveStats(scope);
-        alreadyPop = true;
-    }
+// void NativeScopeManager::Close(NativeScope* scope, bool needReset)
+// {
+//     if ((scope == nullptr) || (scope == root_)) {
+//         return;
+//     }
+//     bool alreadyPop = false;
+//     if (scope == current_) {
+//         current_ = scope->parent;
+//     } else {
+//         nativeChunk_.RemoveStats(scope);
+//         alreadyPop = true;
+//     }
 
-    scope->parent->child = scope->child;
+//     scope->parent->child = scope->child;
 
-    NativeHandle* handle = scope->handlePtr;
-    while (handle != nullptr) {
-        scope->handlePtr = handle->sibling;
-        nativeChunk_.Delete(handle->value);
-        nativeChunk_.Delete(handle);
-        handle = scope->handlePtr;
-    }
-    if (!alreadyPop) {
-        if (needReset) {
-            nativeChunk_.PopChunkStatsAndReset();
-        } else {
-            nativeChunk_.PopChunkStats();
-        }
-    }
-    delete scope;
-}
+//     NativeHandle* handle = scope->handlePtr;
+//     while (handle != nullptr) {
+//         scope->handlePtr = handle->sibling;
+//         nativeChunk_.Delete(handle->value);
+//         nativeChunk_.Delete(handle);
+//         handle = scope->handlePtr;
+//     }
+//     if (!alreadyPop) {
+//         if (needReset) {
+//             nativeChunk_.PopChunkStatsAndReset();
+//         } else {
+//             nativeChunk_.PopChunkStats();
+//         }
+//     }
+//     delete scope;
+// }
 
-NativeScope* NativeScopeManager::OpenEscape()
-{
-    NativeScope* scope = Open();
-    if (scope != nullptr) {
-        scope->escaped = true;
-    }
-    return scope;
-}
+// NativeScope* NativeScopeManager::OpenEscape()
+// {
+//     NativeScope* scope = Open();
+//     if (scope != nullptr) {
+//         scope->escaped = true;
+//     }
+//     return scope;
+// }
 
-void NativeScopeManager::CloseEscape(NativeScope* scope)
-{
-    if (scope == nullptr) {
-        return;
-    }
-    Close(scope, false);
-}
+// void NativeScopeManager::CloseEscape(NativeScope* scope)
+// {
+//     if (scope == nullptr) {
+//         return;
+//     }
+//     Close(scope, false);
+// }
 
-NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
-{
-    NativeValue* result = nullptr;
+// NativeValue* NativeScopeManager::Escape(NativeScope* scope, NativeValue* value)
+// {
+//     NativeValue* result = nullptr;
 
-    if ((scope == nullptr) || (value == nullptr)) {
-        return result;
-    }
+//     if ((scope == nullptr) || (value == nullptr)) {
+//         return result;
+//     }
 
-    NativeHandle* handle = scope->handlePtr;
-    NativeHandle* temp = nullptr;
-    while (handle != nullptr && scope->escaped) {
-        if (handle->value == value) {
-            if (temp == nullptr) {
-                scope->handlePtr = handle->sibling;
-            } else {
-                temp->sibling = handle->sibling;
-            }
-            if (scope->parent->handlePtr == nullptr) {
-                scope->parent->handlePtr = handle;
-                handle->sibling = nullptr;
-            } else {
-                handle->sibling = scope->parent->handlePtr;
-                scope->parent->handlePtr = handle;
-            }
-            scope->handleCount--;
-            scope->parent->handleCount++;
-            result = scope->parent->handlePtr->value;
-            break;
-        }
-        temp = handle;
-        handle = handle->sibling;
-    }
-    return result;
-}
+//     NativeHandle* handle = scope->handlePtr;
+//     NativeHandle* temp = nullptr;
+//     while (handle != nullptr && scope->escaped) {
+//         if (handle->value == value) {
+//             if (temp == nullptr) {
+//                 scope->handlePtr = handle->sibling;
+//             } else {
+//                 temp->sibling = handle->sibling;
+//             }
+//             if (scope->parent->handlePtr == nullptr) {
+//                 scope->parent->handlePtr = handle;
+//                 handle->sibling = nullptr;
+//             } else {
+//                 handle->sibling = scope->parent->handlePtr;
+//                 scope->parent->handlePtr = handle;
+//             }
+//             scope->handleCount--;
+//             scope->parent->handleCount++;
+//             result = scope->parent->handlePtr->value;
+//             break;
+//         }
+//         temp = handle;
+//         handle = handle->sibling;
+//     }
+//     return result;
+// }
 
-void NativeScopeManager::CreateHandle(NativeValue* value)
-{
-    if (current_ == nullptr) {
-        HILOG_ERROR("current scope is null when create handle");
-        return;
-    }
-    auto handlePtr = nativeChunk_.New<NativeHandle>();
-    if (handlePtr == nullptr) {
-        HILOG_ERROR("create handle ptr failed");
-        return;
-    }
-    if (current_->handlePtr == nullptr) {
-        current_->handlePtr = handlePtr;
-        current_->handlePtr->value = value;
-        current_->handlePtr->sibling = nullptr;
-    } else {
-        handlePtr->sibling = current_->handlePtr;
-        handlePtr->value = value;
-        current_->handlePtr = handlePtr;
-    }
-    current_->handleCount++;
-#ifdef ENABLE_MEMLEAK_DEBUG
-    if (NativeScopeManager::DEBUG_MEMLEAK != 0 && current_ == root_) {
-        HILOG_ERROR(
-            "MEMLEAK: size=%{public}" SCNdPTR ", total=%{public}" SCNdPTR, sizeof(*value), current_->handleCount);
-        if (NativeScopeManager::vmas != nullptr && !BackTrace(*NativeScopeManager::vmas)) {
-            return;
-        }
-        ResetVmas(NativeScopeManager::vmas);
-    }
-#endif
-}
+// void NativeScopeManager::CreateHandle(NativeValue* value)
+// {
+//     if (current_ == nullptr) {
+//         HILOG_ERROR("current scope is null when create handle");
+//         return;
+//     }
+//     auto handlePtr = nativeChunk_.New<NativeHandle>();
+//     if (handlePtr == nullptr) {
+//         HILOG_ERROR("create handle ptr failed");
+//         return;
+//     }
+//     if (current_->handlePtr == nullptr) {
+//         current_->handlePtr = handlePtr;
+//         current_->handlePtr->value = value;
+//         current_->handlePtr->sibling = nullptr;
+//     } else {
+//         handlePtr->sibling = current_->handlePtr;
+//         handlePtr->value = value;
+//         current_->handlePtr = handlePtr;
+//     }
+//     current_->handleCount++;
+// #ifdef ENABLE_MEMLEAK_DEBUG
+//     if (NativeScopeManager::DEBUG_MEMLEAK != 0 && current_ == root_) {
+//         HILOG_ERROR(
+//             "MEMLEAK: size=%{public}" SCNdPTR ", total=%{public}" SCNdPTR, sizeof(*value), current_->handleCount);
+//         if (NativeScopeManager::vmas != nullptr && !BackTrace(*NativeScopeManager::vmas)) {
+//             return;
+//         }
+//         ResetVmas(NativeScopeManager::vmas);
+//     }
+// #endif
+// }

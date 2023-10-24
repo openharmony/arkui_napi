@@ -1564,7 +1564,6 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
-//    auto nativeValue = reinterpret_cast<NativeValue*>(js_object);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     auto nativeValue = LocalValueFromJsValue(js_object);
@@ -1804,9 +1803,7 @@ NAPI_EXTERN napi_status napi_get_reference_value(napi_env env, napi_ref ref, nap
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
 
-    auto resultValue = reference->Get();
-
-    *result = reinterpret_cast<napi_value>(resultValue);
+    *result = reference->Get();
     return napi_clear_last_error(env);
 }
 
@@ -3434,10 +3431,10 @@ Local<JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, voi
     if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
     }
-    AttachCallback attach = reinterpret_cast<AttachCallback>(attachData);
-    NativeValue* attachVal = attach(reinterpret_cast<NativeEngine*>(engine), buffer, hint);
-    Global<JSValueRef> result = *attachVal;
-    return scope.Escape(result.ToLocal(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm()));
+    NapiAttachCallback attach = reinterpret_cast<NapiAttachCallback>(attachData);
+    napi_value attachVal = attach(reinterpret_cast<napi_env>(engine), buffer, hint);
+    Local<JSValueRef> result = LocalValueFromJsValue(attachVal);
+    return scope.Escape(result);
 }
 
 NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
@@ -3478,10 +3475,12 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
     CHECK_ENV(env);
     CHECK_ARG(env, value);
 
-    auto nativeValue = reinterpret_cast<NativeValue*>(value);
-    if (nativeValue->TypeOf() == NATIVE_STRING) {
-        auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-        result = nativeString->GetPrintString();
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(value);
+    if (nativeValue->IsString()) {
+        Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
+        result = stringVal->ToString();
     }
     return napi_clear_last_error(env);
 }

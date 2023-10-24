@@ -26,6 +26,18 @@
 using panda::LocalScope;
 using panda::Global;
 
+inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+{
+    return reinterpret_cast<napi_value>(*local);
+}
+
+inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+{
+    Local<panda::JSValueRef> local;
+    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    return local;
+}
+
 NativeReference::NativeReference(NativeEngine* engine,
                                        Local<JSValueRef> value,
                                        uint32_t initialRefcount,
@@ -114,7 +126,7 @@ uint32_t NativeReference::Unref()
     return refCount_;
 }
 
-NativeValue* NativeReference::Get()
+napi_value NativeReference::Get()
 {
     Global<JSValueRef> Value = value_;
     if (Value.IsEmpty()) {
@@ -125,10 +137,10 @@ NativeValue* NativeReference::Get()
 #ifdef ENABLE_CONTAINER_SCOPE
     OHOS::Ace::ContainerScope containerScope(scopeId_);
 #endif
-    return engine_->ValueToNativeValue(value_);
+    return JsValueFromLocalValue(Value.ToLocal(vm));
 }
 
-NativeReference::operator NativeValue*()
+NativeReference::operator napi_value()
 {
     return Get();
 }
@@ -187,6 +199,5 @@ bool NativeReference::GetFinalRun()
 
 napi_value NativeReference::GetNapiValue()
 {
-    NativeValue* result = Get();
-    return reinterpret_cast<napi_value>(result);
+    return Get();
 }

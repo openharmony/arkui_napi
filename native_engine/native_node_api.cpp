@@ -90,8 +90,8 @@ NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
     CHECK_ARG(env, err);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto jsError = reinterpret_cast<NativeValue*>(err);
-    if (engine->TriggerFatalException(jsError)) {
+//    auto jsError = reinterpret_cast<NativeValue*>(err);
+    if (engine->TriggerFatalException(err)) {
         HILOG_INFO("%{public}s, end.", __func__);
         return napi_status::napi_ok;
     } else {
@@ -365,12 +365,11 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
     }
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto jsFunc = reinterpret_cast<NativeValue*>(func);
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
+    // auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
+    // auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
     auto finalizeCallback = reinterpret_cast<NativeFinalize>(thread_finalize_cb);
     auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(call_js_cb);
-    auto safeAsyncWork = engine->CreateSafeAsyncWork(jsFunc, asyncResource, asyncResourceName, max_queue_size,
+    auto safeAsyncWork = engine->CreateSafeAsyncWork(func, async_resource, async_resource_name, max_queue_size,
         initial_thread_count, thread_finalize_data, finalizeCallback, context, callJsCallback);
     CHECK_ENV(safeAsyncWork);
 

@@ -30,7 +30,7 @@
 #include <vector>
 #endif
 
-class NativeValue;
+//class NativeValue;
 struct NativeHandle;
 #ifdef ENABLE_MEMLEAK_DEBUG
 struct StructVma {
@@ -182,42 +182,42 @@ private:
     std::vector<ChunkStats> chunkStats_ {};
 };
 
-class NativeScopeManager {
-public:
-    NativeScopeManager();
-    virtual ~NativeScopeManager();
+// class NativeScopeManager {
+// public:
+//     NativeScopeManager();
+//     virtual ~NativeScopeManager();
 
-    virtual NativeScope* Open();
-    virtual void Close(NativeScope* scope, bool needReset = true);
+//     virtual NativeScope* Open();
+//     virtual void Close(NativeScope* scope, bool needReset = true);
 
-    virtual NativeScope* OpenEscape();
-    virtual void CloseEscape(NativeScope* scope);
+//     virtual NativeScope* OpenEscape();
+//     virtual void CloseEscape(NativeScope* scope);
 
-    virtual void CreateHandle(NativeValue* value);
-    virtual NativeValue* Escape(NativeScope* scope, NativeValue* value);
+//     virtual void CreateHandle(NativeValue* value);
+//     virtual NativeValue* Escape(NativeScope* scope, NativeValue* value);
 
-    NativeChunk& GetNativeChunk()
-    {
-        return nativeChunk_;
-    }
+//     NativeChunk& GetNativeChunk()
+//     {
+//         return nativeChunk_;
+//     }
 
-    NativeScopeManager(NativeScopeManager&) = delete;
-    virtual NativeScopeManager& operator=(NativeScopeManager&) = delete;
+//     NativeScopeManager(NativeScopeManager&) = delete;
+//     virtual NativeScopeManager& operator=(NativeScopeManager&) = delete;
 
-#ifdef ENABLE_MEMLEAK_DEBUG
-    static const int MAPINFO_SIZE = 256;
-    static const int NAME_LEN = 128;
-    static const int DEBUG_MEMLEAK;
-    static const int BACKTRACE_DEPTH;
-#endif
+// #ifdef ENABLE_MEMLEAK_DEBUG
+//     static const int MAPINFO_SIZE = 256;
+//     static const int NAME_LEN = 128;
+//     static const int DEBUG_MEMLEAK;
+//     static const int BACKTRACE_DEPTH;
+// #endif
 
-private:
-#ifdef ENABLE_MEMLEAK_DEBUG
-    static std::atomic<std::vector<struct StructVma>*> vmas;
-#endif
-    NativeScope* root_;
-    NativeScope* current_;
-    NativeChunk nativeChunk_;
-};
+// private:
+// #ifdef ENABLE_MEMLEAK_DEBUG
+//     static std::atomic<std::vector<struct StructVma>*> vmas;
+// #endif
+//     NativeScope* root_;
+//     NativeScope* current_;
+//     NativeChunk nativeChunk_;
+// };
 
 #endif /* FOUNDATION_ACE_NAPI_SCOPE_MANAGER_NATIVE_SCOPE_MANAGER_H */

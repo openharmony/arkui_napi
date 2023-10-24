@@ -26,7 +26,7 @@
 #include <thread>
 #include <iostream>
 
-#include "ark_headers.h"
+//#include "ark_headers.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "native_engine/native_engine.h"
@@ -52,6 +52,8 @@ enum class ForceExpandState : int32_t {
 };
 
 NAPI_EXPORT Local<JSValueRef> NapiValueToLocalValue(napi_value v);
+
+NAPI_EXPORT napi_value LocalValueToLocalNapiValue(Local<JSValueRef> local);
 
 class SerializationData {
 public:
@@ -109,51 +111,51 @@ public:
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
-    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
+//    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
     bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
     bool HasPendingJob() override;
     bool IsProfiling() override;
     void* GetCurrentTaskInfo() const override;
     // Call function
-    NativeValue* CallFunction(napi_value thisVar,
-                              NativeValue* function,
-                              NativeValue* const* argv,
+    napi_value CallFunction(napi_value thisVar,
+                              napi_value function,
+                              napi_value const* argv,
                               size_t argc) override;
     // Run script
 //    NativeValue* RunScript(NativeValue* script) override;
     void* RunScriptPath(const char* path) override;
 
-     NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
+     napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
      bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
 
     // Run buffer script
-    NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) override;
+    napi_value RunBufferScript(std::vector<uint8_t>& buffer) override;
     napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) override;
     // Set lib path
     NAPI_EXPORT void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
-    NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const* argv, size_t argc) override;
+    napi_value CreateInstance(napi_value constructor, napi_value const* argv, size_t argc) override;
 
     // Create native reference
-    NativeReference* CreateReference(NativeValue* value, uint32_t initialRefcount,
+    NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
         NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     bool IsExceptionPending() const override;
-    NativeValue* GetAndClearLastException() override;
-    // Throw exception
-    bool Throw(NativeValue* error) override;
-    // Throw exception
-    bool Throw(NativeErrorType type, const char* code, const char* message) override;
+//    NativeValue* GetAndClearLastException() override;
+     // Throw exception
+    // bool Throw(NativeValue* error) override;
+    // // Throw exception
+    // bool Throw(NativeErrorType type, const char* code, const char* message) override;
 
     void* CreateRuntime() override;
 //    NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
  //   NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
  //   void DeleteSerializationData(NativeValue* value) const override;
 //    NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
-    NativeValue* LoadArkModule(const char* str, int32_t len, const std::string& fileName);
+    napi_value LoadArkModule(const char* str, int32_t len, const std::string& fileName);
 
-    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
+//    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
 
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
-    NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
+//    NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
     NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
@@ -162,7 +164,7 @@ public:
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
-    bool TriggerFatalException(NativeValue* error) override;
+    bool TriggerFatalException(napi_value error) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
     // Detect performance to obtain cpuprofiler file
@@ -216,7 +218,7 @@ public:
     void JudgmentDump(size_t limitSize);
     void NotifyNativeCalling(const void *nativeAddress);
 
-    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
+//    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
     bool HasPendingException() override;
@@ -229,7 +231,7 @@ public:
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
 
-    NativeChunk& GetNativeChunk();
+   // NativeChunk& GetNativeChunk();
 
     NativeReference* GetPromiseRejectCallBackRef()
     {
@@ -256,10 +258,10 @@ public:
         checkCallbackRef_ = checkCallbackRef;
     }
 
-    UncaughtExceptionCallback GetUncaughtExceptionCallback() override
-    {
-        return uncaughtExceptionCallback_;
-    }
+    // UncaughtExceptionCallback GetUncaughtExceptionCallback() override
+    // {
+    //     return uncaughtExceptionCallback_;
+    // }
 
     NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() override
     {
@@ -286,7 +288,7 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
-    UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
+//    UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     inline void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);

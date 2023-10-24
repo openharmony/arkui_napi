@@ -48,9 +48,9 @@ public:
      ~NativeReference();
      uint32_t Ref();
      uint32_t Unref();
-     NativeValue* Get();
+     napi_value Get();
      void* GetData();
-     operator NativeValue*();
+     operator napi_value();
      void SetDeleteSelf();
      uint32_t GetRefCount();
      bool GetFinalRun();
