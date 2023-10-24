@@ -58,7 +58,7 @@ using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static const auto PANDA_MODULE_NAME_LEN = 32;
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static constexpr uint32_t DEC_TO_INT = 100;
 static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
 static constexpr int TIME_OUT = 20;
@@ -120,7 +120,7 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEngine), vm_(vm), topScope_(vm)
 {
     HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (g_enableProperty) {
         std::call_once(flag_, [this] {
             if (threadJsHeap_ == nullptr) {
@@ -980,7 +980,7 @@ bool ArkNativeEngine::Throw(NativeErrorType type, const char* code, const char* 
 NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine)
 {
     panda::RuntimeOption option;
-#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM)
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     std::string bundleName = OHOS::system::GetParameter("persist.ark.arkbundlename", "");
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
@@ -1631,7 +1631,7 @@ void ArkNativeEngine::AllowCrossThreadExecution() const
     JSNApi::AllowCrossThreadExecution(vm_);
 }
 
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 uint64_t ArkNativeEngine::GetCurrentTickMillseconds()
 {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
