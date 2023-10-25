@@ -17,7 +17,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H
 
 #include <memory>
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/wait.h>
 #endif
 #include <unistd.h>
