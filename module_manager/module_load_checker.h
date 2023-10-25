@@ -22,7 +22,7 @@
 
 /**
  * @brief Module load checker. check whether module can be loaded
- * 
+ *
  */
 class ModuleLoadChecker {
 public:
@@ -37,6 +37,14 @@ public:
      * @return false The module cannot be loaded
      */
     bool CheckModuleLoadable(const char* moduleName);
+
+    /**
+     * @brief Whether loadable rules only work for disk case
+     *
+     * @return true Disk check only
+     * @return false Check both cache and disk
+     */
+    bool DiskCheckOnly();
 
     /**
      * @brief Set the moudle checker delegate
