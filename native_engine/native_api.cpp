@@ -1306,8 +1306,9 @@ NAPI_EXTERN napi_status napi_new_instance(
     if (!excep.IsNull()) {
         HILOG_ERROR("ArkNativeEngineImpl::CreateInstance occur Exception");
         *result = nullptr;
+    } else {
+        *result = JsValueFromLocalValue(instance);
     }
-    *result = JsValueFromLocalValue(instance);
 
     return napi_clear_last_error(env);
 }
