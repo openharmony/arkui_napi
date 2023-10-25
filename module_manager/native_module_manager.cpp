@@ -412,6 +412,11 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     }
 
     HILOG_DEBUG("moduleName is %{public}s, path is %{public}s", moduleName, path);
+    if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
+        !moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+        HILOG_INFO("Block module name: %{public}s", moduleName);
+        return nullptr;
+    }
 #ifdef ANDROID_PLATFORM
     std::string strModule(moduleName);
     std::string strCutName = strModule;

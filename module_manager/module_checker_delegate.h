@@ -32,6 +32,14 @@ public:
      * @return false The module cannot be loaded
      */
     virtual bool CheckModuleLoadable(const char* moduleName) = 0;
+
+    /**
+     * @brief Whether loadable rules only work for disk case
+     *
+     * @return true Disk check only
+     * @return false Check both cache and disk
+     */
+    virtual bool DiskCheckOnly();
 };
 
 #endif /* FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H */

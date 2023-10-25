@@ -26,6 +26,15 @@ bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName)
     return moduleCheckerDelegate_->CheckModuleLoadable(moduleName);
 }
 
+bool ModuleLoadChecker::DiskCheckOnly()
+{
+    if (!moduleCheckerDelegate_) {
+        HILOG_INFO("Not check moduleLoadable, moduleCheckerDelegate_ not set");
+        return true;
+    }
+    return moduleCheckerDelegate_->DiskCheckOnly();
+}
+
 void ModuleLoadChecker::SetDelegate(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
     moduleCheckerDelegate_ = moduleCheckerDelegate;
