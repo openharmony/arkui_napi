@@ -30,6 +30,7 @@
 #include "module_manager/native_module_manager.h"
 #include "native_engine/native_async_work.h"
 #include "native_engine/native_reference.h"
+#include "native_engine/native_deferred.h"
 #include "native_engine/native_safe_async_work.h"
 #include "native_engine/native_value.h"
 #include "native_property.h"
@@ -199,6 +200,7 @@ public:
 //    virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
 //    virtual void DeleteSerializationData(NativeValue* value) const = 0;
 //    virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
+    virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;

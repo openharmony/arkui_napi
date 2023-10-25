@@ -23,6 +23,10 @@
 #include "securec.h"
 #include "utils/log.h"
 
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
+
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
 #include "hitrace_meter.h"
@@ -412,7 +416,7 @@ Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     if (localRet.IsEmpty()) {
         return panda::JSValueRef::Undefined(vm);
     }
-    return localRet;
+    return scope.Escape(localRet);
 }
 
 NAPI_EXTERN napi_status napi_create_function(napi_env env,
@@ -439,6 +443,9 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
                                              [](void* externalPointer, void* data) {
@@ -1082,6 +1089,9 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
                                              [](void* externalPointer, void* data) {
@@ -1241,15 +1251,23 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto thisVar = LocalValueFromJsValue(recv);
+//    auto thisVar = LocalValueFromJsValue(recv);
     auto nativeFunc = LocalValueFromJsValue(func);
     RETURN_STATUS_IF_FALSE(env, nativeFunc->IsFunction(), napi_function_expected);
 
     Local<panda::FunctionRef> function = nativeFunc->ToObject(vm);
     Local<panda::JSValueRef> thisObj = panda::JSValueRef::Undefined(vm);
-    if (!thisVar->IsNull()) {
-        thisObj =thisVar;
+    if (recv != nullptr) {
+        thisObj = LocalValueFromJsValue(recv);
     }
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
+    auto fucInfo = reinterpret_cast<NapiNativeFunctionInfo*>(function->GetData(vm));
+    if (fucInfo != nullptr) {
+        scopeId = fucInfo->scopeId;
+    }
+    OHOS::Ace::ContainerScope containerScope(scopeId);
+#endif
     std::vector<Local<panda::JSValueRef>> args;
     args.reserve(argc);
     for (size_t i = 0; i < argc; i++) {
@@ -1401,6 +1419,9 @@ Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNat
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, NativeFunctionCallBack,
                                                     [](void* externalPointer, void* data) {
@@ -2502,11 +2523,17 @@ NAPI_EXTERN napi_status napi_create_promise(napi_env env, napi_deferred* deferre
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, promise);
 
+    // auto engine = reinterpret_cast<NativeEngine*>(env);
+    // auto vm = engine->GetEcmaVm();
+    // Local<panda::PromiseCapabilityRef> capability = panda::PromiseCapabilityRef::New(vm);
+    // *deferred = JsDeferredFromLocalValue(capability);
+    // *promise = JsValueFromLocalValue(capability->GetPromise(vm));
+
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    Local<panda::PromiseCapabilityRef> capability = panda::PromiseCapabilityRef::New(vm);
-    *deferred = JsDeferredFromLocalValue(capability);
-    *promise = JsValueFromLocalValue(capability->GetPromise(vm));
+    auto resultValue = engine->CreatePromise(reinterpret_cast<NativeDeferred**>(deferred));
+
+    *promise = resultValue;
+
     return napi_clear_last_error(env);
 }
 
@@ -2516,11 +2543,18 @@ NAPI_EXTERN napi_status napi_resolve_deferred(napi_env env, napi_deferred deferr
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, resolution);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    Local<panda::PromiseCapabilityRef> deferredObj = LocalValueFromJsDeferred(deferred);
-    auto resolutionObj = LocalValueFromJsValue(resolution);
-    deferredObj->Resolve(vm, resolutionObj);
+    // auto engine = reinterpret_cast<NativeEngine*>(env);
+    // auto vm = engine->GetEcmaVm();
+    // LocalScope scope(vm);
+    // Local<panda::PromiseCapabilityRef> deferredObj = LocalValueFromJsDeferred(deferred);
+    // auto resolutionObj = LocalValueFromJsValue(resolution);
+    // deferredObj->Resolve(vm, resolutionObj);
+
+    auto nativeDeferred = reinterpret_cast<NativeDeferred*>(deferred);
+ //   auto resolutionValue = reinterpret_cast<NativeValue*>(resolution);
+
+    nativeDeferred->Resolve(resolution);
+    delete nativeDeferred;
     return napi_clear_last_error(env);
 }
 
@@ -2530,11 +2564,18 @@ NAPI_EXTERN napi_status napi_reject_deferred(napi_env env, napi_deferred deferre
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, rejection);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    Local<panda::PromiseCapabilityRef> deferredObj = LocalValueFromJsDeferred(deferred);
-    auto resolutionObj = LocalValueFromJsValue(rejection);
-    deferredObj->Reject(vm, resolutionObj);
+    // auto engine = reinterpret_cast<NativeEngine*>(env);
+    // auto vm = engine->GetEcmaVm();
+    // LocalScope scope(vm);
+    // Local<panda::PromiseCapabilityRef> deferredObj = LocalValueFromJsDeferred(deferred);
+    // auto resolutionObj = LocalValueFromJsValue(rejection);
+    // deferredObj->Reject(vm, resolutionObj);
+
+    auto nativeDeferred = reinterpret_cast<NativeDeferred*>(deferred);
+//    auto rejectionValue = reinterpret_cast<NativeValue*>(rejection);
+
+    nativeDeferred->Reject(rejection);
+    delete nativeDeferred;
 
     return napi_clear_last_error(env);
 }
@@ -2609,8 +2650,8 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
 
-    panda::JSExecutionScope executionScope(vm);
-    LocalScope scope(vm);
+//    panda::JSExecutionScope executionScope(vm);
+//    LocalScope scope(vm);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
     if (panda::JSNApi::HasPendingException(vm)) {
         if (engine->GetNapiUncaughtExceptionCallback() != nullptr) {
@@ -2638,8 +2679,8 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffe
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     
-    panda::JSExecutionScope executionScope(vm);
-    LocalScope scope(vm);
+//    panda::JSExecutionScope executionScope(vm);
+//    LocalScope scope(vm);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
 

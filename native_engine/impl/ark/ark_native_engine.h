@@ -146,7 +146,7 @@ public:
     // bool Throw(NativeValue* error) override;
     // // Throw exception
     // bool Throw(NativeErrorType type, const char* code, const char* message) override;
-
+    napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime() override;
 //    NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
  //   NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;

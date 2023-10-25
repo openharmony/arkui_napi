@@ -16,6 +16,7 @@
 #include "ark_native_engine.h"
 
 #include "ark_native_reference.h"
+#include "ark_native_deferred.h"
 #include "scope_manager/native_scope_manager.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -424,7 +425,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
     if (localRet.IsEmpty()) {
         return JSValueRef::Undefined(vm);
     }
-    return localRet;
+    return scope.Escape(localRet);
 }
 
 Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name, NapiNativeCallback cb, void* value)
@@ -586,6 +587,14 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
     return scope.Escape(exports);
 }
 
+napi_value ArkNativeEngine::CreatePromise(NativeDeferred** deferred)
+{
+//   LocalScope scope(vm_);
+    Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
+    *deferred = new ArkNativeDeferred(this, capability);
+    return JsValueFromLocalValue(capability->GetPromise(vm_));
+}
+
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,
     const std::string& param, const std::string& instanceName, void* instance, const std::string& path)
 {
@@ -715,7 +724,7 @@ napi_value ArkNativeEngine::CallFunction(
     if (function == nullptr) {
         return nullptr;
     }
-    LocalScope scope(vm_);
+//    LocalScope scope(vm_);
  //   NativeScopeManager* scopeManager = GetScopeManager();
     // if (scopeManager == nullptr) {
     //     HILOG_ERROR("scope manager is null");
@@ -794,8 +803,8 @@ void ArkNativeEngine::ResumeVMById(uint32_t tid)
 // The security interface needs to be modified accordingly.
 napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
 {
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
+    // panda::JSExecutionScope executionScope(vm_);
+    // LocalScope scope(vm_);
     [[maybe_unused]] bool ret = false;
     if (isBundle) {
         ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, path);
@@ -842,7 +851,7 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
     if (constructor == nullptr) {
         return nullptr;
     }
-    LocalScope scope(vm_);
+//    LocalScope scope(vm_);
     Local<FunctionRef> value = LocalValueFromJsValue(constructor);
     std::vector<Local<JSValueRef>> args;
     args.reserve(argc);
@@ -1040,8 +1049,8 @@ bool ArkNativeEngine::CheckSafepoint()
 
 napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
 {
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
+    // panda::JSExecutionScope executionScope(vm_);
+    // LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
 
     if (panda::JSNApi::HasPendingException(vm_)) {
@@ -1054,8 +1063,8 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
 
 napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* descriptor)
 {
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
+    // panda::JSExecutionScope executionScope(vm_);
+    // LocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
     if (panda::JSNApi::IsBundle(vm_) || !buffer.empty()) {
@@ -1086,7 +1095,7 @@ napi_value ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const st
         return nullptr;
     }
 
-    LocalScope scope(vm_);
+//    LocalScope scope(vm_);
     Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
     if (exportObj->IsNull()) {
         HILOG_ERROR("Get export object failed");
@@ -1148,7 +1157,7 @@ napi_value ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const st
 napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
 {
     //return reinterpret_cast<napi_value>(ValueToNativeValue(value));
-    LocalScope scope(vm_);
+//    LocalScope scope(vm_);
     Global<JSValueRef> arkValue = value;
     return JsValueFromLocalValue(arkValue.ToLocal(vm_));
 }

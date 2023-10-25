@@ -81,6 +81,9 @@ struct NapiNativeFunctionInfo {
     napi_env env = nullptr;
     NapiNativeCallback callback = nullptr;
     void* data = nullptr;
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t scopeId = -1;
+#endif
 };
 
 struct NapiNativeCallbackInfo {
