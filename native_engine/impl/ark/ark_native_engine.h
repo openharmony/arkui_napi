@@ -42,6 +42,8 @@ struct JsFrameInfo {
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
 using panda::LocalScope;
+using panda::Local;
+using panda::JSValueRef;
 using panda::JSNApi;
 using panda::DFXJSNApi;
 
@@ -137,7 +139,7 @@ public:
 
     // Create native reference
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
-        NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+        bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     bool IsExceptionPending() const override;
 //    NativeValue* GetAndClearLastException() override;
      // Throw exception

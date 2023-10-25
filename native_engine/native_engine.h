@@ -175,7 +175,7 @@ public:
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
     virtual NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
-        NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
+        bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
 
     virtual NativeAsyncWork* CreateAsyncWork(napi_value asyncResource,
                                              napi_value asyncResourceName,

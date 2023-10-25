@@ -30,6 +30,7 @@
 
 using panda::ecmascript::EcmaVM;
 using panda::Global;
+using panda::Local;
 using panda::LocalScope;
 using panda::EscapeLocalScope;
 using panda::BooleanRef;
@@ -366,10 +367,10 @@ Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     auto cb = info->callback;
     if (engine == nullptr) {
         HILOG_ERROR("native engine is null");
-        return JSValueRef::Undefined(vm);
+        return panda::JSValueRef::Undefined(vm);
     }
 
-    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
+//    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
     NapiNativeCallbackInfo cbInfo = { 0 };
     StartNapiProfilerTrace(runtimeInfo);
     cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
@@ -378,9 +379,9 @@ Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     cbInfo.argv = nullptr;
     cbInfo.functionInfo = info;
     if (cbInfo.argc > 0) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+//        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
             cbInfo.argv = new napi_value [cbInfo.argc];
-        }
+//        }
         for (size_t i = 0; i < cbInfo.argc; i++) {
             cbInfo.argv[i] = JsValueFromLocalValue(runtimeInfo->GetCallArgRef(i));
         }
@@ -396,9 +397,9 @@ Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     }
 
     if (cbInfo.argv != nullptr) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+//        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
             delete[] cbInfo.argv;
-        }
+//        }
         cbInfo.argv = nullptr;
     }
 
@@ -409,7 +410,7 @@ Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 
     FinishNapiProfilerTrace();
     if (localRet.IsEmpty()) {
-        return JSValueRef::Undefined(vm);
+        return panda::JSValueRef::Undefined(vm);
     }
     return localRet;
 }
@@ -1076,7 +1077,7 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     NapiNativeFunctionInfo* funcInfo = NapiNativeFunctionInfo::CreateNewInstance();
     if (funcInfo == nullptr) {
         HILOG_ERROR("funcInfo is nullptr");
-        return JSValueRef::Undefined(vm);
+        return panda::JSValueRef::Undefined(vm);
     }
     funcInfo->env = env;
     funcInfo->callback = cb;
@@ -1255,7 +1256,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         if (argv[i] != nullptr) {
             args.emplace_back(LocalValueFromJsValue(argv[i]));
         } else {
-            args.emplace_back(JSValueRef::Undefined(vm));
+            args.emplace_back(panda::JSValueRef::Undefined(vm));
         }
     }
 
@@ -1394,7 +1395,7 @@ Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNat
     NapiNativeFunctionInfo* funcInfo = NapiNativeFunctionInfo::CreateNewInstance();
     if (funcInfo == nullptr) {
         HILOG_ERROR("funcInfo is nullptr");
-        return JSValueRef::Undefined(vm);
+        return panda::JSValueRef::Undefined(vm);
     }
     funcInfo->env = env;
     funcInfo->callback = callback;
@@ -1497,10 +1498,12 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = new NativeReference(engine, nativeObject, 1, false, callback, native_object, finalize_hint);
+//          ref = new ArkNativeReference(engine, nativeObject, 1, false, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 1, false, callback, native_object, finalize_hint);
             *reference = ref;
         } else {
-            ref = new NativeReference(engine, nativeObject, 0, true, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 0, true, callback, native_object, finalize_hint);
+
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
@@ -1545,10 +1548,10 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = new NativeReference(engine, nativeObject, 1, false, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 1, false, callback, native_object, finalize_hint);
             *reference = ref;
         } else {
-            ref = new NativeReference(engine, nativeObject, 0, true, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 0, true, callback, native_object, finalize_hint);
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, native_binding_size);
@@ -1621,8 +1624,7 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     } else {
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
-        ref = new NativeReference(engine, nativeObject, 0, true, nullptr, nullptr, nullptr, nullptr);
-
+        ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 0, true, nullptr, nullptr, nullptr);
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
         PropertyAttribute attr(object, true, false, true);
@@ -1728,7 +1730,8 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto nativeValue = LocalValueFromJsValue(value);
-    NativeReference* ref = new NativeReference(engine, nativeValue, initial_refcount, true, nullptr, nullptr, nullptr, nullptr);
+    NativeReference* ref = engine->CreateReference(JsValueFromLocalValue(nativeValue),
+        initial_refcount, true, nullptr, nullptr, nullptr);
 
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
@@ -2620,7 +2623,7 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
         *result = nullptr;
     }
 
-    Local<PrimitiveRef> value = JSValueRef::Undefined(vm);
+    Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
     *result = JsValueFromLocalValue(value);
     return napi_clear_last_error(env); 
 }
@@ -2656,7 +2659,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffe
         *result = nullptr;
     }
 
-    Local<PrimitiveRef> value = JSValueRef::Undefined(vm);
+    Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
     *result = JsValueFromLocalValue(value);
     return napi_clear_last_error(env); 
 }
@@ -3265,11 +3268,11 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env, napi_value js_obj
     NativeReference* reference = nullptr;
     if (result != nullptr) {
         auto engine = reinterpret_cast<NativeEngine*>(env);
-        reference = new NativeReference(engine, nativeValue, 1, false, callback, native_object, finalize_hint);
+        reference = engine->CreateReference(JsValueFromLocalValue(nativeValue), 1, false, callback, native_object, finalize_hint);
         *result = reinterpret_cast<napi_ref>(reference);
     } else {
         auto engine = reinterpret_cast<NativeEngine*>(env);
-        reference = new NativeReference(engine, nativeValue, 0, true, callback, native_object, finalize_hint);
+        reference = engine->CreateReference(JsValueFromLocalValue(nativeValue), 0, true, callback, native_object, finalize_hint);
     }
     return napi_clear_last_error(env);
 }
@@ -3425,7 +3428,7 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
     return detachVal;
 }
 
-Local<JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
+Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
     panda::EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm());
     if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
@@ -3433,7 +3436,7 @@ Local<JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, voi
     }
     NapiAttachCallback attach = reinterpret_cast<NapiAttachCallback>(attachData);
     napi_value attachVal = attach(reinterpret_cast<napi_env>(engine), buffer, hint);
-    Local<JSValueRef> result = LocalValueFromJsValue(attachVal);
+    Local<panda::JSValueRef> result = LocalValueFromJsValue(attachVal);
     return scope.Escape(result);
 }
 

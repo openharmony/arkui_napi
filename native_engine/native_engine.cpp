@@ -187,14 +187,14 @@ void NativeEngine::Loop(LoopMode mode, bool needSync)
     }
 }
 
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 {
     return reinterpret_cast<napi_value>(*local);
 }
 
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
 {
-    Local<panda::JSValueRef> local;
+    panda::Local<panda::JSValueRef> local;
     memcpy(static_cast<void*>(&local), &v, sizeof(v));
     return local;
 }
@@ -314,9 +314,9 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
     int32_t i = 0;
-    Local<ObjectRef> strObj = nativeValue->ToObject(vm);
+    panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
     for (; i < length; i++) {
-        Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
+        panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
         int32_t len = str->Utf8Length(vm) - 1;
         if (len > writableSize) {
             break;
@@ -375,9 +375,9 @@ void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const 
     tempBuf.resize(writableSize + 1);
     UErrorCode ErrorCode = U_ZERO_ERROR;
     const char* encFrom = "utf8";
-    Local<ObjectRef> strObj = nativeValue->ToObject(vm);
+    panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
     for (int32_t i = 0; i < length; i++) {
-        Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
+        panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
         int32_t len = str->Utf8Length(vm) - 1;
         if ((pos + len) >= writableSize) {
             char outBuf[writableSize] = {0};

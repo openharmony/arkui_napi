@@ -22,14 +22,14 @@
 using panda::StringRef;
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 {
     return reinterpret_cast<napi_value>(*local);
 }
 
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
 {
-    Local<panda::JSValueRef> local;
+    panda::Local<panda::JSValueRef> local;
     memcpy(static_cast<void*>(&local), &v, sizeof(v));
     return local;
 }

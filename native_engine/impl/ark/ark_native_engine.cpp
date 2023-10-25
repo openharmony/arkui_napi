@@ -15,7 +15,7 @@
 
 #include "ark_native_engine.h"
 
-#include "native_reference.h"
+#include "ark_native_reference.h"
 #include "scope_manager/native_scope_manager.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -25,13 +25,13 @@
 #include "native_engine/native_property.h"
 
 #ifdef ENABLE_HITRACE
+#include <sys/prctl.h>
 #include "hitrace_meter.h"
 #endif
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #endif
 #include "securec.h"
-#include <sys/prctl.h>
 #include "utils/log.h"
 #ifdef ENABLE_HITRACE
 #include "parameter.h"
@@ -44,7 +44,6 @@ using panda::StringRef;
 using panda::Global;
 using panda::FunctionRef;
 using panda::PrimitiveRef;
-using panda::JSValueRef;
 using panda::ArrayBufferRef;
 using panda::TypedArrayRef;
 using panda::PromiseCapabilityRef;
@@ -614,7 +613,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         } else {
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
-            ref = new NativeReference(this, value.ToLocal(vm_), 0, true, nullptr, instance, nullptr);
+            ref = new ArkNativeReference(this, value.ToLocal(vm_), 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(1);
             object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
@@ -865,10 +864,10 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
 }
 
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
-    NativeFinalize callback, void* data, void* hint)
+    bool flag, NativeFinalize callback, void* data, void* hint)
 {
     Local<JSValueRef> arkValue = LocalValueFromJsValue(value);
-    return new NativeReference(this, arkValue, initialRefcount, false, callback, data, hint);
+    return new ArkNativeReference(this, arkValue, initialRefcount, flag, callback, data, hint);
 }
 
 bool ArkNativeEngine::IsExceptionPending() const
