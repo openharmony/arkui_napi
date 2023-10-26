@@ -112,7 +112,6 @@ using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
-//using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
@@ -125,7 +124,6 @@ public:
     explicit NativeEngine(void* jsEngine);
     virtual ~NativeEngine();
 
-//    virtual NativeScopeManager* GetScopeManager();
     virtual NativeModuleManager* GetModuleManager();
     virtual NativeReferenceManager* GetReferenceManager();
     virtual NativeCallbackScopeManager* GetCallbackScopeManager();
@@ -144,19 +142,10 @@ public:
     virtual void* GetJsEngine();
 
     virtual const EcmaVM* GetEcmaVm() const = 0;
-  //  virtual NativeValue* GetGlobal() = 0;
-
-  //  virtual NativeValue* CreateNull() = 0;
-  //  virtual NativeValue* CreateUndefined() = 0;
-//    virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
-//    virtual NativeValue* CreateObject() = 0;
-//    virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
-//    virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
-//    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
     virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
     virtual bool HasPendingJob() = 0;
     virtual bool IsProfiling() = 0;
@@ -166,10 +155,9 @@ public:
                                       napi_value function,
                                       napi_value const *argv,
                                       size_t argc) = 0;
-//    virtual NativeValue* RunScript(NativeValue* script) = 0;
     virtual void* RunScriptPath(const char* path) = 0;
-     virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
-     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
+    virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
+    virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
 
@@ -192,14 +180,7 @@ public:
         napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
 
-    // virtual bool Throw(NativeValue* error) = 0;
-    // virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
-
     virtual void* CreateRuntime() = 0;
-//    virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
-//    virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
-//    virtual void DeleteSerializationData(NativeValue* value) const = 0;
-//    virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
@@ -229,15 +210,12 @@ public:
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
     void ClearLastError();
     virtual bool IsExceptionPending() const = 0;
-//    virtual NativeValue* GetAndClearLastException() = 0;
     void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
     void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
-//    virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
-
     virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
 
     virtual bool TriggerFatalException(napi_value error) = 0;
@@ -356,8 +334,6 @@ public:
     virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
-
-//    virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
     virtual bool HasPendingException()
@@ -371,7 +347,6 @@ public:
     virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
     virtual void SetCheckCallbackRef(NativeReference*) = 0;
-//    virtual UncaughtExceptionCallback GetUncaughtExceptionCallback() = 0;
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
     // run script by path
@@ -422,7 +397,6 @@ protected:
     void Deinit();
 
     NativeModuleManager* moduleManager_ = nullptr;
-//    NativeScopeManager* scopeManager_ = nullptr;
     NativeReferenceManager* referenceManager_ = nullptr;
     NativeCallbackScopeManager* callbackScopeManager_ = nullptr;
 

@@ -173,20 +173,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     }
 
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
-
-    // NativeScopeManager* scopeManager = that->engine_->GetScopeManager();
     that->engine_->DecreaseWaitingRequestCounter();
-    // if (scopeManager == nullptr) {
-    //     HILOG_ERROR("Get scope manager failed");
-    //     return;
-    // }
-
- //   NativeScope* scope = scopeManager->Open();
-    // if (scope == nullptr) {
-    //     HILOG_ERROR("Open scope failed");
-    //     return;
-    // }
-
     napi_status nstatus = napi_generic_failure;
     switch (status) {
         case 0:
@@ -211,7 +198,6 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
         that->complete_(that->engine_, nstatus, that->data_);
         FinishTrace(HITRACE_TAG_ACE);
         OHOS::HiviewDFX::HiTraceChain::ClearId();
-//        scopeManager->Close(scope);
         return;
     }
 #endif
@@ -219,7 +205,6 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
- //   scopeManager->Close(scope);
 }
 
 std::string NativeAsyncWork::GetTraceDescription()

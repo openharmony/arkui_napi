@@ -90,7 +90,6 @@ NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
     CHECK_ARG(env, err);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-//    auto jsError = reinterpret_cast<NativeValue*>(err);
     if (engine->TriggerFatalException(err)) {
         HILOG_INFO("%{public}s, end.", __func__);
         return napi_status::napi_ok;
@@ -365,8 +364,6 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
     }
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    // auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    // auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
     auto finalizeCallback = reinterpret_cast<NativeFinalize>(thread_finalize_cb);
     auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(call_js_cb);
     auto safeAsyncWork = engine->CreateSafeAsyncWork(func, async_resource, async_resource_name, max_queue_size,

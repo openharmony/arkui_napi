@@ -26,7 +26,6 @@
 #include <thread>
 #include <iostream>
 
-//#include "ark_headers.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "native_engine/native_engine.h"
@@ -86,34 +85,16 @@ private:
 class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
-    // ArkNativeEngine constructor
     ArkNativeEngine(EcmaVM* vm, void* jsEngine);
-    // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
     NAPI_EXPORT const EcmaVM* GetEcmaVm() const override;
 
     void Loop(LoopMode mode, bool needSync = false) override;
-
-    // Get global native object value
- //   NativeValue* GetGlobal() override;
-    // Create native null value
-//   NativeValue* CreateNull() override;
-    // Create native undefined value
-//    NativeValue* CreateUndefined() override;
-    // Create native symbol value
-//    NativeValue* CreateSymbol(NativeValue* value) override;
-    // Create native object value
-//    NativeValue* CreateObject() override;
-    // Create native function value
-//    NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
-    // Create native error value
-//    NativeValue* CreateError(NativeValue* code, NativeValue* message) override;
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
-//    bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) override;
     bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
     bool HasPendingJob() override;
     bool IsProfiling() override;
@@ -123,8 +104,6 @@ public:
                               napi_value function,
                               napi_value const* argv,
                               size_t argc) override;
-    // Run script
-//    NativeValue* RunScript(NativeValue* script) override;
     void* RunScriptPath(const char* path) override;
 
      napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
@@ -141,23 +120,10 @@ public:
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
         bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     bool IsExceptionPending() const override;
-//    NativeValue* GetAndClearLastException() override;
-     // Throw exception
-    // bool Throw(NativeValue* error) override;
-    // // Throw exception
-    // bool Throw(NativeErrorType type, const char* code, const char* message) override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime() override;
-//    NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
- //   NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
- //   void DeleteSerializationData(NativeValue* value) const override;
-//    NativeValue* LoadModule(NativeValue* str, const std::string& fileName) override;
     napi_value LoadArkModule(const char* str, int32_t len, const std::string& fileName);
-
-//    static NativeValue* ArkValueToNativeValue(ArkNativeEngine* engine, Local<JSValueRef> value);
-
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
-//    NativeValue* ValueToNativeValue(JSValueWrapper& value) override;
     NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
@@ -220,7 +186,6 @@ public:
     void JudgmentDump(size_t limitSize);
     void NotifyNativeCalling(const void *nativeAddress);
 
-//    void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) override;
     void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
     bool HasPendingException() override;
@@ -232,8 +197,6 @@ public:
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
-
-   // NativeChunk& GetNativeChunk();
 
     NativeReference* GetPromiseRejectCallBackRef()
     {
@@ -260,11 +223,6 @@ public:
         checkCallbackRef_ = checkCallbackRef;
     }
 
-    // UncaughtExceptionCallback GetUncaughtExceptionCallback() override
-    // {
-    //     return uncaughtExceptionCallback_;
-    // }
-
     NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() override
     {
         return napiUncaughtExceptionCallback_;
@@ -290,7 +248,6 @@ private:
     NativeReference* checkCallbackRef_ { nullptr };
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
-//    UncaughtExceptionCallback uncaughtExceptionCallback_ { nullptr };
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     inline void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);

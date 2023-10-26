@@ -39,8 +39,6 @@ void NativeSafeAsyncWork::CallJs(NativeEngine* engine, napi_value js_call_func, 
         HILOG_ERROR("CallJs failed. engine or js_call_func is nullptr!");
         return;
     }
-
-//    auto value = engine->CreateUndefined();
     napi_value value = nullptr;
     napi_get_undefined(reinterpret_cast<napi_env>(engine), &value);
     if (value == nullptr) {
@@ -53,7 +51,6 @@ void NativeSafeAsyncWork::CallJs(NativeEngine* engine, napi_value js_call_func, 
         HILOG_ERROR("CallFunction failed");
     }
 }
-// static methods end
 
 NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
                                          napi_value func,
@@ -247,12 +244,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 {
     HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
 
-    // auto scopeManager = engine_->GetScopeManager();
-    // if (scopeManager == nullptr) {
-    //     HILOG_ERROR("scope manager is null");
-    //     return;
-    // }
-
     std::unique_lock<std::mutex> lock(mutex_);
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
         HILOG_ERROR("Process failed, thread is closed!");
@@ -269,9 +260,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     void* data = nullptr;
 
     HILOG_INFO("queue size %d", (int32_t)size);
-
-//    auto nativeScope = scopeManager->Open();
-
     while (size > 0) {
         data = queue_.front();
 
@@ -294,7 +282,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         CloseHandles();
     }
 
-//    scopeManager->Close(nativeScope);
 }
 
 SafeAsyncCode NativeSafeAsyncWork::CloseHandles()

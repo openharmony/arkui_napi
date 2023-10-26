@@ -16,6 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_DEFERRED_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_DEFERRED_H
 
+#include "native_engine/native_value.h"
+
 #include "native_engine/native_deferred.h"
 #include "ecmascript/napi/include/jsnapi.h"
 

@@ -81,7 +81,6 @@ void NativeEngine::Init()
     HILOG_INFO("NativeEngine::Init");
     moduleManager_ = NativeModuleManager::GetInstance();
     referenceManager_ = new NativeReferenceManager();
-//    scopeManager_ = new NativeScopeManager();
     callbackScopeManager_ = new NativeCallbackScopeManager();
     loop_ = uv_loop_new();
     if (loop_ == nullptr) {
@@ -102,21 +101,11 @@ void NativeEngine::Deinit()
         delete referenceManager_;
         referenceManager_ = nullptr;
     }
-    // if (scopeManager_ != nullptr) {
-    //     delete scopeManager_;
-    //     scopeManager_ = nullptr;
-    // }
 
     SetStopping(true);
-
     uv_loop_delete(loop_);
     loop_ = nullptr;
 }
-
-// NativeScopeManager* NativeEngine::GetScopeManager()
-// {
-//     return scopeManager_;
-// }
 
 NativeReferenceManager* NativeEngine::GetReferenceManager()
 {
@@ -199,20 +188,6 @@ inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
     return local;
 }
 
-// NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,
-//     NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
-// {
-//     (void)asyncResource;
-//     (void)asyncResourceName;
-//     char name[NAME_BUFFER_SIZE] = {0};
-//     if (asyncResourceName != nullptr) {
-//         auto nativeString = LocalValueFromJsValue(asyncResourceName);
-//         size_t strLength = 0;
-//         nativeString->GetCString(name, NAME_BUFFER_SIZE, &strLength);
-//     }
-//     return new NativeAsyncWork(this, execute, complete, name, data);
-// }
-
 NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,
     NativeAsyncExecuteCallback execute, NativeAsyncCompleteCallback complete, void* data)
 {
@@ -274,22 +249,6 @@ void NativeEngine::ClearLastError()
     lastError_.reserved = nullptr;
 }
 
-// void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
-// {
-//     NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
-//     if (nativeValue == nullptr || nchars == nullptr || written == nullptr) {
-//         HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
-//         return;
-//     }
-
-//     auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-//     if (nativeString == nullptr) {
-//         HILOG_ERROR("nativeValue GetInterface is nullptr");
-//         return;
-//     }
-//     *written = nativeString->EncodeWriteUtf8(buffer, bufferSize, nchars);
-// }
-
 void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
     auto nativeValue = LocalValueFromJsValue(value);
@@ -329,22 +288,6 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     HILOG_DEBUG("EncodeWriteUtf8 the result of buffer: %{public}s", buffer);
     *written = pos;
 }
-
-// void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
-// {
-//     NativeValue* nativeValue = reinterpret_cast<NativeValue*>(value);
-//     if (nativeValue == nullptr) {
-//         HILOG_ERROR("NativeEngine is nullptr");
-//         return;
-//     }
-
-//     auto nativeString = reinterpret_cast<NativeString*>(nativeValue->GetInterface(NativeString::INTERFACE_ID));
-//     if (nativeString == nullptr) {
-//         HILOG_ERROR("nativeValue GetInterface is nullptr");
-//         return;
-//     }
-//     nativeString->EncodeWriteChinese(buffer, encoding.c_str());
-// }
 
 void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
 {

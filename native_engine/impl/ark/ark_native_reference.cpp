@@ -126,7 +126,6 @@ napi_value ArkNativeReference::Get()
         return nullptr;
     }
     auto vm = engine_->GetEcmaVm();
-//    LocalScope scope(vm);
     Local<JSValueRef> value = value_.ToLocal(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
     OHOS::Ace::ContainerScope containerScope(scopeId_);
@@ -192,6 +191,5 @@ bool ArkNativeReference::GetFinalRun()
 
 napi_value ArkNativeReference::GetNapiValue()
 {
-//    NativeValue* result = Get();
     return Get();
 }
