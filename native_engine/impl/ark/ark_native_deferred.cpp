@@ -18,6 +18,7 @@
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
+#include <cstring>
 
 #include "ark_native_deferred.h"
 

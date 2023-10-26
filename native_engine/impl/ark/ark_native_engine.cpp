@@ -268,7 +268,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                         }
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
-                                                JsValueFromLocalValue(exportObj));
+                                                 JsValueFromLocalValue(exportObj));
                         exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
