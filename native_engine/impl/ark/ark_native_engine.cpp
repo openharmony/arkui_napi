@@ -1538,7 +1538,7 @@ void ArkNativeEngine::HandleUncaughtException()
     if (!exception.IsEmpty() && !exception->IsHole()) {
         if (uncaughtExceptionCallback_ != nullptr) {
             uncaughtExceptionCallback_(ArkValueToNativeValue(this, exception));
-        } 
+        }
         if (napiUncaughtExceptionCallback_ != nullptr) {
             napiUncaughtExceptionCallback_(ArkValueToNapiValue(reinterpret_cast<napi_env>(this), exception));
         }
