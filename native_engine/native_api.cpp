@@ -497,7 +497,7 @@ NAPI_EXTERN napi_status napi_create_type_error(napi_env env, napi_value code, na
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
     if (code != nullptr) {
-        auto codeValue = LocalValueFromJsValue(code);
+        codeValue = LocalValueFromJsValue(code);
         if (!codeValue->IsNull()) {
             RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
         }
@@ -526,7 +526,7 @@ NAPI_EXTERN napi_status napi_create_range_error(napi_env env, napi_value code, n
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
 
     if (code != nullptr) {
-        auto codeValue = LocalValueFromJsValue(code);
+        codeValue = LocalValueFromJsValue(code);
         if (!codeValue->IsNull()) {
             RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
         }
