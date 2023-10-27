@@ -25,6 +25,7 @@
 #include "core/common/container_scope.h"
 #endif
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "utils/log.h"
@@ -174,6 +175,8 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
     that->engine_->DecreaseWaitingRequestCounter();
+    auto vm = that->engine_->GetEcmaVm();
+    panda::LocalScope scope(vm);
     napi_status nstatus = napi_generic_failure;
     switch (status) {
         case 0:

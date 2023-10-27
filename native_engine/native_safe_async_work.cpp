@@ -16,6 +16,7 @@
 #include "native_safe_async_work.h"
 
 #include "napi/native_api.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "native_async_work.h"
 #include "native_engine.h"
 #include "native_value.h"
@@ -259,6 +260,8 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     size_t size = queue_.size();
     void* data = nullptr;
 
+    auto vm = engine_->GetEcmaVm();
+    panda::LocalScope scope(vm);
     HILOG_INFO("queue size %d", (int32_t)size);
     while (size > 0) {
         data = queue_.front();
