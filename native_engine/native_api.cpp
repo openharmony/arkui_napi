@@ -469,9 +469,7 @@ NAPI_EXTERN napi_status napi_create_error(napi_env env, napi_value code, napi_va
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        if (!codeValue->IsNull()) {
-            RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
-        }
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
     }
 
     auto msgValue = LocalValueFromJsValue(msg);
@@ -498,9 +496,7 @@ NAPI_EXTERN napi_status napi_create_type_error(napi_env env, napi_value code, na
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        if (!codeValue->IsNull()) {
-            RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
-        }
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
     }
     auto msgValue = LocalValueFromJsValue(msg);
     RETURN_STATUS_IF_FALSE(env, msgValue->IsString(), napi_invalid_arg);
@@ -527,9 +523,7 @@ NAPI_EXTERN napi_status napi_create_range_error(napi_env env, napi_value code, n
 
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        if (!codeValue->IsNull()) {
-            RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
-        }
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
     }
     auto msgValue = LocalValueFromJsValue(msg);
     RETURN_STATUS_IF_FALSE(env, msgValue->IsString(), napi_invalid_arg);
@@ -1750,9 +1744,7 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto nativeValue = LocalValueFromJsValue(value);
-    NativeReference* ref = engine->CreateReference(JsValueFromLocalValue(nativeValue),
-        initial_refcount, true, nullptr, nullptr, nullptr);
+    NativeReference* ref = engine->CreateReference(value, initial_refcount, false, nullptr, nullptr, nullptr);
 
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
