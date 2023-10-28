@@ -17,7 +17,6 @@
 
 #include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_api.h"
-#include "ecmascript/napi/include/jsnapi.h"
 #include "native_async_work.h"
 #include "native_engine.h"
 #include "native_value.h"

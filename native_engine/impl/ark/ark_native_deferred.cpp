@@ -18,18 +18,7 @@
 #include <cstring>
 
 #include "ark_native_engine.h"
-
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
-}
-
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
-{
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
+#include "native_engine/native_utils.h"
 
 ArkNativeDeferred::ArkNativeDeferred(ArkNativeEngine* engine, Local<PromiseCapabilityRef> deferred)
     : engine_(engine), deferred_(engine->GetEcmaVm(), deferred)

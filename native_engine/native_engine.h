@@ -35,7 +35,6 @@
 #include "native_safe_async_work.h"
 #include "native_value.h"
 #include "reference_manager/native_reference_manager.h"
-#include "scope_manager/native_scope_manager.h"
 #include "utils/macros.h"
 
 namespace panda::ecmascript {

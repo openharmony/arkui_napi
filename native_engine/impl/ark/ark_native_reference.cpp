@@ -16,19 +16,8 @@
 #include "ark_native_reference.h"
 
 #include "ark_native_engine.h"
+#include "native_engine/native_utils.h"
 #include "utils/log.h"
-
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
-}
-
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
-{
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        Local<JSValueRef> value,

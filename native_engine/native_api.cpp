@@ -23,6 +23,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/native_property.h"
+#include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
 #include "securec.h"
 #include "utils/log.h"
@@ -103,30 +104,6 @@ inline napi_escapable_handle_scope EscapableHandleScopeToNapiEscapableHandleScop
 
 inline EscapableHandleScopeWrapper* NapiEscapableHandleScopeToEscapableHandleScope(napi_escapable_handle_scope s) {
     return reinterpret_cast<EscapableHandleScopeWrapper*>(s);
-}
-
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
-}
-
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
-{
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
-
-inline napi_deferred JsDeferredFromLocalValue(Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_deferred>(*local);
-}
-
-inline Local<panda::JSValueRef> LocalValueFromJsDeferred(napi_deferred v)
-{
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
 }
 
 NAPI_EXTERN napi_status napi_get_last_error_info(napi_env env, const napi_extended_error_info** result)
@@ -546,31 +523,31 @@ NAPI_EXTERN napi_status napi_typeof(napi_env env, napi_value value, napi_valuety
     CHECK_ARG(env, result);
 
     auto valueObj = LocalValueFromJsValue(value);
-    NativeValueType resultType;
+    napi_valuetype resultType;
     if (valueObj->IsNumber()) {
-        resultType = NATIVE_NUMBER;
+        resultType = napi_number;
     } else if (valueObj->IsString()) {
-        resultType = NATIVE_STRING;
+        resultType = napi_string;
     } else if (valueObj->IsFunction()) {
-        resultType = NATIVE_FUNCTION;
+        resultType = napi_function;
     } else if (valueObj->IsNativePointer()) {
-        resultType = NATIVE_EXTERNAL;
+        resultType = napi_external;
     } else if (valueObj->IsNull()) {
-        resultType = NATIVE_NULL;
+        resultType = napi_null;
     } else if (valueObj->IsBoolean()) {
-        resultType = NATIVE_BOOLEAN;
+        resultType = napi_boolean;
     } else if (valueObj->IsUndefined()) {
-        resultType = NATIVE_UNDEFINED;
+        resultType = napi_undefined;
     } else if (valueObj->IsSymbol()) {
-        resultType = NATIVE_SYMBOL;
+        resultType = napi_symbol;
     } else if (valueObj->IsBigInt()) {
-        resultType = NATIVE_BIGINT;
+        resultType = napi_bigint;
     } else if (valueObj->IsObject()) {
-        resultType = NATIVE_OBJECT;
+        resultType = napi_object;
     } else {
-        resultType = NATIVE_UNDEFINED;
+        resultType = napi_undefined;
     }
-    *result = (napi_valuetype)resultType;
+    *result = resultType;
     return napi_clear_last_error(env);
 }
 

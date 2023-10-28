@@ -16,7 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H
 
-#include "native_value.h"
+#include "native_engine/native_value.h"
 
 class NativeReference {
 public:

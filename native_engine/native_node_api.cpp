@@ -17,22 +17,11 @@
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
 #include "native_engine/native_engine.h"
+#include "native_engine/native_utils.h"
 #include "utils/log.h"
 
 using panda::StringRef;
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
-
-inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
-}
-
-inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
-{
-    panda::Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
 {

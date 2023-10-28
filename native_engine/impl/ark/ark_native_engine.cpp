@@ -22,6 +22,7 @@
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
 #include "native_engine/native_property.h"
+#include "native_engine/native_utils.h"
 #include "securec.h"
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
@@ -75,28 +76,16 @@ bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
 
-inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
+// To be delete
+napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local)
 {
-    return reinterpret_cast<napi_value>(*local);
+    return JsValueFromLocalValue(local);
 }
 
-inline Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+// To be delete
+panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 {
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
-
-Local<JSValueRef> NapiValueToLocalValue(napi_value v)
-{
-    Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
-}
-
-napi_value LocalValueToLocalNapiValue(Local<JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
+    return LocalValueFromJsValue(v);
 }
 
 struct MoudleNameLocker {

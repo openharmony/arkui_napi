@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "native_engine.h"
+#include "native_engine/native_engine.h"
 
 #include <uv.h>
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
@@ -24,6 +24,7 @@
 #endif
 
 #include "ecmascript/napi/include/jsnapi.h"
+#include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
 #include "utils/log.h"
 
@@ -173,18 +174,6 @@ void NativeEngine::Loop(LoopMode mode, bool needSync)
     if (needSync) {
         uv_sem_post(&uvSem_);
     }
-}
-
-inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
-{
-    return reinterpret_cast<napi_value>(*local);
-}
-
-inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
-{
-    panda::Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
-    return local;
 }
 
 NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,

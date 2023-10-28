@@ -30,6 +30,7 @@ struct NapiNativeCallbackInfo;
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
 
+// To be refactor
 typedef napi_value (*NapiNativeCallback)(napi_env env, NapiNativeCallbackInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
@@ -62,6 +63,7 @@ struct NapiNativeFunctionInfo {
     void* data = nullptr;
 };
 
+// To be refactor
 struct NapiNativeCallbackInfo {
     size_t argc = 0;
     napi_value* argv = nullptr;
@@ -72,6 +74,7 @@ struct NapiNativeCallbackInfo {
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);
 
+// To be delete
 enum NativeValueType {
     NATIVE_UNDEFINED,
     NATIVE_NULL,
@@ -85,11 +88,13 @@ enum NativeValueType {
     NATIVE_BIGINT,
 };
 
+// To be delete
 enum NativeThreadSafeFunctionCallMode {
     NATIVE_TSFUNC_NONBLOCKING,
     NATIVE_TSFUNC_BLOCKING,
 };
 
+// To be delete
 enum NativeThreadSafeFunctionReleaseMode {
     NATIVE_TSFUNC_RELEASE,
     NATIVE_TSFUNC_ABORT,
@@ -128,6 +133,7 @@ struct NapiTypeTag {
     uint64_t upper;
 };
 
+// To be delete
 enum NativeTypedArrayType {
     NATIVE_INT8_ARRAY,
     NATIVE_UINT8_ARRAY,
@@ -140,12 +146,6 @@ enum NativeTypedArrayType {
     NATIVE_FLOAT64_ARRAY,
     NATIVE_BIGINT64_ARRAY,
     NATIVE_BIGUINT64_ARRAY,
-};
-
-enum NativeErrorType {
-    NATIVE_COMMON_ERROR,
-    NATIVE_TYPE_ERROR,
-    NATIVE_RANGE_ERROR,
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_VALUE_H */
