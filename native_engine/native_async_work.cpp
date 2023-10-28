@@ -149,9 +149,6 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
 
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
 
-#ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(that->containerScopeId_);
-#endif
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
     if (that->traceId_ && that->traceId_->IsValid()) {

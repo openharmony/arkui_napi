@@ -64,10 +64,6 @@ private:
     bool hasDelete_ {false};
     bool finalRun_ {false};
 
-#ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId_ = -1;
-#endif
-
     NativeFinalize callback_ = nullptr;
     NapiNativeFinalize napiCallback_ = nullptr;
     void* data_ = nullptr;

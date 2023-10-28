@@ -88,6 +88,9 @@ private:
     std::queue<void*> queue_;
     std::condition_variable condition_;
     SafeAsyncStatus status_ = SafeAsyncStatus::UNKNOW;
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t containerScopeId_;
+#endif
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_SAFE_ASYNC_WORK_H */

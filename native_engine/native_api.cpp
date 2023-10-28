@@ -26,9 +26,6 @@
 #include "native_engine/native_value.h"
 #include "securec.h"
 #include "utils/log.h"
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #endif
@@ -446,9 +443,6 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
-#ifdef ENABLE_CONTAINER_SCOPE
-    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
-#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
                                              [](void* externalPointer, void* data) {
@@ -1094,9 +1088,6 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
-#ifdef ENABLE_CONTAINER_SCOPE
-    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
-#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
                                              [](void* externalPointer, void* data) {
@@ -1261,14 +1252,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     if (recv != nullptr) {
         thisObj = LocalValueFromJsValue(recv);
     }
-#ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto fucInfo = reinterpret_cast<NapiNativeFunctionInfo*>(function->GetData(vm));
-    if (fucInfo != nullptr) {
-        scopeId = fucInfo->scopeId;
-    }
-    OHOS::Ace::ContainerScope containerScope(scopeId);
-#endif
+
     std::vector<Local<panda::JSValueRef>> args;
     args.reserve(argc);
     for (size_t i = 0; i < argc; i++) {
@@ -1418,9 +1402,6 @@ Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNat
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
-#ifdef ENABLE_CONTAINER_SCOPE
-    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
-#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, NativeFunctionCallBack,
                                                     [](void* externalPointer, void* data) {

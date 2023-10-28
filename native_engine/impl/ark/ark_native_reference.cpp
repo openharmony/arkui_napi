@@ -17,9 +17,6 @@
 
 #include "ark_native_engine.h"
 #include "utils/log.h"
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
 
 inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
 {
@@ -68,10 +65,6 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
     if (initialRefcount == 0) {
         value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
-
-#ifdef ENABLE_CONTAINER_SCOPE
-    scopeId_ = OHOS::Ace::ContainerScope::CurrentId();
-#endif
 
     if (deleteSelf) {
         NativeReferenceManager* referenceManager = engine->GetReferenceManager();
@@ -125,9 +118,6 @@ napi_value ArkNativeReference::Get()
     }
     auto vm = engine_->GetEcmaVm();
     Local<JSValueRef> value = value_.ToLocal(vm);
-#ifdef ENABLE_CONTAINER_SCOPE
-    OHOS::Ace::ContainerScope containerScope(scopeId_);
-#endif
     return JsValueFromLocalValue(value);
 }
 

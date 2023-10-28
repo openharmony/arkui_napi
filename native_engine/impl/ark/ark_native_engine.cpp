@@ -22,7 +22,6 @@
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
 #include "native_engine/native_property.h"
-#include "scope_manager/native_scope_manager.h"
 #include "securec.h"
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
@@ -698,9 +697,6 @@ napi_value ArkNativeEngine::CallFunction(
         thisObj = LocalValueFromJsValue(thisVar);
     }
     Local<FunctionRef> funcObj = LocalValueFromJsValue(function);
-#ifdef ENABLE_CONTAINER_SCOPE
-    OHOS::Ace::ContainerScope containerScope( OHOS::Ace::ContainerScope::CurrentId());
-#endif
     std::vector<Local<JSValueRef>> args;
     args.reserve(argc);
     for (size_t i = 0; i < argc; i++) {
