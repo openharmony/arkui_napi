@@ -742,7 +742,6 @@ NAPI_EXTERN napi_status napi_coerce_to_bool(napi_env env, napi_value value, napi
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     Local<panda::JSValueRef> val = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, val->IsBoolean(), napi_boolean_expected);
     Local<panda::BooleanRef> boolVal = val->ToBoolean(engine->GetEcmaVm());
     *result = JsValueFromLocalValue(boolVal);
 
@@ -1571,15 +1570,13 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     auto nativeValue = LocalValueFromJsValue(js_object);
-
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(),
         napi_object_expected);
 
     auto nativeObject = nativeValue->ToObject(vm);
-
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
-
+    *result = nullptr;
     if (val->IsObject()) {
         Local<panda::ObjectRef> ext(val);
         auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
@@ -1598,15 +1595,12 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     auto nativeValue = LocalValueFromJsValue(js_object);
-
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(),
         napi_object_expected);
-
     auto nativeObject = nativeValue->ToObject(vm);
-
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
-
+    *result = nullptr;
     if (val->IsObject()) {
         Local<panda::ObjectRef> ext(val);
         auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
@@ -1615,7 +1609,7 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
 
     size_t nativeBindingSize = 0;
     if (nativeObject->Has(vm, key)) {
-        Local<panda::ObjectRef> wrapper =val;
+        Local<panda::ObjectRef> wrapper = val;
         auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
         // Try to remove native pointer from ArrayDataList
         ASSERT(nativeBindingSize == 0);
@@ -2575,22 +2569,8 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
     CHECK_ARG(env, script);
     CHECK_ARG(env, result);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-
-    auto scriptValue = LocalValueFromJsValue(script);
-    RETURN_STATUS_IF_FALSE(env, scriptValue->IsString(), napi_status::napi_string_expected);
-
-    std::vector<uint8_t> scriptContent;
-    std::string path = panda::JSNApi::GetAssetPath(vm);
-    std::string ami;
-    if (!engine->CallGetAssetFunc(path, scriptContent, ami)) {
-        HILOG_ERROR("Get asset error");
-        *result = nullptr;
-    }
-    HILOG_INFO("asset size is %{public}zu", scriptContent.size());
-
-    return napi_run_actor(env, scriptContent, ami.c_str(), result);
+    *result = nullptr;
+    return napi_clear_last_error(env);
 }
 
 // Runnint a buffer script, only used in ark
