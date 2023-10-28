@@ -16,18 +16,18 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H
 
+#include <iostream>
 #include <memory>
+#include <mutex>
+#include <thread>
+#include <unistd.h>
+#include <unordered_map>
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/wait.h>
 #endif
-#include <unistd.h>
-#include <unordered_map>
-#include <mutex>
-#include <thread>
-#include <iostream>
 
-#include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_engine.h"
 
 namespace panda::ecmascript {

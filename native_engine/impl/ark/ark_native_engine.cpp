@@ -15,26 +15,24 @@
 
 #include "ark_native_engine.h"
 
-#include "ark_native_reference.h"
-#include "ark_native_deferred.h"
-#include "scope_manager/native_scope_manager.h"
-
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
-#include "native_engine/native_property.h"
-
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
-#include "hitrace_meter.h"
 #endif
+
+#include "ark_native_deferred.h"
+#include "ark_native_reference.h"
+#include "native_engine/native_property.h"
+#include "scope_manager/native_scope_manager.h"
+#include "securec.h"
+#include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #endif
-#include "securec.h"
-#include "utils/log.h"
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
 #ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
 #include "parameter.h"
 #endif
 

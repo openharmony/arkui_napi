@@ -16,48 +16,50 @@
 #define NAPI_EXPERIMENTAL
 #endif
 
+#ifdef ENABLE_HITRACE
+#include <sys/prctl.h>
+#endif
+
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_value.h"
 #include "securec.h"
 #include "utils/log.h"
-
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-
 #ifdef ENABLE_HITRACE
-#include <sys/prctl.h>
 #include "hitrace_meter.h"
 #endif
 
-using panda::ecmascript::EcmaVM;
-using panda::Global;
-using panda::Local;
-using panda::LocalScope;
-using panda::EscapeLocalScope;
-using panda::BooleanRef;
-using panda::PrimitiveRef;
-using panda::StringRef;
-using panda::SymbolRef;
-using panda::ObjectRef;
-using panda::NumberRef;
-using panda::IntegerRef;
 using panda::ArrayRef;
 using panda::ArrayBufferRef;
-using panda::BufferRef;
 using panda::BigIntRef;
-using panda::DataViewRef;
+using panda::BooleanRef;
+using panda::BufferRef;
 using panda::DateRef;
+using panda::DataViewRef;
+using panda::EscapeLocalScope;
+using panda::FunctionRef;
+using panda::Global;
+using panda::IntegerRef;
 using panda::JSNApi;
+using panda::JsiRuntimeCallInfo;
+using panda::Local;
+using panda::LocalScope;
+using panda::NativePointerRef;
+using panda::NumberRef;
+using panda::ObjectRef;
+using panda::PrimitiveRef;
 using panda::PromiseCapabilityRef;
 using panda::PromiseRef;
-using panda::FunctionRef;
-using panda::TypedArrayRef;
-using panda::NativePointerRef;
-using panda::JsiRuntimeCallInfo;
 using panda::PropertyAttribute;
+using panda::StringRef;
+using panda::SymbolRef;
+using panda::TypedArrayRef;
+using panda::ecmascript::EcmaVM;
+
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 
 class HandleScopeWrapper {
@@ -140,6 +142,7 @@ NAPI_EXTERN napi_status napi_get_last_error_info(napi_env env, const napi_extend
     if ((*result)->error_code == napi_ok) {
         napi_clear_last_error(env);
     }
+
     return napi_ok;
 }
 
@@ -152,6 +155,7 @@ NAPI_EXTERN napi_status napi_get_undefined(napi_env env, napi_value* result)
     auto engine = reinterpret_cast<NativeEngine*>(env);
     Local<panda::PrimitiveRef> value = panda::JSValueRef::Undefined(engine->GetEcmaVm());
     *result = JsValueFromLocalValue(value);
+
     return napi_clear_last_error(env);
 }
 
@@ -175,6 +179,7 @@ NAPI_EXTERN napi_status napi_get_global(napi_env env, napi_value* result)
     auto engine = reinterpret_cast<NativeEngine*>(env);
     Local<panda::ObjectRef> value = panda::JSNApi::GetGlobalObject(engine->GetEcmaVm());
     *result = JsValueFromLocalValue(value);
+
     return napi_clear_last_error(env);
 }
 
@@ -259,7 +264,7 @@ NAPI_EXTERN napi_status napi_create_uint32(napi_env env, uint32_t value, napi_va
     auto engine = reinterpret_cast<NativeEngine*>(env);
     Local<panda::NumberRef> object = panda::NumberRef::New(engine->GetEcmaVm(), value);
     *result = JsValueFromLocalValue(object);
-    
+
     return napi_clear_last_error(env);
 }
 

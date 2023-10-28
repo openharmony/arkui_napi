@@ -14,19 +14,18 @@
  */
 
 #include "native_engine.h"
-#include "utils/log.h"
-#include "unicode/ucnv.h"
-#include "ecmascript/napi/include/jsnapi.h"
 
+#include <uv.h>
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <sys/epoll.h>
 #endif
-
 #ifdef IOS_PLATFORM
 #include <sys/event.h>
 #endif
 
-#include <uv.h>
+#include "ecmascript/napi/include/jsnapi.h"
+#include "unicode/ucnv.h"
+#include "utils/log.h"
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr size_t DESTRUCTION_TIMEOUT = 3000;

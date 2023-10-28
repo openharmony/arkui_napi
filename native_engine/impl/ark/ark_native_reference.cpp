@@ -13,15 +13,13 @@
  * limitations under the License.
  */
 
-#include "ark_native_engine.h"
-
 #include "ark_native_reference.h"
 
+#include "ark_native_engine.h"
+#include "utils/log.h"
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-
-#include "utils/log.h"
 
 inline napi_value JsValueFromLocalValue(Local<panda::JSValueRef> local)
 {

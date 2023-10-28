@@ -17,23 +17,22 @@
 
 #include <dirent.h>
 #include <mutex>
-
 #ifdef ANDROID_PLATFORM
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #endif
 
-#ifdef ENABLE_HITRACE
-#include "hitrace_meter.h"
-#endif
 #include "module_load_checker.h"
 #include "native_engine/native_engine.h"
 #include "securec.h"
 #include "utils/log.h"
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
 
-#define NDK "ndk"
 #define ALLOW_ALL_SHARED_LIBS "allow_all_shared_libs"
+#define NDK "ndk"
 
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 2;
