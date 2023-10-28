@@ -55,7 +55,7 @@ static napi_value NewBufferFun(napi_env env, napi_callback_info info)
 
     NAPI_CALL(env, napi_create_buffer(env, paraStr.size()+1, (void**)(&theCopy), &theBuffer));
     NAPI_ASSERT(env, theCopy, "Failed to copy static text for NewBufferFun");
-    
+
     if (memcpy_s(theCopy, paraStr.size(), paraStr.c_str(), paraStr.size()) != 0) {
         return nullptr;
     }

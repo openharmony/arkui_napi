@@ -30,11 +30,11 @@ void callbackTest(CallbackContext* context)
 {
     uv_loop_s* loop = nullptr;
     napi_get_uv_event_loop(context->env, &loop);
-    
+
     uv_work_t* work = new uv_work_t;
     context->retData = 1;
     work->data = (void*)context;
-    
+
     uv_queue_work(
         loop, work, [](uv_work_t* work) {},
         // using callback function back to JS thread

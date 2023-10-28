@@ -983,7 +983,7 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     *result = JsValueFromLocalValue(obj->Get(vm, key));
-    
+
     return napi_clear_last_error(env);
 }
 
@@ -1326,7 +1326,7 @@ NAPI_EXTERN napi_status napi_new_instance(
     } else {
         *result = JsValueFromLocalValue(instance);
     }
-    
+
     return napi_clear_last_error(env);
 }
 
@@ -2390,7 +2390,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     Local<panda::TypedArrayRef> typedArray = value->ToObject(vm);
-    if (type != nullptr) {     
+    if (type != nullptr) {
         NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
         if (typedArray->IsInt8Array()) {
             thisType = NATIVE_INT8_ARRAY;
@@ -2583,7 +2583,7 @@ NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_r
         panda::JSNApi::SetHostPromiseRejectionTracker(const_cast<EcmaVM*>(engine->GetEcmaVm()), engine->GetPromiseRejectCallback(),
                                             reinterpret_cast<void*>(engine));
     }
-    
+
     return napi_clear_last_error(env);
 }
 
@@ -2599,7 +2599,7 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
 
     auto scriptValue = LocalValueFromJsValue(script);
     RETURN_STATUS_IF_FALSE(env, scriptValue->IsString(), napi_status::napi_string_expected);
-    
+
     std::vector<uint8_t> scriptContent;
     std::string path = panda::JSNApi::GetAssetPath(vm);
     std::string ami;
@@ -2608,7 +2608,7 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
         *result = nullptr;
     }
     HILOG_INFO("asset size is %{public}zu", scriptContent.size());
-  
+
     return napi_run_actor(env, scriptContent, ami.c_str(), result);
 }
 
@@ -2635,7 +2635,7 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
 
     Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
     *result = JsValueFromLocalValue(value);
-    return napi_clear_last_error(env); 
+    return napi_clear_last_error(env);
 }
 
 NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffer,
@@ -2646,7 +2646,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffe
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-    
+
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
 
@@ -2669,7 +2669,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffe
 
     Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
     *result = JsValueFromLocalValue(value);
-    return napi_clear_last_error(env); 
+    return napi_clear_last_error(env);
 }
 
 // Memory management
@@ -3038,7 +3038,7 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
     auto ArrayBuffer_result = nativeValue->IsArrayBuffer();
     Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
     if (ArrayBuffer_result) {
-    
+
         *result = bufObj->IsDetach();
     } else {
         return napi_set_last_error(env, napi_invalid_arg);
@@ -3116,7 +3116,7 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     auto ArrayBuffer_result = nativeValue->IsArrayBuffer();
     Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
     if (ArrayBuffer_result) {
-    
+
         if (!bufObj->IsDetach()) {
             bufObj->Detach(vm);
         }

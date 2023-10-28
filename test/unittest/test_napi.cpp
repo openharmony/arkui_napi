@@ -1647,7 +1647,7 @@ HWTEST_F(NapiBasicTest, WrapWithSizeTest001, testing::ext::TestSize.Level1)
     char* tempTestStr1 = nullptr;
     napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
     ASSERT_STREQ(testWrapStr, tempTestStr1);
-    
+
 }
 
 /**
@@ -1691,7 +1691,7 @@ HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
     bool isBigInt64Array = true;
     napi_is_big_int64_array(env, array, &isBigInt64Array);
     ASSERT_EQ(isBigInt64Array, false);
-    
+
     bool isBigUInt64Array = true;
     napi_is_big_uint64_array(env, array, &isBigUInt64Array);
     ASSERT_EQ(isBigUInt64Array, false);
@@ -1704,7 +1704,7 @@ HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
  */
 HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1) {
     napi_env env = (napi_env) engine_;
-    
+
     napi_value arrayBuffer = nullptr;
     void* arrayBufferPtr = nullptr;
     size_t arrayBufferSize = 1024;

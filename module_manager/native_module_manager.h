@@ -87,11 +87,11 @@ public:
 
     /**
      * @brief Set the path for searching napi dynamic libraries, only for the previewer.
-     *
+     * 
      * @param previewSearchPath the path for searching napi dynamic libraries
      */
     void SetPreviewSearchPath(const std::string& previewSearchPath);
-    
+
     /**
      * @brief Set the Module Load Checker delegate
      * 

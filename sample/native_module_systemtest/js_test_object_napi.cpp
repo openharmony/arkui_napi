@@ -38,7 +38,7 @@ static napi_value ObjectTypeTaggedInstance(napi_env env, napi_callback_info info
     NAPI_CALL(env, napi_get_value_uint32(env, whichType, &typeIndex));
     NAPI_CALL(env, napi_create_object(env, &instance));
     NAPI_CALL(env, napi_type_tag_object(env, instance, &typeTags[typeIndex]));
-    
+
     HILOG_INFO("%{public}s,called typeIndex=%{public}d", __func__, typeIndex);
     return instance;
 }
@@ -58,7 +58,7 @@ static napi_value ObjectCheckTypeTag(napi_env env, napi_callback_info info)
 
     HILOG_INFO("%{public}s,called typeIndex=%{public}d, result=%{public}s", __func__, typeIndex,
         result ? "true" : "false");
-    
+
     return js_result;
 }
 
@@ -113,7 +113,7 @@ void AddLastStatus(napi_env env, const char* key, napi_value returnValue)
 
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, (pLastError->error_message == nullptr ?
         "Invalid argument" : pLastError->error_message), NAPI_AUTO_LENGTH, &prop_value));
-    
+
     NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, returnValue, key, prop_value));
 }
 

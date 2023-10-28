@@ -362,7 +362,7 @@ public:
     /**
      * @brief Set the Extension Infos
      * 
-     * @param extensionInfos extension infos to set 
+     * @param extensionInfos extension infos to set
      */
     void SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos);
 

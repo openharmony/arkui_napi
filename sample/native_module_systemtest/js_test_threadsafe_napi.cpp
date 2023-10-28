@@ -66,7 +66,7 @@ static void DataSourceThread(void* data)
     void* hint = nullptr;
     bool queueWasFull = false, queueWasClosing = false;
     NAPI_CALL_RETURN_VOID(env, napi_get_threadsafe_function_context(tsfun, &hint));
-    
+
     TsFnHint* tsFnInfo = static_cast<TsFnHint*>(hint);
     if (tsFnInfo != &tsinfo) {
         napi_fatal_error("DataSourceThread", NAPI_AUTO_LENGTH,
