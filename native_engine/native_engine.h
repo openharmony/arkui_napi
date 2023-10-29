@@ -28,12 +28,12 @@
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
 #include "module_manager/native_module_manager.h"
-#include "native_async_work.h"
-#include "native_deferred.h"
+#include "native_engine/native_async_work.h"
+#include "native_engine/native_deferred.h"
+#include "native_engine/native_reference.h"
+#include "native_engine/native_safe_async_work.h"
+#include "native_engine/native_value.h"
 #include "native_property.h"
-#include "native_reference.h"
-#include "native_safe_async_work.h"
-#include "native_value.h"
 #include "reference_manager/native_reference_manager.h"
 #include "utils/macros.h"
 
@@ -151,9 +151,9 @@ public:
     virtual void* GetCurrentTaskInfo() const = 0;
 
     virtual napi_value CallFunction(napi_value thisVar,
-                                      napi_value function,
-                                      napi_value const *argv,
-                                      size_t argc) = 0;
+                                    napi_value function,
+                                    napi_value const *argv,
+                                    size_t argc) = 0;
     virtual void* RunScriptPath(const char* path) = 0;
     virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;

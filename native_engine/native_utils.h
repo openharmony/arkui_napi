@@ -16,6 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
 
+#include <cstring>
+
 #include "ecmascript/napi/include/jsnapi.h"
 #include "interfaces/inner_api/napi/native_node_api.h"
 

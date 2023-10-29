@@ -51,7 +51,6 @@ using LIBHANDLE = void*;
 #endif
 
 class NativeEngine;
-class NativeValue;
 
 typedef napi_value (*RegisterCallback)(napi_env, napi_value);
 typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);

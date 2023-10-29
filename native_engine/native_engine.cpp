@@ -279,12 +279,11 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
 
 void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
 {
-    auto nativeValue = LocalValueFromJsValue(value);
-    if (nativeValue->IsNull()) {
+    if (value == nullptr) {
         HILOG_ERROR("nativeValue GetInterface is nullptr");
         return;
     }
-
+    auto nativeValue = LocalValueFromJsValue(value);
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);

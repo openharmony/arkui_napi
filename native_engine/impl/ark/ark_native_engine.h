@@ -40,11 +40,11 @@ struct JsFrameInfo {
 }
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
-using panda::LocalScope;
-using panda::Local;
-using panda::JSValueRef;
-using panda::JSNApi;
 using panda::DFXJSNApi;
+using panda::Local;
+using panda::LocalScope;
+using panda::JSNApi;
+using panda::JSValueRef;
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,
@@ -101,9 +101,9 @@ public:
     void* GetCurrentTaskInfo() const override;
     // Call function
     napi_value CallFunction(napi_value thisVar,
-                              napi_value function,
-                              napi_value const* argv,
-                              size_t argc) override;
+                            napi_value function,
+                            napi_value const* argv,
+                            size_t argc) override;
     void* RunScriptPath(const char* path) override;
 
      napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;

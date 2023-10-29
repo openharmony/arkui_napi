@@ -56,8 +56,8 @@ struct JsFrameInfo {
     uintptr_t *nativePointer = nullptr;
 };
 
-struct NapiNativeFunctionInfo {
-    static NapiNativeFunctionInfo* CreateNewInstance() { return new NapiNativeFunctionInfo(); }
+struct NapiFunctionInfo {
+    static NapiFunctionInfo* CreateNewInstance() { return new NapiFunctionInfo(); }
     napi_env env = nullptr;
     NapiNativeCallback callback = nullptr;
     void* data = nullptr;
@@ -69,7 +69,7 @@ struct NapiNativeCallbackInfo {
     napi_value* argv = nullptr;
     napi_value thisVar = nullptr;
     napi_value function = nullptr;
-    NapiNativeFunctionInfo* functionInfo = nullptr;
+    NapiFunctionInfo* functionInfo = nullptr;
 };
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);

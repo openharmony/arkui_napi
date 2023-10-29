@@ -54,7 +54,7 @@ using panda::BigIntRef;
 using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
-static const auto PANDA_MODULE_NAME_LEN = 32;
+static constexpr auto PANDA_MODULE_NAME_LEN = 32;
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static constexpr uint32_t DEC_TO_INT = 100;
 static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
@@ -101,7 +101,11 @@ struct MoudleNameLocker {
 
 void* ArkNativeEngine::GetNativePtrCallBack(void* data)
 {
-    auto info = reinterpret_cast<NapiNativeFunctionInfo*>(data);
+    if (data == nullptr) {
+        HILOG_ERROR("data is nullptr");
+        return nullptr;
+    }
+    auto info = reinterpret_cast<NapiFunctionInfo*>(data);
     auto cb = reinterpret_cast<void*>(info->callback);
     return cb;
 }
@@ -211,7 +215,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
 #endif
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
-                                                JsValueFromLocalValue(exportObj));
+                                                 JsValueFromLocalValue(exportObj));
 #ifdef ENABLE_HITRACE
                         FinishTrace(HITRACE_TAG_ACE);
 #endif
@@ -247,11 +251,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                     std::string strModuleName = moduleName->ToString();
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
-                    if (!exportObj->IsNull()) {
-                        if (!arkNativeEngine) {
-                            HILOG_ERROR("exportObject is nullptr");
-                            return scope.Escape(exports);
-                        }
+                    if (exportObj->IsObject()) {
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
                                                  JsValueFromLocalValue(exportObj));
@@ -343,7 +343,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
 {
     EcmaVM *vm = runtimeInfo->GetVM();
     panda::EscapeLocalScope scope(vm);
-    auto info = reinterpret_cast<NapiNativeFunctionInfo*>(runtimeInfo->GetData());
+    auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
     auto engine = reinterpret_cast<NativeEngine*>(info->env);
     auto cb = info->callback;
     if (engine == nullptr) {
@@ -351,7 +351,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
         return JSValueRef::Undefined(vm);
     }
 
-    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
+    [[maybe_unused]] uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
     NapiNativeCallbackInfo cbInfo = { 0 };
     StartNapiProfilerTrace(runtimeInfo);
     cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
@@ -360,9 +360,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
     cbInfo.argv = nullptr;
     cbInfo.functionInfo = info;
     if (cbInfo.argc > 0) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
-            cbInfo.argv = new napi_value [cbInfo.argc];
-        }
+        cbInfo.argv = new napi_value [cbInfo.argc];
         for (size_t i = 0; i < cbInfo.argc; i++) {
             cbInfo.argv[i] = JsValueFromLocalValue(runtimeInfo->GetCallArgRef(i));
         }
@@ -378,9 +376,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
     }
 
     if (cbInfo.argv != nullptr) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
-            delete[] cbInfo.argv;
-        }
+        delete[] cbInfo.argv;
         cbInfo.argv = nullptr;
     }
 
@@ -400,7 +396,7 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-    NapiNativeFunctionInfo* funcInfo = NapiNativeFunctionInfo::CreateNewInstance();
+    NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
     if (funcInfo == nullptr) {
         HILOG_ERROR("funcInfo is nullptr");
         return JSValueRef::Undefined(vm);
@@ -410,13 +406,13 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
     funcInfo->data = value;
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
-                                             [](void* externalPointer, void* data) {
-                                                auto info = reinterpret_cast<NapiNativeFunctionInfo*>(data);
-                                                if (info != nullptr) {
-                                                    delete info;
-                                                }
-                                             },
-                                             reinterpret_cast<void*>(funcInfo), true);
+                                                           [](void* externalPointer, void* data) {
+                                                                auto info = reinterpret_cast<NapiFunctionInfo*>(data);
+                                                                if (info != nullptr) {
+                                                                    delete info;
+                                                                }
+                                                           },
+                                                           reinterpret_cast<void*>(funcInfo), true);
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, name);
     fn->SetName(vm, fnName);
     return fn;
@@ -681,6 +677,7 @@ napi_value ArkNativeEngine::CallFunction(
     if (function == nullptr) {
         return nullptr;
     }
+    panda::EscapeLocalScope scope(vm_);
     Local<JSValueRef> thisObj = JSValueRef::Undefined(vm_);
     if (thisVar != nullptr) {
         thisObj = LocalValueFromJsValue(thisVar);
@@ -704,7 +701,7 @@ napi_value ArkNativeEngine::CallFunction(
         return nullptr;
     }
 
-    return JsValueFromLocalValue(value);
+    return JsValueFromLocalValue(scope.Escape(value));
 }
 
 void* ArkNativeEngine::RunScriptPath(const char* path)
@@ -742,6 +739,7 @@ void ArkNativeEngine::ResumeVMById(uint32_t tid)
 // The security interface needs to be modified accordingly.
 napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
 {
+    panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = false;
     if (isBundle) {
         ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, path);
@@ -754,7 +752,7 @@ napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_
         return nullptr;
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(undefObj);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
 bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle)
@@ -788,6 +786,7 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
     if (constructor == nullptr) {
         return nullptr;
     }
+    panda::EscapeLocalScope scope(vm_);
     Local<FunctionRef> value = LocalValueFromJsValue(constructor);
     std::vector<Local<JSValueRef>> args;
     args.reserve(argc);
@@ -804,7 +803,7 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
         HILOG_ERROR("ArkNativeEngineImpl::CreateInstance occur Exception");
         return nullptr;
     }
-    return JsValueFromLocalValue(instance);
+    return JsValueFromLocalValue(scope.Escape(instance));
 }
 
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
@@ -913,6 +912,7 @@ bool ArkNativeEngine::CheckSafepoint()
 
 napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
 {
+    panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
 
     if (panda::JSNApi::HasPendingException(vm_)) {
@@ -920,11 +920,12 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
         return nullptr;
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(undefObj);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
 napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* descriptor)
 {
+    panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
     if (panda::JSNApi::IsBundle(vm_) || !buffer.empty()) {
@@ -938,7 +939,7 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
         return nullptr;
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(undefObj);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
 napi_value ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const std::string& fileName)
@@ -955,6 +956,7 @@ napi_value ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const st
         return nullptr;
     }
 
+    panda::EscapeLocalScope scope(vm_);
     Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
     if (exportObj->IsNull()) {
         HILOG_ERROR("Get export object failed");
@@ -962,7 +964,7 @@ napi_value ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const st
     }
 
     HILOG_DEBUG("ArkNativeEngineImpl::LoadModule end");
-    return JsValueFromLocalValue(exportObj);
+    return JsValueFromLocalValue(scope.Escape(exportObj));
 }
 
 napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
