@@ -380,6 +380,10 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
         result = cb(info->env, &cbInfo);
     }
 
+    if (JSNApi::IsMixedDebugEnabled(vm)) {
+        JSNApi::NotifyNativeReturnJS(vm);
+    }
+
     if (cbInfo.argv != nullptr) {
         if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
             delete[] cbInfo.argv;
