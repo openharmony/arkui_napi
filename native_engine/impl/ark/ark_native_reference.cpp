@@ -20,7 +20,7 @@
 #include "utils/log.h"
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       Local<JSValueRef> value,
+                                       Global<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
@@ -30,7 +30,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 {}
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       Local<JSValueRef> value,
+                                       Global<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
@@ -46,10 +46,9 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       data_(data),
       hint_(hint)
 {
-    Global<JSValueRef> oldValue(engine->GetEcmaVm(), value);
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
-    Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
+    Global<JSValueRef> newValue(vm, value.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
         value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);

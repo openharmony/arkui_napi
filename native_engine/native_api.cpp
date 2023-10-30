@@ -2254,8 +2254,10 @@ NAPI_EXTERN napi_status napi_create_typedarray(napi_env env,
         case NATIVE_BIGUINT64_ARRAY:
             typedArray = panda::BigUint64ArrayRef::New(vm, arrayBuf, byte_offset, length);
             break;
+        default:
+            *result = nullptr;
+            return napi_clear_last_error(env);
     }
-
     *result = JsValueFromLocalValue(typedArray);
     return napi_clear_last_error(env);
 }
@@ -3125,12 +3127,10 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env, napi_value js_obj
     NativeReference* reference = nullptr;
     auto engine = reinterpret_cast<NativeEngine*>(env);
     if (result != nullptr) {
-        reference = engine->CreateReference(JsValueFromLocalValue(nativeValue),
-            1, false, callback, native_object, finalize_hint);
+        reference = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
         *result = reinterpret_cast<napi_ref>(reference);
     } else {
-        reference = engine->CreateReference(JsValueFromLocalValue(nativeValue),
-            0, true, callback, native_object, finalize_hint);
+        reference = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint);
     }
     return napi_clear_last_error(env);
 }

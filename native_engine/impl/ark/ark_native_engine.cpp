@@ -585,7 +585,8 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         } else {
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
-            ref = new ArkNativeReference(this, value.ToLocal(vm_), 0, true, nullptr, instance, nullptr);
+            Global<JSValueRef> refValue(vm_, value);
+            ref = new ArkNativeReference(this, refValue, 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(1);
             object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
@@ -810,7 +811,8 @@ NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t ini
     bool flag, NativeFinalize callback, void* data, void* hint)
 {
     Local<JSValueRef> arkValue = LocalValueFromJsValue(value);
-    return new ArkNativeReference(this, arkValue, initialRefcount, flag, callback, data, hint);
+    Global<JSValueRef> globalValue(vm_, arkValue);
+    return new ArkNativeReference(this, globalValue, initialRefcount, flag, callback, data, hint);
 }
 
 bool ArkNativeEngine::IsExceptionPending() const

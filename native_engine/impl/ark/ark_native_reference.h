@@ -30,14 +30,14 @@ using panda::LocalScope;
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
-                       Local<JSValueRef> value,
+                       Global<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
                        NativeFinalize callback = nullptr,
                        void* data = nullptr,
                        void* hint = nullptr);
     ArkNativeReference(ArkNativeEngine* engine,
-                       Local<JSValueRef> value,
+                       Global<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
                        NativeFinalize callback,
