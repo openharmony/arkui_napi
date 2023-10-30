@@ -20,6 +20,7 @@
 #include <sys/prctl.h>
 #endif
 
+#include "native_engine/impl/ark/ark_native_engine.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/native_property.h"
@@ -318,78 +319,6 @@ NAPI_EXTERN napi_status napi_create_symbol(napi_env env, napi_value description,
     return napi_clear_last_error(env);
 }
 
-static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
-{
-#ifdef ENABLE_HITRACE
-    EcmaVM *vm = runtimeInfo->GetVM();
-    LocalScope scope(vm);
-    Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
-    Local<panda::StringRef> nameRef = fn->GetName(vm);
-    char threadName[128];
-    prctl(PR_GET_NAME, threadName);
-    StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
-#endif
-}
-
-static inline void FinishNapiProfilerTrace()
-{
-#ifdef ENABLE_HITRACE
-    FinishTrace(HITRACE_TAG_ACE);
-#endif
-}
-
-Local<panda::JSValueRef> NativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
-{
-    EcmaVM *vm = runtimeInfo->GetVM();
-    panda::EscapeLocalScope scope(vm);
-    auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
-    auto engine = reinterpret_cast<NativeEngine*>(info->env);
-    auto cb = info->callback;
-    if (engine == nullptr) {
-        HILOG_ERROR("engine is null");
-        return panda::JSValueRef::Undefined(vm);
-    }
-
-    NapiNativeCallbackInfo cbInfo = { 0 };
-    StartNapiProfilerTrace(runtimeInfo);
-    cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
-    cbInfo.function = JsValueFromLocalValue(runtimeInfo->GetNewTargetRef());
-    cbInfo.argc = static_cast<size_t>(runtimeInfo->GetArgsNumber());
-    cbInfo.argv = nullptr;
-    cbInfo.functionInfo = info;
-    if (cbInfo.argc > 0) {
-        cbInfo.argv = new napi_value [cbInfo.argc];
-        for (size_t i = 0; i < cbInfo.argc; i++) {
-            cbInfo.argv[i] = JsValueFromLocalValue(runtimeInfo->GetCallArgRef(i));
-        }
-    }
-
-    if (JSNApi::IsMixedDebugEnabled(vm)) {
-        JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
-    }
-
-    napi_value result = nullptr;
-    if (cb != nullptr) {
-        result = cb(info->env, &cbInfo);
-    }
-
-    if (cbInfo.argv != nullptr) {
-        delete[] cbInfo.argv;
-        cbInfo.argv = nullptr;
-    }
-
-    Local<panda::JSValueRef> localRet = panda::JSValueRef::Undefined(vm);
-    if (result != nullptr) {
-        localRet = LocalValueFromJsValue(result);
-    }
-
-    FinishNapiProfilerTrace();
-    if (localRet.IsEmpty()) {
-        return panda::JSValueRef::Undefined(vm);
-    }
-    return scope.Escape(localRet);
-}
-
 NAPI_EXTERN napi_status napi_create_function(napi_env env,
                                              const char* utf8name,
                                              size_t length,
@@ -414,7 +343,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->callback = callback;
     funcInfo->data = data;
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
                                                            [](void* externalPointer, void* data) {
                                                                 auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                                                                 if (info != nullptr) {
@@ -1030,7 +959,7 @@ Local<panda::JSValueRef> NapiCreateFunction(napi_env env, const char* name, Napi
     funcInfo->callback = cb;
     funcInfo->data = value;
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, NativeFunctionCallBack,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
                                                            [](void* externalPointer, void* data) {
                                                                 auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                                                                 if (info != nullptr) {
@@ -1329,7 +1258,7 @@ Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNat
     funcInfo->callback = callback;
     funcInfo->data = data;
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, NativeFunctionCallBack,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
         [](void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                 if (info != nullptr) {

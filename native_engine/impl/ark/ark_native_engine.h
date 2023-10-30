@@ -45,6 +45,9 @@ using panda::Local;
 using panda::LocalScope;
 using panda::JSNApi;
 using panda::JSValueRef;
+using panda::JsiRuntimeCallInfo;
+
+Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,
@@ -104,10 +107,10 @@ public:
                             napi_value function,
                             napi_value const* argv,
                             size_t argc) override;
-    void* RunScriptPath(const char* path) override;
+    bool RunScriptPath(const char* path) override;
 
-     napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
-     bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
+    napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
+    bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
 
     // Run buffer script
     napi_value RunBufferScript(std::vector<uint8_t>& buffer) override;

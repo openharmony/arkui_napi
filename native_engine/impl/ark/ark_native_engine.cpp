@@ -351,7 +351,7 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
         return JSValueRef::Undefined(vm);
     }
 
-    [[maybe_unused]] uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
+    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
     NapiNativeCallbackInfo cbInfo = { 0 };
     StartNapiProfilerTrace(runtimeInfo);
     cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
@@ -360,7 +360,11 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
     cbInfo.argv = nullptr;
     cbInfo.functionInfo = info;
     if (cbInfo.argc > 0) {
-        cbInfo.argv = new napi_value [cbInfo.argc];
+        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+            cbInfo.argv = new napi_value [cbInfo.argc];
+        } else {
+            cbInfo.argv = engine->GetNativeChunk().NewArray<napi_value>(cbInfo.argc);
+        }
         for (size_t i = 0; i < cbInfo.argc; i++) {
             cbInfo.argv[i] = JsValueFromLocalValue(runtimeInfo->GetCallArgRef(i));
         }
@@ -376,7 +380,11 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
     }
 
     if (cbInfo.argv != nullptr) {
-        delete[] cbInfo.argv;
+        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
+            delete[] cbInfo.argv;
+        } else {
+            engine->GetNativeChunk().Delete(cbInfo.argv);
+        }
         cbInfo.argv = nullptr;
     }
 
@@ -705,16 +713,16 @@ napi_value ArkNativeEngine::CallFunction(
     return JsValueFromLocalValue(scope.Escape(value));
 }
 
-void* ArkNativeEngine::RunScriptPath(const char* path)
+bool ArkNativeEngine::RunScriptPath(const char* path)
 {
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
     if (panda::JSNApi::HasPendingException(vm_)) {
         HandleUncaughtException();
-        return nullptr;
+        return false;
     }
-    return nullptr;
+    return true;
 }
 
 bool ArkNativeEngine::SuspendVMById(uint32_t tid)
