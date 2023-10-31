@@ -581,24 +581,23 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         paramProperty.utf8name = "param";
         paramProperty.value = paramValue;
         Local<ObjectRef> instanceValue = ObjectRef::New(vm_);
-        Global<ObjectRef> value(vm_, instanceValue);
         Local<StringRef> key = StringRef::GetNapiWrapperString(vm_);
-        if (instance == nullptr && value->Has(vm_, key)) {
-            Local<ObjectRef> wrapper = value->Get(vm_, key);
+        if (instance == nullptr && instanceValue->Has(vm_, key)) {
+            Local<ObjectRef> wrapper = instanceValue->Get(vm_, key);
             auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
             wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, 0);
-            value->Delete(vm_, key);
+            instanceValue->Delete(vm_, key);
             delete ref;
         } else {
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
-            Global<JSValueRef> refValue(vm_, value);
+            Global<JSValueRef> refValue(vm_, instanceValue);
             ref = new ArkNativeReference(this, refValue, 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(1);
             object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
             PropertyAttribute attr(object, true, false, true);
-            value->DefineProperty(vm_, key, attr);
+            instanceValue->DefineProperty(vm_, key, attr);
         }
         instanceProperty.utf8name = instanceName.c_str();
         instanceProperty.value = JsValueFromLocalValue(instanceValue);
