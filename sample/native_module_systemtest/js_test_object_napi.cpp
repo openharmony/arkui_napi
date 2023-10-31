@@ -113,7 +113,7 @@ void AddLastStatus(napi_env env, const char* key, napi_value returnValue)
 
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, (pLastError->error_message == nullptr ?
         "Invalid argument" : pLastError->error_message), NAPI_AUTO_LENGTH, &prop_value));
-
+    
     NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, returnValue, key, prop_value));
 }
 

@@ -16,9 +16,9 @@
 #ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_LOAD_CHECKER_H
 #define FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_LOAD_CHECKER_H
 
-#include <memory>
-
 #include "module_checker_delegate.h"
+
+#include <memory>
 
 /**
  * @brief Module load checker. check whether module can be loaded

@@ -6538,7 +6538,7 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Call_Threadsafe_Function_0800, testing::ext:
  *                 2.napi_create_threadsafe_function creates a queue.
  *                 3.In the test thread, calls the napi_call_threadsafe_function function [block call 10 times,
  *                   nonblock call 10 times, block call 10 times].
- *                 4.In the first child thread created, calls the napi_call_threadsafe_function
+ *                 4.In the first child thread created, calls the napi_call_threadsafe_function 
  *                   function[nonblock call 10 times, block call 10 times, nonblock call 10 times].
  *                 5.In the second child thread created, calls the napi_call_threadsafe_function
  *                   function[block call 10 times, nonblock call 10 times, block call 10 times].
@@ -6608,7 +6608,7 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Call_Threadsafe_Function_0900, testing::ext:
  * @tc.desc      : 1.The environment engine is created.
  *                 2.napi_create_threadsafe_function creates a queue.
  *                 3.In the test thread, calls the napi_call_threadsafe_function function [nonblock call 30 times].
- *                 4.In the one child thread created, calls the napi_call_threadsafe_function
+ *                 4.In the one child thread created, calls the napi_call_threadsafe_function 
  *                   function[nonblock call 30 times].
  */
 HWTEST_F(NativeEngineTest, ACE_Napi_Call_Threadsafe_Function_1000, testing::ext::TestSize.Level1)
@@ -6723,7 +6723,7 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Call_Threadsafe_Function_1100, testing::ext:
  * @tc.desc      :1.The environment engine is created.
  *                2.napi_create_threadsafe_function creates a queue with size 10.
  *                3.In the child thread, calls the napi_call_threadsafe_function function in non-blocking modes for 30
- *                  times.
+ *                  times. 
  *                4.Normally for each CallJSSlowCallBack takes at least 1 second,
  *                  the created queue would be full quickly.
  *                5.Check if napi_call_threadsafe_function failure happens.
@@ -6771,7 +6771,7 @@ HWTEST_F(NativeEngineTest, ACE_Napi_Call_Threadsafe_Function_1200, testing::ext:
  *                 test napi_call_threadsafe_function blocking mode with the queue full.
  * @tc.desc      :1.The environment engine is created.
  *                2.napi_create_threadsafe_function creates a queue with size 10.
- *                3.In the child thread, calls the napi_call_threadsafe_function
+ *                3.In the child thread, calls the napi_call_threadsafe_function 
  *                  function in blocking mode for 20 times.
  *                4.Normally for each CallJSSlowCallBack takes at least 1 second, the created queue would be full
  *                  quickly. 5.Check if napi_call_threadsafe_function failure happens.

@@ -16,6 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_SAFE_ASYNC_WORK_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_SAFE_ASYNC_WORK_H
 
+#include "native_value.h"
+
 #include <mutex>
 #include <queue>
 #include <uv.h>
@@ -24,7 +26,6 @@
 #endif
 
 #include "native_async_context.h"
-#include "native_value.h"
 
 enum class SafeAsyncCode {
     UNKNOWN = 0,

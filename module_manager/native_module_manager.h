@@ -19,40 +19,37 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
-#include <pthread.h>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <string>
+#include <pthread.h>
+
+#include "module_load_checker.h"
+#include "utils/macros.h"
+#include "interfaces/inner_api/napi/native_node_api.h"
+
 #ifdef WINDOWS_PLATFORM
 #include <winsock2.h>
 #include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
-
-#include "interfaces/inner_api/napi/native_node_api.h"
-#include "module_load_checker.h"
-#include "utils/macros.h"
-
-#define NAPI_PATH_MAX 4096
-#ifdef WINDOWS_PLATFORM
+using LIBHANDLE = HMODULE;
 #define LIBFREE FreeLibrary
 #define LIBSYM GetProcAddress
 #else
+#include <dlfcn.h>
+using LIBHANDLE = void*;
 #define LIBFREE dlclose
 #define LIBSYM dlsym
 #endif
 
-#ifdef WINDOWS_PLATFORM
-using LIBHANDLE = HMODULE;
-#else
-using LIBHANDLE = void*;
-#endif
+#define NAPI_PATH_MAX 4096
+
+class NativeValue;
 
 class NativeEngine;
 
 typedef napi_value (*RegisterCallback)(napi_env, napi_value);
+
 typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);
 
 struct NativeModule {

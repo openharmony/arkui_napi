@@ -1704,7 +1704,7 @@ HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
  */
 HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1) {
     napi_env env = (napi_env) engine_;
-
+    
     napi_value arrayBuffer = nullptr;
     void* arrayBufferPtr = nullptr;
     size_t arrayBufferSize = 1024;

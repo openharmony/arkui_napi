@@ -71,7 +71,7 @@ static napi_value GetDateValueFun(napi_env env, napi_callback_info info)
 napi_value JsDateInit(napi_env env, napi_value exports)
 {
     HILOG_INFO("%{public}s,called", __func__);
-
+    
     napi_property_descriptor descriptors[] = {
         DECLARE_NAPI_FUNCTION("testCreateDateFun", CreateDateFun),
         DECLARE_NAPI_FUNCTION("testIsDateFun", IsDateFun),
