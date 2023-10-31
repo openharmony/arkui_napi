@@ -66,6 +66,7 @@ static uint64_t g_lastHeapDumpTime = 0;
 static bool g_debugLeak = OHOS::system::GetBoolParameter("debug.arkengine.tags.enableleak", false);
 static constexpr uint64_t HEAP_DUMP_REPORT_INTERVAL = 24 * 3600 * 1000;
 static constexpr uint64_t SEC_TO_MILSEC = 1000;
+static constexpr uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
 #endif
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
@@ -351,7 +352,6 @@ Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeIn
         return JSValueRef::Undefined(vm);
     }
 
-    uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
     NapiNativeCallbackInfo cbInfo = { 0 };
     StartNapiProfilerTrace(runtimeInfo);
     cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
@@ -428,7 +428,6 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
 
 Local<JSValueRef> GetProperty(EcmaVM* vm, Local<panda::ObjectRef> &obj, const char* name)
 {
-
     Local<StringRef> key = StringRef::NewFromUtf8(vm, name);
     Local<JSValueRef> val = obj->Get(vm, key);
     return val;
@@ -466,7 +465,7 @@ std::string NapiGetModuleName(napi_env env, Local<panda::ObjectRef> &obj)
     return moduleName;
 }
 
-bool NapiNativeDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_NativePropertyDescriptor propertyDescriptor)
+bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -488,12 +487,12 @@ bool NapiNativeDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_N
         if (propertyDescriptor.getter != nullptr) {
             fullName += "getter";
             localGetter = NapiNativeCreateFunction(env, fullName.c_str(),
-                                             propertyDescriptor.getter, propertyDescriptor.data);
+                                                   propertyDescriptor.getter, propertyDescriptor.data);
         }
         if (propertyDescriptor.setter != nullptr) {
             fullName += "setter";
             localSetter = NapiNativeCreateFunction(env, fullName.c_str(),
-                                             propertyDescriptor.setter, propertyDescriptor.data);
+                                                   propertyDescriptor.setter, propertyDescriptor.data);
         }
 
         PropertyAttribute attr(panda::JSValueRef::Undefined(vm), false, enumable, configable);
@@ -501,7 +500,7 @@ bool NapiNativeDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, Napi_N
     } else if (propertyDescriptor.method != nullptr) {
         fullName += propertyDescriptor.utf8name;
         Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
-                                             propertyDescriptor.method, propertyDescriptor.data);
+                                                                  propertyDescriptor.method, propertyDescriptor.data);
         PropertyAttribute attr(cbObj, writable, enumable, configable);
         result = obj->DefineProperty(vm, propertyName, attr);
     } else {
@@ -532,14 +531,14 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
         Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
         napi_value paramValue = JsValueFromLocalValue(paramStr);
         Local<ObjectRef> exportObj = ObjectRef::New(vm_);
-        Napi_NativePropertyDescriptor idProperty, paramProperty;
+        NapiPropertyDescriptor idProperty, paramProperty;
         idProperty.utf8name = "id";
         idProperty.value = idValue;
         paramProperty.utf8name = "param";
         paramProperty.value = paramValue;
         SetModuleName(exportObj, module->name);
-        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, idProperty);
-        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
+        NapiDefineProperty(reinterpret_cast<napi_env>(this), exportObj, idProperty);
+        NapiDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
         MoudleNameLocker nameLocker(module->name);
         module->registerCallback(reinterpret_cast<napi_env>(this), JsValueFromLocalValue(exportObj));
         napi_value nExport = JsValueFromLocalValue(exportObj);
@@ -576,7 +575,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         moduleManager->LoadNativeModule(moduleName.c_str(), path.empty() ? nullptr : path.c_str(), isAppModule);
     if (module != nullptr) {
         Local<ObjectRef> exportObj = ObjectRef::New(vm_);
-        Napi_NativePropertyDescriptor paramProperty, instanceProperty;
+        NapiPropertyDescriptor paramProperty, instanceProperty;
         Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
         napi_value paramValue = JsValueFromLocalValue(paramStr);
         paramProperty.utf8name = "param";
@@ -604,8 +603,8 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         instanceProperty.utf8name = instanceName.c_str();
         instanceProperty.value = JsValueFromLocalValue(instanceValue);
         SetModuleName(exportObj, module->name);
-        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
-        NapiNativeDefineProperty(reinterpret_cast<napi_env>(this), exportObj, instanceProperty);
+        NapiDefineProperty(reinterpret_cast<napi_env>(this), exportObj, paramProperty);
+        NapiDefineProperty(reinterpret_cast<napi_env>(this), exportObj, instanceProperty);
 
         MoudleNameLocker nameLocker(module->name);
         module->registerCallback(reinterpret_cast<napi_env>(this), JsValueFromLocalValue(exportObj));

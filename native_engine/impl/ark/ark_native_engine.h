@@ -48,6 +48,7 @@ using panda::JSValueRef;
 using panda::JsiRuntimeCallInfo;
 
 Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
+bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,

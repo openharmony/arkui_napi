@@ -34,7 +34,7 @@ class NativeEngine;
 #define NATIVE_DEFAULT_METHOD NATIVE_WRITABLE | NATIVE_CONFIGURABLE,
 #define NATIVE_DEFAULT_PROPERTY NATIVE_WRITABLE | NATIVE_ENUMERABLE | NATIVE_CONFIGURABLE
 
-struct Napi_NativePropertyDescriptor {
+struct NapiPropertyDescriptor {
     const char* utf8name = nullptr;
     napi_value name = nullptr;
     NapiNativeCallback method = nullptr;

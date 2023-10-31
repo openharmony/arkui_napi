@@ -299,7 +299,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     if (size == 0 && threadCount_ == 0) {
         CloseHandles();
     }
-
 }
 
 SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
