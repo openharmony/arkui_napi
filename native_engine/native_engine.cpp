@@ -31,9 +31,12 @@
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr size_t DESTRUCTION_TIMEOUT = 3000;
 
+using panda::JSValueRef;
+using panda::Local;
 using panda::LocalScope;
-using panda::StringRef;
 using panda::ObjectRef;
+using panda::StringRef;
+
 namespace {
 const char* g_errorMessages[] = {
     nullptr,
@@ -237,26 +240,14 @@ void NativeEngine::ClearLastError()
     lastError_.reserved = nullptr;
 }
 
-void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
+void SubEncodeToUtf8(const EcmaVM* vm,
+                     Local<JSValueRef>& nativeValue,
+                     Local<StringRef>& nativeString,
+                     char* buffer,
+                     int32_t* written,
+                     size_t bufferSize,
+                     int32_t* nchars)
 {
-    auto nativeValue = LocalValueFromJsValue(value);
-    if (nativeValue->IsNull() || nchars == nullptr || written == nullptr) {
-        HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
-        return;
-    }
-
-    auto vm = GetEcmaVm();
-    LocalScope scope(vm);
-    auto nativeString = nativeValue->ToString(vm);
-    if (!nativeString->IsString()) {
-        HILOG_ERROR("nativeValue not is string");
-        return;
-    }
-
-    if (buffer == nullptr) {
-        HILOG_ERROR("buffer is null");
-    }
-
     int32_t length = nativeString->Length();
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
@@ -277,13 +268,14 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     *written = pos;
 }
 
-void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
+void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
 {
-    if (value == nullptr) {
-        HILOG_ERROR("nativeValue GetInterface is nullptr");
+    auto nativeValue = LocalValueFromJsValue(value);
+    if (nativeValue->IsNull() || nchars == nullptr || written == nullptr) {
+        HILOG_ERROR("NativeEngine EncodeToUtf8 args is nullptr");
         return;
     }
-    auto nativeValue = LocalValueFromJsValue(value);
+
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);
@@ -292,12 +284,19 @@ void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const 
         return;
     }
 
-    auto encode = encoding.c_str();
-    if (encode == nullptr) {
-        HILOG_ERROR("encoding is nullptr");
-        return;
+    if (buffer == nullptr) {
+        HILOG_ERROR("buffer is null");
     }
 
+    SubEncodeToUtf8(vm, nativeValue, nativeString, buffer, written, bufferSize, nchars);
+}
+
+void SubEncodeToChinese(const EcmaVM* vm,
+                        Local<JSValueRef>& nativeValue,
+                        Local<StringRef>& nativeString,
+                        std::string& buffer,
+                        const char* encode)
+{
     int32_t length = nativeString->Length();
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
@@ -332,6 +331,31 @@ void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const 
         }
         buffer += outBuf;
     }
+}
+
+void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding)
+{
+    if (value == nullptr) {
+        HILOG_ERROR("nativeValue GetInterface is nullptr");
+        return;
+    }
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto vm = GetEcmaVm();
+    LocalScope scope(vm);
+    auto nativeString = nativeValue->ToString(vm);
+    if (!nativeString->IsString()) {
+        HILOG_ERROR("nativeValue not is string");
+        return;
+    }
+
+    auto encode = encoding.c_str();
+    if (encode == nullptr) {
+        HILOG_ERROR("encoding is nullptr");
+        return;
+    }
+
+    SubEncodeToChinese(vm, nativeValue, nativeString, buffer, encode);
 }
 
 #if !defined(PREVIEW)
