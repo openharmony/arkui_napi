@@ -560,9 +560,11 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
 
 napi_value ArkNativeEngine::CreatePromise(NativeDeferred** deferred)
 {
+    panda::EscapeLocalScope scope(vm_);
     Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
     *deferred = new ArkNativeDeferred(this, capability);
-    return JsValueFromLocalValue(capability->GetPromise(vm_));
+    Local<JSValueRef> promiseValue = capability->GetPromise(vm_);
+    return JsValueFromLocalValue(scope.Escape(promiseValue));
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::string& moduleName, bool isAppModule,

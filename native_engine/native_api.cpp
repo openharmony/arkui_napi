@@ -2314,7 +2314,6 @@ NAPI_EXTERN napi_status napi_reject_deferred(napi_env env, napi_deferred deferre
     auto nativeDeferred = reinterpret_cast<NativeDeferred*>(deferred);
     nativeDeferred->Reject(rejection);
     delete nativeDeferred;
-
     return napi_clear_last_error(env);
 }
 
@@ -3135,7 +3134,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     CHECK_ENV(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
+    [[maybe_unused]] auto vm = engine->GetEcmaVm();
     std::string rawStack;
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
     DFXJSNApi::BuildJsStackTrace(vm, rawStack);
