@@ -3135,11 +3135,14 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     CHECK_ENV(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
     std::string rawStack;
-    bool getStackSuccess = engine->BuildJsStackTrace(rawStack);
-    if (!getStackSuccess) {
-        HILOG_ERROR("GetStacktrace env get stack failed");
-    }
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    DFXJSNApi::BuildJsStackTrace(vm, rawStack);
+#else
+    HILOG_WARN("GetStacktrace env get stack failed");
+#endif
+
     stack = engine->ExecuteTranslateBySourceMap(rawStack);
     return napi_clear_last_error(env);
 }
