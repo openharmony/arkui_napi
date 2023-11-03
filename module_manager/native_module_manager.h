@@ -62,6 +62,7 @@ struct NativeModule {
     uint32_t refCount = 0;
     NativeModule* next = nullptr;
     const char* jsCode = nullptr;
+    const uint8_t* jsABCCode = nullptr;
     int32_t jsCodeLen = 0;
     bool moduleLoaded = false;
     bool isAppModule = false;
@@ -78,7 +79,7 @@ public:
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
         bool internal = false, const char* relativePath = "", bool moduleRestricted = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
-    bool UnloadNativeModule(const std::string &moduleKey);
+    bool UnloadNativeModule(const std::string& moduleKey);
     const char* GetModuleFileName(const char* moduleName, bool isAppModule);
 
     /**
@@ -90,7 +91,7 @@ public:
 
     /**
      * @brief Set the Module Load Checker delegate
-     * 
+     *
      * @param moduleCheckerDelegate The Module Load Checker delegate
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
@@ -104,17 +105,23 @@ private:
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
         bool internal, const bool isAppModule);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
-    LIBHANDLE LoadModuleLibrary(std::string &moduleKey, const char* path, const char* pathKey, const bool isAppModule);
+    LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey, const bool isAppModule);
     bool CheckModuleRestricted(const std::string& moduleName);
+    const uint8_t* GetFileBuffer(const std::string& filePath, const std::string& moduleKey, size_t &len);
     bool UnloadModuleLibrary(LIBHANDLE handle);
     bool CloseModuleLibrary(LIBHANDLE handle);
     void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path, const bool& isSystemApp);
     bool IsExistedPath(const char* pathKey) const;
-    void EmplaceModuleLib(std::string moduleKey, LIBHANDLE lib);
-    bool RemoveModuleLib(std::string moduleKey);
-    LIBHANDLE GetNativeModuleHandle(const std::string &moduleKey) const;
-    bool RemoveNativeModuleByCache(const std::string &moduleKey);
-    bool RemoveNativeModule(const std::string &moduleKey);
+    void EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
+    bool RemoveModuleLib(const std::string moduleKey);
+    void EmplaceModuleBuffer(const std::string moduleKey, const uint8_t* lib);
+    bool RemoveModuleBuffer(const std::string moduleKey);
+    const uint8_t* GetBufferHandle(const std::string& moduleKey) const;
+    void RegisterByBuffer(const std::string& moduleKey, const uint8_t* abcBuffer, size_t len);
+    bool CreateNewNativeModule();
+    LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
+    bool RemoveNativeModuleByCache(const std::string& moduleKey);
+    bool RemoveNativeModule(const std::string& moduleKey);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();
@@ -137,6 +144,9 @@ private:
 
     mutable std::mutex moduleLibMutex_;
     std::map<std::string, const LIBHANDLE> moduleLibMap_;
+
+    mutable std::mutex moduleBufMutex_;
+    std::map<std::string, const uint8_t*> moduleBufMap_;
 
     std::map<std::string, char*> appLibPathMap_;
     std::string previewSearchPath_;
