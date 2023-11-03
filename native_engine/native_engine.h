@@ -220,7 +220,7 @@ public:
     virtual bool Throw(NativeValue* error) = 0;
     virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
 
-    virtual void* CreateRuntime() = 0;
+    virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
     virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
     virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
     virtual void DeleteSerializationData(NativeValue* value) const = 0;

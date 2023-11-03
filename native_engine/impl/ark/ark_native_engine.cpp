@@ -107,7 +107,10 @@ struct MoudleNameLocker {
     }
 };
 
-ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEngine), vm_(vm), topScope_(vm)
+ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
+                                                                                     vm_(vm),
+                                                                                     topScope_(vm),
+                                                                                     isLimitedWorker_(isLimitedWorker)
 {
     HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -147,8 +150,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                 NativeModule* module = nullptr;
                 bool isAppModule = false;
 #ifdef IOS_PLATFORM
-                module =
-                    moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false, false);
+                module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false, false,
+                                                         "", arkNativeEngine->isLimitedWorker_);
 #else
                 const uint32_t lengthMax = 2;
                 if (info->GetArgsNumber() >= lengthMax) {
@@ -159,16 +162,17 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     module =
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
-                            isAppModule, false);
+                            isAppModule, false, "", arkNativeEngine->isLimitedWorker_);
                 } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
                     module =
                         moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false,
-                            relativePath->ToString().c_str());
+                            relativePath->ToString().c_str(), arkNativeEngine->isLimitedWorker_);
                 } else {
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false);
+                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule, false,
+                                                        "", arkNativeEngine->isLimitedWorker_);
                 }
 #endif
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
@@ -247,7 +251,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine) : NativeEngine(jsEn
                 NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
                 ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
-                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false);
+                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false,
+                                                                       false, "", arkNativeEngine->isLimitedWorker_);
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
                 MoudleNameLocker nameLocker(moduleName->ToString());
                 if (module != nullptr && arkNativeEngine) {
@@ -917,7 +922,7 @@ bool ArkNativeEngine::Throw(NativeErrorType type, const char* code, const char* 
     return true;
 }
 
-NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine)
+NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker)
 {
     panda::RuntimeOption option;
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -953,7 +958,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     // worker adaptation mergeabc
     const panda::ecmascript::EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
     panda::JSNApi::SynchronizVMInfo(vm, hostVM);
-    ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine);
+    ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine, isLimitedWorker);
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
     arkEngine->SetHostEngine(engine);
@@ -972,9 +977,9 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     return arkEngine;
 }
 
-void* ArkNativeEngine::CreateRuntime()
+void* ArkNativeEngine::CreateRuntime(bool isLimitedWorker)
 {
-    return ArkNativeEngine::CreateRuntimeFunc(this, jsEngine_);
+    return ArkNativeEngine::CreateRuntimeFunc(this, jsEngine_, isLimitedWorker);
 }
 
 NativeValue* ArkNativeEngine::Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer)
