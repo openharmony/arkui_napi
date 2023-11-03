@@ -89,7 +89,7 @@ class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
     // ArkNativeEngine constructor
-    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker = false);
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
@@ -195,7 +195,7 @@ public:
     // Throw exception
     bool Throw(NativeErrorType type, const char* code, const char* message) override;
 
-    void* CreateRuntime() override;
+    void* CreateRuntime(bool isLimitedWorker = false) override;
     NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) override;
     NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) override;
     void DeleteSerializationData(NativeValue* value) const override;
@@ -301,7 +301,7 @@ public:
     static bool napiProfilerEnabled;
 
 private:
-    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
+    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
 
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
@@ -321,5 +321,6 @@ private:
     std::unique_ptr<std::thread> threadJsHeap_;
     std::mutex lock_;
     std::condition_variable condition_;
+    bool isLimitedWorker_ = false;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
