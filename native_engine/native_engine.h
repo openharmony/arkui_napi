@@ -178,9 +178,11 @@ public:
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
     virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
-    virtual bool HasPendingJob() = 0;
-    virtual bool IsProfiling() = 0;
+    virtual bool HasPendingJob() const = 0;
+    virtual bool IsProfiling() const = 0;
+    virtual bool IsExecutingPendingJob() const = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
+    virtual void TerminateExecution() const = 0;
 
     virtual NativeValue* CallFunction(NativeValue* thisVar,
                                       NativeValue* function,
@@ -407,21 +409,21 @@ public:
 
     /**
      * @brief Set the Extension Infos
-     * 
-     * @param extensionInfos extension infos to set 
+     *
+     * @param extensionInfos extension infos to set
      */
     void SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos);
 
     /**
      * @brief Get the Extension Infos
-     * 
+     *
      * @return extension infos
      */
     const std::unordered_map<std::string, int32_t>& GetExtensionInfos();
 
     /**
      * @brief Set the Module Blocklist
-     * 
+     *
      * @param blocklist the blocklist set to native engine
      */
     void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
