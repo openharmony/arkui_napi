@@ -27,9 +27,6 @@ class NativeReference;
 
 struct NapiNativeCallbackInfo;
 
-static constexpr size_t MAX_BYTE_LENGTH = 2097152;
-static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
-
 // To be refactor
 typedef napi_value (*NapiNativeCallback)(napi_env env, NapiNativeCallbackInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);

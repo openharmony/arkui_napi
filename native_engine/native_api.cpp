@@ -59,6 +59,8 @@ using panda::SymbolRef;
 using panda::TypedArrayRef;
 using panda::ecmascript::EcmaVM;
 
+static constexpr size_t MAX_BYTE_LENGTH = 2097152;
+static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 
 class HandleScopeWrapper {
