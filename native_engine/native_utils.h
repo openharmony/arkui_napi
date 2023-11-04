@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,9 +17,11 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
 
 #include <cstring>
+#include "securec.h"
 
 #include "ecmascript/napi/include/jsnapi.h"
 #include "interfaces/inner_api/napi/native_node_api.h"
+#include "utils/log.h"
 
 inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 {
@@ -29,7 +31,10 @@ inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
 {
     panda::Local<panda::JSValueRef> local;
-    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    if (memcpy_s(static_cast<void*>(&local), sizeof(v), &v, sizeof(v)) != EOK) {
+        HILOG_FATAL("memcpy_s failed");
+        std::abort();
+    }
     return local;
 }
 
