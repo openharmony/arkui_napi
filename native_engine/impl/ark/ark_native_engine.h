@@ -130,7 +130,7 @@ public:
     bool IsExceptionPending() const override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime(bool isLimitedWorker = false) override;
-    napi_value LoadArkModule(const char* str, int32_t len, const std::string& fileName);
+    panda::Local<panda::ObjectRef> LoadArkModule(const char* str, int32_t len, const std::string& fileName);
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
 
