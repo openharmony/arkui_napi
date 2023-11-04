@@ -53,7 +53,7 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 #undef HILOG_INFO
 #undef HILOG_DEBUG
 
-#define LOG_DOMAIN 0xD003900
+#define LOG_DOMAIN 0xD0039FE
 #define LOG_TAG "NAPI"
 
 static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN, LOG_TAG };

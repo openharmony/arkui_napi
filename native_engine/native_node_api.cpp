@@ -72,6 +72,19 @@ NAPI_EXTERN NAPI_NO_RETURN void napi_fatal_error(const char* location,
     abort();
 }
 
+NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result_env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+
+    auto result = engine->CreateRuntime(true);
+    *result_env = reinterpret_cast<napi_env>(result);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
 {
     HILOG_INFO("%{public}s, start.", __func__);

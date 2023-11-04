@@ -89,7 +89,9 @@ private:
 class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
-    ArkNativeEngine(EcmaVM* vm, void* jsEngine);
+    // ArkNativeEngine constructor
+    ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker = false);
+    // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
     NAPI_EXPORT const EcmaVM* GetEcmaVm() const override;
@@ -100,9 +102,11 @@ public:
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
-    bool HasPendingJob() override;
-    bool IsProfiling() override;
+    bool HasPendingJob() const override;
+    bool IsProfiling() const override;
+    bool IsExecutingPendingJob() const override;
     void* GetCurrentTaskInfo() const override;
+    void TerminateExecution() const override;
     // Call function
     napi_value CallFunction(napi_value thisVar,
                             napi_value function,
@@ -125,7 +129,7 @@ public:
         bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     bool IsExceptionPending() const override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
-    void* CreateRuntime() override;
+    void* CreateRuntime(bool isLimitedWorker = false) override;
     napi_value LoadArkModule(const char* str, int32_t len, const std::string& fileName);
     napi_value ValueToNapiValue(JSValueWrapper& value) override;
     NAPI_EXPORT static napi_value ArkValueToNapiValue(napi_env env, Local<JSValueRef> value);
@@ -242,7 +246,7 @@ public:
     static void* GetNativePtrCallBack(void* data);
 
 private:
-    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine);
+    static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
 
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
@@ -261,5 +265,6 @@ private:
     std::unique_ptr<std::thread> threadJsHeap_;
     std::mutex lock_;
     std::condition_variable condition_;
+    bool isLimitedWorker_ = false;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

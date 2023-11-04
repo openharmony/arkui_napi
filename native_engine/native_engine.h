@@ -216,9 +216,11 @@ public:
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
-    virtual bool HasPendingJob() = 0;
-    virtual bool IsProfiling() = 0;
+    virtual bool HasPendingJob() const = 0;
+    virtual bool IsProfiling() const = 0;
+    virtual bool IsExecutingPendingJob() const = 0;
     virtual void* GetCurrentTaskInfo() const = 0;
+    virtual void TerminateExecution() const = 0;
 
     virtual napi_value CallFunction(napi_value thisVar,
                                     napi_value function,
@@ -249,7 +251,7 @@ public:
         napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
 
-    virtual void* CreateRuntime() = 0;
+    virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
@@ -430,21 +432,21 @@ public:
 
     /**
      * @brief Set the Extension Infos
-     * 
-     * @param extensionInfos extension infos to set 
+     *
+     * @param extensionInfos extension infos to set
      */
     void SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos);
 
     /**
      * @brief Get the Extension Infos
-     * 
+     *
      * @return extension infos
      */
     const std::unordered_map<std::string, int32_t>& GetExtensionInfos();
 
     /**
      * @brief Set the Module Blocklist
-     * 
+     *
      * @param blocklist the blocklist set to native engine
      */
     void SetModuleBlocklist(std::unordered_map<int32_t, std::unordered_set<std::string>>&& blocklist);
