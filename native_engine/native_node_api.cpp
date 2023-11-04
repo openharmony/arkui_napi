@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
 #include "native_engine/native_engine.h"
+#include "native_engine/native_utils.h"
 #include "utils/log.h"
 
+using panda::StringRef;
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
@@ -89,8 +92,7 @@ NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
     CHECK_ARG(env, err);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto jsError = reinterpret_cast<NativeValue*>(err);
-    if (engine->TriggerFatalException(jsError)) {
+    if (engine->TriggerFatalException(err)) {
         HILOG_INFO("%{public}s, end.", __func__);
         return napi_status::napi_ok;
     } else {
@@ -116,13 +118,19 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
+    auto asyncResource = LocalValueFromJsValue(async_resource);
+    auto asyncResourceName = LocalValueFromJsValue(async_resource_name);
     auto asyncExecute = reinterpret_cast<NativeAsyncExecuteCallback>(execute);
     auto asyncComplete = reinterpret_cast<NativeAsyncCompleteCallback>(complete);
-
-    auto asyncWork = engine->CreateAsyncWork(asyncResource, asyncResourceName, asyncExecute, asyncComplete, data);
-
+    (void)asyncResource;
+    (void)asyncResourceName;
+    char name[64] = {0}; // 64:NAME_BUFFER_SIZE
+    if (!asyncResourceName->IsNull()) {
+        auto nativeString = asyncResourceName->ToString(engine->GetEcmaVm());
+        int copied = nativeString->WriteUtf8(name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
+        name[copied] = '\0';
+    }
+    auto asyncWork  = new NativeAsyncWork(engine, asyncExecute, asyncComplete, name, data);
     *result = reinterpret_cast<napi_async_work>(asyncWork);
     return napi_status::napi_ok;
 }
@@ -133,7 +141,6 @@ NAPI_EXTERN napi_status napi_delete_async_work(napi_env env, napi_async_work wor
     CHECK_ARG(env, work);
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
-
     delete asyncWork;
     asyncWork = nullptr;
 
@@ -358,12 +365,9 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
     }
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto jsFunc = reinterpret_cast<NativeValue*>(func);
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
     auto finalizeCallback = reinterpret_cast<NativeFinalize>(thread_finalize_cb);
     auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(call_js_cb);
-    auto safeAsyncWork = engine->CreateSafeAsyncWork(jsFunc, asyncResource, asyncResourceName, max_queue_size,
+    auto safeAsyncWork = engine->CreateSafeAsyncWork(func, async_resource, async_resource_name, max_queue_size,
         initial_thread_count, thread_finalize_data, finalizeCallback, context, callJsCallback);
     CHECK_ENV(safeAsyncWork);
 
@@ -484,12 +488,9 @@ NAPI_INNER_EXTERN napi_status napi_async_init(
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, result);
 
-    auto asyncResource = reinterpret_cast<NativeValue*>(async_resource);
-    auto asyncResourceName = reinterpret_cast<NativeValue*>(async_resource_name);
-
     auto async_context = new NativeAsyncContext();
-    async_context->asyncResource = asyncResource;
-    async_context->asyncResourceName = asyncResourceName;
+    async_context->napiAsyncResource = async_resource;
+    async_context->napiAsyncResourceName = async_resource_name;
 
     *result = reinterpret_cast<napi_async_context>(async_context);
 

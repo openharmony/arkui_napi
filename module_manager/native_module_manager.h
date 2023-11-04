@@ -27,6 +27,7 @@
 
 #include "module_load_checker.h"
 #include "utils/macros.h"
+#include "interfaces/inner_api/napi/native_node_api.h"
 
 #ifdef WINDOWS_PLATFORM
 #include <winsock2.h>
@@ -47,7 +48,8 @@ class NativeValue;
 
 class NativeEngine;
 
-typedef NativeValue* (*RegisterCallback)(NativeEngine*, NativeValue*);
+typedef napi_value (*RegisterCallback)(napi_env, napi_value);
+
 typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);
 
 struct NativeModule {
@@ -85,7 +87,7 @@ public:
      * @param previewSearchPath the path for searching napi dynamic libraries
      */
     void SetPreviewSearchPath(const std::string& previewSearchPath);
-    
+
     /**
      * @brief Set the Module Load Checker delegate
      * 

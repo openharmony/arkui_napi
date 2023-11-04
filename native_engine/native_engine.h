@@ -35,8 +35,11 @@
 #include "native_engine/native_value.h"
 #include "native_property.h"
 #include "reference_manager/native_reference_manager.h"
-#include "scope_manager/native_scope_manager.h"
 #include "utils/macros.h"
+
+namespace panda::ecmascript {
+    class EcmaVM;
+}
 
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
@@ -108,19 +111,88 @@ using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
-using UncaughtExceptionCallback = std::function<void(NativeValue* value)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
+using EcmaVM = panda::ecmascript::EcmaVM;
+
+class NativeChunk {
+public:
+    static constexpr size_t CHUNK_PAGE_SIZE = 8 * 1024;
+
+    NativeChunk() {};
+    ~NativeChunk()
+    {
+        for (auto iter = usedPage_.begin(); iter != usedPage_.end(); iter++) {
+            free(*iter);
+        }
+        usedPage_.clear();
+    }
+
+    template<class T>
+    [[nodiscard]] T *NewArray(size_t size)
+    {
+        return static_cast<T *>(Allocate(size * sizeof(T)));
+    }
+
+    template<typename T, typename... Args>
+    [[nodiscard]] T *New(Args &&... args)
+    {
+        auto p = reinterpret_cast<void *>(Allocate(sizeof(T)));
+        new (p) T(std::forward<Args>(args)...);
+        return reinterpret_cast<T *>(p);
+    }
+
+    template<class T>
+    void Delete(T *ptr)
+    {
+        if (!useChunk_) {
+            delete ptr;
+            return;
+        }
+
+        if (std::is_class<T>::value) {
+            ptr->~T();
+        }
+    }
+
+private:
+    void *Allocate(size_t size)
+    {
+        uintptr_t result = ptr_;
+        if (size > end_ - ptr_) {
+            result = Expand();
+        }
+        ptr_ += size;
+        return reinterpret_cast<void *>(result);
+    }
+
+    uintptr_t Expand()
+    {
+        void *ptr = malloc(CHUNK_PAGE_SIZE);
+        if (ptr == nullptr) {
+            std::abort();
+        }
+        usedPage_.emplace_back(ptr);
+        useChunk_ = true;
+        ptr_ = reinterpret_cast<uintptr_t>(ptr);
+        end_ = ptr_ + CHUNK_PAGE_SIZE;
+        return ptr_;
+    }
+
+    uintptr_t ptr_ {0};
+    uintptr_t end_ {0};
+    bool useChunk_ {false};
+    std::vector<void *> usedPage_ {};
+};
 
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
     virtual ~NativeEngine();
 
-    virtual NativeScopeManager* GetScopeManager();
     virtual NativeModuleManager* GetModuleManager();
     virtual NativeReferenceManager* GetReferenceManager();
     virtual NativeCallbackScopeManager* GetCallbackScopeManager();
@@ -138,45 +210,11 @@ public:
 #endif
     virtual void* GetJsEngine();
 
-    virtual NativeValue* GetGlobal() = 0;
-
-    virtual NativeValue* CreateNull() = 0;
-    virtual NativeValue* CreateUndefined() = 0;
-    virtual NativeValue* CreateBoolean(bool value) = 0;
-    virtual NativeValue* CreateNumber(int32_t value) = 0;
-    virtual NativeValue* CreateNumber(uint32_t value) = 0;
-    virtual NativeValue* CreateNumber(int64_t value) = 0;
-    virtual NativeValue* CreateNumber(double value) = 0;
-    virtual NativeValue* CreateBigInt(int64_t value) = 0;
-    virtual NativeValue* CreateBigInt(uint64_t value) = 0;
-    virtual NativeValue* CreateString(const char* value, size_t length) = 0;
-    virtual NativeValue* CreateString16(const char16_t* value, size_t length) = 0;
-
-    virtual NativeValue* CreateSymbol(NativeValue* value) = 0;
-    virtual NativeValue* CreateExternal(void* value, NativeFinalize callback, void* hint,
-        size_t nativeBindingSize = 0) = 0;
-
-    virtual NativeValue* CreateObject() = 0;
-    virtual NativeValue* CreateFunction(const char* name, size_t length, NativeCallback cb, void* value) = 0;
-    virtual NativeValue* CreateArray(size_t length) = 0;
-    virtual NativeValue* CreateBuffer(void** value, size_t length) = 0;
-    virtual NativeValue* CreateBufferCopy(void** value, size_t length, const void* data) = 0;
-    virtual NativeValue* CreateBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint) = 0;
-    virtual NativeValue* CreateArrayBuffer(void** value, size_t length) = 0;
-    virtual NativeValue* CreateArrayBufferExternal(void* value, size_t length, NativeFinalize cb, void* hint) = 0;
-
-    virtual NativeValue* CreateTypedArray(NativeTypedArrayType type,
-                                          NativeValue* value,
-                                          size_t length,
-                                          size_t offset) = 0;
-    virtual NativeValue* CreateDataView(NativeValue* value, size_t length, size_t offset) = 0;
-    virtual NativeValue* CreatePromise(NativeDeferred** deferred) = 0;
+    virtual const EcmaVM* GetEcmaVm() const = 0;
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
-    virtual NativeValue* CreateError(NativeValue* code, NativeValue* message) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
-    virtual bool InitTaskPoolFunc(NativeEngine* engine, NativeValue* func, void* taskInfo) = 0;
     virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
     virtual bool HasPendingJob() const = 0;
     virtual bool IsProfiling() const = 0;
@@ -184,29 +222,23 @@ public:
     virtual void* GetCurrentTaskInfo() const = 0;
     virtual void TerminateExecution() const = 0;
 
-    virtual NativeValue* CallFunction(NativeValue* thisVar,
-                                      NativeValue* function,
-                                      NativeValue* const *argv,
-                                      size_t argc) = 0;
-    virtual NativeValue* RunScript(NativeValue* script) = 0;
-    virtual NativeValue* RunScriptPath(const char* path) = 0;
-    virtual NativeValue* RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
+    virtual napi_value CallFunction(napi_value thisVar,
+                                    napi_value function,
+                                    napi_value const *argv,
+                                    size_t argc) = 0;
+    virtual bool RunScriptPath(const char* path) = 0;
+    virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
-    virtual NativeValue* RunBufferScript(std::vector<uint8_t>& buffer) = 0;
-    virtual NativeValue* RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
-    virtual NativeValue* DefineClass(const char* name,
-                                     NativeCallback callback,
-                                     void* data,
-                                     const NativePropertyDescriptor* properties,
-                                     size_t length) = 0;
+    virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
+    virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
 
-    virtual NativeValue* CreateInstance(NativeValue* constructor, NativeValue* const *argv, size_t argc) = 0;
+    virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
-    virtual NativeReference* CreateReference(NativeValue* value, uint32_t initialRefcount,
-        NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
+    virtual NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
+        bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
 
-    virtual NativeAsyncWork* CreateAsyncWork(NativeValue* asyncResource,
-                                             NativeValue* asyncResourceName,
+    virtual NativeAsyncWork* CreateAsyncWork(napi_value asyncResource,
+                                             napi_value asyncResourceName,
                                              NativeAsyncExecuteCallback execute,
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
@@ -215,18 +247,12 @@ public:
                                              NativeAsyncExecuteCallback execute,
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
-    virtual NativeSafeAsyncWork* CreateSafeAsyncWork(NativeValue* func, NativeValue* asyncResource,
-        NativeValue* asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
+    virtual NativeSafeAsyncWork* CreateSafeAsyncWork(napi_value func, napi_value asyncResource,
+        napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
 
-    virtual bool Throw(NativeValue* error) = 0;
-    virtual bool Throw(NativeErrorType type, const char* code, const char* message) = 0;
-
     virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
-    virtual NativeValue* Serialize(NativeEngine* context, NativeValue* value, NativeValue* transfer) = 0;
-    virtual NativeValue* Deserialize(NativeEngine* context, NativeValue* recorder) = 0;
-    virtual void DeleteSerializationData(NativeValue* value) const = 0;
-    virtual NativeValue* LoadModule(NativeValue* str, const std::string& fileName) = 0;
+    virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
@@ -255,18 +281,15 @@ public:
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
     void ClearLastError();
     virtual bool IsExceptionPending() const = 0;
-    virtual NativeValue* GetAndClearLastException() = 0;
     void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
     void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
     NativeEngine(NativeEngine&) = delete;
     virtual NativeEngine& operator=(NativeEngine&) = delete;
 
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
-    virtual NativeValue* ValueToNativeValue(JSValueWrapper& value) = 0;
-
     virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
 
-    virtual bool TriggerFatalException(NativeValue* error) = 0;
+    virtual bool TriggerFatalException(napi_value error) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
     void MarkWorkerThread()
@@ -346,8 +369,6 @@ public:
     virtual void SetHostEngine(NativeEngine* engine);
     virtual NativeEngine* GetHostEngine() const;
 
-    virtual NativeValue* CreateDate(double value) = 0;
-    virtual NativeValue* CreateBigWords(int sign_bit, size_t word_count, const uint64_t* words) = 0;
     using CleanupCallback = CleanupHookCallback::Callback;
     virtual void AddCleanupHook(CleanupCallback fun, void* arg);
     virtual void RemoveCleanupHook(CleanupCallback fun, void* arg);
@@ -384,8 +405,6 @@ public:
     virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
-
-    virtual void RegisterUncaughtExceptionHandler(UncaughtExceptionCallback callback) = 0;
     virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
     virtual bool HasPendingException()
@@ -397,8 +416,12 @@ public:
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
     virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
     virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
+    virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
+    virtual void SetCheckCallbackRef(NativeReference*) = 0;
+    virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
+    virtual void* GetPromiseRejectCallback() = 0;
     // run script by path
-    NativeValue* RunScript(const char* path);
+    napi_value RunScript(const char* path);
 
     const char* GetModuleFileName();
 
@@ -435,6 +458,11 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
+    NativeChunk& GetNativeChunk()
+    {
+        return nativeChunk_;
+    }
+
 private:
     void StartCleanupTimer();
 protected:
@@ -445,7 +473,6 @@ protected:
     void Deinit();
 
     NativeModuleManager* moduleManager_ = nullptr;
-    NativeScopeManager* scopeManager_ = nullptr;
     NativeReferenceManager* referenceManager_ = nullptr;
     NativeCallbackScopeManager* callbackScopeManager_ = nullptr;
 
@@ -461,6 +488,9 @@ protected:
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
     NativeEngine* hostEngine_ {nullptr};
+
+public:
+    uint64_t openHandleScopes_ = 0;
 
 private:
     std::string moduleName_;
@@ -495,6 +525,7 @@ private:
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;
     uv_timer_t timer_;
+    NativeChunk nativeChunk_;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */

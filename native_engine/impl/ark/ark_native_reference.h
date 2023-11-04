@@ -18,6 +18,7 @@
 
 #include "native_engine/native_value.h"
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_reference.h"
 
 class ArkNativeEngine;
@@ -25,18 +26,19 @@ class ArkNativeEngine;
 using panda::Global;
 using panda::JSValueRef;
 using panda::Local;
+using panda::LocalScope;
 
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
-                       NativeValue* value,
+                       Global<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
                        NativeFinalize callback = nullptr,
                        void* data = nullptr,
                        void* hint = nullptr);
     ArkNativeReference(ArkNativeEngine* engine,
-                       NativeValue* value,
+                       Global<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
                        NativeFinalize callback,
@@ -47,9 +49,9 @@ public:
 
     uint32_t Ref() override;
     uint32_t Unref() override;
-    NativeValue* Get() override;
+    napi_value Get() override;
     void* GetData() override;
-    operator NativeValue*() override;
+    operator napi_value() override;
     void SetDeleteSelf() override;
     uint32_t GetRefCount() override;
     bool GetFinalRun() override;
@@ -62,10 +64,6 @@ private:
     bool deleteSelf_ {false};
     bool hasDelete_ {false};
     bool finalRun_ {false};
-
-#ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId_ = -1;
-#endif
 
     NativeFinalize callback_ = nullptr;
     NapiNativeFinalize napiCallback_ = nullptr;

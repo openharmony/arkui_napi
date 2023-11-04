@@ -21,8 +21,8 @@
 class NativeDeferred {
 public:
     virtual ~NativeDeferred() {}
-    virtual void Resolve(NativeValue* data) = 0;
-    virtual void Reject(NativeValue* reason) = 0;
+    virtual void Resolve(napi_value data) = 0;
+    virtual void Reject(napi_value reason) = 0;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_DEFERRED_H */

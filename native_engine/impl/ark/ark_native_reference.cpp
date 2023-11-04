@@ -13,18 +13,14 @@
  * limitations under the License.
  */
 
-#include "ark_native_engine.h"
-
 #include "ark_native_reference.h"
 
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
+#include "ark_native_engine.h"
+#include "native_engine/native_utils.h"
 #include "utils/log.h"
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       NativeValue* value,
+                                       Global<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
@@ -34,7 +30,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 {}
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       NativeValue* value,
+                                       Global<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NativeFinalize callback,
@@ -50,18 +46,13 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       data_(data),
       hint_(hint)
 {
-    Global<JSValueRef> oldValue = *value;
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
-    Global<JSValueRef> newValue(vm, oldValue.ToLocal(vm));
+    Global<JSValueRef> newValue(vm, value.ToLocal(vm));
     value_ = newValue;
     if (initialRefcount == 0) {
         value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
     }
-
-#ifdef ENABLE_CONTAINER_SCOPE
-    scopeId_ = OHOS::Ace::ContainerScope::CurrentId();
-#endif
 
     if (deleteSelf) {
         NativeReferenceManager* referenceManager = engine->GetReferenceManager();
@@ -108,21 +99,17 @@ uint32_t ArkNativeReference::Unref()
     return refCount_;
 }
 
-NativeValue* ArkNativeReference::Get()
+napi_value ArkNativeReference::Get()
 {
     if (value_.IsEmpty()) {
         return nullptr;
     }
     auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
     Local<JSValueRef> value = value_.ToLocal(vm);
-#ifdef ENABLE_CONTAINER_SCOPE
-    OHOS::Ace::ContainerScope containerScope(scopeId_);
-#endif
-    return ArkNativeEngine::ArkValueToNativeValue(engine_, value);
+    return JsValueFromLocalValue(value);
 }
 
-ArkNativeReference::operator NativeValue*()
+ArkNativeReference::operator napi_value()
 {
     return Get();
 }
@@ -180,6 +167,5 @@ bool ArkNativeReference::GetFinalRun()
 
 napi_value ArkNativeReference::GetNapiValue()
 {
-    NativeValue* result = Get();
-    return reinterpret_cast<napi_value>(result);
+    return Get();
 }

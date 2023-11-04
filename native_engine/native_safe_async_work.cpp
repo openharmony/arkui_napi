@@ -15,12 +15,21 @@
 
 #include "native_safe_async_work.h"
 
+#include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_api.h"
 #include "native_async_work.h"
 #include "native_engine.h"
 #include "native_value.h"
 #include "securec.h"
 #include "utils/log.h"
+
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
+
+#ifdef ENABLE_CONTAINER_SCOPE
+using OHOS::Ace::ContainerScope;
+#endif
 
 // static methods start
 void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
@@ -31,7 +40,7 @@ void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
     that->ProcessAsyncHandle();
 }
 
-void NativeSafeAsyncWork::CallJs(NativeEngine* engine, NativeValue* js_call_func, void* context, void* data)
+void NativeSafeAsyncWork::CallJs(NativeEngine* engine, napi_value js_call_func, void* context, void* data)
 {
     HILOG_INFO("NativeSafeAsyncWork::CallJs called");
 
@@ -39,8 +48,8 @@ void NativeSafeAsyncWork::CallJs(NativeEngine* engine, NativeValue* js_call_func
         HILOG_ERROR("CallJs failed. engine or js_call_func is nullptr!");
         return;
     }
-
-    auto value = engine->CreateUndefined();
+    napi_value value = nullptr;
+    napi_get_undefined(reinterpret_cast<napi_env>(engine), &value);
     if (value == nullptr) {
         HILOG_ERROR("CreateUndefined failed");
         return;
@@ -51,12 +60,11 @@ void NativeSafeAsyncWork::CallJs(NativeEngine* engine, NativeValue* js_call_func
         HILOG_ERROR("CallFunction failed");
     }
 }
-// static methods end
 
 NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
-                                         NativeValue* func,
-                                         NativeValue* asyncResource,
-                                         NativeValue* asyncResourceName,
+                                         napi_value func,
+                                         napi_value asyncResource,
+                                         napi_value asyncResourceName,
                                          size_t maxQueueSize,
                                          size_t threadCount,
                                          void* finalizeData,
@@ -73,12 +81,16 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
         return;
     }
 
-    asyncContext_.asyncResource = asyncResource;
-    asyncContext_.asyncResourceName = asyncResourceName;
+    asyncContext_.napiAsyncResource = asyncResource;
+    asyncContext_.napiAsyncResourceName = asyncResourceName;
     if (func != nullptr) {
         uint32_t initialRefcount = 1;
         ref_ = engine->CreateReference(func, initialRefcount);
     }
+
+#ifdef ENABLE_CONTAINER_SCOPE
+    containerScopeId_ = ContainerScope::CurrentId();
+#endif
 }
 
 NativeSafeAsyncWork::~NativeSafeAsyncWork()
@@ -245,12 +257,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 {
     HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
 
-    auto scopeManager = engine_->GetScopeManager();
-    if (scopeManager == nullptr) {
-        HILOG_ERROR("scope manager is null");
-        return;
-    }
-
     std::unique_lock<std::mutex> lock(mutex_);
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
         HILOG_ERROR("Process failed, thread is closed!");
@@ -266,10 +272,12 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     size_t size = queue_.size();
     void* data = nullptr;
 
+    auto vm = engine_->GetEcmaVm();
+    panda::LocalScope scope(vm);
+#ifdef ENABLE_CONTAINER_SCOPE
+    ContainerScope containerScope(containerScopeId_);
+#endif
     HILOG_INFO("queue size %d", (int32_t)size);
-
-    auto nativeScope = scopeManager->Open();
-
     while (size > 0) {
         data = queue_.front();
 
@@ -278,7 +286,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
             condition_.notify_one();
         }
 
-        NativeValue* func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
+        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
@@ -291,8 +299,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     if (size == 0 && threadCount_ == 0) {
         CloseHandles();
     }
-
-    scopeManager->Close(nativeScope);
 }
 
 SafeAsyncCode NativeSafeAsyncWork::CloseHandles()

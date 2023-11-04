@@ -23,16 +23,15 @@ public:
     virtual ~NativeReference() {}
     virtual uint32_t Ref() = 0;
     virtual uint32_t Unref() = 0;
-    virtual NativeValue* Get() = 0;
+    virtual napi_value Get() = 0;
     virtual void* GetData()
     {
         return nullptr;
     }
-    virtual operator NativeValue*() = 0;
+    virtual operator napi_value() = 0;
     virtual void SetDeleteSelf() = 0;
     virtual uint32_t GetRefCount() = 0;
     virtual bool GetFinalRun() = 0;
     virtual napi_value GetNapiValue() = 0;
 };
-
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H */

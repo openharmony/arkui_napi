@@ -19,8 +19,8 @@
 #include "native_value.h"
 
 struct NativeAsyncContext {
-    NativeValue* asyncResource;
-    NativeValue* asyncResourceName;
+    napi_value napiAsyncResource;
+    napi_value napiAsyncResourceName;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_CONTEXT_H */

@@ -13,10 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_ARK_HEADERS_H
-#define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_ARK_HEADERS_H
+#ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
+#define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
+
+#include <cstring>
 
 #include "ecmascript/napi/include/jsnapi.h"
+#include "interfaces/inner_api/napi/native_node_api.h"
 
-#endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_ARK_HEADERS_H */
+inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
+{
+    return reinterpret_cast<napi_value>(*local);
+}
 
+inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
+{
+    panda::Local<panda::JSValueRef> local;
+    memcpy(static_cast<void*>(&local), &v, sizeof(v));
+    return local;
+}
+
+#endif  // FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
