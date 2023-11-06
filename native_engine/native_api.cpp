@@ -2481,7 +2481,6 @@ NAPI_EXTERN napi_status napi_is_boolean_object(napi_env env, napi_value value, b
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBoolean(), napi_boolean_expected);
     *result = nativeValue->IsJSPrimitiveBoolean();
 
     return napi_clear_last_error(env);
@@ -2778,7 +2777,6 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto isArrayBuffer = nativeValue->IsArrayBuffer();
     Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
