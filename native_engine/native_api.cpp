@@ -1814,18 +1814,6 @@ NAPI_EXTERN napi_status napi_create_external_arraybuffer(napi_env env,
     auto vm = engine->GetEcmaVm();
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     uint8_t* value = (uint8_t*)external_data;
-    if (!value) {
-        HILOG_ERROR("value is empty");
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
-    if (byte_length > MAX_BYTE_LENGTH) {
-        HILOG_ERROR("Creat failed, current size: %{public}2f MiB, limit size: %{public}2f MiB",
-                    static_cast<float>(byte_length) / static_cast<float>(ONEMIB_BYTE_SIZE),
-                    static_cast<float>(MAX_BYTE_LENGTH) / static_cast<float>(ONEMIB_BYTE_SIZE));
-        value = nullptr;
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
-
     NativeObjectInfo* cbinfo = NativeObjectInfo::CreateNewInstance();
     if (cbinfo == nullptr) {
         HILOG_ERROR("cbinfo is nullptr");
@@ -1847,9 +1835,6 @@ NAPI_EXTERN napi_status napi_create_external_arraybuffer(napi_env env,
             delete externalInfo;
         },
         cbinfo);
-
-    void* ptr = object->GetBuffer();
-    CHECK_ARG(env, ptr);
     *result = JsValueFromLocalValue(object);
     return napi_clear_last_error(env);
 }
