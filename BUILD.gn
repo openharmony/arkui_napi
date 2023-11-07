@@ -143,6 +143,9 @@ if (is_cross_platform_build) {
 config("container_scope_config") {
   visibility = [ ":*" ]
   include_dirs = [ "$ace_root/frameworks" ]
+  if (napi_enable_container_scope) {
+    defines = [ "ENABLE_CONTAINER_SCOPE" ]
+  }
 }
 
 ohos_shared_library("ace_container_scope") {
