@@ -501,8 +501,7 @@ NAPI_EXTERN napi_status napi_get_value_int32(napi_env env, napi_value value, int
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::NumberRef> NumberVal = nativeValue->ToNumber(vm);
-    *result = NumberVal->Value();
+    *result = nativeValue->Int32Value(vm);
 
     return napi_clear_last_error(env);
 }
@@ -516,8 +515,7 @@ NAPI_EXTERN napi_status napi_get_value_uint32(napi_env env, napi_value value, ui
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::NumberRef> NumberVal = nativeValue->ToNumber(vm);
-    *result = NumberVal->Value();
+    *result = nativeValue->Uint32Value(vm);
     return napi_clear_last_error(env);
 }
 
@@ -530,8 +528,7 @@ NAPI_EXTERN napi_status napi_get_value_int64(napi_env env, napi_value value, int
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::NumberRef> NumberVal = nativeValue->ToNumber(vm);
-    *result = NumberVal->Value();
+    *result = nativeValue->IntegerValue(vm);
     return napi_clear_last_error(env);
 }
 
@@ -564,16 +561,14 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
-    if (result != nullptr) {
-        if (buf == nullptr) {
-            *result = stringVal->Length();
-        } else if (bufsize != 0) {
-            int copied = stringVal->WriteLatin1(buf, bufsize);
-            buf[copied] = '\0';
-            *result = copied;
-        } else {
-            *result = 0;
-        }
+    if (buf == nullptr) {
+        *result = stringVal->Length();
+    } else if (bufsize != 0) {
+        int copied = stringVal->WriteLatin1(buf, bufsize);
+        buf[copied] = '\0';
+        *result = copied;
+    } else {
+        *result = 0;
     }
 
     return napi_clear_last_error(env);
@@ -594,16 +589,14 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
-    if (result != nullptr) {
-        if (buf == nullptr) {
-            *result = stringVal->Utf8Length(vm) - 1;
-        } else if (bufsize != 0) {
-            int copied = stringVal->WriteUtf8(buf, bufsize - 1, true) - 1;
-            buf[copied] = '\0';
-            *result = copied;
-        } else {
-            *result = 0;
-        }
+    if (buf == nullptr) {
+        *result = stringVal->Utf8Length(vm) - 1;
+    } else if (bufsize != 0) {
+        int copied = stringVal->WriteUtf8(buf, bufsize - 1, true) - 1;
+        buf[copied] = '\0';
+        *result = copied;
+    } else {
+        *result = 0;
     }
 
     return napi_clear_last_error(env);
@@ -623,19 +616,17 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
-    if (result != nullptr) {
-        if (buf == nullptr) {
-            *result = stringVal->Length();
-        } else if (bufsize == 1) {
-            buf[0] = '\0';
-            *result = 0;
-        } else if (bufsize != 0) {
-            int copied = stringVal->WriteUtf16(buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
-            buf[copied] = '\0';
-            *result = copied;
-        } else {
-            *result = 0;
-        }
+    if (buf == nullptr) {
+        *result = stringVal->Length();
+    } else if (bufsize == 1) {
+        buf[0] = '\0';
+        *result = 0;
+    } else if (bufsize != 0) {
+        int copied = stringVal->WriteUtf16(buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
+        buf[copied] = '\0';
+        *result = copied;
+    } else {
+        *result = 0;
     }
 
     return napi_clear_last_error(env);
