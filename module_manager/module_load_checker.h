@@ -19,6 +19,7 @@
 #include "module_checker_delegate.h"
 
 #include <memory>
+#include <shared_mutex>
 
 /**
  * @brief Module load checker. check whether module can be loaded
@@ -54,6 +55,7 @@ public:
     void SetDelegate(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
 private:
+    std::shared_mutex moduleCheckerDelegateMutex_;
     std::shared_ptr<ModuleCheckerDelegate> moduleCheckerDelegate_ = nullptr;
 };
 
