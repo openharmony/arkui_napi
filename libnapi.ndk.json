@@ -131,5 +131,6 @@
     {"name": "napi_create_buffer_copy"},
     {"name": "napi_create_external_buffer"},
     {"name": "napi_get_buffer_info"},
-    {"name": "napi_queue_async_work_with_qos"}
+    {"name": "napi_queue_async_work_with_qos"},
+    {"name": "napi_load_module"}
 ]

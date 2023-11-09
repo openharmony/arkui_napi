@@ -56,6 +56,10 @@ static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
 static constexpr uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
+static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router", 
+    "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
+static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
+static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static constexpr uint32_t DEC_TO_INT = 100;
 static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
@@ -738,6 +742,52 @@ bool ArkNativeEngine::RunScriptPath(const char* path)
         return false;
     }
     return true;
+}
+
+/*
+ * Before: input: 1. @ohos.hilog
+                  2. @system.app (NATIVE_MODULE contains this name)
+ * After: return: 1.@ohos:hilog
+ *                2.@native:system.app 
+ */
+std::string ArkNativeEngine::GetOhmurl(const char* str)
+{
+    std::string path(str);
+    const std::regex reg("@(ohos|system)\\.(\\S+)");
+    path.erase(0, path.find_first_not_of(" "));
+    path.erase(path.find_last_not_of(" ") + 1);
+    bool ret = std::regex_match(path, reg);
+    if (!ret) {
+        HILOG_ERROR("ArkNativeEngine:The module name doesn't comply with the naming rules");
+        return "";
+    }
+    std::string systemModule = path.substr(1);
+    if (NATIVE_MODULE.count(systemModule)) {
+        return NATIVE_MODULE_PREFIX + systemModule;
+    } else {
+        int pos = path.find('.');
+        std::string systemKey = path.substr(pos + 1, systemModule.size());
+        return OHOS_MODULE_PREFIX + systemKey;
+    }
+}
+
+napi_value ArkNativeEngine::NapiLoadModule(const char* str)
+{
+    if (str == nullptr) {
+        HILOG_ERROR("ArkNativeEngine:The module name is empty");
+        return nullptr;
+    }
+    std::string key = GetOhmurl(str);
+    if (key.size() == 0) {
+        return nullptr;
+    }
+    panda::EscapeLocalScope scope(vm_);
+    Local<ObjectRef> exportObj = panda::JSNApi::ExecuteNativeModule(vm_, key);
+    if (exportObj->IsNull()) {
+        HILOG_ERROR("ArkNativeEngine:napi load module failed");
+        return nullptr;
+    }
+    return JsValueFromLocalValue(scope.Escape(exportObj));
 }
 
 bool ArkNativeEngine::SuspendVMById(uint32_t tid)

@@ -123,6 +123,7 @@ extern "C" {
 
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result);
 NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos);
+NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result);
 
 #ifdef __cplusplus
 }

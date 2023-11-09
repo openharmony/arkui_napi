@@ -2402,6 +2402,16 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env,
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+    
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    *result = engine->NapiLoadModule(path);
+    return napi_clear_last_error(env);
+}
+
 // Memory management
 NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(
     napi_env env, int64_t change_in_bytes, int64_t* adjusted_value)
