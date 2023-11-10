@@ -19,6 +19,7 @@
 
 bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName)
 {
+    std::shared_lock lock(moduleCheckerDelegateMutex_);
     if (!moduleCheckerDelegate_) {
         HILOG_INFO("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
@@ -28,6 +29,7 @@ bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName)
 
 bool ModuleLoadChecker::DiskCheckOnly()
 {
+    std::shared_lock lock(moduleCheckerDelegateMutex_);
     if (!moduleCheckerDelegate_) {
         HILOG_INFO("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
@@ -37,5 +39,6 @@ bool ModuleLoadChecker::DiskCheckOnly()
 
 void ModuleLoadChecker::SetDelegate(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
+    std::lock_guard lock(moduleCheckerDelegateMutex_);
     moduleCheckerDelegate_ = moduleCheckerDelegate;
 }
