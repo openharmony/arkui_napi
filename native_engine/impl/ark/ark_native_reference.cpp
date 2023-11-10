@@ -105,9 +105,8 @@ napi_value ArkNativeReference::Get()
         return nullptr;
     }
     auto vm = engine_->GetEcmaVm();
-    panda::EscapeLocalScope scope(vm);
     Local<JSValueRef> value = value_.ToLocal(vm);
-    return JsValueFromLocalValue(scope.Escape(value));
+    return JsValueFromLocalValue(value);
 }
 
 ArkNativeReference::operator napi_value()
