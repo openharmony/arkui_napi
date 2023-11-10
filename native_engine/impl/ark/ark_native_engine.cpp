@@ -192,7 +192,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     if (module->jsCode == nullptr && module->getABCCode != nullptr) {
                         module->getABCCode(&module->jsCode, &module->jsCodeLen);
                     }
-                    if (module->jsCode != nullptr) {
+                    if (module->jsABCCode != nullptr || module->jsCode != nullptr) {
                         char fileName[NAPI_PATH_MAX] = { 0 };
                         const char* name = module->name;
                         if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
@@ -200,8 +200,13 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                             return scope.Escape(exports);
                         }
                         HILOG_DEBUG("load js code from %{public}s", fileName);
-                        auto exportObject = arkNativeEngine->LoadArkModule(module->jsCode,
-                            module->jsCodeLen, fileName);
+                        const void *buffer = nullptr;
+                        if (module->jsABCCode) {
+                            buffer = static_cast<const void *>(module->jsABCCode);
+                        } else {
+                            buffer = static_cast<const void *>(module->jsCode);
+                        }
+                        auto exportObject = arkNativeEngine->LoadArkModule(buffer, module->jsCodeLen, fileName);
                         if (exportObject->IsUndefined()) {
                             HILOG_ERROR("load module failed");
                             return scope.Escape(exports);
@@ -967,17 +972,17 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
-panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const char* str, int32_t len, const std::string& fileName)
+panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
+    int32_t len, const std::string& fileName)
 {
-    HILOG_DEBUG("ArkNativeEngineImpl::LoadModule start, buffer = %{public}s", str);
     panda::EscapeLocalScope scope(vm_);
     Local<ObjectRef> undefObj(JSValueRef::Undefined(vm_));
-    if (str == nullptr || len <= 0 || fileName.empty()) {
+    if (buffer == nullptr || len <= 0 || fileName.empty()) {
         HILOG_ERROR("fileName is nullptr or source code is nullptr");
         return scope.Escape(undefObj);
     }
 
-    bool res = JSNApi::ExecuteModuleFromBuffer(vm_, str, len, fileName);
+    bool res = JSNApi::ExecuteModuleFromBuffer(vm_, buffer, len, fileName);
     if (!res) {
         HILOG_ERROR("Execute module failed");
         return scope.Escape(undefObj);
