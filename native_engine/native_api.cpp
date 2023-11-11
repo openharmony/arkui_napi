@@ -337,6 +337,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     CHECK_ARG(env, result);
 
     auto vm = const_cast<EcmaVM*>(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
+    EscapeLocalScope scope(vm);
     auto callback = reinterpret_cast<NapiNativeCallback>(cb);
     const char* name = "defaultName";
     NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
@@ -358,7 +359,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
                                                            reinterpret_cast<void*>(funcInfo), true);
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, utf8name != nullptr ? utf8name : name);
     fn->SetName(vm, fnName);
-    *result = JsValueFromLocalValue(fn);
+    *result = JsValueFromLocalValue(scope.Escape(fn));
     return napi_clear_last_error(env);
 }
 
@@ -1040,6 +1041,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     auto nativeFunc = LocalValueFromJsValue(func);
     RETURN_STATUS_IF_FALSE(env, nativeFunc->IsFunction(), napi_function_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    EscapeLocalScope scope(vm);
     Local<panda::FunctionRef> function = nativeFunc->ToObject(vm);
     Local<panda::JSValueRef> thisObj = panda::JSValueRef::Undefined(vm);
     if (recv != nullptr) {
@@ -1064,7 +1066,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         return napi_set_last_error(env, napi_function_expected);
     }
     if (result) {
-        *result = JsValueFromLocalValue(value);
+        *result = JsValueFromLocalValue(scope.Escape(value));
     }
     return napi_clear_last_error(env);
 }
@@ -1248,8 +1250,9 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
         HILOG_ERROR("napi_define_class strncpy_s failed");
         *result = nullptr;
     } else {
+        EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
         auto resultValue = NapiDefineClass(env, newName, callback, data, nativeProperties, property_count);
-        *result = JsValueFromLocalValue(resultValue);
+        *result = JsValueFromLocalValue(scope.Escape(resultValue));
     }
 
     return napi_clear_last_error(env);
@@ -3159,7 +3162,7 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
 
 Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
-    panda::EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm());
+    EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm());
     if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
     }
