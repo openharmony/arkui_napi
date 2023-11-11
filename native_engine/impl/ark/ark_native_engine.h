@@ -47,18 +47,19 @@ using panda::JSNApi;
 using panda::JSValueRef;
 using panda::JsiRuntimeCallInfo;
 
-Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
-bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
+panda::Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
+bool NapiDefineProperty(napi_env env, panda::Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
+NAPI_EXPORT panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v);
+NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local);
+void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
+panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
+    void* data, const NapiPropertyDescriptor* properties, size_t length);
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,
     START_HIGH_SENSITIVE,
     FINISH_HIGH_SENSITIVE,
 };
-
-NAPI_EXPORT Local<JSValueRef> NapiValueToLocalValue(napi_value v);
-
-NAPI_EXPORT napi_value LocalValueToLocalNapiValue(Local<JSValueRef> local);
 
 class SerializationData {
 public:
@@ -241,7 +242,10 @@ public:
         return reinterpret_cast<void*>(PromiseRejectCallback);
     }
 
+    void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
+
     static bool napiProfilerEnabled;
+    static std::string tempModuleName_;
 
     static void* GetNativePtrCallBack(void* data);
 
@@ -258,9 +262,7 @@ private:
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
-    inline void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
     static bool napiProfilerParamReaded;
-    static std::string tempModuleName_;
     std::once_flag flag_;
     std::unique_ptr<std::thread> threadJsHeap_;
     std::mutex lock_;

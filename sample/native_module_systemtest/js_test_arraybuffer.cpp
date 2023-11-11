@@ -43,7 +43,7 @@ static napi_value DetachArrayBuffer(napi_env env, napi_callback_info info)
     bool  isArrayBuffer = false;
     NAPI_CALL(env, napi_is_arraybuffer(env, args[0], &isArrayBuffer));
     HILOG_INFO("%{public}s called isArrayBuffer = %{public}s", __func__, (isArrayBuffer == true) ? "true" : "false");
-    NAPI_ASSERT(env,  isArrayBuffer, "Wrong type of arguments. Expects a typedarray as first argument.");
+    NAPI_ASSERT(env, isArrayBuffer, "Wrong type of arguments. Expects a typedarray as first argument.");
 
     NAPI_CALL(env, napi_detach_arraybuffer(env, args[0]));
     HILOG_INFO("%{public}s called end", __func__);

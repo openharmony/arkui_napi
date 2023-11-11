@@ -809,7 +809,7 @@ bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(
-    const char* moduleName, const char* path, const char* relativePath, bool internal,  const bool isAppModule)
+    const char* moduleName, const char* path, const char* relativePath, bool internal, const bool isAppModule)
 {
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     nativeModulePath[0][0] = 0;
