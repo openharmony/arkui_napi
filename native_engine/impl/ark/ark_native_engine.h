@@ -25,6 +25,7 @@
 #include <mutex>
 #include <thread>
 #include <iostream>
+#include <regex>
 
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
@@ -205,7 +206,8 @@ public:
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
-
+    napi_value NapiLoadModule(const char* str) override;
+    std::string GetOhmurl(const char* str);
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
