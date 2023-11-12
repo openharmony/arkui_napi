@@ -767,8 +767,11 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    Local<panda::JSValueRef> val = obj->Get(vm, propKey);
-    *result = JsValueFromLocalValue(val);
+    Local<panda::JSValueRef> value = obj->Get(vm, propKey);
+    if (value->IsFunction()) {
+        FunctionSetContainerId(vm, value);
+    }
+    *result = JsValueFromLocalValue(value);
 
     return napi_clear_last_error(env);
 }
@@ -862,7 +865,11 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    *result = JsValueFromLocalValue(obj->Get(vm, key));
+    Local<panda::JSValueRef> value = obj->Get(vm, key);
+    if (value->IsFunction()) {
+        FunctionSetContainerId(vm, value);
+    }
+    *result = JsValueFromLocalValue(value);
 
     return napi_clear_last_error(env);
 }
@@ -929,7 +936,11 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    *result = JsValueFromLocalValue(obj->Get(vm, index));
+    Local<panda::JSValueRef> value = obj->Get(vm, index);
+    if (value->IsFunction()) {
+        FunctionSetContainerId(vm, value);
+    }
+    *result = JsValueFromLocalValue(value);
 
     return napi_clear_last_error(env);
 }
@@ -1179,48 +1190,6 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
     }
 
     return napi_clear_last_error(env);
-}
-
-Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
-    void* data, const NapiPropertyDescriptor* properties, size_t length)
-{
-    auto vm = const_cast<EcmaVM*>(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
-    std::string className(name);
-
-    NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
-    if (funcInfo == nullptr) {
-        HILOG_ERROR("funcInfo is nullptr");
-        return panda::JSValueRef::Undefined(vm);
-    }
-    funcInfo->env = env;
-    funcInfo->callback = callback;
-    funcInfo->data = data;
-
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-                if (info != nullptr) {
-                    delete info;
-                }
-            },
-        reinterpret_cast<void*>(funcInfo), true);
-    Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
-    fn->SetName(vm, fnName);
-    Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
-    Local<panda::ObjectRef> fnObj = fn->ToObject(vm);
-    for (size_t i = 0; i < length; i++) {
-        if (properties[i].attributes & NATIVE_STATIC) {
-            NapiDefineProperty(env, fnObj, properties[i]);
-        } else {
-            if (classPrototype->IsUndefined()) {
-                HILOG_ERROR("ArkNativeEngineImpl::Class's prototype is null");
-                continue;
-            }
-            NapiDefineProperty(env, classPrototype, properties[i]);
-        }
-    }
-
-    return fn;
 }
 
 NAPI_EXTERN napi_status napi_define_class(napi_env env,
