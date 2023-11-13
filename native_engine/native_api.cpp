@@ -1272,7 +1272,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     CHECK_ARG(env, finalize_cb);
 
     auto nativeValue = LocalValueFromJsValue(js_object);
-    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -1292,12 +1292,10 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject),
-                1, false, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
             *reference = ref;
         } else {
-            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject),
-                0, true, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint);
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
@@ -1322,7 +1320,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
     CHECK_ARG(env, finalize_cb);
 
     auto nativeValue = LocalValueFromJsValue(js_object);
-    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -1341,12 +1339,10 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject),
-                1, false, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
             *reference = ref;
         } else {
-            ref = engine->CreateReference(JsValueFromLocalValue(nativeObject),
-                0, true, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint);
         }
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, native_binding_size);
@@ -1410,7 +1406,7 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     } else {
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
-        ref = engine->CreateReference(JsValueFromLocalValue(nativeObject), 0, true, nullptr, nullptr, nullptr);
+        ref = engine->CreateReference(js_object, 0, true, nullptr, nullptr, nullptr);
         object->SetNativePointerFieldCount(1);
         object->SetNativePointerField(0, ref, nullptr, nullptr, nativeBindingSize);
         PropertyAttribute attr(object, true, false, true);
@@ -2986,7 +2982,7 @@ NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env,
     CHECK_ARG(env, finalize_cb);
 
     auto nativeValue = LocalValueFromJsValue(js_object);
-    auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
     NativeReference* reference = nullptr;
     auto engine = reinterpret_cast<NativeEngine*>(env);

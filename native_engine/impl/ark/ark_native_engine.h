@@ -125,8 +125,8 @@ public:
     napi_value CreateInstance(napi_value constructor, napi_value const* argv, size_t argc) override;
 
     // Create native reference
-    NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
-        bool flag = false, NativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+    NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
+        NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     bool IsExceptionPending() const override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime(bool isLimitedWorker = false) override;
