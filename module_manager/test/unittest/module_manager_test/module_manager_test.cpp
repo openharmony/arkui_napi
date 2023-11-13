@@ -404,3 +404,54 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_017, TestSize.Level1)
     EXPECT_EQ(result, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 end";
 }
+
+/*
+ * @tc.name: LoadNativeModuleTest_018
+ * @tc.desc: test NativeModule's LoadNativeModule function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_018, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_018 starts";
+
+    NativeModule *module = nullptr;
+    NativeModule mockModule;
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+
+    /* isModuleRestricted is true and isAppModule is false, we will check the restriction */
+    module = moduleManager->LoadNativeModule("dummy", nullptr, false, false, "", true);
+    EXPECT_EQ(module, nullptr);
+
+    MockFindNativeModuleByDisk(&mockModule);
+    module = moduleManager->LoadNativeModule("worker", nullptr, false, false, "", true);
+    EXPECT_EQ(module, &mockModule);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_018 end";
+}
+
+/*
+ * @tc.name: LoadNativeModuleTest_019
+ * @tc.desc: test NativeModule's LoadNativeModule function
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_019, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_019 starts";
+
+    NativeModule *module = nullptr;
+    NativeModule mockModule;
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+
+    MockFindNativeModuleByDisk(&mockModule);
+
+    /* isModuleRestricted is false, we wont check the restriction */
+    module = moduleManager->LoadNativeModule("dummy", nullptr, false, false, "", false);
+    EXPECT_EQ(module, &mockModule);
+
+    module = moduleManager->LoadNativeModule("worker", nullptr, false, false, "rel_path", false);
+    EXPECT_EQ(module, &mockModule);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_019 end";
+}
