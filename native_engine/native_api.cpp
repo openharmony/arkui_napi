@@ -20,6 +20,9 @@
 #include <sys/prctl.h>
 #endif
 
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
@@ -348,6 +351,9 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
                                                            [](void* externalPointer, void* data) {
@@ -1058,6 +1064,15 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     if (recv != nullptr) {
         thisObj = LocalValueFromJsValue(recv);
     }
+
+#ifdef ENABLE_CONTAINER_SCOPE
+    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
+    auto funcInfo = reinterpret_cast<NapiFunctionInfo*>(function->GetData(vm));
+    if (funcInfo != nullptr) {
+        scopeId = funcInfo->scopeId;
+    }
+    OHOS::Ace::ContainerScope containerScope(scopeId);
+#endif
 
     std::vector<Local<panda::JSValueRef>> args;
     args.reserve(argc);

@@ -20,7 +20,9 @@
 #include "native_engine/native_utils.h"
 #include "utils/log.h"
 
+using panda::Local;
 using panda::StringRef;
+
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
@@ -126,7 +128,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     (void)asyncResourceName;
     char name[64] = {0}; // 64:NAME_BUFFER_SIZE
     if (!asyncResourceName->IsNull()) {
-        auto nativeString = asyncResourceName->ToString(engine->GetEcmaVm());
+        panda::Local<panda::StringRef> nativeString(asyncResourceName);
         int copied = nativeString->WriteUtf8(name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
         name[copied] = '\0';
     }
