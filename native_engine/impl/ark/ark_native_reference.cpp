@@ -20,20 +20,20 @@
 #include "utils/log.h"
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       Global<JSValueRef> value,
+                                       napi_value value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
-                                       NativeFinalize callback,
+                                       NapiNativeFinalize napiCallback,
                                        void* data,
                                        void* hint)
-    : ArkNativeReference::ArkNativeReference(engine, value, initialRefcount, deleteSelf, callback, nullptr, data, hint)
+    : ArkNativeReference::ArkNativeReference(engine, LocalValueFromJsValue(value), initialRefcount, deleteSelf,
+                                             napiCallback, data, hint)
 {}
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       Global<JSValueRef> value,
+                                       Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
-                                       NativeFinalize callback,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
                                        void* hint)
@@ -41,14 +41,13 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       value_(Global<JSValueRef>(engine->GetEcmaVm(), JSValueRef::Undefined(engine->GetEcmaVm()))),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
-      callback_(callback),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint)
 {
     auto vm = engine->GetEcmaVm();
     LocalScope scope(vm);
-    Global<JSValueRef> newValue(vm, value.ToLocal(vm));
+    Global<JSValueRef> newValue(vm, value);
     value_ = newValue;
     if (initialRefcount == 0) {
         value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
@@ -121,13 +120,9 @@ void* ArkNativeReference::GetData()
 
 void ArkNativeReference::FinalizeCallback()
 {
-    if (callback_ != nullptr) {
-        callback_(engine_, data_, hint_);
-    }
     if (napiCallback_ != nullptr) {
         napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);
     }
-    callback_ = nullptr;
     napiCallback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
