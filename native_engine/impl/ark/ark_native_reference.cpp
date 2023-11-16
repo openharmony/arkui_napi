@@ -15,22 +15,31 @@
 
 #include "ark_native_reference.h"
 
-#include "ark_native_engine.h"
 #include "native_engine/native_utils.h"
 #include "utils/log.h"
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
+                                       const EcmaVM* vm,
                                        napi_value value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
                                        void* hint)
-    : ArkNativeReference::ArkNativeReference(engine, LocalValueFromJsValue(value), initialRefcount, deleteSelf,
-                                             napiCallback, data, hint)
-{}
+    : engine_(engine),
+      vm_(vm),
+      value_(vm, LocalValueFromJsValue(value)),
+      refCount_(initialRefcount),
+      deleteSelf_(deleteSelf),
+      napiCallback_(napiCallback),
+      data_(data),
+      hint_(hint)
+{
+    ArkNativeReferenceConstructor(initialRefcount, deleteSelf);
+}
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
+                                       const EcmaVM* vm,
                                        Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
@@ -38,27 +47,15 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        void* data,
                                        void* hint)
     : engine_(engine),
-      value_(Global<JSValueRef>(engine->GetEcmaVm(), JSValueRef::Undefined(engine->GetEcmaVm()))),
+      vm_(vm),
+      value_(vm, value),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint)
 {
-    auto vm = engine->GetEcmaVm();
-    LocalScope scope(vm);
-    Global<JSValueRef> newValue(vm, value);
-    value_ = newValue;
-    if (initialRefcount == 0) {
-        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
-    }
-
-    if (deleteSelf) {
-        NativeReferenceManager* referenceManager = engine->GetReferenceManager();
-        if (referenceManager != nullptr) {
-            referenceManager->CreateHandler(this);
-        }
-    }
+    ArkNativeReferenceConstructor(initialRefcount, deleteSelf);
 }
 
 ArkNativeReference::~ArkNativeReference()
@@ -103,8 +100,7 @@ napi_value ArkNativeReference::Get()
     if (value_.IsEmpty()) {
         return nullptr;
     }
-    auto vm = engine_->GetEcmaVm();
-    Local<JSValueRef> value = value_.ToLocal(vm);
+    Local<JSValueRef> value = value_.ToLocal(vm_);
     return JsValueFromLocalValue(value);
 }
 

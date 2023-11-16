@@ -16,13 +16,14 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_REFERENCE_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_REFERENCE_H
 
-#include "native_engine/native_value.h"
-
+#include "ark_native_engine.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_reference.h"
+#include "native_engine/native_value.h"
 
 class ArkNativeEngine;
 
+using panda::EcmaVM;
 using panda::Global;
 using panda::JSValueRef;
 using panda::Local;
@@ -31,13 +32,15 @@ using panda::LocalScope;
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
+                       const EcmaVM* vm,
                        napi_value value,
                        uint32_t initialRefcount,
-                       bool deleteSelf,
-                       NapiNativeFinalize napiCallback,
-                       void* data,
-                       void* hint);
+                       bool deleteSelf = false,
+                       NapiNativeFinalize napiCallback = nullptr,
+                       void* data = nullptr,
+                       void* hint = nullptr);
     ArkNativeReference(ArkNativeEngine* engine,
+                       const EcmaVM* vm,
                        Local<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
@@ -57,16 +60,31 @@ public:
     napi_value GetNapiValue() override;
 
 private:
+    inline void ArkNativeReferenceConstructor(uint32_t initialRefCount, bool deleteSelf)
+    {
+        if (initialRefCount == 0) {
+            value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
+        }
+
+        if (deleteSelf) {
+            NativeReferenceManager* referenceManager = engine_->GetReferenceManager();
+            if (referenceManager != nullptr) {
+                referenceManager->CreateHandler(this);
+            }
+        }
+    }
+
     ArkNativeEngine* engine_;
+    const EcmaVM* vm_;
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
-    bool hasDelete_ {false};
-    bool finalRun_ {false};
-
     NapiNativeFinalize napiCallback_ = nullptr;
     void* data_ = nullptr;
     void* hint_ = nullptr;
+
+    bool hasDelete_ {false};
+    bool finalRun_ {false};
 
     void FinalizeCallback();
 

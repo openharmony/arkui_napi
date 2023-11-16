@@ -30,11 +30,7 @@ inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 
 inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
 {
-    panda::Local<panda::JSValueRef> local;
-    if (memcpy_s(static_cast<void*>(&local), sizeof(v), &v, sizeof(v)) != EOK) {
-        HILOG_FATAL("memcpy_s failed");
-        std::abort();
-    }
+    panda::Local<panda::JSValueRef> local(reinterpret_cast<uintptr_t>(v));
     return local;
 }
 
