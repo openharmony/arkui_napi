@@ -1020,7 +1020,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsArray(vm), napi_array_expected);
-    Local<panda::ArrayRef> arr = nativeValue->ToObject(vm);
+    Local<panda::ArrayRef> arr(nativeValue);
     *result = arr->Length(vm);
 
     return napi_clear_last_error(env);
@@ -1410,15 +1410,9 @@ NAPI_EXTERN napi_status napi_create_external(
     auto vm = engine->GetEcmaVm();
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     NativeObjectInfo* info = NativeObjectInfo::CreateNewInstance();
-    if (info == nullptr) {
-        HILOG_ERROR("info is nullptr");
-        return napi_set_last_error(env, napi_function_expected);
-    }
     info->engine = engine;
-    info->nativeObject = nullptr;
     info->callback = callback;
     info->hint = finalize_hint;
-    size_t nativeBindingSize = 0;
     Local<panda::NativePointerRef> object = panda::NativePointerRef::New(vm, data,
         [](void* data, void* info) {
             auto externalInfo = reinterpret_cast<NativeObjectInfo*>(info);
@@ -1429,7 +1423,7 @@ NAPI_EXTERN napi_status napi_create_external(
                 callback(engine, data, hint);
             }
             delete externalInfo;
-        }, info, nativeBindingSize);
+        }, info, 0);
 
     *result = JsValueFromLocalValue(object);
     return napi_clear_last_error(env);
