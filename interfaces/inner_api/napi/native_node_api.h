@@ -96,7 +96,7 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          napi_value* result);
 NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result);
 NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
-                                                             napi_value native_object,
+                                                             napi_value js_object,
                                                              NapiDetachCallback detach,
                                                              NapiAttachCallback attach,
                                                              void* object,

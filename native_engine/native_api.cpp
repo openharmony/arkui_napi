@@ -3163,30 +3163,41 @@ Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hi
 }
 
 NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
-                                                             napi_value native_object,
+                                                             napi_value js_object,
                                                              NapiDetachCallback detach,
                                                              NapiAttachCallback attach,
                                                              void* object,
                                                              void* hint)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, js_object);
     CHECK_ARG(env, detach);
     CHECK_ARG(env, attach);
     CHECK_ARG(env, object);
 
-    auto nativeValue = LocalValueFromJsValue(native_object);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    auto jsValue = LocalValueFromJsValue(js_object);
+    RETURN_STATUS_IF_FALSE(env, jsValue->IsObject(), napi_object_expected);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto obj = nativeValue->ToObject(vm);
-    bool res = obj->Set(vm, reinterpret_cast<void*>(DetachFuncCallback), reinterpret_cast<void*>(AttachFuncCallback));
-    obj->SetNativePointerFieldCount(5); // 5 : NativeEngine, NativeObject, hint, detachData, attachData
-    obj->SetNativePointerField(0, reinterpret_cast<void*>(engine), nullptr, nullptr);
-    obj->SetNativePointerField(1, object, nullptr, nullptr);
-    obj->SetNativePointerField(2, hint, nullptr, nullptr); // 2 : hint
-    obj->SetNativePointerField(3, reinterpret_cast<void*>(detach), nullptr, nullptr); // 3 : detachData
-    obj->SetNativePointerField(4, reinterpret_cast<void*>(attach), nullptr, nullptr); // 4 : attachData
+    auto obj = jsValue->ToObject(vm);
+
+    panda::JSNApi::NativeBindingInfo* data = panda::JSNApi::NativeBindingInfo::CreateNewInstance();
+    data->env = env;
+    data->nativeValue = object;
+    data->attachFunc = reinterpret_cast<void*>(AttachFuncCallback);
+    data->attachData = reinterpret_cast<void*>(attach);
+    data->detachFunc = reinterpret_cast<void*>(DetachFuncCallback);
+    data->detachData = reinterpret_cast<void*>(detach);
+    data->hint = hint;
+
+    size_t nativeBindingSize = 7 * sizeof(void *); // 7 : params num
+    Local<panda::NativePointerRef> value = panda::NativePointerRef::New(vm, data,
+        [](void* data, void* info) {
+            auto externalInfo = reinterpret_cast<panda::JSNApi::NativeBindingInfo*>(data);
+            delete externalInfo;
+        }, nullptr, nativeBindingSize);
+
+    bool res = obj->ConvertToNativeBindingObject(vm, value);
     if (res) {
         return napi_clear_last_error(env);
     }
