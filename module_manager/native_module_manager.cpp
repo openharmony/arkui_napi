@@ -15,6 +15,7 @@
 
 #include "native_module_manager.h"
 
+#include <cstring>
 #include <dirent.h>
 #include <fstream>
 #include <iostream>
@@ -238,16 +239,9 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     const char *nativeModuleName = nativeModule->name == nullptr ? "" : nativeModule->name;
     std::string appName = prefix_ + "/" + nativeModuleName;
     const char *tmpName = isAppModule_ ? appName.c_str() : nativeModuleName;
-    char *moduleName = new char[NAPI_PATH_MAX];
-    errno_t err = EOK;
-    err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
-    if (err != EOK) {
-        delete[] moduleName;
-        return;
-    }
-    err = strcpy_s(moduleName, NAPI_PATH_MAX, tmpName);
-    if (err != EOK) {
-        delete[] moduleName;
+    char *moduleName = strdup(tmpName);
+    if (moduleName == nullptr) {
+        HILOG_ERROR("strdup failed. tmpName is %{public}s", tmpName);
         return;
     }
 
