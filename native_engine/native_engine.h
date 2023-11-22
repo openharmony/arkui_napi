@@ -27,6 +27,7 @@
 #endif
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "module_manager/native_module_manager.h"
 #include "native_engine/native_async_work.h"
 #include "native_engine/native_deferred.h"
@@ -500,6 +501,7 @@ protected:
 
 public:
     uint64_t openHandleScopes_ = 0;
+    panda::Local<panda::ObjectRef> lastException_;
 
 private:
     std::string moduleName_;
@@ -537,4 +539,19 @@ private:
     NativeChunk nativeChunk_;
 };
 
+class TryCatch : public panda::TryCatch {
+public:
+    explicit TryCatch(napi_env env)
+        : panda::TryCatch(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()),
+          engine_(reinterpret_cast<NativeEngine*>(env)) {}
+
+    ~TryCatch()
+    {
+        if (HasCaught()) {
+            engine_->lastException_ = GetException();
+        }
+    }
+private:
+   NativeEngine* engine_ = nullptr;
+};
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */
