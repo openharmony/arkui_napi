@@ -46,4 +46,18 @@ static inline napi_status napi_set_last_error(napi_env env,
 
 #define CHECK_ARG(env, arg) RETURN_STATUS_IF_FALSE((env), ((arg) != nullptr), napi_invalid_arg)
 
+#define NAPI_PREAMBLE(env)                                                     \
+    CHECK_ENV((env));                                                          \
+    RETURN_STATUS_IF_FALSE(                                                    \
+        (env),                                                                 \
+        (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),      \
+        napi_pending_exception);                                               \
+        napi_clear_last_error((env));                                          \
+    TryCatch tryCatch(env)
+
+#define GET_RETURN_STATUS(env)                                                 \
+    (!tryCatch.HasCaught()                                                     \
+        ? napi_ok                                                              \
+        : napi_set_last_error((env), napi_pending_exception))
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */
