@@ -119,76 +119,6 @@ using SourceMapCallback = std::function<std::string(const std::string& rawStack)
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 
-class NativeChunk {
-public:
-    static constexpr size_t CHUNK_PAGE_SIZE = 8 * 1024;
-
-    NativeChunk() {};
-    ~NativeChunk()
-    {
-        for (auto iter = usedPage_.begin(); iter != usedPage_.end(); iter++) {
-            free(*iter);
-        }
-        usedPage_.clear();
-    }
-
-    template<class T>
-    [[nodiscard]] T *NewArray(size_t size)
-    {
-        return static_cast<T *>(Allocate(size * sizeof(T)));
-    }
-
-    template<typename T, typename... Args>
-    [[nodiscard]] T *New(Args &&... args)
-    {
-        auto p = reinterpret_cast<void *>(Allocate(sizeof(T)));
-        new (p) T(std::forward<Args>(args)...);
-        return reinterpret_cast<T *>(p);
-    }
-
-    template<class T>
-    void Delete(T *ptr)
-    {
-        if (!useChunk_) {
-            delete ptr;
-            return;
-        }
-
-        if (std::is_class<T>::value) {
-            ptr->~T();
-        }
-    }
-
-private:
-    void *Allocate(size_t size)
-    {
-        uintptr_t result = ptr_;
-        if (size > end_ - ptr_) {
-            result = Expand();
-        }
-        ptr_ += size;
-        return reinterpret_cast<void *>(result);
-    }
-
-    uintptr_t Expand()
-    {
-        void *ptr = malloc(CHUNK_PAGE_SIZE);
-        if (ptr == nullptr) {
-            std::abort();
-        }
-        usedPage_.emplace_back(ptr);
-        useChunk_ = true;
-        ptr_ = reinterpret_cast<uintptr_t>(ptr);
-        end_ = ptr_ + CHUNK_PAGE_SIZE;
-        return ptr_;
-    }
-
-    uintptr_t ptr_ {0};
-    uintptr_t end_ {0};
-    bool useChunk_ {false};
-    std::vector<void *> usedPage_ {};
-};
-
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
@@ -467,10 +397,6 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
-    NativeChunk& GetNativeChunk()
-    {
-        return nativeChunk_;
-    }
     virtual napi_value NapiLoadModule(const char* str) = 0;
 
 private:
@@ -536,7 +462,6 @@ private:
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;
     uv_timer_t timer_;
-    NativeChunk nativeChunk_;
 };
 
 class TryCatch : public panda::TryCatch {

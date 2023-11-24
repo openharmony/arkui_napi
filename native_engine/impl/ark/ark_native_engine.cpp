@@ -55,7 +55,6 @@ using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
-static constexpr uint32_t MAX_CHUNK_ARRAY_SIZE = 10;
 static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router", 
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
@@ -448,11 +447,7 @@ panda::Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *ru
     cbInfo.argv = nullptr;
     cbInfo.functionInfo = info;
     if (cbInfo.argc > 0) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
-            cbInfo.argv = new napi_value [cbInfo.argc];
-        } else {
-            cbInfo.argv = engine->GetNativeChunk().NewArray<napi_value>(cbInfo.argc);
-        }
+        cbInfo.argv = new napi_value [cbInfo.argc];
         for (size_t i = 0; i < cbInfo.argc; i++) {
             panda::Local<panda::JSValueRef> value = runtimeInfo->GetCallArgRef(i);
             if (value->IsFunction()) {
@@ -476,11 +471,7 @@ panda::Local<panda::JSValueRef> ArkNativeFunctionCallBack(JsiRuntimeCallInfo *ru
     }
 
     if (cbInfo.argv != nullptr) {
-        if (cbInfo.argc > MAX_CHUNK_ARRAY_SIZE) {
-            delete[] cbInfo.argv;
-        } else {
-            engine->GetNativeChunk().Delete(cbInfo.argv);
-        }
+        delete[] cbInfo.argv;
         cbInfo.argv = nullptr;
     }
 
