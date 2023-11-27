@@ -145,5 +145,6 @@
     {"name": "napi_async_destroy"},
     {"name": "napi_open_callback_scope"},
     {"name": "napi_close_callback_scope"},
-    {"name": "node_api_get_module_file_name"}
+    {"name": "node_api_get_module_file_name"},
+    {"name": "napi_coerce_to_native_binding_object"}
 ]

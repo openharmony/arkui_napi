@@ -3192,16 +3192,16 @@ Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hi
 
 NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              napi_value js_object,
-                                                             NapiDetachCallback detach,
-                                                             NapiAttachCallback attach,
-                                                             void* object,
+                                                             napi_native_binding_detach_callback detach_cb,
+                                                             napi_native_binding_attach_callback attach_cb,
+                                                             void* native_object,
                                                              void* hint)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, js_object);
-    CHECK_ARG(env, detach);
-    CHECK_ARG(env, attach);
-    CHECK_ARG(env, object);
+    CHECK_ARG(env, detach_cb);
+    CHECK_ARG(env, attach_cb);
+    CHECK_ARG(env, native_object);
 
     auto jsValue = LocalValueFromJsValue(js_object);
     RETURN_STATUS_IF_FALSE(env, jsValue->IsObject(), napi_object_expected);
@@ -3211,11 +3211,11 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
 
     panda::JSNApi::NativeBindingInfo* data = panda::JSNApi::NativeBindingInfo::CreateNewInstance();
     data->env = env;
-    data->nativeValue = object;
+    data->nativeValue = native_object;
     data->attachFunc = reinterpret_cast<void*>(AttachFuncCallback);
-    data->attachData = reinterpret_cast<void*>(attach);
+    data->attachData = reinterpret_cast<void*>(attach_cb);
     data->detachFunc = reinterpret_cast<void*>(DetachFuncCallback);
-    data->detachData = reinterpret_cast<void*>(detach);
+    data->detachData = reinterpret_cast<void*>(detach_cb);
     data->hint = hint;
 
     size_t nativeBindingSize = 7 * sizeof(void *); // 7 : params num

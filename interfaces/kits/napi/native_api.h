@@ -79,6 +79,9 @@ NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(napi_env env,
 extern "C" {
 #endif
 
+typedef void* (*napi_native_binding_detach_callback)(napi_env env, void* native_object, void* hint);
+typedef napi_value (*napi_native_binding_attach_callback)(napi_env env, void* native_object, void* hint);
+
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result);
 NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos);
 NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result);
@@ -115,6 +118,12 @@ NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
                                                                  size_t property_count,
                                                                  const char** keys,
                                                                  const napi_value* values);
+NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
+                                                             napi_value js_object,
+                                                             napi_native_binding_detach_callback detach_cb,
+                                                             napi_native_binding_attach_callback attach_cb,
+                                                             void* native_object,
+                                                             void* hint);
 
 #ifdef __cplusplus
 }
