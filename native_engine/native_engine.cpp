@@ -711,19 +711,26 @@ void NativeEngine::FinalizerInstanceData(void)
 const char* NativeEngine::GetModuleFileName()
 {
     HILOG_INFO("%{public}s, start.", __func__);
-    NativeModuleManager* moduleManager = GetModuleManager();
-    HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
-    if (moduleManager != nullptr) {
-        const char* moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), false);
-        HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName);
-        return moduleFileName;
+    if (moduleFileName_.empty()) {
+        NativeModuleManager* moduleManager = GetModuleManager();
+        HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
+        if (moduleManager != nullptr) {
+            std::string moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), isAppModule_);
+            HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName.c_str());
+            SetModuleFileName(moduleFileName);
+        }
     }
-    return nullptr;
+    return moduleFileName_.c_str();
 }
 
-void NativeEngine::SetModuleFileName(std::string& moduleName)
+void NativeEngine::SetModuleName(std::string& moduleName)
 {
     moduleName_ = moduleName;
+}
+
+void NativeEngine::SetModuleFileName(std::string& moduleFileName)
+{
+    moduleFileName_ = moduleFileName;
 }
 
 void NativeEngine::SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos)

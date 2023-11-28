@@ -183,8 +183,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_006, TestSize.Level1)
     moduleManager.SetNativeEngine(moduleKey, engine);
 
     MockFindNativeModuleByCache(nullptr);
-    const char* result = moduleManager.GetModuleFileName(moduleName, true);
-    EXPECT_EQ(result, nullptr);
+    std::string result = moduleManager.GetModuleFileName(moduleName, true);
+    EXPECT_TRUE(result.empty());
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_006 end";
 }
 
@@ -202,8 +202,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_007, TestSize.Level1)
     NativeModuleManager moduleManager;
 
     MockFindNativeModuleByCache(&mockModule);
-    const char* result = moduleManager.GetModuleFileName(moduleName, true);
-    EXPECT_TRUE(result != nullptr);
+    std::string result = moduleManager.GetModuleFileName(moduleName, true);
+    EXPECT_FALSE(result.empty());
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_007 end";
 }
 

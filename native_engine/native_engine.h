@@ -364,7 +364,8 @@ public:
 
     const char* GetModuleFileName();
 
-    void SetModuleFileName(std::string &moduleName);
+    void SetModuleName(std::string &moduleName);
+    void SetModuleFileName(std::string &moduleFileName);
 
     void SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint);
     void GetInstanceData(void** data);
@@ -424,6 +425,7 @@ protected:
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
     NativeEngine* hostEngine_ {nullptr};
+    bool isAppModule_ = false;
 
 public:
     uint64_t openHandleScopes_ = 0;
@@ -431,6 +433,7 @@ public:
 
 private:
     std::string moduleName_;
+    std::string moduleFileName_;
     std::mutex instanceDataLock_;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);

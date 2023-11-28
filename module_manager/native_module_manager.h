@@ -80,7 +80,7 @@ public:
         bool internal = false, const char* relativePath = "", bool moduleRestricted = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
     bool UnloadNativeModule(const std::string& moduleKey);
-    const char* GetModuleFileName(const char* moduleName, bool isAppModule);
+    std::string GetModuleFileName(const char* moduleName, bool isAppModule);
 
     /**
      * @brief Set the path for searching napi dynamic libraries, only for the previewer.
