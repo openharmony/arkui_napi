@@ -484,6 +484,11 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     }
 
     FinishNapiProfilerTrace();
+    // Fixme: Rethrow error to engine while clear lastException_
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+
     if (localRet.IsEmpty()) {
         return **JSValueRef::Undefined(vm);
     }
