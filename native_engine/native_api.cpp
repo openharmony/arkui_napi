@@ -1075,17 +1075,8 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     OHOS::Ace::ContainerScope containerScope(scopeId);
 #endif
 
-    std::vector<Local<panda::JSValueRef>> args;
-    args.reserve(argc);
-    for (size_t i = 0; i < argc; i++) {
-        if (argv[i] != nullptr) {
-            args.emplace_back(LocalValueFromJsValue(argv[i]));
-        } else {
-            args.emplace_back(panda::JSValueRef::Undefined(vm));
-        }
-    }
-
-    Local<panda::JSValueRef> value = function->Call(vm, thisObj, args.data(), argc);
+    Local<panda::JSValueRef> value =
+        function->Call(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("pending exception when js function called");
         HILOG_ERROR("print exception info: ");
