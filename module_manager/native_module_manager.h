@@ -66,6 +66,7 @@ struct NativeModule {
     int32_t jsCodeLen = 0;
     bool moduleLoaded = false;
     bool isAppModule = false;
+    std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
 };
 
 class NAPI_EXPORT NativeModuleManager {
@@ -122,6 +123,8 @@ private:
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool RemoveNativeModule(const std::string& moduleKey);
+    void MoveApiAllowListCheckerPtr(
+        std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();

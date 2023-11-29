@@ -14,6 +14,7 @@
 import("//foundation/arkui/napi/napi.gni")
 
 import("//build/test.gni")
+import("//foundation/ability/form_fwk/form_fwk.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
@@ -73,9 +74,34 @@ ohos_unittest("test_ark_unittest_threadsafe") {
   external_deps += [ "ets_runtime:libark_jsruntime" ]
 }
 
+ohos_unittest("test_ark_api_allowlist") {
+  module_out_path = module_output_path
+
+  include_dirs = ark_include
+
+  cflags = [ "-g3" ]
+
+  sources = [
+    "engine/test_ark.cpp",
+    "test_ark_api_allowlist.cpp",
+  ]
+
+  defines = [ "NAPI_TEST" ]
+
+  deps = ark_deps
+  deps += [ "../..:ace_napi" ]
+  deps += [ "${form_render_service_path}/..:formrender" ]
+
+  external_deps = [ "bounds_checking_function:libsec_shared" ]
+
+  external_deps += [ "hilog:libhilog" ]
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
+}
+
 group("unittest") {
   testonly = true
   deps = [
+    ":test_ark_api_allowlist",
     ":test_ark_unittest",
     ":test_ark_unittest_threadsafe",
   ]

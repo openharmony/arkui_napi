@@ -468,6 +468,14 @@ bool NativeModuleManager::CheckModuleRestricted(const std::string& moduleName)
     return true;
 }
 
+void NativeModuleManager::MoveApiAllowListCheckerPtr(
+    std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule)
+{
+    if (apiAllowListChecker != nullptr) {
+        nativeModule->apiAllowListChecker.reset(apiAllowListChecker.release());
+    }
+}
+
 NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     const char* path, bool isAppModule, bool internal, const char* relativePath, bool isModuleRestricted)
 {
@@ -487,8 +495,9 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
         }
     }
 
+    std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
-        !moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+        !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
         HILOG_INFO("Block module name: %{public}s", moduleName);
         return nullptr;
     }
@@ -540,6 +549,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
 #endif
     }
 #endif
+    MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
 
     (void) pthread_mutex_unlock(&mutex_);
 
@@ -821,7 +831,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
         HILOG_WARN("get module '%{public}s' path failed", moduleName);
         return nullptr;
     }
-    if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName)) {
+    std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
+    if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
         HILOG_ERROR("module '%{public}s' is not allowed to load", moduleName);
         return nullptr;
     }
@@ -881,6 +892,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             auto getJSCode = reinterpret_cast<GetJSCodeCallback>(LIBSYM(lib, symbol));
             if (getJSCode == nullptr) {
                 HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
+                MoveApiAllowListCheckerPtr(apiAllowListChecker, lastNativeModule_);
                 return lastNativeModule_;
             }
             const char* buf = nullptr;
@@ -898,6 +910,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     if (lastNativeModule_) {
         lastNativeModule_->moduleLoaded = true;
         HILOG_DEBUG("last native module name is %{public}s", lastNativeModule_->name);
+        MoveApiAllowListCheckerPtr(apiAllowListChecker, lastNativeModule_);
     }
     return lastNativeModule_;
 }
