@@ -26,6 +26,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
+#include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
@@ -1488,8 +1489,8 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     CHECK_ENV(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    NativeReference* ref = engine->CreateReference(value, initial_refcount, false, nullptr, nullptr, nullptr);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto ref = new ArkNativeReference(engine, engine->GetEcmaVm(), value, initial_refcount);
 
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
