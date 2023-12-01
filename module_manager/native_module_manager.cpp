@@ -633,7 +633,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 return false;
             }
 
-            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s%s",
+            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s%s", // 2 : Element index value
                 sysAbcPrefix.c_str(), dupModuleName, abcfix) == -1) {
                 return false;
             }
@@ -690,7 +690,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, afterDot, zfix, soPostfix) == -1) {
                 return false;
             }
-            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s/%s%s",
+            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s/%s%s", // 2 : Element index value
                 sysAbcPrefix.c_str(), dupModuleName, afterDot, abcfix) == -1) {
                 return false;
             }
@@ -777,7 +777,7 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         HILOG_ERROR("%{public}s is not existed.", filePath.c_str());
         return lib;
     }
-    len = inFile.tellg();
+    len = static_cast<size_t>(inFile.tellg());
     std::string abcModuleKey = moduleKey;
     lib = GetBufferHandle(abcModuleKey);
     if (lib != nullptr) {
@@ -816,7 +816,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
-    nativeModulePath[2][0] = 0;
+    nativeModulePath[2][0] = 0; // 2 : Element index value
     if (!GetNativeModulePath(moduleName, path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
         HILOG_WARN("get module '%{public}s' path failed", moduleName);
         return nullptr;
@@ -845,7 +845,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     const uint8_t* abcBuffer = nullptr;
     size_t len = 0;
     if (lib == nullptr) {
-        loadPath = nativeModulePath[2];
+        loadPath = nativeModulePath[2]; // 2 : Element index value
         HILOG_DEBUG("try to load abc module path: %{public}s", loadPath);
         abcBuffer = GetFileBuffer(loadPath, moduleKey, len);
         if (!abcBuffer) {
@@ -925,7 +925,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 
     lastNativeModule_->name = moduleName;
     lastNativeModule_->jsABCCode = abcBuffer;
-    lastNativeModule_->jsCodeLen = len;
+    lastNativeModule_->jsCodeLen = static_cast<int32_t>(len);
     lastNativeModule_->next = nullptr;
 
     HILOG_INFO("NativeModule Register by buffer success. module name is '%{public}s'", lastNativeModule_->name);
