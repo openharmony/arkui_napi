@@ -193,11 +193,11 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         auto str = val->ToString(vm);
         char* buffer = name;
         if (buffer == nullptr) {
-            strLength = str->Utf8Length(vm) - 1;
+            strLength = static_cast<size_t>(str->Utf8Length(vm) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
             int copied = str->WriteUtf8(buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
-            strLength = copied;
+            strLength = static_cast<size_t>(copied);
         } else {
             strLength = 0;
         }
@@ -248,7 +248,7 @@ void SubEncodeToUtf8(const EcmaVM* vm,
                      size_t bufferSize,
                      int32_t* nchars)
 {
-    int32_t length = nativeString->Length();
+    int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
     int32_t i = 0;
@@ -297,7 +297,7 @@ void SubEncodeToChinese(const EcmaVM* vm,
                         std::string& buffer,
                         const char* encode)
 {
-    int32_t length = nativeString->Length();
+    int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";

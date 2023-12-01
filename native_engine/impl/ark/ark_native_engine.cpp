@@ -857,7 +857,7 @@ std::string ArkNativeEngine::GetOhmurl(const char* str)
     if (NATIVE_MODULE.count(systemModule)) {
         return NATIVE_MODULE_PREFIX + systemModule;
     } else {
-        int pos = path.find('.');
+        int pos = static_cast<int>(path.find('.'));
         std::string systemKey = path.substr(pos + 1, systemModule.size());
         return OHOS_MODULE_PREFIX + systemKey;
     }
