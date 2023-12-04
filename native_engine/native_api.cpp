@@ -1060,7 +1060,12 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeFunc->IsFunction(), napi_function_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     EscapeLocalScope scope(vm);
-    Local<panda::FunctionRef> function = nativeFunc->ToObject(vm);
+    Local<panda::FunctionRef> function = panda::JSValueRef::Undefined(vm);
+    if (nativeFunc->IsJSFunction()) {
+        function = nativeFunc;
+    } else {
+        function = nativeFunc->ToObject(vm);
+    }
     Local<panda::JSValueRef> thisObj = panda::JSValueRef::Undefined(vm);
     if (recv != nullptr) {
         thisObj = LocalValueFromJsValue(recv);
