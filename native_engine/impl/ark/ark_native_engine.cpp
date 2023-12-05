@@ -389,7 +389,7 @@ ArkNativeEngine::~ArkNativeEngine()
     // Free threadJsHeap_
     needStop_ = true;
     condition_.notify_all();
-    if (threadJsHeap_->joinable()) {
+    if (threadJsHeap_ != nullptr && threadJsHeap_->joinable()) {
         threadJsHeap_->join();
     }
 #endif
