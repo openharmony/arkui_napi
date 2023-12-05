@@ -3142,13 +3142,19 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
 
 Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
-    EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm());
     if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
     }
+    auto vm = reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm();
+    EscapeLocalScope scope(vm);
+    Local<panda::JSValueRef> result = panda::JSValueRef::Undefined(vm);
     NapiAttachCallback attach = reinterpret_cast<NapiAttachCallback>(attachData);
     napi_value attachVal = attach(reinterpret_cast<napi_env>(engine), buffer, hint);
-    Local<panda::JSValueRef> result = LocalValueFromJsValue(attachVal);
+    if (attachVal == nullptr) {
+        HILOG_WARN("AttachFunc return nullptr");
+    } else {
+        result = LocalValueFromJsValue(attachVal);
+    }
     return scope.Escape(result);
 }
 
