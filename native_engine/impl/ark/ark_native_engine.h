@@ -96,7 +96,10 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override;
+    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override
+    {
+        return vm_;
+    }
 
     void Loop(LoopMode mode, bool needSync = false) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
