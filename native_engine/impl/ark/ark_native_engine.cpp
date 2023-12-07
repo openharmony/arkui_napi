@@ -1102,6 +1102,12 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
+void ArkNativeEngine::GetCurrentModuleName(std::string& moduleName)
+{
+    LocalScope scope(vm_);
+    moduleName = panda::JSNApi::GetCurrentModuleName(vm_);
+}
+
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
     int32_t len, const std::string& fileName)
 {
