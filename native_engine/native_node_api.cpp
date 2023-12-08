@@ -191,7 +191,7 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
     return napi_status::napi_ok;
 }
 
-NAPI_INNER_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
+NAPI_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, fun);
@@ -202,7 +202,7 @@ NAPI_INNER_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_remove_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
+NAPI_EXTERN napi_status napi_remove_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, fun);
@@ -327,7 +327,7 @@ struct napi_async_cleanup_hook_handle__ {
     void* done_data_ = nullptr;
 };
 
-NAPI_INNER_EXTERN napi_status napi_add_async_cleanup_hook(
+NAPI_EXTERN napi_status napi_add_async_cleanup_hook(
     napi_env env, napi_async_cleanup_hook hook, void* arg, napi_async_cleanup_hook_handle* remove_handle)
 {
     CHECK_ENV(env);
@@ -341,7 +341,7 @@ NAPI_INNER_EXTERN napi_status napi_add_async_cleanup_hook(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_remove_async_cleanup_hook(napi_async_cleanup_hook_handle remove_handle)
+NAPI_EXTERN napi_status napi_remove_async_cleanup_hook(napi_async_cleanup_hook_handle remove_handle)
 {
     if (remove_handle == nullptr) {
         return napi_invalid_arg;
@@ -484,7 +484,7 @@ NAPI_EXTERN napi_status napi_unref_threadsafe_function(napi_env env, napi_thread
     return napi_status::napi_ok;
 }
 
-NAPI_INNER_EXTERN napi_status napi_async_init(
+NAPI_EXTERN napi_status napi_async_init(
     napi_env env, napi_value async_resource, napi_value async_resource_name, napi_async_context* result)
 {
     CHECK_ENV(env);
@@ -500,7 +500,7 @@ NAPI_INNER_EXTERN napi_status napi_async_init(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_context async_context)
+NAPI_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_context async_context)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, async_context);
@@ -512,7 +512,7 @@ NAPI_INNER_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_contex
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_open_callback_scope(
+NAPI_EXTERN napi_status napi_open_callback_scope(
     napi_env env, napi_value, napi_async_context async_context_handle, napi_callback_scope* result)
 {
     CHECK_ENV(env);
@@ -530,7 +530,7 @@ NAPI_INNER_EXTERN napi_status napi_open_callback_scope(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_scope scope)
+NAPI_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_scope scope)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, scope);
@@ -550,7 +550,7 @@ NAPI_INNER_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callb
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_set_instance_data(
+NAPI_EXTERN napi_status napi_set_instance_data(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint)
 {
     HILOG_INFO("%{public}s", __func__);
@@ -561,7 +561,7 @@ NAPI_INNER_EXTERN napi_status napi_set_instance_data(
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
+NAPI_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 {
     HILOG_INFO("%{public}s", __func__);
     CHECK_ENV(env);
@@ -571,7 +571,7 @@ NAPI_INNER_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result)
+NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result)
 {
     HILOG_INFO("%{public}s", __func__);
     CHECK_ENV(env);

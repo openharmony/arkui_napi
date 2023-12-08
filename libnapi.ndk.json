@@ -132,5 +132,16 @@
     {"name": "napi_create_external_buffer"},
     {"name": "napi_get_buffer_info"},
     {"name": "napi_queue_async_work_with_qos"},
-    {"name": "napi_load_module"}
+    {"name": "napi_load_module"},
+    {"name": "napi_set_instance_data"},
+    {"name": "napi_get_instance_data"},
+    {"name": "napi_add_env_cleanup_hook"},
+    {"name": "napi_remove_env_cleanup_hook"},
+    {"name": "napi_add_async_cleanup_hook"},
+    {"name": "napi_remove_async_cleanup_hook"},
+    {"name": "napi_async_init"},
+    {"name": "napi_async_destroy"},
+    {"name": "napi_open_callback_scope"},
+    {"name": "napi_close_callback_scope"},
+    {"name": "node_api_get_module_file_name"}
 ]

@@ -240,6 +240,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     Local<BooleanRef> ret(info->GetCallArgRef(1));
                     isAppModule = ret->Value();
                 }
+                arkNativeEngine->isAppModule_ = isAppModule;
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     module =
