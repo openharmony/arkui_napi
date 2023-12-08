@@ -395,11 +395,6 @@ ArkNativeEngine::~ArkNativeEngine()
 #endif
 }
 
-const EcmaVM* ArkNativeEngine::GetEcmaVm() const
-{
-    return vm_;
-}
-
 static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
 {
 #ifdef ENABLE_HITRACE

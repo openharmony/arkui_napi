@@ -232,14 +232,6 @@ void NativeEngine::SetLastError(int errorCode, uint32_t engineErrorCode, void* e
     lastError_.reserved = engineReserved;
 }
 
-void NativeEngine::ClearLastError()
-{
-    lastError_.errorCode = 0;
-    lastError_.engineErrorCode = 0;
-    lastError_.message = nullptr;
-    lastError_.reserved = nullptr;
-}
-
 void SubEncodeToUtf8(const EcmaVM* vm,
                      Local<JSValueRef>& nativeValue,
                      Local<StringRef>& nativeString,

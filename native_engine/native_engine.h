@@ -210,7 +210,13 @@ public:
 
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
-    void ClearLastError();
+    void ClearLastError()
+    {
+        lastError_.errorCode = 0;
+        lastError_.engineErrorCode = 0;
+        lastError_.message = nullptr;
+        lastError_.reserved = nullptr;
+    }
     virtual bool IsExceptionPending() const = 0;
     void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
     void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
