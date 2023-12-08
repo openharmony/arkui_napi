@@ -624,26 +624,41 @@ void NativeEngine::RunCleanup()
 
 void NativeEngine::CleanupHandles()
 {
-    while (request_waiting_.load() > 0 && !cleanupTimeout_) {
+    while (requestWaiting_.load() > 0 && !cleanupTimeout_) {
         HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
-            request_waiting_.load(std::memory_order_relaxed));
+            requestWaiting_.load(std::memory_order_relaxed));
         uv_run(loop_, UV_RUN_ONCE);
     }
 }
 
 void NativeEngine::IncreaseWaitingRequestCounter()
 {
-    request_waiting_++;
+    requestWaiting_++;
 }
 
 void NativeEngine::DecreaseWaitingRequestCounter()
 {
-    request_waiting_--;
+    requestWaiting_--;
 }
 
 bool NativeEngine::HasWaitingRequest()
 {
-    return request_waiting_.load() != 0;
+    return requestWaiting_.load() != 0;
+}
+
+void NativeEngine::IncreaseListeningCounter()
+{
+    listeningCounter_++;
+}
+
+void NativeEngine::DecreaseListeningCounter()
+{
+    listeningCounter_--;
+}
+
+bool NativeEngine::HasListeningCounter()
+{
+    return listeningCounter_.load() != 0;
 }
 
 void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
