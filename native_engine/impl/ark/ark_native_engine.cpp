@@ -1519,24 +1519,13 @@ bool ArkNativeEngine::ExecutePermissionCheck()
 
 void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
 {
-    if (SourceMapCallback_ == nullptr) {
-        SourceMapCallback_ = callback;
-    }
+    // regedit SourceMapCallback to ark_js_runtime
+    panda::JSNApi::SetSourceMapCallback(vm_, callback);
 }
 
 void ArkNativeEngine::RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback)
 {
     panda::JSNApi::SetSourceMapTranslateCallback(vm_, callback);
-}
-
-std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)
-{
-    if (SourceMapCallback_ != nullptr) {
-        return SourceMapCallback_(rawStack);
-    } else {
-        HILOG_WARN("SourceMapCallback_ is nullptr.");
-        return "";
-    }
 }
 
 bool ArkNativeEngine::IsMixedDebugEnabled()

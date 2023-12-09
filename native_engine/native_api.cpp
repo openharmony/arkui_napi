@@ -3091,8 +3091,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
 #else
     HILOG_WARN("GetStacktrace env get stack failed");
 #endif
-
-    stack = engine->ExecuteTranslateBySourceMap(rawStack);
+    stack = rawStack;
     return napi_clear_last_error(env);
 }
 
