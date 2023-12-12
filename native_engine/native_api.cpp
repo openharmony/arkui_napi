@@ -173,8 +173,11 @@ NAPI_EXTERN napi_status napi_get_boolean(napi_env env, bool value, napi_value* r
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::BooleanRef> object = panda::BooleanRef::New(vm, value);
-    *result = JsValueFromLocalValue(object);
+    if (value) {
+        *result = JsValueFromLocalValue(panda::JSValueRef::True(vm));
+    } else {
+        *result = JsValueFromLocalValue(panda::JSValueRef::False(vm));
+    }
 
     return napi_clear_last_error(env);
 }
