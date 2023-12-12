@@ -1056,32 +1056,20 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         CHECK_ARG(env, argv);
     }
 
-    auto nativeFunc = LocalValueFromJsValue(func);
-    RETURN_STATUS_IF_FALSE(env, nativeFunc->IsFunction(), napi_function_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    EscapeLocalScope scope(vm);
-    Local<panda::FunctionRef> function = panda::JSValueRef::Undefined(vm);
-    if (nativeFunc->IsJSFunction()) {
-        function = nativeFunc;
-    } else {
-        function = nativeFunc->ToObject(vm);
-    }
-    Local<panda::JSValueRef> thisObj = panda::JSValueRef::Undefined(vm);
-    if (recv != nullptr) {
-        thisObj = LocalValueFromJsValue(recv);
-    }
-
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
+    auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
+    panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
+    panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto funcInfo = reinterpret_cast<NapiFunctionInfo*>(function->GetData(vm));
+    auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
     if (funcInfo != nullptr) {
         scopeId = funcInfo->scopeId;
     }
     OHOS::Ace::ContainerScope containerScope(scopeId);
 #endif
-
-    Local<panda::JSValueRef> value =
-        function->Call(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
+    panda::JSValueRef* value =
+        function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("pending exception when js function called");
         HILOG_ERROR("print exception info: ");
@@ -1089,7 +1077,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         return napi_set_last_error(env, napi_pending_exception);
     }
     if (result) {
-        *result = JsValueFromLocalValue(scope.Escape(value));
+        *result = reinterpret_cast<napi_value>(value);
     }
     return napi_clear_last_error(env);
 }
