@@ -105,7 +105,9 @@ NativeModuleManager* NativeModuleManager::GetInstance()
 void NativeModuleManager::SetNativeEngine(std::string moduleKey, NativeEngine* nativeEngine)
 {
     HILOG_DEBUG("modulekey is '%{public}s'", moduleKey.c_str());
-    nativeEngine->SetModuleName(moduleKey);
+    if (nativeEngine != nullptr) {
+        nativeEngine->SetModuleName(moduleKey);
+    }
     std::lock_guard<std::mutex> lock(nativeEngineListMutex_);
     nativeEngineList_.emplace(moduleKey, nativeEngine);
 }
