@@ -12,9 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H
 #define FOUNDATION_ACE_NAPI_MODULE_MANAGER_MODULE_CHECKER_H
+
+#include <memory>
+#include <functional>
+
+typedef std::function<bool(const std::string&)> ApiAllowListChecker;
 
 /**
  * @brief Module checker interface. check whether module can be loaded
@@ -31,7 +35,8 @@ public:
      * @return true The module can be loaded
      * @return false The module cannot be loaded
      */
-    virtual bool CheckModuleLoadable(const char* moduleName) = 0;
+    virtual bool CheckModuleLoadable(const char* moduleName,
+        std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker) = 0;
 
     /**
      * @brief Whether loadable rules only work for disk case

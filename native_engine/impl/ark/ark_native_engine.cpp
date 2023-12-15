@@ -55,7 +55,7 @@ using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
-static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router", 
+static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router",
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
@@ -189,6 +189,49 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
     return cb;
 }
 
+bool ArkNativeEngine::CheckArkApiAllowList(
+    NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy)
+{
+    std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker = module->apiAllowListChecker;
+    if (apiAllowListChecker != nullptr) {
+        const std::string apiPath = context.moduleName->ToString();
+        if ((*apiAllowListChecker)(apiPath)) {
+            CopyPropertyApiFilter(apiAllowListChecker, context.ecmaVm, context.exportObj, exportCopy, apiPath);
+        }
+        return true;
+    }
+    return false;
+}
+
+void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker,
+    const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj, panda::Local<panda::ObjectRef>& exportCopy,
+    const std::string& apiPath)
+{
+    panda::Local<panda::ArrayRef> namesArrayRef = exportObj->GetAllPropertyNames(ecmaVm, NATIVE_DEFAULT);
+    for (int i = namesArrayRef->Length(ecmaVm) - 1; i >= 0; i--) {
+        const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
+        const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
+        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
+        if ((*apiAllowListChecker)(curPath)) {
+            const std::string valueType = value->Typeof(ecmaVm)->ToString();
+            if (valueType == "object") {
+                panda::Local<panda::ObjectRef> subObject = ObjectRef::New(ecmaVm);
+                CopyPropertyApiFilter(apiAllowListChecker, ecmaVm, value, subObject, curPath);
+                exportCopy->Set(ecmaVm, nameValue, subObject);
+                HILOG_DEBUG("Set the package '%{public}s' to the allow list", curPath.c_str());
+            } else if (valueType == "function") {
+                exportCopy->Set(ecmaVm, nameValue, value);
+                HILOG_DEBUG("Set the function '%{public}s' to the allow list", curPath.c_str());
+            } else {
+                exportCopy->Set(ecmaVm, nameValue, value);
+                HILOG_DEBUG("Set the element type is '%{public}s::%{public}s' to the allow list", valueType.c_str(),
+                    curPath.c_str());
+            }
+        }
+    }
+}
+
+
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
                                                                                      vm_(vm),
                                                                                      topScope_(vm),
@@ -304,6 +347,11 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 #ifdef ENABLE_HITRACE
                         FinishTrace(HITRACE_TAG_ACE);
 #endif
+                        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
+                        panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
+                        if (CheckArkApiAllowList(module, context, exportCopy)) {
+                            return scope.Escape(exportCopy);
+                        }
                         exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
@@ -836,7 +884,7 @@ bool ArkNativeEngine::RunScriptPath(const char* path)
  * Before: input: 1. @ohos.hilog
                   2. @system.app (NATIVE_MODULE contains this name)
  * After: return: 1.@ohos:hilog
- *                2.@native:system.app 
+ *                2.@native:system.app
  */
 std::string ArkNativeEngine::GetOhmurl(const char* str)
 {

@@ -38,6 +38,13 @@ struct JsFrameInfo {
     std::string pos;
     uintptr_t* nativePointer = nullptr;
 };
+struct ApiCheckContext {
+    NativeModuleManager* moduleManager;
+    EcmaVM* ecmaVm;
+    panda::Local<panda::StringRef>& moduleName;
+    panda::Local<panda::ObjectRef>& exportObj;
+    panda::EscapeLocalScope& scope;
+};
 }
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
@@ -253,10 +260,14 @@ public:
     static std::string tempModuleName_;
 
     static void* GetNativePtrCallBack(void* data);
+    static void CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker,
+        const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
+        panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
 private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
-
+    static bool CheckArkApiAllowList(
+        NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
