@@ -202,6 +202,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     }
 #endif
 
+    // Don't use that after complete
     that->complete_(engine, nstatus, that->data_);
     if (tryCatch.HasCaught()) {
         engine->HandleUncaughtException();
@@ -210,7 +211,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
     if (isValidTraceId) {
-        OHOS::HiviewDFX::HiTraceChain::SetId(*(that->traceId_.get()));
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
     }
 #endif
 }
