@@ -1945,7 +1945,12 @@ HWTEST_F(NapiBasicTest, FreezeObjectTest001, testing::ext::TestSize.Level1)
     int32_t testNumber2 = 0;
     napi_value numberAttribute2 = nullptr;
     napi_create_int32(env, testNumber2, &numberAttribute2);
-    ASSERT_CHECK_CALL(napi_set_named_property(env, object, "test", numberAttribute2));
+    // Set property after freezed will throw 'Cannot add property in prevent extensions'.
+    napi_status status = napi_set_named_property(env, object, "test", numberAttribute2);
+    ASSERT_EQ(status, napi_pending_exception);
+
+    napi_value ex;
+    napi_get_and_clear_last_exception(env, &ex);
 
     napi_key_collection_mode keyMode = napi_key_own_only;
     napi_key_filter keyFilter = napi_key_all_properties;
