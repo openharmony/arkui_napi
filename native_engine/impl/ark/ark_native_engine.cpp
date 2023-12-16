@@ -1022,11 +1022,6 @@ NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t ini
     return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint);
 }
 
-bool ArkNativeEngine::IsExceptionPending() const
-{
-    return panda::JSNApi::HasPendingException(vm_);
-}
-
 NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker)
 {
     panda::RuntimeOption option;
