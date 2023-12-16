@@ -104,4 +104,8 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
+NAPI_EXTERN napi_status napi_run_module_path(napi_env env,
+                                             const char* path,
+                                             const char* entryPoint,
+                                             napi_value* result);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

@@ -161,8 +161,8 @@ public:
     virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
-    virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor) = 0;
-    
+    virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor, char* entryPoint = nullptr) = 0;
+
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
     virtual NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
@@ -360,7 +360,7 @@ public:
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
     // run script by path
-    napi_value RunScript(const char* path);
+    napi_value RunScript(const char* path, char* entryPoint = nullptr);
 
     const char* GetModuleFileName();
 

@@ -3210,3 +3210,13 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, st
     }
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_run_module_path(napi_env env, const char* path, const char* entryPoint, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    *result = engine->RunScript(path, const_cast<char*>(entryPoint));
+    return napi_clear_last_error(env);
+}
