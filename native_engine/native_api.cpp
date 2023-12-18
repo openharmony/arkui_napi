@@ -26,6 +26,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
+#include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
@@ -172,8 +173,11 @@ NAPI_EXTERN napi_status napi_get_boolean(napi_env env, bool value, napi_value* r
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::BooleanRef> object = panda::BooleanRef::New(vm, value);
-    *result = JsValueFromLocalValue(object);
+    if (value) {
+        *result = JsValueFromLocalValue(panda::JSValueRef::True(vm));
+    } else {
+        *result = JsValueFromLocalValue(panda::JSValueRef::False(vm));
+    }
 
     return napi_clear_last_error(env);
 }
@@ -1055,36 +1059,20 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         CHECK_ARG(env, argv);
     }
 
-    auto nativeFunc = LocalValueFromJsValue(func);
-    RETURN_STATUS_IF_FALSE(env, nativeFunc->IsFunction(), napi_function_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    EscapeLocalScope scope(vm);
-    Local<panda::FunctionRef> function = nativeFunc->ToObject(vm);
-    Local<panda::JSValueRef> thisObj = panda::JSValueRef::Undefined(vm);
-    if (recv != nullptr) {
-        thisObj = LocalValueFromJsValue(recv);
-    }
-
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
+    auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
+    panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
+    panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto funcInfo = reinterpret_cast<NapiFunctionInfo*>(function->GetData(vm));
+    auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
     if (funcInfo != nullptr) {
         scopeId = funcInfo->scopeId;
     }
     OHOS::Ace::ContainerScope containerScope(scopeId);
 #endif
-
-    std::vector<Local<panda::JSValueRef>> args;
-    args.reserve(argc);
-    for (size_t i = 0; i < argc; i++) {
-        if (argv[i] != nullptr) {
-            args.emplace_back(LocalValueFromJsValue(argv[i]));
-        } else {
-            args.emplace_back(panda::JSValueRef::Undefined(vm));
-        }
-    }
-
-    Local<panda::JSValueRef> value = function->Call(vm, thisObj, args.data(), argc);
+    panda::JSValueRef* value =
+        function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("pending exception when js function called");
         HILOG_ERROR("print exception info: ");
@@ -1092,7 +1080,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         return napi_set_last_error(env, napi_pending_exception);
     }
     if (result) {
-        *result = JsValueFromLocalValue(scope.Escape(value));
+        *result = reinterpret_cast<napi_value>(value);
     }
     return napi_clear_last_error(env);
 }
@@ -1114,17 +1102,8 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeConstructor->IsFunction(), napi_function_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::FunctionRef> constructorVal = nativeConstructor->ToObject(vm);
-    std::vector<Local<panda::JSValueRef>> args;
-    args.reserve(argc);
-    for (size_t i = 0; i < argc; i++) {
-        if (argv[i] != nullptr) {
-            Local<panda::JSValueRef> arg = LocalValueFromJsValue(argv[i]);
-            args.emplace_back(arg);
-        } else {
-            args.emplace_back(panda::JSValueRef::Undefined(vm));
-        }
-    }
-    Local<panda::JSValueRef> instance = constructorVal->Constructor(vm, args.data(), argc);
+    Local<panda::JSValueRef> instance = constructorVal->ConstructorOptimize(vm,
+        reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("CreateInstance occur Exception");
         *result = nullptr;
@@ -1488,8 +1467,8 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     CHECK_ENV(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    NativeReference* ref = engine->CreateReference(value, initial_refcount, false, nullptr, nullptr, nullptr);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto ref = new ArkNativeReference(engine, engine->GetEcmaVm(), value, initial_refcount);
 
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
@@ -3103,8 +3082,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
 #else
     HILOG_WARN("GetStacktrace env get stack failed");
 #endif
-
-    stack = engine->ExecuteTranslateBySourceMap(rawStack);
+    stack = rawStack;
     return napi_clear_last_error(env);
 }
 
@@ -3145,13 +3123,19 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
 
 Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
-    EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm());
     if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
     }
+    auto vm = reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm();
+    EscapeLocalScope scope(vm);
+    Local<panda::JSValueRef> result = panda::JSValueRef::Undefined(vm);
     NapiAttachCallback attach = reinterpret_cast<NapiAttachCallback>(attachData);
     napi_value attachVal = attach(reinterpret_cast<napi_env>(engine), buffer, hint);
-    Local<panda::JSValueRef> result = LocalValueFromJsValue(attachVal);
+    if (attachVal == nullptr) {
+        HILOG_WARN("AttachFunc return nullptr");
+    } else {
+        result = LocalValueFromJsValue(attachVal);
+    }
     return scope.Escape(result);
 }
 

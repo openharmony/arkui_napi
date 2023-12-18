@@ -37,7 +37,7 @@ public:
      * @return true The module can be loaded
      * @return false The module cannot be loaded
      */
-    bool CheckModuleLoadable(const char* moduleName);
+    bool CheckModuleLoadable(const char* moduleName, std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker);
 
     /**
      * @brief Whether loadable rules only work for disk case

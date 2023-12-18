@@ -210,8 +210,13 @@ public:
 
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
-    void ClearLastError();
-    virtual bool IsExceptionPending() const = 0;
+    void ClearLastError()
+    {
+        lastError_.errorCode = 0;
+        lastError_.engineErrorCode = 0;
+        lastError_.message = nullptr;
+        lastError_.reserved = nullptr;
+    }
     void EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars);
     void EncodeToChinese(napi_value value, std::string& buffer, const std::string& encoding);
     NativeEngine(NativeEngine&) = delete;
@@ -317,6 +322,10 @@ public:
     void DecreaseWaitingRequestCounter();
     bool HasWaitingRequest();
 
+    void IncreaseListeningCounter();
+    void DecreaseListeningCounter();
+    bool HasListeningCounter();
+
     virtual void RunCleanup();
 
     bool IsStopping() const
@@ -353,18 +362,19 @@ public:
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
-    virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
     virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
     virtual void SetCheckCallbackRef(NativeReference*) = 0;
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
+    virtual void GetCurrentModuleName(std::string& moduleName) = 0;
     // run script by path
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
 
     const char* GetModuleFileName();
 
-    void SetModuleFileName(std::string &moduleName);
+    void SetModuleName(std::string &moduleName);
+    void SetModuleFileName(std::string &moduleFileName);
 
     void SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint);
     void GetInstanceData(void** data);
@@ -424,6 +434,7 @@ protected:
     DebuggerPostTask debuggerPostTaskFunc_ {nullptr};
 #endif
     NativeEngine* hostEngine_ {nullptr};
+    bool isAppModule_ = false;
 
 public:
     uint64_t openHandleScopes_ = 0;
@@ -431,6 +442,7 @@ public:
 
 private:
     std::string moduleName_;
+    std::string moduleFileName_;
     std::mutex instanceDataLock_;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
@@ -457,7 +469,8 @@ private:
     uv_async_t uvAsync_;
     std::unordered_set<CleanupHookCallback, CleanupHookCallback::Hash, CleanupHookCallback::Equal> cleanup_hooks_;
     uint64_t cleanup_hook_counter_ = 0;
-    std::atomic_int request_waiting_ { 0 };
+    std::atomic_int requestWaiting_ { 0 };
+    std::atomic_int listeningCounter_ { 0 };
     std::atomic_int subEnvCounter_ { 0 };
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;

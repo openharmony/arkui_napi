@@ -193,11 +193,11 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         auto str = val->ToString(vm);
         char* buffer = name;
         if (buffer == nullptr) {
-            strLength = str->Utf8Length(vm) - 1;
+            strLength = static_cast<size_t>(str->Utf8Length(vm) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
             int copied = str->WriteUtf8(buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
-            strLength = copied;
+            strLength = static_cast<size_t>(copied);
         } else {
             strLength = 0;
         }
@@ -232,14 +232,6 @@ void NativeEngine::SetLastError(int errorCode, uint32_t engineErrorCode, void* e
     lastError_.reserved = engineReserved;
 }
 
-void NativeEngine::ClearLastError()
-{
-    lastError_.errorCode = 0;
-    lastError_.engineErrorCode = 0;
-    lastError_.message = nullptr;
-    lastError_.reserved = nullptr;
-}
-
 void SubEncodeToUtf8(const EcmaVM* vm,
                      Local<JSValueRef>& nativeValue,
                      Local<StringRef>& nativeString,
@@ -248,7 +240,7 @@ void SubEncodeToUtf8(const EcmaVM* vm,
                      size_t bufferSize,
                      int32_t* nchars)
 {
-    int32_t length = nativeString->Length();
+    int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
     int32_t i = 0;
@@ -297,7 +289,7 @@ void SubEncodeToChinese(const EcmaVM* vm,
                         std::string& buffer,
                         const char* encode)
 {
-    int32_t length = nativeString->Length();
+    int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";
@@ -632,26 +624,41 @@ void NativeEngine::RunCleanup()
 
 void NativeEngine::CleanupHandles()
 {
-    while (request_waiting_.load() > 0 && !cleanupTimeout_) {
+    while (requestWaiting_.load() > 0 && !cleanupTimeout_) {
         HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
-            request_waiting_.load(std::memory_order_relaxed));
+            requestWaiting_.load(std::memory_order_relaxed));
         uv_run(loop_, UV_RUN_ONCE);
     }
 }
 
 void NativeEngine::IncreaseWaitingRequestCounter()
 {
-    request_waiting_++;
+    requestWaiting_++;
 }
 
 void NativeEngine::DecreaseWaitingRequestCounter()
 {
-    request_waiting_--;
+    requestWaiting_--;
 }
 
 bool NativeEngine::HasWaitingRequest()
 {
-    return request_waiting_.load() != 0;
+    return requestWaiting_.load() != 0;
+}
+
+void NativeEngine::IncreaseListeningCounter()
+{
+    listeningCounter_++;
+}
+
+void NativeEngine::DecreaseListeningCounter()
+{
+    listeningCounter_--;
+}
+
+bool NativeEngine::HasListeningCounter()
+{
+    return listeningCounter_.load() != 0;
 }
 
 void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
@@ -711,19 +718,26 @@ void NativeEngine::FinalizerInstanceData(void)
 const char* NativeEngine::GetModuleFileName()
 {
     HILOG_INFO("%{public}s, start.", __func__);
-    NativeModuleManager* moduleManager = GetModuleManager();
-    HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
-    if (moduleManager != nullptr) {
-        const char* moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), false);
-        HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName);
-        return moduleFileName;
+    if (moduleFileName_.empty()) {
+        NativeModuleManager* moduleManager = GetModuleManager();
+        HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
+        if (moduleManager != nullptr) {
+            std::string moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), isAppModule_);
+            HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName.c_str());
+            SetModuleFileName(moduleFileName);
+        }
     }
-    return nullptr;
+    return moduleFileName_.c_str();
 }
 
-void NativeEngine::SetModuleFileName(std::string& moduleName)
+void NativeEngine::SetModuleName(std::string& moduleName)
 {
     moduleName_ = moduleName;
+}
+
+void NativeEngine::SetModuleFileName(std::string& moduleFileName)
+{
+    moduleFileName_ = moduleFileName;
 }
 
 void NativeEngine::SetExtensionInfos(std::unordered_map<std::string, int32_t>&& extensionInfos)

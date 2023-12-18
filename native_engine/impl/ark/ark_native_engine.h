@@ -38,6 +38,13 @@ struct JsFrameInfo {
     std::string pos;
     uintptr_t* nativePointer = nullptr;
 };
+struct ApiCheckContext {
+    NativeModuleManager* moduleManager;
+    EcmaVM* ecmaVm;
+    panda::Local<panda::StringRef>& moduleName;
+    panda::Local<panda::ObjectRef>& exportObj;
+    panda::EscapeLocalScope& scope;
+};
 }
 using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
 
@@ -96,7 +103,10 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override;
+    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override
+    {
+        return vm_;
+    }
 
     void Loop(LoopMode mode, bool needSync = false) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
@@ -129,7 +139,6 @@ public:
     // Create native reference
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
-    bool IsExceptionPending() const override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime(bool isLimitedWorker = false) override;
     panda::Local<panda::ObjectRef> LoadArkModule(const void *buffer, int32_t len, const std::string& fileName);
@@ -202,8 +211,7 @@ public:
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
     void RegisterTranslateBySourceMap(SourceMapCallback callback) override;
-    std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
-        void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) override;
+    void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) override;
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
@@ -245,15 +253,20 @@ public:
     }
 
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
+    void GetCurrentModuleName(std::string& moduleName) override;
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
 
     static void* GetNativePtrCallBack(void* data);
+    static void CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker,
+        const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
+        panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
 private:
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
-
+    static bool CheckArkApiAllowList(
+        NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
@@ -263,7 +276,6 @@ private:
     std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
-    SourceMapCallback SourceMapCallback_ { nullptr };
     static bool napiProfilerParamReaded;
     std::once_flag flag_;
     std::unique_ptr<std::thread> threadJsHeap_;

@@ -55,7 +55,7 @@ using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
-static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router", 
+static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router",
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
@@ -189,6 +189,49 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
     return cb;
 }
 
+bool ArkNativeEngine::CheckArkApiAllowList(
+    NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy)
+{
+    std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker = module->apiAllowListChecker;
+    if (apiAllowListChecker != nullptr) {
+        const std::string apiPath = context.moduleName->ToString();
+        if ((*apiAllowListChecker)(apiPath)) {
+            CopyPropertyApiFilter(apiAllowListChecker, context.ecmaVm, context.exportObj, exportCopy, apiPath);
+        }
+        return true;
+    }
+    return false;
+}
+
+void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker,
+    const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj, panda::Local<panda::ObjectRef>& exportCopy,
+    const std::string& apiPath)
+{
+    panda::Local<panda::ArrayRef> namesArrayRef = exportObj->GetAllPropertyNames(ecmaVm, NATIVE_DEFAULT);
+    for (int i = namesArrayRef->Length(ecmaVm) - 1; i >= 0; i--) {
+        const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
+        const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
+        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
+        if ((*apiAllowListChecker)(curPath)) {
+            const std::string valueType = value->Typeof(ecmaVm)->ToString();
+            if (valueType == "object") {
+                panda::Local<panda::ObjectRef> subObject = ObjectRef::New(ecmaVm);
+                CopyPropertyApiFilter(apiAllowListChecker, ecmaVm, value, subObject, curPath);
+                exportCopy->Set(ecmaVm, nameValue, subObject);
+                HILOG_DEBUG("Set the package '%{public}s' to the allow list", curPath.c_str());
+            } else if (valueType == "function") {
+                exportCopy->Set(ecmaVm, nameValue, value);
+                HILOG_DEBUG("Set the function '%{public}s' to the allow list", curPath.c_str());
+            } else {
+                exportCopy->Set(ecmaVm, nameValue, value);
+                HILOG_DEBUG("Set the element type is '%{public}s::%{public}s' to the allow list", valueType.c_str(),
+                    curPath.c_str());
+            }
+        }
+    }
+}
+
+
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
                                                                                      vm_(vm),
                                                                                      topScope_(vm),
@@ -240,6 +283,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     Local<BooleanRef> ret(info->GetCallArgRef(1));
                     isAppModule = ret->Value();
                 }
+                arkNativeEngine->isAppModule_ = isAppModule;
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     module =
@@ -303,6 +347,11 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 #ifdef ENABLE_HITRACE
                         FinishTrace(HITRACE_TAG_ACE);
 #endif
+                        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
+                        panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
+                        if (CheckArkApiAllowList(module, context, exportCopy)) {
+                            return scope.Escape(exportCopy);
+                        }
                         exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
@@ -385,19 +434,14 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     // Free threadJsHeap_
     needStop_ = true;
     condition_.notify_all();
-    if (threadJsHeap_->joinable()) {
+    if (threadJsHeap_ != nullptr && threadJsHeap_->joinable()) {
         threadJsHeap_->join();
     }
 #endif
-}
-
-const EcmaVM* ArkNativeEngine::GetEcmaVm() const
-{
-    return vm_;
 }
 
 static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
@@ -484,6 +528,11 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     }
 
     FinishNapiProfilerTrace();
+    // Fixme: Rethrow error to engine while clear lastException_
+    if (!engine->lastException_.IsEmpty()) {
+        engine->lastException_.Empty();
+    }
+
     if (localRet.IsEmpty()) {
         return **JSValueRef::Undefined(vm);
     }
@@ -690,7 +739,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
             Local<JSValueRef> value(instanceValue);
-            ref = new ArkNativeReference(this, value, 0, true, nullptr, instance, nullptr);
+            ref = new ArkNativeReference(this, vm_, value, 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(1);
             object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
@@ -835,7 +884,7 @@ bool ArkNativeEngine::RunScriptPath(const char* path)
  * Before: input: 1. @ohos.hilog
                   2. @system.app (NATIVE_MODULE contains this name)
  * After: return: 1.@ohos:hilog
- *                2.@native:system.app 
+ *                2.@native:system.app
  */
 std::string ArkNativeEngine::GetOhmurl(const char* str)
 {
@@ -852,7 +901,7 @@ std::string ArkNativeEngine::GetOhmurl(const char* str)
     if (NATIVE_MODULE.count(systemModule)) {
         return NATIVE_MODULE_PREFIX + systemModule;
     } else {
-        int pos = path.find('.');
+        int pos = static_cast<int>(path.find('.'));
         std::string systemKey = path.substr(pos + 1, systemModule.size());
         return OHOS_MODULE_PREFIX + systemKey;
     }
@@ -970,12 +1019,7 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint);
-}
-
-bool ArkNativeEngine::IsExceptionPending() const
-{
-    return panda::JSNApi::HasPendingException(vm_);
+    return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint);
 }
 
 NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker)
@@ -1109,6 +1153,12 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     return JsValueFromLocalValue(scope.Escape(undefObj));
+}
+
+void ArkNativeEngine::GetCurrentModuleName(std::string& moduleName)
+{
+    LocalScope scope(vm_);
+    moduleName = panda::JSNApi::GetCurrentModuleName(vm_);
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
@@ -1521,24 +1571,13 @@ bool ArkNativeEngine::ExecutePermissionCheck()
 
 void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
 {
-    if (SourceMapCallback_ == nullptr) {
-        SourceMapCallback_ = callback;
-    }
+    // regedit SourceMapCallback to ark_js_runtime
+    panda::JSNApi::SetSourceMapCallback(vm_, callback);
 }
 
 void ArkNativeEngine::RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback)
 {
     panda::JSNApi::SetSourceMapTranslateCallback(vm_, callback);
-}
-
-std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)
-{
-    if (SourceMapCallback_ != nullptr) {
-        return SourceMapCallback_(rawStack);
-    } else {
-        HILOG_WARN("SourceMapCallback_ is nullptr.");
-        return "";
-    }
 }
 
 bool ArkNativeEngine::IsMixedDebugEnabled()

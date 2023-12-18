@@ -25,6 +25,20 @@ common_include = [
 
 ark_include = common_include
 ark_include += [ "//foundation/arkui/napi/native_engine/impl/ark" ]
+ark_include +=
+    [ "//foundation/ability/form_fwk/services/form_render_service/include" ]
+ark_include += [ "//foundation/ability/form_fwk/interfaces/inner_api/include" ]
+ark_include += [ "//base/global/i18n/interfaces/js/kits/include" ]
+ark_include += [ "//base/global/i18n/frameworks/intl/include" ]
+ark_include += [
+  "//base/global/i18n/interfaces/native/inner_api/preferred_language/include",
+]
+ark_include +=
+    [ "//third_party/skia/third_party/externals/icu/source/common/unicode" ]
+ark_include += [ "//third_party/libphonenumber" ]
+ark_include += [ "//third_party/libphonenumber/cpp/src" ]
+ark_include += [ "//third_party/protobuf/src" ]
+ark_include += [ "//foundation/arkui" ]
 
 jerryscript_include = common_include
 jerryscript_include += [
