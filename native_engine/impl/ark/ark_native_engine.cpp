@@ -434,7 +434,7 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     // Free threadJsHeap_
     needStop_ = true;
     condition_.notify_all();
