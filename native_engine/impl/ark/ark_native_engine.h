@@ -47,6 +47,7 @@ using panda::LocalScope;
 using panda::JSNApi;
 using panda::JSValueRef;
 using panda::JsiRuntimeCallInfo;
+using panda::PropertyAttribute;
 
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
 bool NapiDefineProperty(napi_env env, panda::Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
@@ -55,6 +56,10 @@ NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
     void* data, const NapiPropertyDescriptor* properties, size_t length);
+panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
+                                                              const napi_property_descriptor *properties,
+                                                              Local<panda::JSValueRef> *keys,
+                                                              PropertyAttribute *attrs);
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,

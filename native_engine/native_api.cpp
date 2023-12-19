@@ -195,6 +195,57 @@ NAPI_EXTERN napi_status napi_create_object(napi_env env, napi_value* result)
     return napi_clear_last_error(env);
 }
 
+// Create JSObject with initial properties given by descriptors, note that property key must be String, and
+// must can not convert to element_index, also all keys must not duplicate.
+NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env, napi_value* result, size_t property_count,
+                                                           const napi_property_descriptor* properties)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    Local<panda::ObjectRef> object;
+    if (property_count <= panda::ObjectRef::MAX_PROPERTIES_ON_STACK) {
+        char attrs[sizeof(PropertyAttribute) * panda::ObjectRef::MAX_PROPERTIES_ON_STACK];
+        char keys[sizeof(Local<panda::JSValueRef>) * panda::ObjectRef::MAX_PROPERTIES_ON_STACK];
+        object = NapiCreateObjectWithProperties(env, property_count, properties,
+                                                reinterpret_cast<Local<panda::JSValueRef> *>(keys),
+                                                reinterpret_cast<PropertyAttribute *>(attrs));
+    } else {
+        void *attrs = malloc(sizeof(PropertyAttribute) * property_count);
+        void *keys = malloc(sizeof(Local<panda::JSValueRef>) * property_count);
+        object = NapiCreateObjectWithProperties(env, property_count, properties,
+                                                reinterpret_cast<Local<panda::JSValueRef> *>(keys),
+                                                reinterpret_cast<PropertyAttribute *>(attrs));
+        free(attrs);
+        free(keys);
+    }
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
+// Create JSObject with initial properties given by keys and values, note that property key must be String, and
+// must can not convert to element_index, also all keys must not duplicate.
+NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env, napi_value* result,
+                                                                 size_t property_count, const char** keys,
+                                                                 const napi_value* values)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWithNamedProperties(vm, property_count, keys,
+        reinterpret_cast<const Local<JSValueRef> *>(values));
+    Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
+    if (!excep.IsNull()) {
+        HILOG_ERROR("ArkNativeObject::craete_object_with_named_properties occur Exception");
+        panda::JSNApi::GetAndClearUncaughtException(vm);
+    }
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_create_array(napi_env env, napi_value* result)
 {
     CHECK_ENV(env);

@@ -3507,3 +3507,127 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
     usleep(THREAD_PAUSE_ONE);
     napi_cancel_async_work(env, asyncWorkContext->work);
 }
+
+static napi_value CreateWithPropertiesTestGetter(napi_env env, napi_callback_info info)
+{
+    napi_value res;
+    napi_get_boolean(env, false, &res);
+    return res;
+}
+
+static napi_value CreateWithPropertiesTestSetter(napi_env env, napi_callback_info info)
+{
+    napi_value res;
+    napi_get_boolean(env, true, &res);
+    return res;
+}
+
+/**
+ * @tc.name: CreateObjectWithPropertiesTest001
+ * @tc.desc: Test napi_create_object_with_properteis.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateObjectWithPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value val_false;
+    napi_value val_true;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, false, &val_false));
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &val_true));
+    napi_property_descriptor desc1[] = {
+        DECLARE_NAPI_PROPERTY("x", val_true),
+    };
+    napi_value obj1;
+    ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj1, 1, desc1));
+    napi_value obj2;
+    napi_property_descriptor desc2[] = {
+        DECLARE_NAPI_PROPERTY("a", val_false),
+        DECLARE_NAPI_GETTER_SETTER("b", CreateWithPropertiesTestGetter, CreateWithPropertiesTestSetter),
+        DECLARE_NAPI_PROPERTY("c", obj1),
+    };
+    ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj2, 3, desc2));
+    ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
+    ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
+    auto checkPropertyEqualsTo = [env] (napi_value obj, const char *keyStr, napi_value expect) -> bool {
+        napi_value result;
+        napi_get_named_property(env, obj, keyStr, &result);
+        bool equal = false;
+        napi_strict_equals(env, result, expect, &equal);
+        return equal;
+    };
+    // get obj1.x == true
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_true));
+    // set obj1.x = false
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj1, "x", val_false));
+    // get obj1.x == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_false));
+    // get obj2.a == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "a", val_false));
+    // get obj2.b == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "b", val_false));
+    // set obj2.b = true (useless)
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj2, "b", val_true));
+    // get obj2.b == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "b", val_false));
+    // get obj2.c == obj1
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "c", obj1));
+    // get obj2.c.x == false
+    napi_value val_res;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj2, "c", &val_res));
+    ASSERT_TRUE(checkPropertyEqualsTo(val_res, "x", val_false));
+}
+
+/**
+ * @tc.name: CreateObjectWithNamedPropertiesTest001
+ * @tc.desc: Test napi_create_object_with_named_properteis.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateObjectWithNamedPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value val_false;
+    napi_value val_true;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, false, &val_false));
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &val_true));
+    const char *keys1[] = {
+        "x",
+    };
+    const napi_value values1[] = {
+        val_true,
+    };
+    napi_value obj1;
+    ASSERT_CHECK_CALL(napi_create_object_with_named_properties(env, &obj1, 1, keys1, values1));
+    napi_value obj2;
+    const char *keys2[] = {
+        "a",
+        "b",
+    };
+    const napi_value values2[] = {
+        val_false,
+        obj1,
+    };
+    ASSERT_CHECK_CALL(napi_create_object_with_named_properties(env, &obj2, 2, keys2, values2));
+    ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
+    ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
+    auto checkPropertyEqualsTo = [env] (napi_value obj, const char *keyStr, napi_value expect) -> bool {
+        napi_value result;
+        napi_get_named_property(env, obj, keyStr, &result);
+        bool equal = false;
+        napi_strict_equals(env, result, expect, &equal);
+        return equal;
+    };
+    // get obj1.x == true
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_true));
+    // set obj1.x = false
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj1, "x", val_false));
+    // get obj1.x == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_false));
+    // get obj2.a == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "a", val_false));
+    // get obj2.b == obj1
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "b", obj1));
+    // get obj2.b.x == false
+    napi_value val_res;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj2, "b", &val_res));
+    ASSERT_TRUE(checkPropertyEqualsTo(val_res, "x", val_false));
+}

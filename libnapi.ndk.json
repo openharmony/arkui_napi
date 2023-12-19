@@ -28,6 +28,8 @@
     {"name": "napi_create_external"},
     {"name": "napi_create_external_arraybuffer"},
     {"name": "napi_create_object"},
+    {"name": "napi_create_object_with_properties"},
+    {"name": "napi_create_object_with_named_properties"},
     {"name": "napi_create_symbol"},
     {"name": "napi_create_typedarray"},
     {"name": "napi_create_dataview"},

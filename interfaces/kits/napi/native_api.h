@@ -106,6 +106,15 @@ NAPI_EXTERN napi_status napi_open_callback_scope(napi_env env,
                                                  napi_async_context context,
                                                  napi_callback_scope* result);
 NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result);
+NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
+                                                           napi_value* result,
+                                                           size_t property_count,
+                                                           const napi_property_descriptor* properties);
+NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
+                                                                 napi_value* result,
+                                                                 size_t property_count,
+                                                                 const char** keys,
+                                                                 const napi_value* values);
 
 #ifdef __cplusplus
 }
