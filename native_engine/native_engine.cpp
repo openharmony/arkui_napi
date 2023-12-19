@@ -671,7 +671,7 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
 }
 
-napi_value NativeEngine::RunScript(const char* path)
+napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
 {
     std::vector<uint8_t> scriptContent;
     std::string pathStr(path);
@@ -681,7 +681,7 @@ napi_value NativeEngine::RunScript(const char* path)
         return nullptr;
     }
     HILOG_INFO("asset size is %{public}zu", scriptContent.size());
-    return RunActor(scriptContent, ami.c_str());
+    return RunActor(scriptContent, ami.c_str(), entryPoint);
 }
 
 void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint)
