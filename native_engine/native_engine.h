@@ -362,6 +362,7 @@ public:
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
+    virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
     virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
     virtual void SetCheckCallbackRef(NativeReference*) = 0;
