@@ -51,7 +51,6 @@ using panda::SymbolRef;
 using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
-using panda::PropertyAttribute;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
@@ -622,10 +621,10 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     bool configable = (propertyDescriptor.attributes & NATIVE_CONFIGURABLE) != 0;
 
     std::string fullName("");
-#ifdef ENABLE_HITRACE
-    fullName += NapiGetModuleName(env, obj);
-#endif
     if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
+#ifdef ENABLE_HITRACE
+        fullName += NapiGetModuleName(env, obj);
+#endif
         Local<panda::JSValueRef> localGetter = panda::JSValueRef::Undefined(vm);
         Local<panda::JSValueRef> localSetter = panda::JSValueRef::Undefined(vm);
 
@@ -643,6 +642,9 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
         PropertyAttribute attr(panda::JSValueRef::Undefined(vm), false, enumable, configable);
         result = obj->SetAccessorProperty(vm, propertyName, localGetter, localSetter, attr);
     } else if (propertyDescriptor.method != nullptr) {
+#ifdef ENABLE_HITRACE
+        fullName += NapiGetModuleName(env, obj);
+#endif
         fullName += propertyDescriptor.utf8name;
         Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
                                                                   propertyDescriptor.method, propertyDescriptor.data);
@@ -660,6 +662,63 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
         panda::JSNApi::GetAndClearUncaughtException(vm);
     }
     return result;
+}
+
+panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
+                                                              const napi_property_descriptor *properties,
+                                                              Local<panda::JSValueRef> *keys,
+                                                              PropertyAttribute *attrs)
+{
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::EscapeLocalScope scope(vm);
+    for (size_t i = 0; i < propertyCount; ++i) {
+        const napi_property_descriptor &property = properties[i];
+
+        const char* utf8name = property.utf8name;
+        uint32_t attributes = property.attributes;
+        bool writable = (attributes & NATIVE_WRITABLE) != 0;
+        bool enumable = (attributes & NATIVE_ENUMERABLE) != 0;
+        bool configable = (attributes & NATIVE_CONFIGURABLE) != 0;
+        NapiNativeCallback method = reinterpret_cast<NapiNativeCallback>(property.method);
+        NapiNativeCallback getter = reinterpret_cast<NapiNativeCallback>(property.getter);
+        NapiNativeCallback setter = reinterpret_cast<NapiNativeCallback>(property.setter);
+        napi_value value = property.value;
+        void *data = property.data;
+
+        Local<panda::JSValueRef> val = panda::JSValueRef::Undefined(vm);
+
+        std::string fullName("");
+        if (getter != nullptr || setter != nullptr) {
+            Local<panda::JSValueRef> localGetter = panda::JSValueRef::Undefined(vm);
+            Local<panda::JSValueRef> localSetter = panda::JSValueRef::Undefined(vm);
+
+            if (getter != nullptr) {
+                fullName += "getter";
+                localGetter = NapiNativeCreateFunction(env, fullName.c_str(), getter, data);
+            }
+            if (setter != nullptr) {
+                fullName += "setter";
+                localSetter = NapiNativeCreateFunction(env, fullName.c_str(), setter, data);
+            }
+
+            val = panda::ObjectRef::CreateAccessorData(vm, localGetter, localSetter);
+            writable = false;
+        } else if (method != nullptr) {
+            fullName += utf8name;
+            val = NapiNativeCreateFunction(env, fullName.c_str(), method, data);
+        } else {
+            val = LocalValueFromJsValue(value);
+        }
+        new (reinterpret_cast<void *>(&attrs[i])) PropertyAttribute(val, writable, enumable, configable);
+        keys[i] = panda::StringRef::NewFromUtf8(vm, utf8name);
+    }
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWithProperties(vm, propertyCount, keys, attrs);
+    Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
+    if (!excep.IsNull()) {
+        HILOG_ERROR("ArkNativeObject::create_object_with_properties occur Exception");
+        panda::JSNApi::GetAndClearUncaughtException(vm);
+    }
+    return scope.Escape(object);
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
