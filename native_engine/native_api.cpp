@@ -1148,20 +1148,17 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
         CHECK_ARG(env, argv);
     }
     CHECK_ARG(env, result);
-
-    auto nativeConstructor = LocalValueFromJsValue(constructor);
-    RETURN_STATUS_IF_FALSE(env, nativeConstructor->IsFunction(), napi_function_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef*>(constructor)->IsFunction(), napi_function_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::FunctionRef> constructorVal = nativeConstructor->ToObject(vm);
-    Local<panda::JSValueRef> instance = constructorVal->ConstructorOptimize(vm,
+    panda::FunctionRef* constructorVal = reinterpret_cast<panda::FunctionRef*>(constructor);
+    panda::JSValueRef* instance = constructorVal->ConstructorOptimize(vm,
         reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("CreateInstance occur Exception");
         *result = nullptr;
     } else {
-        *result = JsValueFromLocalValue(instance);
+        *result = reinterpret_cast<napi_value>(instance);
     }
-
     return GET_RETURN_STATUS(env);
 }
 
