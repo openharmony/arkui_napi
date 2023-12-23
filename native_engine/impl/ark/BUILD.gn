@@ -73,6 +73,8 @@ template("ace_napi_impl") {
       defines += [ "APP_USE_ARM64" ]
     } else if (target_cpu == "arm") {
       defines += [ "APP_USE_ARM" ]
+    } else if (target_cpu == "riscv64") {
+      defines += [ "APP_USE_RISCV64" ]
     }
     if (target_os == "android") {
       defines += [ "ANDROID_PLATFORM" ]
