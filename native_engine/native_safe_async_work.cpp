@@ -34,7 +34,7 @@ using OHOS::Ace::ContainerScope;
 // static methods start
 void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
 {
-    HILOG_INFO("NativeSafeAsyncWork::AsyncCallback called");
+    HILOG_DEBUG("NativeSafeAsyncWork::AsyncCallback called");
     NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::asyncHandler_, asyncHandler);
 
     that->ProcessAsyncHandle();
@@ -42,8 +42,6 @@ void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
 
 void NativeSafeAsyncWork::CallJs(NativeEngine* engine, napi_value js_call_func, void* context, void* data)
 {
-    HILOG_INFO("NativeSafeAsyncWork::CallJs called");
-
     if (engine == nullptr || js_call_func == nullptr) {
         HILOG_ERROR("CallJs failed. engine or js_call_func is nullptr!");
         return;
@@ -103,7 +101,7 @@ NativeSafeAsyncWork::~NativeSafeAsyncWork()
 
 bool NativeSafeAsyncWork::Init()
 {
-    HILOG_INFO("NativeSafeAsyncWork::Init called");
+    HILOG_DEBUG("NativeSafeAsyncWork::Init called");
 
     uv_loop_t* loop = engine_->GetUVLoop();
     if (loop == nullptr) {
@@ -132,8 +130,6 @@ bool NativeSafeAsyncWork::IsMaxQueueSize()
 
 SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCallMode mode)
 {
-    HILOG_INFO("NativeSafeAsyncWork::Send called");
-
     std::unique_lock<std::mutex> lock(mutex_);
     if (IsMaxQueueSize()) {
         HILOG_INFO("queue size bigger than max queue size");
@@ -155,7 +151,7 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
             return SafeAsyncCode::SAFE_ASYNC_CLOSED;
         }
     } else {
-        queue_.push(data);
+        queue_.emplace(data);
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
             HILOG_ERROR("uv async send failed %d", ret);
@@ -168,7 +164,7 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
 
 SafeAsyncCode NativeSafeAsyncWork::Acquire()
 {
-    HILOG_INFO("NativeSafeAsyncWork::Acquire called");
+    HILOG_DEBUG("NativeSafeAsyncWork::Acquire called");
 
     std::unique_lock<std::mutex> lock(mutex_);
 
@@ -186,7 +182,7 @@ SafeAsyncCode NativeSafeAsyncWork::Acquire()
 
 SafeAsyncCode NativeSafeAsyncWork::Release(NativeThreadSafeFunctionReleaseMode mode)
 {
-    HILOG_INFO("NativeSafeAsyncWork::Release called");
+    HILOG_DEBUG("NativeSafeAsyncWork::Release called");
 
     std::unique_lock<std::mutex> lock(mutex_);
 
@@ -255,8 +251,6 @@ void* NativeSafeAsyncWork::GetContext()
 
 void NativeSafeAsyncWork::ProcessAsyncHandle()
 {
-    HILOG_INFO("NativeSafeAsyncWork::ProcessAsyncHandle called");
-
     std::unique_lock<std::mutex> lock(mutex_);
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
         HILOG_ERROR("Process failed, thread is closed!");
@@ -277,7 +271,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 #ifdef ENABLE_CONTAINER_SCOPE
     ContainerScope containerScope(containerScopeId_);
 #endif
-    HILOG_INFO("queue size %d", (int32_t)size);
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
     while (size > 0) {
         data = queue_.front();
@@ -308,7 +301,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
 SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
 {
-    HILOG_INFO("NativeSafeAsyncWork::CloseHandles called");
+    HILOG_DEBUG("NativeSafeAsyncWork::CloseHandles called");
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
         HILOG_INFO("Close failed, thread is closed!");
@@ -329,7 +322,7 @@ SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
 
 void NativeSafeAsyncWork::CleanUp()
 {
-    HILOG_INFO("NativeSafeAsyncWork::CleanUp called");
+    HILOG_DEBUG("NativeSafeAsyncWork::CleanUp called");
 
     if (finalizeCallback_ != nullptr) {
         finalizeCallback_(engine_, finalizeData_, context_);
