@@ -1434,6 +1434,10 @@ NAPI_EXTERN napi_status napi_create_external(
     auto vm = engine->GetEcmaVm();
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     NativeObjectInfo* info = NativeObjectInfo::CreateNewInstance();
+    if (info == nullptr) {
+        HILOG_ERROR("info is nullptr");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
     info->engine = engine;
     info->callback = callback;
     info->hint = finalize_hint;
@@ -3207,6 +3211,10 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     auto obj = jsValue->ToObject(vm);
 
     panda::JSNApi::NativeBindingInfo* data = panda::JSNApi::NativeBindingInfo::CreateNewInstance();
+    if (data == nullptr) {
+        HILOG_ERROR("data is nullptr");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
     data->env = env;
     data->nativeValue = object;
     data->attachFunc = reinterpret_cast<void*>(AttachFuncCallback);

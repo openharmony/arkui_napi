@@ -39,7 +39,7 @@ using NativeThreadSafeFunctionCallJs =
     void (*)(NativeEngine* env, napi_value js_callback, void* context, void* data);
 
 struct NativeObjectInfo {
-    static NativeObjectInfo* CreateNewInstance() { return new NativeObjectInfo(); }
+    static NativeObjectInfo* CreateNewInstance() { return new(std::nothrow) NativeObjectInfo(); }
     NativeEngine* engine = nullptr;
     void* nativeObject = nullptr;
     NativeFinalize callback = nullptr;
@@ -54,7 +54,7 @@ struct JsFrameInfo {
 };
 
 struct NapiFunctionInfo {
-    static NapiFunctionInfo* CreateNewInstance() { return new NapiFunctionInfo(); }
+    static NapiFunctionInfo* CreateNewInstance() { return new(std::nothrow) NapiFunctionInfo(); }
     napi_env env = nullptr;
     NapiNativeCallback callback = nullptr;
     void* data = nullptr;

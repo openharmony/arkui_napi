@@ -104,6 +104,10 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &v
     }
 
     NapiFunctionInfo *funcInfo = NapiFunctionInfo::CreateNewInstance();
+    if (funcInfo == nullptr) {
+        HILOG_ERROR("funcInfo is nullptr");
+        return;
+    }
 #ifdef ENABLE_CONTAINER_SCOPE
     funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
 #endif
