@@ -117,6 +117,56 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &v
         }, true);
 }
 
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
+bool IsFileNameFormat(char c)
+{
+    if (c >= '0' && c <= '9') {
+        return false;
+    }
+
+    if (c >= 'a' && c <= 'z') {
+        return false;
+    }
+
+    if (c >= 'A' && c <= 'Z') {
+        return false;
+    }
+
+    if (c == '.' || c == '-' || c == '_') {
+        return false;
+    }
+
+    return true;
+}
+
+std::string GetSelfProcName()
+{
+    constexpr uint16_t READ_SIZE = 128;
+    std::ifstream fin;
+    fin.open("/proc/self/comm", std::ifstream::in);
+    if (!fin.is_open()) {
+        HILOG_ERROR("fin.is_open() false");
+        return "";
+    }
+    char readStr[READ_SIZE] = {'\0'};
+    fin.getline(readStr, READ_SIZE - 1);
+    fin.close();
+
+    std::string ret = std::string(readStr);
+    ret.erase(std::remove_if(ret.begin(), ret.end(), IsFileNameFormat), ret.end());
+    return ret;
+}
+
+static bool IsInAppspawn()
+{
+    if (GetSelfProcName().find("appspawn") != std::string::npos && getppid() == 1) {
+        return true;
+    }
+    return false;
+}
+
+#endif
+
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
     void* data, const NapiPropertyDescriptor* properties, size_t length)
 {
@@ -240,7 +290,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (g_enableProperty) {
         std::call_once(flag_, [this] {
-            if (threadJsHeap_ == nullptr) {
+            if (threadJsHeap_ == nullptr && !IsInAppspawn()) {
                 threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
                 HILOG_ERROR("JsHeapStart is OK");
             }

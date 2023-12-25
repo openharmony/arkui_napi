@@ -19,6 +19,7 @@
 #include <memory>
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
 #include <sys/wait.h>
+#include <sys/types.h>
 #endif
 #include <unistd.h>
 #include <unordered_map>
