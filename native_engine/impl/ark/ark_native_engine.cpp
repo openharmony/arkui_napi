@@ -287,16 +287,6 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                                                                                      isLimitedWorker_(isLimitedWorker)
 {
     HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (g_enableProperty) {
-        std::call_once(flag_, [this] {
-            if (threadJsHeap_ == nullptr && !IsInAppspawn()) {
-                threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
-                HILOG_ERROR("JsHeapStart is OK");
-            }
-        });
-    }
-#endif
 #ifdef ENABLE_HITRACE
     if (!ArkNativeEngine::napiProfilerParamReaded) {
         char napiProfilerParam[NAPI_PROFILER_PARAM_SIZE] = {0};
@@ -483,14 +473,6 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    // Free threadJsHeap_
-    needStop_ = true;
-    condition_.notify_all();
-    if (threadJsHeap_ != nullptr && threadJsHeap_->joinable()) {
-        threadJsHeap_->join();
-    }
-#endif
 }
 
 static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
@@ -1769,7 +1751,7 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
 
 void ArkNativeEngine::JsHeapStart()
 {
-    if (pthread_setname_np(pthread_self(), "JsHeapThread") != 0) {
+    if (pthread_setname_np(pthread_self(), "OS_JsHeapThread") != 0) {
         HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
     }
     while (!needStop_) {
@@ -1783,3 +1765,35 @@ void ArkNativeEngine::JsHeapStart()
     }
 }
 #endif
+
+void ArkNativeEngine::StartMonitorJSHeapUsage()
+{
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (!g_enableProperty) {
+        return;
+    }
+    if (threadJsHeap_ == nullptr && !IsInAppspawn()) {
+        threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
+        HILOG_ERROR("JsHeapStart is OK");
+    }
+#else
+    HILOG_ERROR("StartMonitorJSHeapUsage does not support dfx");
+#endif
+}
+
+void ArkNativeEngine::StopMonitorJSHeapUsage()
+{
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (threadJsHeap_ != nullptr) {
+        // Free threadJsHeap_
+        needStop_ = true;
+        condition_.notify_all();
+        if (threadJsHeap_->joinable()) {
+            threadJsHeap_->join();
+            threadJsHeap_ = nullptr;
+        }
+    }
+#else
+    HILOG_ERROR("StopMonitorJSHeapUsage does not support dfx");
+#endif
+}

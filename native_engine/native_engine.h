@@ -310,6 +310,9 @@ public:
     virtual void CallDebuggerPostTaskFunc(std::function<void()>&& task);
 #endif
 
+    virtual void StartMonitorJSHeapUsage() = 0;
+    virtual void StopMonitorJSHeapUsage() = 0;
+
     virtual void SetHostEngine(NativeEngine* engine);
     virtual NativeEngine* GetHostEngine() const;
 
