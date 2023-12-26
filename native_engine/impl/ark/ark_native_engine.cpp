@@ -1687,6 +1687,8 @@ void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
     if (SourceMapCallback_ == nullptr) {
         SourceMapCallback_ = callback;
     }
+    // regedit SourceMapCallback to ark_js_runtime
+    panda::JSNApi::SetSourceMapCallback(vm_, callback);
 }
 
 void ArkNativeEngine::RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback)
