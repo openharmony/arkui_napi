@@ -1193,13 +1193,19 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
     CHECK_ARG(env, cbinfo);
 
     auto info = reinterpret_cast<NapiNativeCallbackInfo*>(cbinfo);
-
     if ((argc != nullptr) && (argv != nullptr)) {
         size_t i = 0;
-        for (i = 0; (i < *argc) && (i < info->argc); i++) {
+        size_t bufferSize = *argc;
+        for (i = 0; (i < bufferSize) && (i < info->argc); i++) {
             argv[i] = info->argv[i];
         }
-        *argc = i;
+        if (i < bufferSize) {
+            napi_value undefined = JsValueFromLocalValue(
+                panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
+            for (; i < bufferSize; i++) {
+                argv[i] = undefined;
+            }
+        }
     }
     if (argc != nullptr) {
         *argc = info->argc;
