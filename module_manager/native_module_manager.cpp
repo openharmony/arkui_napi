@@ -34,8 +34,7 @@
 #define ALLOW_ALL_SHARED_LIBS "allow_all_shared_libs"
 
 namespace {
-constexpr static int32_t NATIVE_PATH_NUMBER = 3;
-constexpr static int32_t INDEX_TWO = 2;
+    constexpr static int32_t NATIVE_PATH_NUMBER = 3;
 } // namespace
 
 NativeModuleManager* NativeModuleManager::instance_ = NULL;
@@ -653,7 +652,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 return false;
             }
 
-            if (sprintf_s(nativeModulePath[INDEX_TWO], pathLength, "%s/%s%s", // 2 : Element index value
+            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s%s", // 2 : Element index value
                 sysAbcPrefix.c_str(), dupModuleName, abcfix) == -1) {
                 return false;
             }
@@ -710,7 +709,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, afterDot, zfix, soPostfix) == -1) {
                 return false;
             }
-            if (sprintf_s(nativeModulePath[INDEX_TWO], pathLength, "%s/%s/%s%s", // 2 : Element index value
+            if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s/%s%s", // 2 : Element index value
                 sysAbcPrefix.c_str(), dupModuleName, afterDot, abcfix) == -1) {
                 return false;
             }
@@ -836,7 +835,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     nativeModulePath[0][0] = 0;
     nativeModulePath[1][0] = 0;
-    nativeModulePath[INDEX_TWO][0] = 0; // 2 : Element index value
+    nativeModulePath[2][0] = 0; // 2 : Element index value
     if (!GetNativeModulePath(moduleName, path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
         HILOG_WARN("get module '%{public}s' path failed", moduleName);
         return nullptr;
@@ -866,7 +865,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
     const uint8_t* abcBuffer = nullptr;
     size_t len = 0;
     if (lib == nullptr) {
-        loadPath = nativeModulePath[INDEX_TWO]; // 2 : Element index value
+        loadPath = nativeModulePath[2]; // 2 : Element index value
         HILOG_DEBUG("try to load abc module path: %{public}s", loadPath);
         abcBuffer = GetFileBuffer(loadPath, moduleKey, len);
         if (!abcBuffer) {
