@@ -3662,20 +3662,22 @@ static napi_value CreateWithPropertiesTestSetter(napi_env env, napi_callback_inf
 HWTEST_F(NapiBasicTest, CreateObjectWithPropertiesTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
+    napi_value excep;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
     napi_value val_false;
     napi_value val_true;
     ASSERT_CHECK_CALL(napi_get_boolean(env, false, &val_false));
     ASSERT_CHECK_CALL(napi_get_boolean(env, true, &val_true));
     napi_property_descriptor desc1[] = {
-        DECLARE_NAPI_PROPERTY("x", val_true),
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", val_true),
     };
     napi_value obj1;
     ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj1, 1, desc1));
     napi_value obj2;
     napi_property_descriptor desc2[] = {
-        DECLARE_NAPI_PROPERTY("a", val_false),
+        DECLARE_NAPI_DEFAULT_PROPERTY("a", val_false),
         DECLARE_NAPI_GETTER_SETTER("b", CreateWithPropertiesTestGetter, CreateWithPropertiesTestSetter),
-        DECLARE_NAPI_PROPERTY("c", obj1),
+        DECLARE_NAPI_DEFAULT_PROPERTY("c", obj1),
     };
     ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj2, 3, desc2));
     ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
@@ -3717,6 +3719,8 @@ HWTEST_F(NapiBasicTest, CreateObjectWithPropertiesTest001, testing::ext::TestSiz
 HWTEST_F(NapiBasicTest, CreateObjectWithNamedPropertiesTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
+    napi_value excep;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
     napi_value val_false;
     napi_value val_true;
     ASSERT_CHECK_CALL(napi_get_boolean(env, false, &val_false));

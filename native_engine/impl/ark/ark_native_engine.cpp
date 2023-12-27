@@ -767,11 +767,6 @@ panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size
         keys[i] = panda::StringRef::NewFromUtf8(vm, utf8name);
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::NewWithProperties(vm, propertyCount, keys, attrs);
-    Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
-    if (!excep.IsNull()) {
-        HILOG_ERROR("ArkNativeObject::create_object_with_properties occur Exception");
-        panda::JSNApi::GetAndClearUncaughtException(vm);
-    }
     return scope.Escape(object);
 }
 
