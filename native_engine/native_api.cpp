@@ -213,11 +213,21 @@ NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env, napi_va
     } else {
         void *attrs = malloc(sizeof(PropertyAttribute) * property_count);
         void *keys = malloc(sizeof(Local<panda::JSValueRef>) * property_count);
-        object = NapiCreateObjectWithProperties(env, property_count, properties,
-                                                reinterpret_cast<Local<panda::JSValueRef> *>(keys),
-                                                reinterpret_cast<PropertyAttribute *>(attrs));
-        free(attrs);
-        free(keys);
+        if (attrs != nullptr && keys != nullptr) {
+            object = NapiCreateObjectWithProperties(env, property_count, properties,
+                                                    reinterpret_cast<Local<panda::JSValueRef> *>(keys),
+                                                    reinterpret_cast<PropertyAttribute *>(attrs));
+        } else {
+            auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+            object = panda::JSValueRef::Undefined(vm);
+            napi_throw_error(env, nullptr, "malloc failed in napi_create_object_with_properties");
+        }
+        if (attrs != nullptr) {
+            free(attrs);
+        }
+        if (keys != nullptr) {
+            free(keys);
+        }
     }
     *result = JsValueFromLocalValue(object);
 
@@ -236,11 +246,6 @@ NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env, n
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> object = panda::ObjectRef::NewWithNamedProperties(vm, property_count, keys,
         reinterpret_cast<const Local<JSValueRef> *>(values));
-    Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
-    if (!excep.IsNull()) {
-        HILOG_ERROR("ArkNativeObject::craete_object_with_named_properties occur Exception");
-        panda::JSNApi::GetAndClearUncaughtException(vm);
-    }
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);

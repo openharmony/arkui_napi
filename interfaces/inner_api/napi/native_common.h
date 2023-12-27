@@ -60,6 +60,11 @@
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_default, nullptr \
     }
 
+#define DECLARE_NAPI_DEFAULT_PROPERTY(name, val)                                          \
+    {                                                                                     \
+        (name), nullptr, nullptr, nullptr, nullptr, val, napi_default_jsproperty, nullptr \
+    }
+
 #define DECLARE_NAPI_STATIC_PROPERTY(name, val)                               \
     {                                                                         \
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_static, nullptr \
