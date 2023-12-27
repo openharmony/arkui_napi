@@ -95,12 +95,6 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          const char* utf8name,
                                                          napi_value* result);
 NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result);
-NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
-                                                             napi_value js_object,
-                                                             NapiDetachCallback detach,
-                                                             NapiAttachCallback attach,
-                                                             void* object,
-                                                             void* hint);
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
