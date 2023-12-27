@@ -395,6 +395,9 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function(
     napi_status status = napi_status::napi_ok;
     auto code = safeAsyncWork->Send(data, callMode);
     switch (code) {
+        case SafeAsyncCode::SAFE_ASYNC_OK:
+            status = napi_status::napi_ok;
+            break;
         case SafeAsyncCode::SAFE_ASYNC_QUEUE_FULL:
             status = napi_status::napi_queue_full;
             break;
@@ -408,7 +411,7 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function(
             status = napi_status::napi_generic_failure;
             break;
         default:
-            status = napi_status::napi_ok;
+            HILOG_FATAL("this branch is unreachable, code is %{public}d", code);
             break;
     }
 
