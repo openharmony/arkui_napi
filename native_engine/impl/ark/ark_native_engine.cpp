@@ -1253,6 +1253,7 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
         } else {
             // this path for mergeabc with specific entryPoint
             // entryPoint: bundleName/moduleName/xxx/xxx
+            panda::JSNApi::SetModuleInfo(vm_, desc, std::string(entryPoint));
             ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), entryPoint, desc);
         }
     } else {
