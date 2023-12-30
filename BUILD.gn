@@ -24,6 +24,7 @@ config("ace_napi_config") {
     "native_engine/impl/ark",
     "//third_party/libuv/include",
     "//third_party/node/src",
+    "//arkcompiler/ets_runtime",
   ]
   defines = []
   cflags_cc = []
