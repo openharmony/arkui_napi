@@ -1043,17 +1043,13 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> nativeObject = nativeValue->ToObject(vm);
 
+    auto nativeProperties = reinterpret_cast<const NapiPropertyDescriptor*>(properties);
     for (size_t i = 0; i < property_count; i++) {
-        NapiPropertyDescriptor property;
-        property.utf8name = properties[i].utf8name;
-        property.name = properties[i].name;
-        property.method = reinterpret_cast<NapiNativeCallback>(properties[i].method);
-        property.getter = reinterpret_cast<NapiNativeCallback>(properties[i].getter);
-        property.setter = reinterpret_cast<NapiNativeCallback>(properties[i].setter);
-        property.value = properties[i].value;
-        property.attributes = (uint32_t)properties[i].attributes;
-        property.data = properties[i].data;
-        NapiDefineProperty(env, nativeObject, property);
+        if (nativeProperties[i].utf8name == nullptr) {
+            auto name = LocalValueFromJsValue(nativeProperties[i].name);
+            RETURN_STATUS_IF_FALSE(env, !name.IsEmpty() && (name->IsString() || name->IsSymbol()), napi_name_expected);
+        }
+        NapiDefineProperty(env, nativeObject, nativeProperties[i]);
     }
     return GET_RETURN_STATUS(env);
 }
