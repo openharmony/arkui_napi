@@ -567,7 +567,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     }
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
-        JSNApi::NotifyNativeReturnJS(vm);
+        JSNApi::NotifyNativeReturn(vm, reinterpret_cast<void *>(cb));
     }
 
     if (cbInfo.argv != nullptr) {
