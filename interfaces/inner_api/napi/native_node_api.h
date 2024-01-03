@@ -44,7 +44,9 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env);
-NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_value* result);
+NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list,
+                                       napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
+                                       napi_value* result);
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, napi_value recorder, napi_value* object);
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value value);
 NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t>& buffer, napi_value* result);
@@ -89,6 +91,7 @@ NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* r
 NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result);
+NAPI_EXTERN napi_status napi_is_sendable_object(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack);
 NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          napi_value object,
