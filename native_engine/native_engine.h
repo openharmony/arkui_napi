@@ -368,7 +368,7 @@ public:
     virtual void SetCheckCallbackRef(NativeReference*) = 0;
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
-    virtual void GetCurrentModuleName(std::string& moduleName) = 0;
+    virtual void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) = 0;
     // run script by path
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
 
