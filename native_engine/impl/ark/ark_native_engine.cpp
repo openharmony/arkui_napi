@@ -668,7 +668,12 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     bool result = false;
-    Local<panda::StringRef> propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
+    Local<panda::JSValueRef> propertyName;
+    if (propertyDescriptor.utf8name != nullptr) {
+        propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
+    } else {
+        propertyName = LocalValueFromJsValue(propertyDescriptor.name);
+    }
 
     bool writable = (propertyDescriptor.attributes & NATIVE_WRITABLE) != 0;
     bool enumable = (propertyDescriptor.attributes & NATIVE_ENUMERABLE) != 0;
@@ -699,7 +704,13 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
 #ifdef ENABLE_HITRACE
         fullName += NapiGetModuleName(env, obj);
 #endif
-        fullName += propertyDescriptor.utf8name;
+        if (propertyDescriptor.utf8name != nullptr) {
+            fullName += propertyDescriptor.utf8name;
+        } else {
+            fullName += propertyName->IsString()
+                        ? Local<panda::StringRef>(propertyName)->ToString()
+                        : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString();
+        }
         Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
                                                                   propertyDescriptor.method, propertyDescriptor.data);
         PropertyAttribute attr(cbObj, writable, enumable, configable);
