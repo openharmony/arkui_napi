@@ -260,7 +260,7 @@ public:
     }
 
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
-    void GetCurrentModuleName(std::string& moduleName) override;
+    void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;

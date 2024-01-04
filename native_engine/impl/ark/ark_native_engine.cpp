@@ -1275,10 +1275,12 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
-void ArkNativeEngine::GetCurrentModuleName(std::string& moduleName)
+void ArkNativeEngine::GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName)
 {
     LocalScope scope(vm_);
-    moduleName = panda::JSNApi::GetCurrentModuleName(vm_);
+    std::pair<std::string, std::string> moduleInfo = panda::JSNApi::GetCurrentModuleInfo(vm_, needRecordName);
+    moduleName = moduleInfo.first; // if needRecordName is true, then moduleName is recordName.
+    fileName = moduleInfo.second;
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,

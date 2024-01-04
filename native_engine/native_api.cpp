@@ -2384,35 +2384,14 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
 NAPI_EXTERN napi_status napi_run_actor(napi_env env,
                                        std::vector<uint8_t>& buffer,
                                        const char* descriptor,
-                                       napi_value* result)
+                                       napi_value* result,
+                                       char* entryPoint)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-    std::string desc(descriptor);
-    [[maybe_unused]] bool ret = false;
-
-    if (panda::JSNApi::IsBundle(vm) || !buffer.empty()) {
-        ret = panda::JSNApi::Execute(vm, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
-    } else {
-        ret = panda::JSNApi::Execute(vm, desc, PANDA_MAIN_FUNCTION);
-    }
-    if (panda::JSNApi::HasPendingException(vm)) {
-        if (engine->GetNapiUncaughtExceptionCallback() != nullptr) {
-            LocalScope scope(vm);
-            Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm);
-            auto value = JsValueFromLocalValue(exception);
-            if (!exception.IsEmpty() && !exception->IsHole()) {
-                engine->GetNapiUncaughtExceptionCallback()(value);
-            }
-        }
-        *result = nullptr;
-    }
-
-    Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
-    *result = JsValueFromLocalValue(value);
+    *result = engine->RunActor(buffer, descriptor, entryPoint);
     return GET_RETURN_STATUS(env);
 }
 
