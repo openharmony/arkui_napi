@@ -2999,12 +2999,12 @@ NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, doub
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env,
-                                                 napi_value js_object,
-                                                 void* native_object,
-                                                 napi_finalize finalize_cb,
-                                                 void* finalize_hint,
-                                                 napi_ref* result)
+NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
+                                           napi_value js_object,
+                                           void* native_object,
+                                           napi_finalize finalize_cb,
+                                           void* finalize_hint,
+                                           napi_ref* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, js_object);
