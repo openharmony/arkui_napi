@@ -132,6 +132,8 @@ public:
                             size_t argc) override;
     bool RunScriptPath(const char* path) override;
 
+    virtual void StartMonitorJSHeapUsage() override;
+    virtual void StopMonitorJSHeapUsage() override;
     napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
     bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
 
