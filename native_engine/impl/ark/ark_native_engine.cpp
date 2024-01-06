@@ -477,6 +477,7 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
+    StopMonitorJSHeapUsage();
 }
 
 static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
