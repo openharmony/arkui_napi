@@ -413,6 +413,16 @@ public:
 
     virtual napi_value NapiLoadModule(const char* str) = 0;
 
+    double NewAsyncId()
+    {
+        return 0;
+    }
+
+    double GetDefaultTriggerAsyncId()
+    {
+        return 0;
+    }
+
 private:
     void StartCleanupTimer();
 protected:

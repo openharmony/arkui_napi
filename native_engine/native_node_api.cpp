@@ -16,6 +16,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
+#include "native_engine/native_async_hook_context.h"
 #include "native_engine/native_engine.h"
 #include "native_engine/native_utils.h"
 #include "utils/log.h"
@@ -494,11 +495,27 @@ NAPI_EXTERN napi_status napi_async_init(
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, result);
 
-    auto async_context = new NativeAsyncContext();
-    async_context->napiAsyncResource = async_resource;
-    async_context->napiAsyncResourceName = async_resource_name;
+    auto ecmaVm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::Local<panda::ObjectRef> resource;
+    bool isExternalResource;
+    if (async_resource != nullptr) {
+        auto nativeValue = LocalValueFromJsValue(async_resource);
+        resource = nativeValue->ToObject(ecmaVm);
+        isExternalResource = true;
+    } else {
+        resource = panda::ObjectRef::New(ecmaVm);
+        isExternalResource = false;
+    }
 
-    *result = reinterpret_cast<napi_async_context>(async_context);
+    auto nativeValue = LocalValueFromJsValue(async_resource_name);
+    auto resourceName = nativeValue->ToString(ecmaVm);
+
+    auto asyncContext = new NativeAsyncHookContext(reinterpret_cast<NativeEngine*>(env),
+                                                   resource,
+                                                   resourceName,
+                                                   isExternalResource);
+
+    *result = reinterpret_cast<napi_async_context>(asyncContext);
 
     return napi_clear_last_error(env);
 }
@@ -508,9 +525,9 @@ NAPI_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_context asyn
     CHECK_ENV(env);
     CHECK_ARG(env, async_context);
 
-    NativeAsyncContext* native_async_context = reinterpret_cast<NativeAsyncContext*>(async_context);
+    NativeAsyncHookContext* nativeAsyncContext = reinterpret_cast<NativeAsyncHookContext*>(async_context);
 
-    delete native_async_context;
+    delete nativeAsyncContext;
 
     return napi_clear_last_error(env);
 }
@@ -521,14 +538,9 @@ NAPI_EXTERN napi_status napi_open_callback_scope(
     CHECK_ENV(env);
     CHECK_ARG(env, result);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto callbackScopeManager = engine->GetCallbackScopeManager();
-    CHECK_ARG(env, callbackScopeManager);
+    NativeAsyncHookContext* nodeAsyncContext = reinterpret_cast<NativeAsyncHookContext*>(async_context_handle);
 
-    auto callbackScope = callbackScopeManager->Open(engine);
-    callbackScopeManager->IncrementOpenCallbackScopes();
-
-    *result = reinterpret_cast<napi_callback_scope>(callbackScope);
+    *result = reinterpret_cast<napi_callback_scope>(nodeAsyncContext->OpenCallbackScope());
 
     return napi_clear_last_error(env);
 }
@@ -538,17 +550,8 @@ NAPI_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_sc
     CHECK_ENV(env);
     CHECK_ARG(env, scope);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto callbackScopeManager = engine->GetCallbackScopeManager();
-    CHECK_ARG(env, callbackScopeManager);
-    size_t count = callbackScopeManager->GetOpenCallbackScopes();
-    if (count == 0) {
-        return napi_callback_scope_mismatch;
-    }
-    callbackScopeManager->DecrementOpenCallbackScopes();
-
-    auto callbackScope = reinterpret_cast<NativeCallbackScope*>(scope);
-    callbackScopeManager->Close(callbackScope);
+    NativeAsyncHookContext::CloseCallbackScope(reinterpret_cast<NativeEngine*>(env),
+                                               reinterpret_cast<NativeCallbackScope*>(scope));
 
     return napi_clear_last_error(env);
 }
