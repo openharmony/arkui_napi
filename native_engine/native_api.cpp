@@ -1082,6 +1082,17 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_is_sendable_object(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    *result = nativeValue->IsSharedObject();
+    return napi_clear_last_error(env);
+}
+
 // Methods to compare values
 NAPI_EXTERN napi_status napi_strict_equals(napi_env env, napi_value lhs, napi_value rhs, bool* result)
 {
@@ -2638,7 +2649,9 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_value* result)
+NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list,
+                                       napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
+                                       napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
@@ -2648,7 +2661,9 @@ NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_val
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(object);
     auto transferList = LocalValueFromJsValue(transfer_list);
-    void* res = panda::JSNApi::SerializeValue(vm, nativeValue, transferList);
+    auto cloneList = LocalValueFromJsValue(clone_list);
+    void* res =
+        panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, defaultTransfer, defaultCloneSendable);
     *result = reinterpret_cast<napi_value>(res);
 
     return napi_clear_last_error(env);
