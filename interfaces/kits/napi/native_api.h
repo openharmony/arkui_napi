@@ -64,13 +64,6 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
                                                    const napi_type_tag* type_tag,
                                                    bool* result);
 
-NAPI_INNER_EXTERN napi_status napi_add_finalizer(napi_env env,
-                                                 napi_value js_object,
-                                                 void* native_object,
-                                                 napi_finalize finalize_cb,
-                                                 void* finalize_hint,
-                                                 napi_ref* result);
-
 NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(napi_env env,
                                                           int64_t change_in_bytes,
                                                           int64_t* adjusted_value);
@@ -124,6 +117,12 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              napi_native_binding_attach_callback attach_cb,
                                                              void* native_object,
                                                              void* hint);
+NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
+                                           napi_value js_object,
+                                           void* native_object,
+                                           napi_finalize finalize_cb,
+                                           void* finalize_hint,
+                                           napi_ref* result);
 
 #ifdef __cplusplus
 }
