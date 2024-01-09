@@ -3247,6 +3247,6 @@ NAPI_EXTERN napi_status napi_run_module_path(napi_env env, const char* path, con
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunScript(path, const_cast<char*>(entryPoint));
+    *result = engine->RunScriptForAbc(path, const_cast<char*>(entryPoint));
     return napi_clear_last_error(env);
 }
