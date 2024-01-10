@@ -42,7 +42,7 @@ std::mutex g_instanceMutex;
 
 NativeModuleManager::NativeModuleManager()
 {
-    HILOG_DEBUG("enter");
+    HILOG_INFO("enter");
     pthread_mutex_init(&mutex_, nullptr);
     moduleLoadChecker_ = std::make_unique<ModuleLoadChecker>();
 }
@@ -238,7 +238,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         return;
     }
 
-    HILOG_DEBUG("native module name is '%{public}s'", nativeModule->name);
+    HILOG_INFO("native module name is '%{public}s'", nativeModule->name);
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (!CreateNewNativeModule()) {
         HILOG_ERROR("create new nativeModule failed");
@@ -265,7 +265,8 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->next = nullptr;
     lastNativeModule_->moduleLoaded = true;
 
-    HILOG_INFO("NativeModule Register success. module name is '%{public}s'", lastNativeModule_->name);
+    HILOG_INFO("register module name is '%{public}s', isAppModule is %{public}d",
+        lastNativeModule_->name, isAppModule_);
 }
 
 bool NativeModuleManager::CreateNewNativeModule()
@@ -423,14 +424,6 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
                                         const bool& isSystemApp)
 {
     HILOG_DEBUG("moduleName is %{public}s, isisSystemApp is %{public}d", moduleName.c_str(), isSystemApp);
-    char* tmp = new char[NAPI_PATH_MAX];
-    errno_t err = EOK;
-    err = memset_s(tmp, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
-    if (err != EOK) {
-        delete[] tmp;
-        HILOG_ERROR("memset_s failed");
-        return;
-    }
 
     std::string tmpPath = "";
     for (size_t i = 0; i < appLibPath.size(); i++) {
@@ -444,16 +437,15 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
         tmpPath.pop_back();
     }
 
-    err = strcpy_s(tmp, NAPI_PATH_MAX, tmpPath.c_str());
-    if (err != EOK) {
-        delete[] tmp;
+    char *tmp = strdup(tmpPath.c_str());
+    if (tmp == nullptr) {
+        HILOG_ERROR("strdup failed. tmpPath is %{public}s", tmpPath.c_str());
         return;
     }
 
     if (appLibPathMap_[moduleName] != nullptr) {
         delete[] appLibPathMap_[moduleName];
     }
-
     appLibPathMap_[moduleName] = tmp;
     CreateLdNamespace(moduleName, tmp, isSystemApp);
     HILOG_INFO("create ld namespace, path: %{public}s", appLibPathMap_[moduleName]);
@@ -493,9 +485,8 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
         return nullptr;
     }
 
-    HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, isModuleRestricted is %{public}d",
-                moduleName, path, isModuleRestricted);
-
+    HILOG_INFO("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
+        moduleName, path, relativePath);
     // we only check system so in restricted runtime.
     if (isModuleRestricted == true && isAppModule == false) {
         if (CheckModuleRestricted(moduleName) == true) {
@@ -507,7 +498,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
         !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
-        HILOG_INFO("Block module name: %{public}s", moduleName);
+        HILOG_ERROR("Block module name: %{public}s", moduleName);
         return nullptr;
     }
 #ifdef ANDROID_PLATFORM
@@ -543,6 +534,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
             prefix_ = path;
         }
         key = prefix_ + '/' + moduleName;
+        HILOG_INFO("key is %{public}s", key.c_str());
     }
     NativeModule* nativeModule = FindNativeModuleByCache(key.c_str());
 #endif
@@ -932,19 +924,11 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
         return;
     }
 
-    char *moduleName = new char[NAPI_PATH_MAX];
-    errno_t err = EOK;
-    err = memset_s(moduleName, NAPI_PATH_MAX, 0, NAPI_PATH_MAX);
-    if (err != EOK) {
-        delete[] moduleName;
+    char *moduleName = strdup(moduleKey.c_str());
+    if (moduleName == nullptr) {
+        HILOG_ERROR("strdup failed. tmpName is %{public}s", moduleKey.c_str());
         return;
     }
-    err = strcpy_s(moduleName, NAPI_PATH_MAX, moduleKey.c_str());
-    if (err != EOK) {
-        delete[] moduleName;
-        return;
-    }
-
     lastNativeModule_->name = moduleName;
     lastNativeModule_->jsABCCode = abcBuffer;
     lastNativeModule_->jsCodeLen = static_cast<int32_t>(len);
@@ -1022,7 +1006,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 
     if (result && !result->moduleLoaded) {
         if (result == lastNativeModule_) {
-            HILOG_DEBUG("module '%{public}s' does not load", result->name);
+            HILOG_WARN("module '%{public}s' does not load", result->name);
             return nullptr;
         }
         if (preNativeModule) {
@@ -1033,7 +1017,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
         result->next = nullptr;
         lastNativeModule_->next = result;
         lastNativeModule_ = result;
-        HILOG_DEBUG("module '%{public}s' does not found", moduleName);
+        HILOG_WARN("module '%{public}s' does not found", moduleName);
         return nullptr;
     }
     HILOG_DEBUG("module '%{public}s' found in cache", moduleName);
