@@ -1518,6 +1518,11 @@ size_t ArkNativeEngine::GetHeapUsedSize()
     return DFXJSNApi::GetHeapUsedSize(vm_);
 }
 
+size_t ArkNativeEngine::GetHeapObjectSize()
+{
+    return DFXJSNApi::GetHeapObjectSize(vm_);
+}
+
 size_t ArkNativeEngine::GetHeapLimitSize()
 {
     return DFXJSNApi::GetHeapLimitSize(vm_);
@@ -1589,6 +1594,12 @@ size_t ArkNativeEngine::GetHeapTotalSize()
 }
 
 size_t ArkNativeEngine::GetHeapUsedSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetHeapObjectSize()
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return 0;
@@ -1725,7 +1736,7 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
     if (!limitSize) {
         return;
     }
-    size_t nowPrecent = GetHeapUsedSize() * DEC_TO_INT / limitSize;
+    size_t nowPrecent = GetHeapObjectSize() * DEC_TO_INT / limitSize;
     if (g_debugLeak || (nowPrecent >= g_threshold && (g_lastHeapDumpTime == 0 ||
         GetCurrentTickMillseconds() - g_lastHeapDumpTime > HEAP_DUMP_REPORT_INTERVAL))) {
         HILOG_INFO("dumpheapSnapshot ready");

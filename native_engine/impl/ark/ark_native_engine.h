@@ -194,6 +194,7 @@ public:
     size_t GetArrayBufferSize() override;
     size_t GetHeapTotalSize() override;
     size_t GetHeapUsedSize() override;
+    size_t GetHeapObjectSize() override;
     size_t GetHeapLimitSize() override;
     void NotifyApplicationState(bool inBackground) override;
     void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
