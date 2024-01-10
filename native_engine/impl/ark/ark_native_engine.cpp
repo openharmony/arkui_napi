@@ -1234,7 +1234,9 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
     panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
-    if (panda::JSNApi::IsBundle(vm_) || !buffer.empty()) {
+    if (panda::JSNApi::IsBundle(vm_)) {
+        ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
+    } else if (!buffer.empty()) {
         if (entryPoint == nullptr) {
             HILOG_ERROR("Input entryPoint is nullptr, please input entryPoint for merged ESModule");
             // this path for bundle and abc compiled by single module js
@@ -1264,6 +1266,12 @@ void ArkNativeEngine::GetCurrentModuleInfo(std::string& moduleName, std::string&
     std::pair<std::string, std::string> moduleInfo = panda::JSNApi::GetCurrentModuleInfo(vm_, needRecordName);
     moduleName = moduleInfo.first; // if needRecordName is true, then moduleName is recordName.
     fileName = moduleInfo.second;
+}
+
+bool ArkNativeEngine::GetIsBundle()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsBundle(vm_);
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,

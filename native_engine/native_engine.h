@@ -373,6 +373,7 @@ public:
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;
     virtual void* GetPromiseRejectCallback() = 0;
     virtual void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) = 0;
+    virtual bool GetIsBundle() = 0;
     // run script by path
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
 
