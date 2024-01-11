@@ -671,6 +671,27 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
 }
 
+napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
+{
+    std::vector<uint8_t> scriptContent;
+    std::string pathStr(path);
+    std::string ami;
+    if (!CallGetAssetFunc(pathStr, scriptContent, ami)) {
+        HILOG_ERROR("Get asset error");
+        return nullptr;
+    }
+    // if buffer is empty, return directly.
+    if (scriptContent.size() == 0) {
+        HILOG_ERROR("asset size is %{public}zu", scriptContent.size());
+        auto vm = GetEcmaVm();
+        Local<panda::JSValueRef> error =
+            panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, "RunScriptForAbc: abc file is empty."));
+        panda::JSNApi::ThrowException(vm, error);
+        return nullptr;
+    }
+    return RunActor(scriptContent, ami.c_str(), entryPoint);
+}
+
 napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
 {
     std::vector<uint8_t> scriptContent;
