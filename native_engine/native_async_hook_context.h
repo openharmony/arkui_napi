@@ -16,7 +16,14 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_HOOK_CONTEXT_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_HOOK_CONTEXT_H
 
+#include "callback_scope_manager/native_callback_scope_manager.h"
 #include "native_value.h"
+#include "utils/log.h"
+
+class NativeAsyncHookContext;
+static panda::JSValueRef* InternalMakeCallback(NativeEngine* engine, panda::FunctionRef* funRef,
+                                               panda::JSValueRef* obj, panda::JSValueRef *const argv[],
+                                               size_t argc, NativeAsyncHookContext* asyncContext);
 
 class NativeAsyncWrap {
 public:
@@ -103,6 +110,13 @@ public:
         }
     }
 
+    panda::JSValueRef* MakeCallback(panda::FunctionRef* funRef, panda::JSValueRef* obj,
+                                    panda::JSValueRef *const argv[], size_t argc)
+    {
+        EnsureReference();
+        panda::JSValueRef* rst = InternalMakeCallback(env_, funRef, obj, argv, argc, this);
+        return rst;
+    }
 private:
     NativeEngine* env_ {nullptr};
     double asyncId_ = 0;
@@ -110,5 +124,77 @@ private:
     panda::Global<panda::ObjectRef> resource_;
     bool lostReference_ = false;
 };
+
+static panda::FunctionRef* AsyncHooksCallbackTrampoline()
+{
+    return nullptr; // not support async_hook yet, and the actions need to be improved in the future
+}
+
+static void CloseScope(NativeAsyncHookContext* nativeAsyncContext,
+                       NativeCallbackScopeManager* callbackScopeMgr,
+                       NativeCallbackScope* callbackScope,
+                       NativeEngine* engine)
+{
+    if (nativeAsyncContext != nullptr) {
+        nativeAsyncContext->CloseCallbackScope(engine, callbackScope);
+    } else {
+        if (callbackScopeMgr != nullptr) {
+            callbackScopeMgr->Close(callbackScope);
+        }
+    }
+}
+
+static panda::JSValueRef* InternalMakeCallback(NativeEngine* engine, panda::FunctionRef* funRef,
+                                               panda::JSValueRef* obj, panda::JSValueRef* const argv[],
+                                               size_t argc, NativeAsyncHookContext* asyncContext)
+{
+    auto vm = engine->GetEcmaVm();
+    if (funRef == nullptr) {
+        HILOG_ERROR("funRef is nullptr!");
+        return *panda::JSValueRef::Undefined(vm);
+    }
+
+    bool useAsyncHooksTrampoline = false;
+    panda::FunctionRef* rstFunRef = AsyncHooksCallbackTrampoline();
+    if (rstFunRef != nullptr) {
+        useAsyncHooksTrampoline = true;
+    }
+    NativeCallbackScopeManager* callbackScopeMgr = nullptr;
+    NativeCallbackScope* callbackScope;
+    if (asyncContext == nullptr) {
+        callbackScopeMgr = engine->GetCallbackScopeManager();
+        callbackScope = callbackScopeMgr->Open(engine);
+    } else {
+        callbackScope = asyncContext->OpenCallbackScope();
+    }
+
+    panda::JSValueRef* callBackRst;
+    if (useAsyncHooksTrampoline) {
+        callBackRst = nullptr; // not support async_hook yet, and the actions need to be improved in the future
+    } else {
+        callBackRst = funRef->CallForNapi(vm, obj, argv, argc);
+    }
+
+    if (callBackRst == nullptr) {
+        callbackScope->MarkAsFailed();
+    }
+    callbackScope->Close();
+    CloseScope(asyncContext, callbackScopeMgr, callbackScope, engine);
+    return callBackRst;
+}
+
+panda::JSValueRef* MakeCallback(NativeEngine* engine, panda::FunctionRef* funRef,
+                                panda::JSValueRef* obj, size_t argc,
+                                panda::JSValueRef* const argv[], NativeAsyncHookContext* asyncContext)
+{
+    auto vm = engine->GetEcmaVm();
+    panda::JSValueRef* rst = InternalMakeCallback(engine, funRef, obj, argv, argc, asyncContext);
+    NativeCallbackScopeManager* callbackScopeMgr = engine->GetCallbackScopeManager();
+    size_t depth = callbackScopeMgr->GetAsyncCallbackScopeDepth();
+    if (rst == nullptr && depth == 0) {
+        return *panda::JSValueRef::Undefined(vm);
+    }
+    return rst;
+}
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_HOOK_CONTEXT_H */

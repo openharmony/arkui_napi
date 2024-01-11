@@ -587,3 +587,43 @@ NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char**
     HILOG_INFO("%{public}s, napi called fileName : %{public}s", __func__, *result);
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_make_callback(napi_env env,
+                                           napi_async_context async_context,
+                                           napi_value recv,
+                                           napi_value func,
+                                           size_t argc,
+                                           const napi_value* argv,
+                                           napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, func);
+    CHECK_ARG(env, recv);
+    if (argc > 0) {
+        CHECK_ARG(env, argv);
+    }
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
+    panda::JSValueRef* Obj = reinterpret_cast<panda::JSValueRef *>(recv);
+    panda::FunctionRef* funRef = reinterpret_cast<panda::FunctionRef *>(func);
+    panda::JSValueRef* callBackRst;
+    if (async_context == nullptr) {
+        callBackRst = MakeCallback(engine, funRef, Obj,
+                                   argc, reinterpret_cast<panda::JSValueRef* const*>(argv), nullptr);
+    } else {
+        NativeAsyncHookContext* nativeAsyncContext = reinterpret_cast<NativeAsyncHookContext*>(async_context);
+        callBackRst = nativeAsyncContext->MakeCallback(funRef, Obj,
+                                                       reinterpret_cast<panda::JSValueRef* const*>(argv), argc);
+    }
+    if (tryCatch.HasCaught()) {
+        HILOG_ERROR("print exception info: ");
+        panda::JSNApi::PrintExceptionInfo(vm);
+        return napi_set_last_error(env, napi_pending_exception);
+    }
+    if (result) {
+        *result = reinterpret_cast<napi_value>(callBackRst);
+    }
+    return GET_RETURN_STATUS(env);
+}
