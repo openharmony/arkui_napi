@@ -91,6 +91,7 @@
     {"name": "napi_create_function"},
     {"name": "napi_get_cb_info"},
     {"name": "napi_get_new_target"},
+    {"name": "napi_make_callback"},
     {"name": "napi_new_instance"},
     {"name": "napi_define_class"},
     {"name": "napi_wrap"},
