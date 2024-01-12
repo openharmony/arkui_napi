@@ -27,6 +27,7 @@
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
+#include <uv.h>
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
@@ -59,6 +60,12 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+struct JsHeapDumpWork {
+    EcmaVM *vm;
+    uv_work_t work;
+    std::condition_variable *condition;
+    size_t limitSize;
+};
 static constexpr uint32_t DEC_TO_INT = 100;
 static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
 static constexpr int TIME_OUT = 20;
@@ -1739,6 +1746,33 @@ uint64_t ArkNativeEngine::GetCurrentTickMillseconds()
         std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 
+void AsyncAfterWorkCallback(uv_work_t* req, int status)
+{
+    if (req == nullptr) {
+        HILOG_ERROR("dumpheapSnapshot AsyncAfterWorkCallback req is nullptr");
+        return;
+    }
+    if (status) {
+        HILOG_ERROR("dumpheapSnapshot AsyncAfterWorkCallback failed");
+    }
+    auto work = reinterpret_cast<JsHeapDumpWork*>(req->data);
+    if (work == nullptr) {
+        HILOG_ERROR("dumpheapSnapshot JsHeapDumpWork is nullptr");
+        return;
+    }
+    size_t heapUsedSize = DFXJSNApi::GetHeapUsedSize(work->vm);
+    size_t nowPrecent = heapUsedSize * DEC_TO_INT / (work->limitSize);
+    HILOG_INFO("dumpheapSnapshot nowPrecent is %{public}zu", nowPrecent);
+    if (nowPrecent >= g_threshold) {
+        auto vm = work->vm;
+        DFXJSNApi::GetHeapPrepare(vm);
+        DFXJSNApi::SetOverLimit(vm, true);
+        HILOG_INFO("dumpheapSnapshot GetHeapPrepare done");
+    }
+    work->condition->notify_all();
+    delete work;
+}
+
 void ArkNativeEngine::JudgmentDump(size_t limitSize)
 {
     if (!limitSize) {
@@ -1747,9 +1781,22 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
     size_t nowPrecent = GetHeapObjectSize() * DEC_TO_INT / limitSize;
     if (g_debugLeak || (nowPrecent >= g_threshold && (g_lastHeapDumpTime == 0 ||
         GetCurrentTickMillseconds() - g_lastHeapDumpTime > HEAP_DUMP_REPORT_INTERVAL))) {
-        HILOG_INFO("dumpheapSnapshot ready");
         int pid = -1;
-        DFXJSNApi::GetHeapPrepare(vm_);
+        std::unique_lock<std::mutex> lock(lock_);
+        dumpWork_ = new(std::nothrow) JsHeapDumpWork;
+        dumpWork_->vm = vm_;
+        dumpWork_->work.data = dumpWork_;
+        dumpWork_->condition = &condition_;
+        dumpWork_->limitSize = limitSize;
+        uv_loop_t *loop = GetUVLoop();
+        uv_queue_work(loop, &(dumpWork_->work), [](uv_work_t *) {}, AsyncAfterWorkCallback);
+        condition_.wait(lock);
+        // VM destructed but syncTask is executed.
+        if (needStop_ || !DFXJSNApi::isOverLimit(vm_)) {
+            return;
+        }
+        DFXJSNApi::SetOverLimit(vm_, false);
+        HILOG_INFO("dumpheapSnapshot ready");
         time_t startTime = time(nullptr);
         g_lastHeapDumpTime = GetCurrentTickMillseconds();
         if((pid = fork()) < 0) {
@@ -1790,10 +1837,12 @@ void ArkNativeEngine::JsHeapStart()
         HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
     }
     while (!needStop_) {
-        std::unique_lock<std::mutex> lock(lock_);
-        condition_.wait_for(lock, std::chrono::milliseconds(g_checkInterval * SEC_TO_MILSEC));
-        if (needStop_) {
-            return;
+        {
+            std::unique_lock<std::mutex> lock(lock_);
+            condition_.wait_for(lock, std::chrono::milliseconds(g_checkInterval * SEC_TO_MILSEC));
+            if (needStop_) {
+                return;
+            }
         }
         size_t limitSize = GetHeapLimitSize();
         JudgmentDump(limitSize);

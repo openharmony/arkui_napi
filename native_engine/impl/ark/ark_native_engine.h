@@ -33,6 +33,7 @@
 #include "native_engine/native_engine.h"
 
 namespace panda::ecmascript {
+struct JsHeapDumpWork;
 struct JsFrameInfo {
     std::string functionName;
     std::string fileName;
@@ -294,5 +295,6 @@ private:
     std::mutex lock_;
     std::condition_variable condition_;
     bool isLimitedWorker_ = false;
+    struct JsHeapDumpWork *dumpWork_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
