@@ -1140,6 +1140,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         HILOG_ERROR("pending exception when js function called");
         HILOG_ERROR("print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
+        result = nullptr;
         return napi_set_last_error(env, napi_pending_exception);
     }
     if (result) {
