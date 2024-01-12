@@ -1207,27 +1207,23 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
 
     auto info = reinterpret_cast<NapiNativeCallbackInfo*>(cbinfo);
     if ((argc != nullptr) && (argv != nullptr)) {
-        size_t i = 0;
-        size_t bufferSize = *argc;
-        for (i = 0; (i < bufferSize) && (i < info->argc); i++) {
-            argv[i] = info->argv[i];
-        }
-        if (i < bufferSize) {
+        size_t i = info->GetArgv(argv, *argc);
+        if (i < *argc) {
             napi_value undefined = JsValueFromLocalValue(
                 panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
-            for (; i < bufferSize; i++) {
+            for (; i < *argc; i++) {
                 argv[i] = undefined;
             }
         }
     }
     if (argc != nullptr) {
-        *argc = info->argc;
+        *argc = info->GetArgc();
     }
     if (this_arg != nullptr) {
-        *this_arg = info->thisVar;
+        *this_arg = info->GetThisVar();
     }
-    if (data != nullptr && info->functionInfo != nullptr) {
-        *data = info->functionInfo->data;
+    if (data != nullptr && info->GetFunctionInfo() != nullptr) {
+        *data = info->GetFunctionInfo()->data;
     }
 
     return napi_clear_last_error(env);
@@ -1241,10 +1237,10 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
 
     auto info = reinterpret_cast<NapiNativeCallbackInfo*>(cbinfo);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    auto thisVarObj = LocalValueFromJsValue(info->thisVar);
-    auto functionVal = LocalValueFromJsValue(info->function);
+    auto thisVarObj = LocalValueFromJsValue(info->GetThisVar());
+    auto functionVal = LocalValueFromJsValue(info->GetFunction());
     if (thisVarObj->InstanceOf(vm, functionVal)) {
-        *result = info->function;
+        *result = info->GetFunction();
     } else {
         *result = nullptr;
     }

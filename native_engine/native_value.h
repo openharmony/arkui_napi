@@ -22,6 +22,10 @@
 
 #include "interfaces/inner_api/napi/native_node_api.h"
 
+namespace panda {
+class JsiRuntimeCallInfo;
+}
+
 class NativeEngine;
 class NativeReference;
 
@@ -65,11 +69,14 @@ struct NapiFunctionInfo {
 
 // To be refactor
 struct NapiNativeCallbackInfo {
-    size_t argc = 0;
-    napi_value* argv = nullptr;
-    napi_value thisVar = nullptr;
-    napi_value function = nullptr;
-    NapiFunctionInfo* functionInfo = nullptr;
+    NapiNativeCallbackInfo(panda::JsiRuntimeCallInfo* runtimeInfo): info(runtimeInfo) { };
+    size_t GetArgc() const;
+    size_t GetArgv(napi_value* argv, size_t argc);
+    napi_value GetThisVar();
+    napi_value GetFunction();
+    NapiFunctionInfo* GetFunctionInfo();
+private:
+    panda::JsiRuntimeCallInfo* info = nullptr;
 };
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);

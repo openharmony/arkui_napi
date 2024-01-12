@@ -511,6 +511,51 @@ static inline void FinishNapiProfilerTrace()
 #endif
 }
 
+size_t NapiNativeCallbackInfo::GetArgc() const
+{
+    return static_cast<size_t>(info->GetArgsNumber());
+}
+
+size_t NapiNativeCallbackInfo::GetArgv(napi_value* argv, size_t argc)
+{
+    auto *vm = info->GetVM();
+    if (argc > 0) {
+        size_t i = 0;
+        size_t buffer = GetArgc();
+        for (; i < buffer && i < argc; i++) {
+            panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
+            if (value->IsFunction()) {
+                FunctionSetContainerId(vm, value);
+            }
+            argv[i] = JsValueFromLocalValue(value);
+        }
+        return i;
+    }
+
+    return GetArgc();
+}
+
+napi_value NapiNativeCallbackInfo::GetThisVar()
+{
+    return JsValueFromLocalValue(info->GetThisRef());
+}
+
+napi_value NapiNativeCallbackInfo::GetFunction()
+{
+    auto *vm = info->GetVM();
+    panda::Local<panda::JSValueRef> newValue = info->GetNewTargetRef();
+    if (newValue->IsFunction()) {
+        FunctionSetContainerId(vm, newValue);
+    }
+
+    return JsValueFromLocalValue(newValue);
+}
+
+NapiFunctionInfo* NapiNativeCallbackInfo::GetFunctionInfo()
+{
+    return reinterpret_cast<NapiFunctionInfo*>(info->GetData());
+}
+
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 {
     EcmaVM *vm = runtimeInfo->GetVM();
@@ -525,27 +570,8 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         return **JSValueRef::Undefined(vm);
     }
 
-    NapiNativeCallbackInfo cbInfo = { 0 };
+    NapiNativeCallbackInfo cbInfo(runtimeInfo);
     StartNapiProfilerTrace(runtimeInfo);
-    cbInfo.thisVar = JsValueFromLocalValue(runtimeInfo->GetThisRef());
-    panda::Local<panda::JSValueRef> newValue = runtimeInfo->GetNewTargetRef();
-    if (newValue->IsFunction()) {
-        FunctionSetContainerId(vm, newValue);
-    }
-    cbInfo.function = JsValueFromLocalValue(newValue);
-    cbInfo.argc = static_cast<size_t>(runtimeInfo->GetArgsNumber());
-    cbInfo.argv = nullptr;
-    cbInfo.functionInfo = info;
-    if (cbInfo.argc > 0) {
-        cbInfo.argv = new napi_value [cbInfo.argc];
-        for (size_t i = 0; i < cbInfo.argc; i++) {
-            panda::Local<panda::JSValueRef> value = runtimeInfo->GetCallArgRef(i);
-            if (value->IsFunction()) {
-                FunctionSetContainerId(vm, value);
-            }
-            cbInfo.argv[i] = JsValueFromLocalValue(value);
-        }
-    }
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
@@ -558,11 +584,6 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeReturn(vm, reinterpret_cast<void *>(cb));
-    }
-
-    if (cbInfo.argv != nullptr) {
-        delete[] cbInfo.argv;
-        cbInfo.argv = nullptr;
     }
 
     Local<panda::JSValueRef> localRet = panda::JSValueRef::Undefined(vm);
