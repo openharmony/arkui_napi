@@ -268,7 +268,7 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     const std::string& apiPath)
 {
     panda::Local<panda::ArrayRef> namesArrayRef = exportObj->GetAllPropertyNames(ecmaVm, NATIVE_DEFAULT);
-    for (uint32_t i = namesArrayRef->Length(ecmaVm) - 1; i >= 0; i--) {
+    for (uint32_t i = 0; i < namesArrayRef->Length(ecmaVm); i++) {
         const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
         const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
         const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
