@@ -238,7 +238,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         return;
     }
 
-    HILOG_INFO("native module name is '%{public}s'", nativeModule->name);
+    HILOG_DEBUG("native module name is '%{public}s'", nativeModule->name);
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (!CreateNewNativeModule()) {
         HILOG_ERROR("create new nativeModule failed");
@@ -265,7 +265,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->next = nullptr;
     lastNativeModule_->moduleLoaded = true;
 
-    HILOG_INFO("register module name is '%{public}s', isAppModule is %{public}d",
+    HILOG_DEBUG("register module name is '%{public}s', isAppModule is %{public}d",
         lastNativeModule_->name, isAppModule_);
 }
 
@@ -416,7 +416,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
 
     nsMap_[moduleName] = ns;
 
-    HILOG_INFO("CreateLdNamespace success. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
+    HILOG_DEBUG("end. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
 #endif
 }
 
@@ -448,7 +448,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     }
     appLibPathMap_[moduleName] = tmp;
     CreateLdNamespace(moduleName, tmp, isSystemApp);
-    HILOG_INFO("create ld namespace, path: %{public}s", appLibPathMap_[moduleName]);
+    HILOG_DEBUG("path: %{public}s", appLibPathMap_[moduleName]);
 }
 
 bool NativeModuleManager::CheckModuleRestricted(const std::string& moduleName)
@@ -485,7 +485,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
         return nullptr;
     }
 
-    HILOG_INFO("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
+    HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
         moduleName, path, relativePath);
     // we only check system so in restricted runtime.
     if (isModuleRestricted == true && isAppModule == false) {
