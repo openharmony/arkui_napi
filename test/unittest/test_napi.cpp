@@ -3018,7 +3018,8 @@ HWTEST_F(NapiBasicTest, OpenCallbackScopeTest002, testing::ext::TestSize.Level1)
     int asyncCallbackScopeDepthOne = callbackScopeManager->GetAsyncCallbackScopeDepth();
 
     // Open a internal callback scope
-    auto scopeTwo = callbackScopeManager->Open(engine_);
+    panda::Local<panda::ObjectRef> obj = panda::ObjectRef::New(engine_->GetEcmaVm());
+    auto scopeTwo = callbackScopeManager->Open(engine_, obj, {0, 0});
     int openCallbackScopesTwo = callbackScopeManager->GetOpenCallbackScopes();
     int asyncCallbackScopeDepthTwo = callbackScopeManager->GetAsyncCallbackScopeDepth();
 
@@ -3027,6 +3028,7 @@ HWTEST_F(NapiBasicTest, OpenCallbackScopeTest002, testing::ext::TestSize.Level1)
     EXPECT_EQ(asyncCallbackScopeDepthTwo, (asyncCallbackScopeDepthOne + 1));
 
     callbackScopeManager->Close(scopeTwo);
+    obj->Delete(engine_->GetEcmaVm(), obj);
     int openCallbackScopesAfterTwo = callbackScopeManager->GetOpenCallbackScopes();
     int asyncCallbackScopeDepthAfterTwo = callbackScopeManager->GetAsyncCallbackScopeDepth();
 

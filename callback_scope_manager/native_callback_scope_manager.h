@@ -17,12 +17,41 @@
 #define FOUNDATION_ACE_NAPI_CALLBACK_SCOPE_MANAGER_NATIVE_CALLBACK_SCOPE_MANAGER_H
 
 #include <cstddef>
+#include "ecmascript/napi/include/jsnapi.h"
 
 class NativeEngine;
 
+class NativeAsyncWrap {
+public:
+    static void EmitAsyncInit(NativeEngine* env,
+                              panda::Local<panda::ObjectRef> object,
+                              panda::Local<panda::StringRef> type,
+                              double asyncId,
+                              double triggerAsyncId) {}
+
+    static void EmitDestroy(NativeEngine* env, double asyncId) {}
+
+    static void EmitBefore(NativeEngine* env, double asyncId) {}
+
+    static void EmitAfter(NativeEngine* env, double asyncId) {}
+};
+
+struct AsyncIdInfo {
+    double asyncId;
+    double triggerAsyncId;
+};
+
 class NativeCallbackScope {
 public:
-    explicit NativeCallbackScope(NativeEngine* env);
+    enum Flags {
+        NO_FLAGS = 0,
+        SKIP_ASYNC_HOOKS = 1,
+        SKIP_TASK_QUEUES = 2
+    };
+    NativeCallbackScope(NativeEngine* env,
+                        panda::Local<panda::ObjectRef> object,
+                        const AsyncIdInfo& asyncIdInfo,
+                        int flags = NO_FLAGS);
     virtual ~NativeCallbackScope();
     void Close();
 
@@ -39,6 +68,11 @@ private:
     bool closed_ = false;
     bool failed_ = false;
     NativeEngine* env_ = nullptr;
+    AsyncIdInfo asyncIdInfo_ = {0, 0};
+    [[maybe_unused]] panda::Local<panda::ObjectRef> object_;
+    bool skipHooks_ = false;
+    bool skipTaskQueues_ = false;
+    bool pushedIds_ = false;
 };
 
 class NativeCallbackScopeManager {
@@ -46,7 +80,7 @@ public:
     NativeCallbackScopeManager();
     virtual ~NativeCallbackScopeManager();
 
-    NativeCallbackScope* Open(NativeEngine* env);
+    NativeCallbackScope* Open(NativeEngine* env, panda::Local<panda::ObjectRef> object, AsyncIdInfo asyncContext);
     void Close(NativeCallbackScope* scope);
 
     size_t IncrementOpenCallbackScopes();

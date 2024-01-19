@@ -550,8 +550,13 @@ NAPI_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_sc
     CHECK_ENV(env);
     CHECK_ARG(env, scope);
 
-    NativeAsyncHookContext::CloseCallbackScope(reinterpret_cast<NativeEngine*>(env),
-                                               reinterpret_cast<NativeCallbackScope*>(scope));
+    auto ret = NativeAsyncHookContext::CloseCallbackScope(reinterpret_cast<NativeEngine*>(env),
+                                                          reinterpret_cast<NativeCallbackScope*>(scope));
+    if (ret == CALLBACK_SCOPE_MISMATCH) {
+        return napi_callback_scope_mismatch;
+    } else if (ret != CALLBACK_SCOPE_OK) {
+        return napi_invalid_arg;
+    }
 
     return napi_clear_last_error(env);
 }

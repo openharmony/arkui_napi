@@ -17,7 +17,9 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ASYNC_HOOK_CONTEXT_H
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
+#include "ecmascript/napi/include/jsnapi.h"
 #include "native_value.h"
+#include "native_engine.h"
 #include "utils/log.h"
 
 class NativeAsyncHookContext;
@@ -25,15 +27,10 @@ static panda::JSValueRef* InternalMakeCallback(NativeEngine* engine, panda::Func
                                                panda::JSValueRef* obj, panda::JSValueRef *const argv[],
                                                size_t argc, NativeAsyncHookContext* asyncContext);
 
-class NativeAsyncWrap {
-public:
-    static void EmitAsyncInit(NativeEngine* env,
-                              panda::Local<panda::ObjectRef> object,
-                              panda::Local<panda::StringRef> type,
-                              double async_id,
-                              double trigger_async_id) {}
-
-    static void EmitDestroy(NativeEngine* env, double async_id) {}
+enum CallbackScopeCode {
+    CALLBACK_SCOPE_OK = 0,
+    CALLBACK_SCOPE_INVALID_ARG,
+    CALLBACK_SCOPE_MISMATCH,
 };
 
 class NativeAsyncHookContext {
@@ -74,6 +71,11 @@ public:
 
     static void NativeFinalizeCallBack(void* ref) {}
 
+    inline AsyncIdInfo GetAsyncIdInfo()
+    {
+        return {asyncId_, triggerAsyncId_};
+    }
+
     inline NativeCallbackScope* OpenCallbackScope()
     {
         EnsureReference();
@@ -82,7 +84,7 @@ public:
             return nullptr;
         }
 
-        auto callbackScope = callbackScopeManager->Open(env_);
+        auto callbackScope = callbackScopeManager->Open(env_, resource_.ToLocal(), GetAsyncIdInfo());
         callbackScopeManager->IncrementOpenCallbackScopes();
 
         return callbackScope;
@@ -98,15 +100,18 @@ public:
         }
     }
 
-    static void CloseCallbackScope(NativeEngine* env, NativeCallbackScope* scope)
+    static CallbackScopeCode CloseCallbackScope(NativeEngine* env, NativeCallbackScope* scope)
     {
         auto callbackScopeManager = env->GetCallbackScopeManager();
         if (callbackScopeManager == nullptr) {
-            return;
+            return CALLBACK_SCOPE_INVALID_ARG;
         }
         if (callbackScopeManager->GetOpenCallbackScopes() > 0) {
             callbackScopeManager->DecrementOpenCallbackScopes();
             callbackScopeManager->Close(scope);
+            return CALLBACK_SCOPE_OK;
+        } else {
+            return CALLBACK_SCOPE_MISMATCH;
         }
     }
 
@@ -163,7 +168,8 @@ static panda::JSValueRef* InternalMakeCallback(NativeEngine* engine, panda::Func
     NativeCallbackScope* callbackScope;
     if (asyncContext == nullptr) {
         callbackScopeMgr = engine->GetCallbackScopeManager();
-        callbackScope = callbackScopeMgr->Open(engine);
+        callbackScope = callbackScopeMgr->Open(engine,
+            panda::Local<panda::ObjectRef>(reinterpret_cast<uintptr_t>(obj)), {0, 0});
     } else {
         callbackScope = asyncContext->OpenCallbackScope();
     }
