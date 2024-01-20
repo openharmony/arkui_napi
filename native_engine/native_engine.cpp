@@ -71,7 +71,7 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
 
 NativeEngine::~NativeEngine()
 {
-    HILOG_INFO("NativeEngine::~NativeEngine");
+    HILOG_DEBUG("NativeEngine::~NativeEngine");
     if (cleanEnv_ != nullptr) {
         cleanEnv_();
     }
@@ -81,7 +81,7 @@ NativeEngine::~NativeEngine()
 
 void NativeEngine::Init()
 {
-    HILOG_INFO("NativeEngine::Init");
+    HILOG_DEBUG("NativeEngine::Init");
     moduleManager_ = NativeModuleManager::GetInstance();
     referenceManager_ = new NativeReferenceManager();
     callbackScopeManager_ = new NativeCallbackScopeManager();
@@ -96,7 +96,7 @@ void NativeEngine::Init()
 
 void NativeEngine::Deinit()
 {
-    HILOG_INFO("NativeEngine::Deinit");
+    HILOG_DEBUG("NativeEngine::Deinit");
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
     RunCleanup();
@@ -553,20 +553,20 @@ NativeEngine* NativeEngine::GetHostEngine() const
 
 void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
-    HILOG_INFO("%{public}s, start.", __func__);
+    HILOG_DEBUG("%{public}s, start.", __func__);
     auto insertion_info = cleanup_hooks_.emplace(CleanupHookCallback { fun, arg, cleanup_hook_counter_++ });
     if (insertion_info.second != true) {
         HILOG_ERROR("AddCleanupHook Failed.");
     }
-    HILOG_INFO("%{public}s, end.", __func__);
+    HILOG_DEBUG("%{public}s, end.", __func__);
 }
 
 void NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
 {
-    HILOG_INFO("%{public}s, start.", __func__);
+    HILOG_DEBUG("%{public}s, start.", __func__);
     CleanupHookCallback hook { fun, arg, 0 };
     cleanup_hooks_.erase(hook);
-    HILOG_INFO("%{public}s, end.", __func__);
+    HILOG_DEBUG("%{public}s, end.", __func__);
 }
 
 void NativeEngine::StartCleanupTimer()
@@ -617,7 +617,7 @@ void NativeEngine::RunCleanup()
     uv_run(loop_, UV_RUN_ONCE);
 
     if (cleanupTimeout_) {
-        HILOG_ERROR("RunCleanup timeout");
+        HILOG_DEBUG("RunCleanup timeout");
     }
     HILOG_DEBUG("%{public}s, end.", __func__);
 }

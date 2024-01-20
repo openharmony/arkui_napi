@@ -1137,8 +1137,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
-        HILOG_ERROR("pending exception when js function called");
-        HILOG_ERROR("print exception info: ");
+        HILOG_ERROR("pending exception when js function called, print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
         result = nullptr;
         return napi_set_last_error(env, napi_pending_exception);
