@@ -862,7 +862,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         if (instance == nullptr && instanceValue->Has(vm_, key)) {
             Local<ObjectRef> wrapper = instanceValue->Get(vm_, key);
             auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
-            wrapper->SetNativePointerField(0, nullptr, nullptr, nullptr, 0);
+            wrapper->SetNativePointerField(vm_, 0, nullptr, nullptr, nullptr, 0);
             instanceValue->Delete(vm_, key);
             delete ref;
         } else {
@@ -871,8 +871,8 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
             Local<JSValueRef> value(instanceValue);
             ref = new ArkNativeReference(this, vm_, value, 0, true, nullptr, instance, nullptr);
 
-            object->SetNativePointerFieldCount(1);
-            object->SetNativePointerField(0, ref, nullptr, nullptr, 0);
+            object->SetNativePointerFieldCount(vm_, 1);
+            object->SetNativePointerField(vm_, 0, ref, nullptr, nullptr, 0);
             PropertyAttribute attr(object, true, false, true);
             instanceValue->DefineProperty(vm_, key, attr);
         }
