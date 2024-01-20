@@ -471,7 +471,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 
 ArkNativeEngine::~ArkNativeEngine()
 {
-    HILOG_INFO("ArkNativeEngine::~ArkNativeEngine");
+    HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
     Deinit();
     // Free cached objects
     for (auto&& [module, exportObj] : loadedModules_) {
@@ -734,7 +734,7 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     }
     Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
     if (!excep.IsNull()) {
-        HILOG_ERROR("ArkNativeObject::DefineProperty occur Exception");
+        HILOG_DEBUG("ArkNativeObject::DefineProperty occur Exception");
         panda::JSNApi::GetAndClearUncaughtException(vm);
     }
     return result;
@@ -1171,7 +1171,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     option.SetEnableAsmInterpreter(asmInterpreterEnabled);
     option.SetAsmOpcodeDisableRange(asmOpcodeDisableRange);
     option.SetIsWorker();
-    HILOG_INFO("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d, bundlename = %{public}s",
+    HILOG_DEBUG("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d, bundlename = %{public}s",
         arkProperties, bundleName.c_str());
 #endif
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
@@ -1195,7 +1195,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
 
     auto cleanEnv = [vm]() {
         if (vm != nullptr) {
-            HILOG_INFO("cleanEnv is called");
+            HILOG_DEBUG("cleanEnv is called");
             panda::JSNApi::DestroyJSVM(vm);
         }
     };
@@ -1266,7 +1266,7 @@ napi_value ArkNativeEngine::RunActor(std::vector<uint8_t>& buffer, const char* d
         ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
     } else if (!buffer.empty()) {
         if (entryPoint == nullptr) {
-            HILOG_ERROR("Input entryPoint is nullptr, please input entryPoint for merged ESModule");
+            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule");
             // this path for bundle and abc compiled by single module js
             ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, desc);
         } else {
@@ -1879,7 +1879,7 @@ void ArkNativeEngine::StartMonitorJSHeapUsage()
     }
     if (threadJsHeap_ == nullptr && !IsInAppspawn()) {
         threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
-        HILOG_ERROR("JsHeapStart is OK");
+        HILOG_DEBUG("JsHeapStart is OK");
     }
 #else
     HILOG_ERROR("StartMonitorJSHeapUsage does not support dfx");
