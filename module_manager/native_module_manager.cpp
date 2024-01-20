@@ -743,7 +743,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         return lib;
     }
 
-    HILOG_DEBUG("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
+    HILOG_INFO("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, path);
 #endif
@@ -878,6 +878,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(
             if (lib != nullptr) {
                 LIBFREE(lib);
             }
+            HILOG_ERROR("sprintf_s failed. moduleKey is %{public}s", moduleKey.c_str());
             return nullptr;
         }
 
