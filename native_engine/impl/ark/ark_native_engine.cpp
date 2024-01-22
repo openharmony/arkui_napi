@@ -170,6 +170,10 @@ std::string GetSelfProcName()
 
 static bool IsInAppspawn()
 {
+    const char *env = getenv("LD_PRELOAD");
+    if (env && strstr(env, "libclang_rt.asan.so") != nullptr) {
+        return true;
+    }
     if (GetSelfProcName().find("appspawn") != std::string::npos && getppid() == 1) {
         return true;
     }
