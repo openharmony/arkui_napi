@@ -29,7 +29,7 @@
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
-#include "native_engine/native_value.h"
+#include "native_engine/native_value-inl.h"
 #include "securec.h"
 #include "utils/log.h"
 #ifdef ENABLE_HITRACE
@@ -1126,14 +1126,6 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
     panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
-#ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
-    if (funcInfo != nullptr) {
-        scopeId = funcInfo->scopeId;
-    }
-    OHOS::Ace::ContainerScope containerScope(scopeId);
-#endif
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
@@ -1206,7 +1198,11 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
 
     auto info = reinterpret_cast<NapiNativeCallbackInfo*>(cbinfo);
     if ((argc != nullptr) && (argv != nullptr)) {
-        size_t i = info->GetArgv(argv, *argc);
+        uint32_t i = 0;
+        uint32_t numOfArgs = info->GetArgsNumber();
+        for (i = 0; (i < *argc) && (i < numOfArgs); i++) {
+            argv[i] = info->GetArgs(i);
+        }
         if (i < *argc) {
             napi_value undefined = JsValueFromLocalValue(
                 panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
@@ -1216,13 +1212,14 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
         }
     }
     if (argc != nullptr) {
-        *argc = info->GetArgc();
+        *argc = info->GetArgsNumber();
     }
     if (this_arg != nullptr) {
-        *this_arg = info->GetThisVar();
+        *this_arg = info->GetThis();
     }
-    if (data != nullptr && info->GetFunctionInfo() != nullptr) {
-        *data = info->GetFunctionInfo()->data;
+    NapiFunctionInfo* functionInfo = info->GetData();
+    if (data != nullptr && functionInfo != nullptr) {
+        *data = functionInfo->data;
     }
 
     return napi_clear_last_error(env);
@@ -1236,10 +1233,11 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
 
     auto info = reinterpret_cast<NapiNativeCallbackInfo*>(cbinfo);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    auto thisVarObj = LocalValueFromJsValue(info->GetThisVar());
-    auto functionVal = LocalValueFromJsValue(info->GetFunction());
+    auto thisVarObj = LocalValueFromJsValue(info->GetThis());
+    napi_value function = info->GetNewTargetRef();
+    auto functionVal = LocalValueFromJsValue(function);
     if (thisVarObj->InstanceOf(vm, functionVal)) {
-        *result = info->GetFunction();
+        *result = function;
     } else {
         *result = nullptr;
     }
