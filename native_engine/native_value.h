@@ -69,15 +69,14 @@ struct NapiFunctionInfo {
 
 // To be refactor
 struct NapiNativeCallbackInfo {
-    inline napi_value GetThis();
-    inline uint32_t GetArgsNumber() const;
-    inline napi_value GetArgs(uint32_t idx);
-    inline napi_value GetNewTargetRef();
-    inline NapiFunctionInfo* GetData();
-    enum ArgsIndex : uint8_t { FUNC_INDEX = 0, NEW_TARGET_INDEX, THIS_INDEX, FIRST_ARGS_INDEX };
-    alignas(sizeof(uint64_t)) void *thread_ {nullptr};
-    alignas(sizeof(uint64_t))  uint32_t numArgs_ = 0;
-    __extension__ alignas(sizeof(uint64_t)) uint64_t stackArgs_[0];
+    NapiNativeCallbackInfo(panda::JsiRuntimeCallInfo* runtimeInfo): info(runtimeInfo) { };
+    size_t GetArgc() const;
+    size_t GetArgv(napi_value* argv, size_t argc);
+    napi_value GetThisVar();
+    napi_value GetFunction();
+    NapiFunctionInfo* GetFunctionInfo();
+private:
+    panda::JsiRuntimeCallInfo* info = nullptr;
 };
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);
