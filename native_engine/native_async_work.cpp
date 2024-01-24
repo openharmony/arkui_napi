@@ -21,18 +21,11 @@
 #include "parameter.h"
 #include <securec.h>
 #endif
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
 
 #include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "utils/log.h"
-
-#ifdef ENABLE_CONTAINER_SCOPE
-using OHOS::Ace::ContainerScope;
-#endif
 
 #ifdef ENABLE_HITRACE
 bool g_napiTraceIdEnabled = false;
@@ -76,9 +69,6 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     if (createdTraceId) {
         OHOS::HiviewDFX::HiTraceChain::ClearId();
     }
-#endif
-#ifdef ENABLE_CONTAINER_SCOPE
-    containerScopeId_ = ContainerScope::CurrentId();
 #endif
 }
 
@@ -189,9 +179,6 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
         default:
             nstatus = napi_generic_failure;
     }
-#ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(that->containerScopeId_);
-#endif
 
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));
 #ifdef ENABLE_HITRACE

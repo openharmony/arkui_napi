@@ -67,10 +67,6 @@ ohos_source_set("ace_napi_static") {
     defines += [ "_ARM64_" ]
   }
   if (is_arkui_x) {
-    if (napi_enable_container_scope) {
-      deps += [ ":ace_container_scope_static" ]
-      defines += [ "ENABLE_CONTAINER_SCOPE" ]
-    }
     if (target_os == "android") {
       libs = [ "log" ]
     }
@@ -82,10 +78,6 @@ ohos_source_set("ace_napi_static") {
       "init:libbegetutil",
     ]
     defines += [ "ENABLE_HITRACE" ]
-    if (product_name != "ohos-sdk" && napi_enable_container_scope) {
-      deps += [ ":ace_container_scope" ]
-      defines += [ "ENABLE_CONTAINER_SCOPE" ]
-    }
   }
 
   configs = [ "//third_party/icu/icu4c:icu_config" ]
