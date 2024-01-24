@@ -515,6 +515,51 @@ static inline void FinishNapiProfilerTrace()
 #endif
 }
 
+size_t NapiNativeCallbackInfo::GetArgc() const
+{
+    return static_cast<size_t>(info->GetArgsNumber());
+}
+
+size_t NapiNativeCallbackInfo::GetArgv(napi_value* argv, size_t argc)
+{
+    auto *vm = info->GetVM();
+    if (argc > 0) {
+        size_t i = 0;
+        size_t buffer = GetArgc();
+        for (; i < buffer && i < argc; i++) {
+            panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
+            if (value->IsFunction()) {
+                FunctionSetContainerId(vm, value);
+            }
+            argv[i] = JsValueFromLocalValue(value);
+        }
+        return i;
+    }
+
+    return GetArgc();
+}
+
+napi_value NapiNativeCallbackInfo::GetThisVar()
+{
+    return JsValueFromLocalValue(info->GetThisRef());
+}
+
+napi_value NapiNativeCallbackInfo::GetFunction()
+{
+    auto *vm = info->GetVM();
+    panda::Local<panda::JSValueRef> newValue = info->GetNewTargetRef();
+    if (newValue->IsFunction()) {
+        FunctionSetContainerId(vm, newValue);
+    }
+
+    return JsValueFromLocalValue(newValue);
+}
+
+NapiFunctionInfo* NapiNativeCallbackInfo::GetFunctionInfo()
+{
+    return reinterpret_cast<NapiFunctionInfo*>(info->GetData());
+}
+
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 {
     EcmaVM *vm = runtimeInfo->GetVM();
@@ -529,19 +574,19 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         return **JSValueRef::Undefined(vm);
     }
 
+    NapiNativeCallbackInfo cbInfo(runtimeInfo);
     StartNapiProfilerTrace(runtimeInfo);
 
-    bool isMixedDebugEnabled = JSNApi::IsMixedDebugEnabled(vm);
-    if (isMixedDebugEnabled) {
+    if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
     }
 
     napi_value result = nullptr;
     if (cb != nullptr) {
-        result = cb(info->env, reinterpret_cast<NapiNativeCallbackInfo *>(runtimeInfo));
+        result = cb(info->env, &cbInfo);
     }
 
-    if (isMixedDebugEnabled) {
+    if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeReturn(vm, reinterpret_cast<void *>(cb));
     }
 
