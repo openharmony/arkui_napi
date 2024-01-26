@@ -337,6 +337,7 @@ void NativeSafeAsyncWork::CleanUp()
         }
         queue_.pop();
     }
+    delete this;
 }
 
 bool NativeSafeAsyncWork::IsSameTid()
