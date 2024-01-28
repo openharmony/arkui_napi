@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #endif
 #include <unistd.h>
-#include <unordered_map>
+#include <map>
 #include <mutex>
 #include <thread>
 #include <iostream>
@@ -285,7 +285,7 @@ private:
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
     NativeReference* checkCallbackRef_ { nullptr };
-    std::unordered_map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
+    std::map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
