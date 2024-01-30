@@ -29,6 +29,9 @@
 #include "parameters.h"
 #include <uv.h>
 #endif
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "core/common/container_scope.h"
+#endif
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
 #include "parameter.h"
@@ -112,6 +115,9 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &v
         HILOG_ERROR("funcInfo is nullptr");
         return;
     }
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
     funcValue->SetData(vm, reinterpret_cast<void*>(funcInfo),
         [](void *externalPointer, void *data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
@@ -193,6 +199,9 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
         [](void* externalPointer, void* data) {
@@ -613,6 +622,9 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
     funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
+#ifdef ENABLE_CONTAINER_SCOPE
+    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+#endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
                                                            [](void* externalPointer, void* data) {
