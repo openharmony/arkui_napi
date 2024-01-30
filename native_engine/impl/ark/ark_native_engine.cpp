@@ -1008,9 +1008,8 @@ bool ArkNativeEngine::RunScriptPath(const char* path)
  * After: return: 1.@ohos:hilog
  *                2.@native:system.app
  */
-std::string ArkNativeEngine::GetOhmurl(const char* str)
+std::string ArkNativeEngine::GetOhmurl(std::string path)
 {
-    std::string path(str);
     const std::regex reg("@(ohos|system)\\.(\\S+)");
     path.erase(0, path.find_first_not_of(" "));
     path.erase(path.find_last_not_of(" ") + 1);
@@ -1029,23 +1028,60 @@ std::string ArkNativeEngine::GetOhmurl(const char* str)
     }
 }
 
+Local<JSValueRef> ArkNativeEngine::NapiLoadNativeModule(std::string path)
+{
+    std::string key = GetOhmurl(path);
+    if (key.size() == 0) {
+        return JSValueRef::Undefined(vm_);
+    }
+    return panda::JSNApi::ExecuteNativeModule(vm_, key);
+}
+
+ModuleTypes ArkNativeEngine::CheckLoadType(const std::string &path)
+{
+    if (path[0] == '@') {
+        return ModuleTypes::NATIVE_MODULE;
+    } else if (path.find("ets/") == 0) { // ets/xxx/xxx
+        return ModuleTypes::MODULE_INNER_FILE;
+    }
+    return ModuleTypes::UNKNOWN;
+}
+
 napi_value ArkNativeEngine::NapiLoadModule(const char* str)
 {
     if (str == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
         return nullptr;
     }
-    std::string key = GetOhmurl(str);
-    if (key.size() == 0) {
-        return nullptr;
-    }
     panda::EscapeLocalScope scope(vm_);
-    Local<ObjectRef> exportObj = panda::JSNApi::ExecuteNativeModule(vm_, key);
-    if (exportObj->IsNull()) {
-        HILOG_ERROR("ArkNativeEngine:napi load module failed");
-        return nullptr;
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    Local<ObjectRef> exportObj(undefObj);
+    std::string inputPath(str);
+    switch (CheckLoadType(inputPath)) {
+        case ModuleTypes::NATIVE_MODULE: {
+            exportObj = NapiLoadNativeModule(inputPath);
+            break;
+        }
+        case ModuleTypes::MODULE_INNER_FILE: {
+            exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath);
+            break;
+        }
+        default: {
+            std::string msg = "ArkNativeEngine:NapiLoadModule input path:" + inputPath + " is invalid.";
+            ThrowException(msg.c_str());
+        }
+    }
+    if (!exportObj->IsObject()) {
+        ThrowException("ArkNativeEngine:NapiLoadModule failed.");
+        return JsValueFromLocalValue(scope.Escape(undefObj));
     }
     return JsValueFromLocalValue(scope.Escape(exportObj));
+}
+
+void ArkNativeEngine::ThrowException(const char* msg)
+{
+    Local<panda::JSValueRef> error = panda::Exception::Error(vm_, StringRef::NewFromUtf8(vm_, msg));
+    panda::JSNApi::ThrowException(vm_, error);
 }
 
 bool ArkNativeEngine::SuspendVMById(uint32_t tid)

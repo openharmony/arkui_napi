@@ -76,6 +76,12 @@ enum class ForceExpandState : int32_t {
     FINISH_HIGH_SENSITIVE,
 };
 
+enum class ModuleTypes : uint8_t {
+    NATIVE_MODULE = 0x01,
+    MODULE_INNER_FILE,
+    UNKNOWN
+};
+
 class SerializationData {
 public:
     SerializationData() : data_(nullptr), size_(0) {}
@@ -227,7 +233,10 @@ public:
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
     napi_value NapiLoadModule(const char* str) override;
-    std::string GetOhmurl(const char* str);
+    std::string GetOhmurl(std::string str);
+    Local<JSValueRef> NapiLoadNativeModule(std::string path);
+    ModuleTypes CheckLoadType(const std::string &path);
+    void ThrowException(const char* msg);
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
