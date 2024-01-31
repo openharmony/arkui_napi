@@ -159,6 +159,9 @@ ohos_source_set("ace_container_scope_static") {
 
 group("napi_packages") {
   deps = [ ":ace_napi" ]
+  if (target_cpu == "arm64") {
+    deps += [ "jsvm:libjsvm" ]
+  }
 }
 
 ohos_ndk_library("libnapi_ndk") {
