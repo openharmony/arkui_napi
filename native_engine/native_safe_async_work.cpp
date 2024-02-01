@@ -23,14 +23,6 @@
 #include "securec.h"
 #include "utils/log.h"
 
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
-#ifdef ENABLE_CONTAINER_SCOPE
-using OHOS::Ace::ContainerScope;
-#endif
-
 // static methods start
 void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
 {
@@ -85,10 +77,6 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
         uint32_t initialRefcount = 1;
         ref_ = engine->CreateReference(func, initialRefcount);
     }
-
-#ifdef ENABLE_CONTAINER_SCOPE
-    containerScopeId_ = ContainerScope::CurrentId();
-#endif
 }
 
 NativeSafeAsyncWork::~NativeSafeAsyncWork()
@@ -268,9 +256,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     auto vm = engine_->GetEcmaVm();
     panda::LocalScope scope(vm);
-#ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(containerScopeId_);
-#endif
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
     while (size > 0) {
         data = queue_.front();
