@@ -83,6 +83,15 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_container_scope"
+                  },
+                  {
+                    "header": {
+                      "header_base": "//third_party/node/src",
+                      "header_files": [
+                          "jsvm.h"
+                      ]
+                    },
+                    "name": "//foundation/arkui/napi:napi_packages"
                   }
             ],
             "test": [
