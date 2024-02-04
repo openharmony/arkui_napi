@@ -1239,6 +1239,358 @@ HWTEST_F(NapiBasicTest, CustomClassTest001, testing::ext::TestSize.Level1)
     ASSERT_TRUE(isInstanceOf);
 }
 
+HWTEST_F(NapiBasicTest, SendableClassTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+
+    napi_value static_str;
+    napi_value non_static_str;
+    napi_value name_str;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "static", NAPI_AUTO_LENGTH, &static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "name", NAPI_AUTO_LENGTH, &name_str));
+
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_STATIC_PROPERTY("static", static_str),
+        DECLARE_NAPI_DEFAULT_PROPERTY("nonStatic", non_static_str),
+        DECLARE_NAPI_STATIC_FUNCTION("staticFunc",
+                                     [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; }),
+        DECLARE_NAPI_FUNCTION("func", [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; }),
+        DECLARE_NAPI_GETTER_SETTER(
+            "getterSetter", [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; },
+            [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; }),
+    };
+
+    napi_value sendableClass = nullptr;
+    ASSERT_CHECK_CALL(napi_define_sendable_class(env, "SendableClass", NAPI_AUTO_LENGTH, constructor, nullptr,
+                                                 sizeof(desc) / sizeof(desc[0]), desc, nullptr, &sendableClass));
+
+    napi_value value = nullptr;
+    char* str = new char[TEST_STR_LENGTH];
+    size_t length;
+
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, name_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("SendableClass", str);
+    ASSERT_CHECK_VALUE_TYPE(env, sendableClass, napi_function);
+}
+
+HWTEST_F(NapiBasicTest, SendableClassTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+
+    napi_value static_str;
+    napi_value non_static_str;
+    napi_value invalid_str;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "static", NAPI_AUTO_LENGTH, &static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_str));
+
+    napi_property_attributes napi_writable_static = static_cast<napi_property_attributes>(napi_static | napi_writable);
+    napi_property_descriptor desc[] = {
+        { "static", nullptr, nullptr, nullptr, nullptr, static_str, napi_writable_static, nullptr },
+        DECLARE_NAPI_DEFAULT_PROPERTY("nonStatic", non_static_str),
+    };
+
+    napi_value sendableClass = nullptr;
+    ASSERT_CHECK_CALL(napi_define_sendable_class(env, "SendableClass", NAPI_AUTO_LENGTH, constructor, nullptr,
+                                                 sizeof(desc) / sizeof(desc[0]), desc, nullptr, &sendableClass));
+
+    napi_value value = nullptr;
+    char* str = new char[TEST_STR_LENGTH];
+    size_t length;
+
+    // get static property from constructor
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("static", str);
+    // get invalid property from constructor
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, invalid_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+
+    napi_value static_value;
+    napi_value non_static_value;
+    napi_value invalid_value;
+    napi_value exception = nullptr;
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "static0", NAPI_AUTO_LENGTH, &static_value));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic0", NAPI_AUTO_LENGTH, &non_static_value));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_value));
+
+    // set static property on constructor
+    napi_set_property(env, sendableClass, static_str, static_value);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("static0", str);
+
+    // set invalid property on constructor
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
+    napi_set_property(env, sendableClass, invalid_str, invalid_value);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_TRUE(isExceptionPending);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, invalid_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+}
+
+napi_value GetSendableClass(napi_env env)
+{
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+
+    napi_value static_str;
+    napi_value non_static_str;
+    napi_value instance_str;
+    napi_create_string_utf8(env, "static", NAPI_AUTO_LENGTH, &static_str);
+    napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str);
+    napi_create_string_utf8(env, "instance", NAPI_AUTO_LENGTH, &instance_str);
+
+    napi_property_attributes napi_instance = static_cast<napi_property_attributes>(1 << 9 | 1 << 0);
+    napi_property_descriptor desc[] = { DECLARE_NAPI_STATIC_PROPERTY("static", static_str),
+                                        DECLARE_NAPI_DEFAULT_PROPERTY("nonStatic", non_static_str),
+                                        { "instance", nullptr, nullptr, nullptr, nullptr, instance_str, napi_instance,
+                                          nullptr } };
+
+    napi_value sendableClass = nullptr;
+    napi_define_sendable_class(env, "SendableClass", NAPI_AUTO_LENGTH, constructor, nullptr,
+                               sizeof(desc) / sizeof(desc[0]), desc, nullptr, &sendableClass);
+
+    return sendableClass;
+}
+
+HWTEST_F(NapiBasicTest, SendableClassTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value sendableClass = GetSendableClass(env);
+    napi_value non_static_str;
+    napi_value invalid_str;
+    napi_value instance_str;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "instance", NAPI_AUTO_LENGTH, &instance_str));
+
+    // new instance
+    napi_value sendableInstance = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, sendableClass, 0, nullptr, &sendableInstance));
+    bool isInstanceOf = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, sendableInstance, sendableClass, &isInstanceOf));
+    ASSERT_TRUE(isInstanceOf);
+
+    // get prototype
+    napi_value prototype = nullptr;
+    ASSERT_CHECK_CALL(napi_get_prototype(env, sendableInstance, &prototype));
+    ASSERT_CHECK_VALUE_TYPE(env, prototype, napi_object);
+
+    napi_value value = nullptr;
+    char* str = new char[TEST_STR_LENGTH];
+    size_t length;
+    napi_value instance_value;
+    napi_value non_static_value;
+    napi_value invalid_value;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "instance", NAPI_AUTO_LENGTH, &instance_value));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic0", NAPI_AUTO_LENGTH, &non_static_value));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_value));
+
+    // get initial instance property
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, instance_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+    // set instance property
+    napi_set_property(env, sendableInstance, instance_str, instance_value);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, instance_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("instance", str);
+
+    // get non static property from instance
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, non_static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("nonStatic", str);
+    // set non static property on prototype and get from instance
+    napi_set_property(env, prototype, non_static_str, non_static_value);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, non_static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("nonStatic0", str);
+}
+
+HWTEST_F(NapiBasicTest, SendableClassTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value sendableClass = GetSendableClass(env);
+    napi_value non_static_str;
+    napi_value invalid_str;
+    napi_value instance_str;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_str));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "instance", NAPI_AUTO_LENGTH, &instance_str));
+
+    // new instance
+    napi_value sendableInstance = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, sendableClass, 0, nullptr, &sendableInstance));
+    bool isInstanceOf = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, sendableInstance, sendableClass, &isInstanceOf));
+    ASSERT_TRUE(isInstanceOf);
+
+    napi_value value = nullptr;
+    char* str = new char[TEST_STR_LENGTH];
+    size_t length;
+    napi_value non_static_value;
+    napi_value invalid_value;
+    napi_value exception = nullptr;
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonStatic0", NAPI_AUTO_LENGTH, &non_static_value));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "invalid", NAPI_AUTO_LENGTH, &invalid_value));
+
+    // set non static property on instance
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
+    napi_set_property(env, sendableInstance, non_static_str, non_static_value);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_TRUE(isExceptionPending);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, non_static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("nonStatic", str);
+
+    // set invalid property on instance
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
+    napi_set_property(env, sendableInstance, invalid_str, invalid_value);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_TRUE(isExceptionPending);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, invalid_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+}
+
+napi_value GetSendableChildClass(napi_env env, napi_value parentClass)
+{
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+
+    napi_value static_str;
+    napi_value non_static_str;
+    napi_value instance_str;
+    napi_create_string_utf8(env, "static", NAPI_AUTO_LENGTH, &static_str);
+    napi_create_string_utf8(env, "nonStatic", NAPI_AUTO_LENGTH, &non_static_str);
+    napi_create_string_utf8(env, "instance", NAPI_AUTO_LENGTH, &instance_str);
+
+    napi_property_attributes napi_instance = static_cast<napi_property_attributes>(1 << 9 | 1 << 0);
+    napi_property_descriptor desc[] = { DECLARE_NAPI_STATIC_PROPERTY("static", static_str),
+                                        DECLARE_NAPI_DEFAULT_PROPERTY("nonStatic", non_static_str),
+                                        { "instance", nullptr, nullptr, nullptr, nullptr, instance_str, napi_instance,
+                                          nullptr } };
+
+    napi_value childClass = nullptr;
+    napi_define_sendable_class(env, "SendableClass", NAPI_AUTO_LENGTH, constructor, nullptr,
+                               sizeof(desc) / sizeof(desc[0]), desc, parentClass, &childClass);
+
+    return childClass;
+}
+
+napi_value GetSendableParentClass(napi_env env)
+{
+    auto constructor = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar = nullptr;
+        napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+
+    napi_value parent_static_str;
+    napi_value parent_non_static_str;
+    napi_value parent_instance_str;
+    napi_create_string_utf8(env, "parentStatic", NAPI_AUTO_LENGTH, &parent_static_str);
+    napi_create_string_utf8(env, "parentNonStatic", NAPI_AUTO_LENGTH, &parent_non_static_str);
+    napi_create_string_utf8(env, "parentInstance", NAPI_AUTO_LENGTH, &parent_instance_str);
+
+    napi_property_attributes napi_instance = static_cast<napi_property_attributes>(1 << 9 | 1 << 0);
+    napi_property_descriptor parentDesc[] = { DECLARE_NAPI_STATIC_PROPERTY("parentStatic", parent_static_str),
+                                              DECLARE_NAPI_DEFAULT_PROPERTY("parentNonStatic", parent_non_static_str),
+                                              { "parentInstance", nullptr, nullptr, nullptr, nullptr,
+                                                parent_instance_str, napi_instance, nullptr } };
+
+    napi_value parentClass = nullptr;
+    napi_define_sendable_class(env, "ParentClass", NAPI_AUTO_LENGTH, constructor, nullptr,
+                               sizeof(parentDesc) / sizeof(parentDesc[0]), parentDesc, nullptr, &parentClass);
+
+    return parentClass;
+}
+
+HWTEST_F(NapiBasicTest, SendableClassTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value parentClass = GetSendableParentClass(env);
+    napi_value sendableClass = GetSendableChildClass(env, parentClass);
+    napi_value parent_static_str;
+    napi_value parent_non_static_str;
+    napi_value parent_instance_str;
+    napi_create_string_utf8(env, "parentStatic", NAPI_AUTO_LENGTH, &parent_static_str);
+    napi_create_string_utf8(env, "parentNonStatic", NAPI_AUTO_LENGTH, &parent_non_static_str);
+    napi_create_string_utf8(env, "parentInstance", NAPI_AUTO_LENGTH, &parent_instance_str);
+
+    // new instance
+    napi_value sendableInstance = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, sendableClass, 0, nullptr, &sendableInstance));
+    bool isInstanceOf = false;
+    bool isInstanceOfParent = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, sendableInstance, sendableClass, &isInstanceOf));
+    ASSERT_CHECK_CALL(napi_instanceof(env, sendableInstance, parentClass, &isInstanceOfParent));
+    ASSERT_TRUE(isInstanceOf);
+    ASSERT_TRUE(isInstanceOfParent);
+
+    napi_value value = nullptr;
+    char* str = new char[TEST_STR_LENGTH];
+    size_t length;
+    napi_value parent_instance_value;
+    napi_value exception = nullptr;
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "parentInstance", NAPI_AUTO_LENGTH, &parent_instance_value));
+
+    // initial instance property
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, parent_instance_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+
+    // set parent instance property on instance
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
+    napi_set_property(env, sendableInstance, parent_instance_str, parent_instance_value);
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_TRUE(isExceptionPending);
+    napi_get_and_clear_last_exception(env, &exception);
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, parent_instance_str, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+
+    // get parent static property from constructor
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, parent_static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("parentStatic", str);
+
+    // get parent non static property from instance
+    ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, parent_non_static_str, &value));
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("parentNonStatic", str);
+}
+
 /**
  * @tc.name: AsyncWorkTest001
  * @tc.desc: Test async work.
@@ -1816,7 +2168,7 @@ HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
  */
 HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1) {
     napi_env env = (napi_env) engine_;
-    
+
     napi_value arrayBuffer = nullptr;
     void* arrayBufferPtr = nullptr;
     size_t arrayBufferSize = 1024;

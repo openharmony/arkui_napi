@@ -1115,7 +1115,8 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSShared();
+    *result = nativeValue->IsUndefined() || nativeValue->IsNull() || nativeValue->IsNumber() ||
+              nativeValue->IsString() || nativeValue->IsBoolean() || nativeValue->IsJSShared() || nativeValue->IsBigInt();
     return napi_clear_last_error(env);
 }
 
@@ -1302,6 +1303,44 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
     } else {
         EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
         auto resultValue = NapiDefineClass(env, newName, callback, data, nativeProperties, property_count);
+        *result = JsValueFromLocalValue(scope.Escape(resultValue));
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
+                                                   const char* utf8name,
+                                                   size_t length,
+                                                   napi_callback constructor,
+                                                   void* data,
+                                                   size_t property_count,
+                                                   const napi_property_descriptor* properties,
+                                                   napi_value parent,
+                                                   napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, utf8name);
+    RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX,
+                           napi_object_expected);
+    CHECK_ARG(env, constructor);
+    if (property_count > 0) {
+        CHECK_ARG(env, properties);
+    }
+    CHECK_ARG(env, result);
+
+    auto callback = reinterpret_cast<NapiNativeCallback>(constructor);
+    auto nativeProperties = reinterpret_cast<const NapiPropertyDescriptor*>(properties);
+
+    size_t nameLength = std::min(length, strlen(utf8name));
+    char newName[nameLength + 1];
+    if (strncpy_s(newName, nameLength + 1, utf8name, nameLength) != EOK) {
+        HILOG_ERROR("napi_define_sendable_class strncpy_s failed");
+        *result = nullptr;
+    } else {
+        EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
+        auto resultValue =
+            NapiDefineSendableClass(env, newName, callback, data, nativeProperties, property_count, parent);
         *result = JsValueFromLocalValue(scope.Escape(resultValue));
     }
 

@@ -72,6 +72,13 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &l
 #endif
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
     void* data, const NapiPropertyDescriptor* properties, size_t length);
+Local<JSValueRef> NapiDefineSendableClass(napi_env env,
+                                          const char* name,
+                                          NapiNativeCallback callback,
+                                          void* data,
+                                          const NapiPropertyDescriptor* properties,
+                                          size_t propertiesLength,
+                                          napi_value parent);
 panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
                                                               const napi_property_descriptor *properties,
                                                               Local<panda::JSValueRef> *keys,

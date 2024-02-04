@@ -132,6 +132,18 @@ NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env);
 NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env *env);
 NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env *env);
 
+NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
+                                                   const char* utf8name,
+                                                   size_t length,
+                                                   napi_callback constructor,
+                                                   void* data,
+                                                   size_t property_count,
+                                                   const napi_property_descriptor* properties,
+                                                   napi_value parent,
+                                                   napi_value* result);
+
+NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result);
+
 #ifdef __cplusplus
 }
 #endif
