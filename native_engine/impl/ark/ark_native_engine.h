@@ -59,6 +59,11 @@ using panda::JsiRuntimeCallInfo;
 using panda::PropertyAttribute;
 
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
+void NapiDefinePropertyInner(napi_env env,
+                             Local<panda::ObjectRef> &obj,
+                             NapiPropertyDescriptor &propertyDescriptor,
+                             Local<panda::JSValueRef> &propertyName,
+                             bool &result);
 bool NapiDefineProperty(napi_env env, panda::Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
 NAPI_EXPORT panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v);
 NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local);
@@ -304,6 +309,6 @@ private:
     std::mutex lock_;
     std::condition_variable condition_;
     bool isLimitedWorker_ = false;
-    struct JsHeapDumpWork *dumpWork_;
+    struct JsHeapDumpWork *dumpWork_ = nullptr;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

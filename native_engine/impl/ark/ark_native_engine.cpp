@@ -263,7 +263,7 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     const std::string& apiPath)
 {
     panda::Local<panda::ArrayRef> namesArrayRef = exportObj->GetAllPropertyNames(ecmaVm, NATIVE_DEFAULT);
-    for (uint32_t i = 0; i < namesArrayRef->Length(ecmaVm); i++) {
+    for (uint32_t i = 0; i < namesArrayRef->Length(ecmaVm); ++i) {
         const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
         const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
         const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
@@ -666,22 +666,17 @@ std::string NapiGetModuleName(napi_env env, Local<panda::ObjectRef> &obj)
     return moduleName;
 }
 
-bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor)
+void NapiDefinePropertyInner(napi_env env,
+                             Local<panda::ObjectRef> &obj,
+                             NapiPropertyDescriptor &propertyDescriptor,
+                             Local<panda::JSValueRef> &propertyName,
+                             bool &result)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    bool result = false;
-    Local<panda::JSValueRef> propertyName;
-    if (propertyDescriptor.utf8name != nullptr) {
-        propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
-    } else {
-        propertyName = LocalValueFromJsValue(propertyDescriptor.name);
-    }
-
     bool writable = (propertyDescriptor.attributes & NATIVE_WRITABLE) != 0;
     bool enumable = (propertyDescriptor.attributes & NATIVE_ENUMERABLE) != 0;
     bool configable = (propertyDescriptor.attributes & NATIVE_CONFIGURABLE) != 0;
-
     std::string fullName("");
     if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
 #ifdef ENABLE_HITRACE
@@ -724,6 +719,20 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
         PropertyAttribute attr(val, writable, enumable, configable);
         result = obj->DefineProperty(vm, propertyName, attr);
     }
+}
+
+bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    bool result = false;
+    Local<panda::JSValueRef> propertyName;
+    if (propertyDescriptor.utf8name != nullptr) {
+        propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
+    } else {
+        propertyName = LocalValueFromJsValue(propertyDescriptor.name);
+    }
+    NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
     Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
     if (!excep.IsNull()) {
         HILOG_DEBUG("ArkNativeObject::DefineProperty occur Exception");

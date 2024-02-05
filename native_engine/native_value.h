@@ -66,7 +66,7 @@ struct NapiFunctionInfo {
 
 // To be refactor
 struct NapiNativeCallbackInfo {
-    NapiNativeCallbackInfo(panda::JsiRuntimeCallInfo* runtimeInfo): info(runtimeInfo) { };
+    explicit NapiNativeCallbackInfo(panda::JsiRuntimeCallInfo* runtimeInfo): info(runtimeInfo) { };
     size_t GetArgc() const;
     size_t GetArgv(napi_value* argv, size_t argc);
     napi_value GetThisVar();

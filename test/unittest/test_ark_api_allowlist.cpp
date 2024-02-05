@@ -26,6 +26,10 @@
 #include "test_common.h"
 #include "utils/log.h"
 
+using panda::ArrayRef;
+using panda::JSValueRef;
+using panda::Local;
+using panda::ObjectRef;
 
 class ArkApiAllowlistTest : public NativeEngineTest {
 public:
@@ -44,12 +48,91 @@ public:
 };
 
 
-napi_value TestFunction01(napi_env env, napi_callback_info info)
+napi_value TestFunction(napi_env env, napi_callback_info info)
 {
-    HILOG_INFO("this is TestFunction01");
+    HILOG_INFO("this is TestFunction");
     return nullptr;
 }
 
+void CheckPropertyNames(Local<ObjectRef> &obj,
+                        const EcmaVM* vm,
+                        uint32_t &filter,
+                        std::unordered_map<std::string, bool> &keyToCond)
+{
+    Local<ArrayRef> propertyNamesArrayVal = obj->GetAllPropertyNames(vm, filter);
+    for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
+        Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
+        std::string keyname = nameValue->ToString(vm)->ToString();
+        HILOG_INFO("exportCopy->system->function:%{public}s", keyname.c_str());
+        if (keyToCond.find(keyname) != keyToCond.end()) {
+            keyToCond[keyname] = true;
+        }
+    }
+}
+
+bool Test001(const EcmaVM* vm, Local<ObjectRef> &exportCopy, uint32_t &filter)
+{
+    bool condition1 = false;
+    bool condition2 = false;
+    bool condition3 = true;
+    Local<ArrayRef> propertyNamesArrayVal = exportCopy->GetAllPropertyNames(vm, filter);
+    for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
+        Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
+        std::string keyname = nameValue->ToString(vm)->ToString();
+        HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
+        if (keyname == "System") {
+            Local<ObjectRef> obj = exportCopy->Get(vm, nameValue);
+            std::unordered_map<std::string, bool> keyToCond;
+            keyToCond["getSystemLanguage"] = condition1;
+            keyToCond["is24HourClock"] = condition2;
+            CheckPropertyNames(obj, vm, filter, keyToCond);
+            condition1 = keyToCond["getSystemLanguage"];
+            condition2 = keyToCond["is24HourClock"];
+        } else {
+            condition3 = false;
+        }
+    }
+    return condition1 && condition2 && condition3;
+}
+
+bool Test002(const EcmaVM* vm, Local<ObjectRef> &exportCopy, uint32_t &filter)
+{
+    bool condition1 = false;
+    bool condition2 = false;
+    bool condition3 = true;
+    bool condition4 = false;
+    bool condition5 = false;
+    bool condition6 = false;
+    bool condition7 = false;
+    Local<ArrayRef> propertyNamesArrayVal = exportCopy->GetAllPropertyNames(vm, filter);
+    for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
+        Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
+        std::string keyname = nameValue->ToString(vm)->ToString();
+        HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
+        if (keyname == "Locale") {
+            condition1 = true;
+            Local<ObjectRef> obj = exportCopy->Get(vm, nameValue);
+            std::unordered_map<std::string, bool> keyToCond;
+            keyToCond["function001"] = condition4;
+            keyToCond["systemOtherFunction"] = condition5;
+            CheckPropertyNames(obj, vm, filter, keyToCond);
+            condition4 = keyToCond["function001"];
+            condition5 = keyToCond["systemOtherFunction"];
+        } else if (keyname == "DateTimeFormat") {
+            condition2 = true;
+            Local<ObjectRef> obj = exportCopy->Get(vm, nameValue);
+            std::unordered_map<std::string, bool> keyToCond;
+            keyToCond["function001"] = condition6;
+            keyToCond["systemOtherFunction"] = condition7;
+            CheckPropertyNames(obj, vm, filter, keyToCond);
+            condition6 = keyToCond["function001"];
+            condition7 = keyToCond["systemOtherFunction"];
+        } else if (nameValue->Typeof(vm)->ToString() == "object") {
+            condition3 = false;
+        }
+    }
+    return condition1 && condition2 && condition3 && condition4 && condition5 && condition6 && condition7;
+}
 
 /**
  * @tc.name: CopyPropertyApiFilterTest002
@@ -66,25 +149,25 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest001, testing::ext::TestSi
     formChecker->CheckModuleLoadable("i18n", apiAllowListFilter);
 
     napi_property_descriptor systemProperties[] = {
-        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction01),
-        DECLARE_NAPI_FUNCTION("is24HourClock", TestFunction01),
-        DECLARE_NAPI_FUNCTION("systemOtherFunction", TestFunction01),
+        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction),
+        DECLARE_NAPI_FUNCTION("is24HourClock", TestFunction),
+        DECLARE_NAPI_FUNCTION("systemOtherFunction", TestFunction),
     };
     napi_value system;
     napi_create_object(env, &system);
     napi_define_properties(env, system, sizeof(systemProperties) / sizeof(napi_property_descriptor), systemProperties);
 
     napi_property_descriptor i18nProperties[] = {
-        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction01),
-        DECLARE_NAPI_FUNCTION("i18nOtherFunction", TestFunction01),
+        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction),
+        DECLARE_NAPI_FUNCTION("i18nOtherFunction", TestFunction),
         DECLARE_NAPI_PROPERTY("System", system),
     };
     napi_value i18n;
     napi_create_object(env, &i18n);
     napi_define_properties(env, i18n, sizeof(i18nProperties) / sizeof(napi_property_descriptor), i18nProperties);
-    panda::Local<panda::ObjectRef> i18nObj = LocalValueFromJsValue(i18n);
+    Local<ObjectRef> i18nObj = LocalValueFromJsValue(i18n);
 
-    panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(vm);
+    Local<ObjectRef> exportCopy = ObjectRef::New(vm);
 
     if (apiAllowListFilter != nullptr) {
         std::string apiPath = "i18n";
@@ -94,38 +177,12 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest001, testing::ext::TestSi
     }
 
     uint32_t filter = NATIVE_DEFAULT;
-    panda::Local<panda::ArrayRef> propertyNamesArrayVal01 = i18nObj->GetAllPropertyNames(vm, filter);
-    for (int i = propertyNamesArrayVal01->Length(vm) - 1; i >= 0; i--) {
+    Local<ArrayRef> propertyNamesArrayVal = i18nObj->GetAllPropertyNames(vm, filter);
+    for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         HILOG_INFO("exportObj->function:%{public}s",
-            panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal01, i)->ToString(vm)->ToString().c_str());
+            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString().c_str());
     }
-    panda::Local<panda::ArrayRef> propertyNamesArrayVal02 = exportCopy->GetAllPropertyNames(vm, filter);
-    bool condition1 = false;
-    bool condition2 = false;
-    bool condition3 = true;
-    for (int i = propertyNamesArrayVal02->Length(vm) - 1; i >= 0; i--) {
-        panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal02, i);
-        std::string keyname = nameValue->ToString(vm)->ToString();
-        HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
-        if (keyname == "System") {
-            panda::Local<panda::ObjectRef> obj = exportCopy->Get(vm, nameValue);
-            panda::Local<panda::ArrayRef> propertyNamesArrayVal03 = obj->GetAllPropertyNames(vm, filter);
-            for (int j = propertyNamesArrayVal03->Length(vm) - 1; j >= 0; j--) {
-                nameValue = panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal03, j);
-                keyname = nameValue->ToString(vm)->ToString();
-                HILOG_INFO("exportCopy->system->function:%{public}s", keyname.c_str());
-                if (keyname == "getSystemLanguage") {
-                    condition1 = true;
-                }
-                if (keyname == "is24HourClock") {
-                    condition2 = true;
-                }
-            }
-        } else {
-            condition3 = false;
-        }
-    }
-    ASSERT_EQ(condition1 && condition2 && condition3, true);
+    ASSERT_EQ(Test001(vm, exportCopy, filter), true);
 }
 
 
@@ -144,17 +201,17 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest002, testing::ext::TestSi
     formChecker->CheckModuleLoadable("intl", apiAllowListFilter);
 
     napi_property_descriptor l2Properties[] = {
-        DECLARE_NAPI_FUNCTION("function001", TestFunction01),
-        DECLARE_NAPI_FUNCTION("function002", TestFunction01),
-        DECLARE_NAPI_FUNCTION("systemOtherFunction", TestFunction01),
+        DECLARE_NAPI_FUNCTION("function001", TestFunction),
+        DECLARE_NAPI_FUNCTION("function002", TestFunction),
+        DECLARE_NAPI_FUNCTION("systemOtherFunction", TestFunction),
     };
     napi_value l2obj;
     napi_create_object(env, &l2obj);
     napi_define_properties(env, l2obj, sizeof(l2Properties) / sizeof(napi_property_descriptor), l2Properties);
 
     napi_property_descriptor intlProperties[] = {
-        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction01),
-        DECLARE_NAPI_FUNCTION("i18nOtherFunction", TestFunction01),
+        DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction),
+        DECLARE_NAPI_FUNCTION("i18nOtherFunction", TestFunction),
         DECLARE_NAPI_PROPERTY("Locale2", l2obj),
         DECLARE_NAPI_PROPERTY("Locale", l2obj),
         DECLARE_NAPI_PROPERTY("DateTimeFormat", l2obj),
@@ -162,9 +219,9 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest002, testing::ext::TestSi
     napi_value intl;
     napi_create_object(env, &intl);
     napi_define_properties(env, intl, sizeof(intlProperties) / sizeof(napi_property_descriptor), intlProperties);
-    panda::Local<panda::ObjectRef> intlObj = LocalValueFromJsValue(intl);
+    Local<ObjectRef> intlObj = LocalValueFromJsValue(intl);
 
-    panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(vm);
+    Local<ObjectRef> exportCopy = ObjectRef::New(vm);
 
     if (apiAllowListFilter != nullptr) {
         std::string apiPath = "intl";
@@ -174,56 +231,10 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest002, testing::ext::TestSi
     }
 
     uint32_t filter = NATIVE_DEFAULT;
-    panda::Local<panda::ArrayRef> propertyNamesArrayVal01 = intlObj->GetAllPropertyNames(vm, filter);
-    for (int i = propertyNamesArrayVal01->Length(vm) - 1; i >= 0; i--) {
+    Local<ArrayRef> propertyNamesArrayVal = intlObj->GetAllPropertyNames(vm, filter);
+    for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         HILOG_INFO("exportObj->function:%{public}s",
-            panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal01, i)->ToString(vm)->ToString().c_str());
+            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString().c_str());
     }
-    panda::Local<panda::ArrayRef> propertyNamesArrayVal02 = exportCopy->GetAllPropertyNames(vm, filter);
-    bool condition1 = false;
-    bool condition2 = false;
-    bool condition3 = true;
-    bool condition4 = false;
-    bool condition5 = false;
-    bool condition6 = false;
-    bool condition7 = false;
-    for (int i = propertyNamesArrayVal02->Length(vm) - 1; i >= 0; i--) {
-        panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal02, i);
-        std::string keyname = nameValue->ToString(vm)->ToString();
-        HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
-        if (keyname == "Locale") {
-            condition1 = true;
-            panda::Local<panda::ObjectRef> obj = exportCopy->Get(vm, nameValue);
-            panda::Local<panda::ArrayRef> propertyNamesArrayVal03 = obj->GetAllPropertyNames(vm, filter);
-            for (int j = propertyNamesArrayVal03->Length(vm) - 1; j >= 0; j--) {
-                nameValue = panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal03, j);
-                keyname = nameValue->ToString(vm)->ToString();
-                HILOG_INFO("exportCopy->system->function:%{public}s", keyname.c_str());
-                if (keyname == "function001") {
-                    condition4 = true;
-                }
-                if (keyname == "systemOtherFunction") {
-                    condition5 = true;
-                }
-            }
-        } else if (keyname == "DateTimeFormat") {
-            condition2 = true;
-            panda::Local<panda::ObjectRef> obj = exportCopy->Get(vm, nameValue);
-            panda::Local<panda::ArrayRef> propertyNamesArrayVal03 = obj->GetAllPropertyNames(vm, filter);
-            for (int j = propertyNamesArrayVal03->Length(vm) - 1; j >= 0; j--) {
-                nameValue = panda::ArrayRef::GetValueAt(vm, propertyNamesArrayVal03, j);
-                keyname = nameValue->ToString(vm)->ToString();
-                HILOG_INFO("exportCopy->system->function:%{public}s", keyname.c_str());
-                if (keyname == "function001") {
-                    condition6 = true;
-                }
-                if (keyname == "systemOtherFunction") {
-                    condition7 = true;
-                }
-            }
-        } else if (nameValue->Typeof(vm)->ToString() == "object") {
-            condition3 = false;
-        }
-    }
-    ASSERT_EQ(condition1 && condition2 && condition3 && condition4 && condition5 && condition6 && condition7, true);
+    ASSERT_EQ(Test002(vm, exportCopy, filter), true);
 }
