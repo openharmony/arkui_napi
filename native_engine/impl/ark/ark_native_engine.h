@@ -309,6 +309,7 @@ private:
     std::mutex lock_;
     std::condition_variable condition_;
     bool isLimitedWorker_ = false;
+    bool isReady_ = false;
     struct JsHeapDumpWork *dumpWork_ = nullptr;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
