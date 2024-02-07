@@ -58,6 +58,7 @@ static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 struct JsHeapDumpWork {
+    bool *isReady = nullptr;
     EcmaVM *vm;
     uv_work_t work;
     std::condition_variable *condition;
@@ -1827,6 +1828,7 @@ void AsyncAfterWorkCallback(uv_work_t* req, int status)
         DFXJSNApi::SetOverLimit(vm, true);
         HILOG_INFO("dumpheapSnapshot GetHeapPrepare done");
     }
+    *(work->isReady) = true;
     work->condition->notify_all();
     delete work;
 }
@@ -1846,9 +1848,13 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
         dumpWork_->work.data = dumpWork_;
         dumpWork_->condition = &condition_;
         dumpWork_->limitSize = limitSize;
+        dumpWork_->isReady = &isReady_;
         uv_loop_t *loop = GetUVLoop();
         uv_queue_work(loop, &(dumpWork_->work), [](uv_work_t *) {}, AsyncAfterWorkCallback);
-        condition_.wait(lock);
+        while (!isReady_) {
+            condition_.wait(lock);
+        }
+        isReady_ = false;
         // VM destructed but syncTask is executed.
         if (needStop_ || !DFXJSNApi::isOverLimit(vm_)) {
             return;
