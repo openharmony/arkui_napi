@@ -1057,23 +1057,27 @@ ModuleTypes ArkNativeEngine::CheckLoadType(const std::string &path)
     return ModuleTypes::UNKNOWN;
 }
 
-napi_value ArkNativeEngine::NapiLoadModule(const char* str)
+napi_value ArkNativeEngine::NapiLoadModule(const char* path, const char* module_info)
 {
-    if (str == nullptr) {
+    if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
         return nullptr;
     }
     panda::EscapeLocalScope scope(vm_);
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     Local<ObjectRef> exportObj(undefObj);
-    std::string inputPath(str);
+    std::string inputPath(path);
+    std::string modulePath;
+    if (module_info != nullptr) {
+        modulePath = module_info;
+    }
     switch (CheckLoadType(inputPath)) {
         case ModuleTypes::NATIVE_MODULE: {
             exportObj = NapiLoadNativeModule(inputPath);
             break;
         }
         case ModuleTypes::MODULE_INNER_FILE: {
-            exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath);
+            exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath, modulePath);
             break;
         }
         default: {

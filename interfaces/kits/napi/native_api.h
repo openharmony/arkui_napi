@@ -78,6 +78,10 @@ typedef napi_value (*napi_native_binding_attach_callback)(napi_env env, void* na
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result);
 NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos);
 NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result);
+NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
+                                                   napi_value* result,
+                                                   const char* path,
+                                                   const char* module_info);
 NAPI_EXTERN napi_status napi_get_instance_data(napi_env env, void** data);
 NAPI_EXTERN napi_status napi_set_instance_data(napi_env env,
                                                void* data,

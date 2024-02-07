@@ -414,7 +414,7 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
-    virtual napi_value NapiLoadModule(const char* str) = 0;
+    virtual napi_value NapiLoadModule(const char* path, const char* module_info) = 0;
 
     double NewAsyncId()
     {
