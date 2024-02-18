@@ -655,17 +655,19 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 return false;
             }
 #elif defined(ANDROID_PLATFORM)
-            std::istringstream iss(prefix);
             std::string libPath;
-            while (std::getline(iss, libPath, ':')) {
-                std::ifstream dupModuleFile(libPath + "/lib" + dupModuleName + soPostfix);
-                std::ifstream moduleFile(libPath + "/lib" + moduleName + soPostfix);
-                if(dupModuleFile.good() || moduleFile.good()) {
-                    break;
-                }
+            int sprintfResult = 0;
+            std::string prefixStr = std::string(prefix);
+            std::size_t pos = prefixStr.find(':');
+            if (pos != std::string::npos) {
+                sprintfResult = sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s",
+                    prefixStr.substr(0, pos).c_str(), dupModuleName, soPostfix);
+                libPath = prefixStr.substr(pos + 1);
+            } else {
+                sprintfResult = sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", dupModuleName, soPostfix);
+                libPath = prefixStr;
             }
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", libPath.c_str(),
-                dupModuleName, soPostfix) == -1) {
+            if (sprintfResult == -1) {
                 return false;
             }
 #else
@@ -675,7 +677,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 #endif
 #ifdef ANDROID_PLATFORM
             if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s", libPath.c_str(),
-                moduleName, soPostfix) == -1) {
+                dupModuleName, soPostfix) == -1) {
                 return false;
             }
 #endif
