@@ -24,8 +24,7 @@ export SCRIPT_PATCH=$(dirname $(readlink -f "$0"))
 
 source ${SCRIPT_PATCH}/build_jsvm_inter.sh
 
-options="$(getopt -o h "help,sysroot:,node_path:,prefix:,target_cpu:,base_path:" -- "$@")"
- || usage
+options="$(getopt -o h "help,sysroot:,node_path:,prefix:,target_cpu:,base_path:" -- "$@")" || usage
 
 eval set -- "$options"
 
@@ -49,11 +48,11 @@ die() {
 do_man_process() {
     do_opt_process $@
     do_env
-    do_fetch 2>&1 | tee ${out_dir}/log.do_fetch
-    do_patch 2>&1 | tee ${out_dir}/log.do_patch
-    do_configure 2>&1 | tee ${out_dir}/log.do_configure
-    do_compile 2>&1 | tee ${out_dir}/log.do_compile
-    do_install 2>&1 | tee ${out_dir}/log.do_install
+    do_fetch     > ${out_dir}/log.do_fetch
+    do_patch     > ${out_dir}/log.do_patch
+    do_configure > ${out_dir}/log.do_configure
+    do_compile   > ${out_dir}/log.do_compile
+    do_install   > ${out_dir}/log.do_install
 }
 
 do_opt_process() {

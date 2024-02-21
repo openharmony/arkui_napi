@@ -24,7 +24,7 @@ do_patch() {
 
 do_configure() {
     pushd ${workdir}
-    if [[ "${TARGET_CPU}" = "x64" ]]; then
+    if [[ "${TARGET_CPU}" = "x86_64" ]]; then
         ./configure --shared; return
     fi
     ./configure \
@@ -35,7 +35,6 @@ do_configure() {
         --with-arm-float-abi=hard \
         --without-corepack \
         --without-npm \
-        --without-ssl \
         --without-intl
     popd
 }
@@ -70,35 +69,15 @@ do_compile() {
 }
 
 do_install () {
-    # default install path
-    cp -u ${workdir}/out/Release/libjsvm.so ${out_dir}/lib/libjsvm.so
-    # target install path
-    if [ "x${TARGET_GEN_DIR}" != "x" ]; then
-        cp -u ${out_dir}/lib/* ${TARGET_GEN_DIR}
-    fi
+    cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}
 }
 
 do_env() {
     # init workspace
-    out_dir=${SCRIPT_PATCH}/out
+    out_dir=${TARGET_GEN_DIR}/out
     workdir=${NODE_PATH}
-    mkdir -p ${out_dir}
-    mkdir -p ${out_dir}/include
-    mkdir -p ${out_dir}/lib
-
-    if [[ "${TARGET_CPU}" = "arm" ]]; then
-        target_name="arm-linux-ohos"
-        target_arch="arm"
-        target_march="armv7-a"
-        host_args="-m32 -I${workdir}"
-    elif [[ "${TARGET_CPU}" = "arm64" ]]; then
-        target_name="aarch64-linux-ohos"
-        target_arch="aarch64"
-        target_march="armv8-a"
-        host_args="-m64"
-    else
-        return # do nothing
-    fi
+    [ -d ${out_dir} ] || mkdir -p ${out_dir}
+    [ -L ${workdir}/out ] || ln -s ${out_dir} ${workdir}/out
 
     argurment+=" -s"
     argurment+=" -fstack-protector-strong"
@@ -107,11 +86,28 @@ do_env() {
     argurment+=" -Wl,-z,now"
     argurment+=" -pie"
 
-    cflags_host=${host_args}
-    cflags="  --target=${target_name}"
-    cflags+=" --sysroot=${SYSROOT}"
-    cflags+=" -mfpu=neon"
-    cflags+=" -march=${target_march}"
+    if [[ "${TARGET_CPU}" = "arm" ]]; then
+        cflags="  --target=arm-linux-ohos"
+        cflags+=" --sysroot=${SYSROOT}"
+        cflags+=" -march=armv7-a"
+        cflags+=" -mfpu=neon"
+        cflags_host="-m32"
+        ARCH="arm"
+    elif [[ "${TARGET_CPU}" = "arm64" ]]; then
+        cflags="  --target=aarch64-linux-ohos"
+        cflags+=" --sysroot=${SYSROOT}"
+        cflags+=" -march=armv8-a"
+        cflags+=" -mfpu=neon"
+        cflags_host="-m64"
+        ARCH="aarch64"
+    elif [[ "${TARGET_CPU}" = "x86_64" ]]; then
+        export CC="${CCACHE_EXEC} gcc"
+        export CXX="${CCACHE_EXEC} g++"
+        return
+    else
+        die "not support target cpu"
+    fi
+
     cflags+=" ${argurment}"
 
     # linux host env
@@ -123,7 +119,6 @@ do_env() {
     export AR_host=${PREFIX}/llvm-ar
 
     # target env
-    ARCH=${target_arch}
     export CC="${CCACHE_EXEC} ${PREFIX}/clang ${cflags}"
     export CXX="${CCACHE_EXEC} ${PREFIX}/clang++ ${cflags}"
     export LD="${PREFIX}/ld.lld"
@@ -136,5 +131,5 @@ do_env() {
     export NM="${PREFIX}/llvm-nm"
     export STRINGS="${PREFIX}/llvm-strings"
     export READELF="${PREFIX}/llvm-readelf"
-    env | tee ${out_dir}/log.do_env
+    env > ${out_dir}/log.do_env
 }
