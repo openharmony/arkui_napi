@@ -780,3 +780,54 @@ void NativeEngine::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDeleg
     }
     moduleManager->SetModuleLoadChecker(moduleCheckerDelegate);
 }
+
+napi_status NativeEngine::RunEventLoop(napi_event_mode mode)
+{
+    HILOG_DEBUG("%{public}s, start.", __func__);
+    if (loop_ == nullptr) {
+        HILOG_ERROR("nullptr loop in native engine");
+        return napi_status::napi_invalid_arg;
+    }
+
+    if (!IsNativeThread()) {
+        HILOG_ERROR("current thread is not native thread");
+        return napi_status::napi_generic_failure;
+    }
+
+    std::unique_lock<std::mutex> lock(loopRunningMutex_);
+    if (isLoopRunning_) {
+        HILOG_DEBUG("loop is already undered running state");
+        return napi_status::napi_ok;
+    }
+    isLoopRunning_ = true;
+    lock.unlock();
+    HILOG_DEBUG("uv loop is running");
+    uv_run(loop_, static_cast<uv_run_mode>(mode));
+    HILOG_DEBUG("uv loop is stopped");
+    lock.lock();
+    isLoopRunning_ = false;
+    return napi_status::napi_ok;
+}
+
+napi_status NativeEngine::StopEventLoop()
+{
+    HILOG_DEBUG("%{public}s, start.", __func__);
+    if (loop_ == nullptr) {
+        HILOG_ERROR("nullptr loop in native engine");
+        return napi_status::napi_invalid_arg;
+    }
+
+    if (!IsNativeThread()) {
+        HILOG_ERROR("current thread is not native thread");
+        return napi_status::napi_generic_failure;
+    }
+    std::unique_lock<std::mutex> lock(loopRunningMutex_);
+    if (!isLoopRunning_) {
+        HILOG_DEBUG("loop is already undered stop state");
+        return napi_status::napi_ok;
+    }
+    HILOG_DEBUG("uv loop is running");
+    uv_stop(loop_);
+    HILOG_DEBUG("uv loop is stopped");
+    return napi_status::napi_ok;
+}

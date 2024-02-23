@@ -149,5 +149,7 @@
     {"name": "node_api_get_module_file_name"},
     {"name": "napi_coerce_to_native_binding_object"},
     {"name": "napi_add_finalizer"},
-    {"name": "napi_load_module_with_info"}
+    {"name": "napi_load_module_with_info"},
+    {"name": "napi_run_event_loop"},
+    {"name": "napi_stop_event_loop"}
 ]
