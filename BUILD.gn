@@ -46,8 +46,10 @@ config("ace_napi_config") {
     cflags_cc += [ "-std=c++17" ]
   } else if (is_arkui_x && target_os == "ios") {
     defines += [ "IOS_PLATFORM" ]
+    include_dirs += [ "//arkcompiler/ets_runtime" ]
   } else if (is_arkui_x && target_os == "android") {
     defines += [ "ANDROID_PLATFORM" ]
+    include_dirs += [ "//arkcompiler/ets_runtime" ]
   }
 }
 
