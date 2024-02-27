@@ -1120,14 +1120,6 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
     panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
-#ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
-    if (funcInfo != nullptr) {
-        scopeId = funcInfo->scopeId;
-    }
-    OHOS::Ace::ContainerScope containerScope(scopeId);
-#endif
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     if (tryCatch.HasCaught()) {
