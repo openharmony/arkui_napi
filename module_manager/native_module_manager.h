@@ -77,8 +77,8 @@ public:
     void Register(NativeModule* nativeModule);
     void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                        const bool& isSystemApp = false);
-    NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
-        bool internal = false, const char* relativePath = "", bool moduleRestricted = false, size_t errCode = 0);
+    NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule, std::string& errInfo,
+        bool internal = false, const char* relativePath = "", bool moduleRestricted = false);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
     bool UnloadNativeModule(const std::string& moduleKey);
     std::string GetModuleFileName(const char* moduleName, bool isAppModule);
@@ -104,9 +104,10 @@ private:
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
-        bool internal, const bool isAppModule);
+        bool internal, const bool isAppModule, std::string& errInfo);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
-    LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey, const bool isAppModule);
+    LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
+        const bool isAppModule, std::string& errInfo);
     bool CheckModuleRestricted(const std::string& moduleName);
     const uint8_t* GetFileBuffer(const std::string& filePath, const std::string& moduleKey, size_t &len);
     bool UnloadModuleLibrary(LIBHANDLE handle);
