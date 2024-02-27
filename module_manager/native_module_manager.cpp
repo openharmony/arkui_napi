@@ -478,7 +478,7 @@ void NativeModuleManager::MoveApiAllowListCheckerPtr(
 }
 
 NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
-    const char* path, bool isAppModule, bool internal, const char* relativePath, bool isModuleRestricted)
+    const char* path, bool isAppModule, bool internal, const char* relativePath, bool isModuleRestricted, size_t errCode)
 {
     if (moduleName == nullptr || relativePath == nullptr) {
         HILOG_ERROR("moduleName or relativePath is nullptr");
