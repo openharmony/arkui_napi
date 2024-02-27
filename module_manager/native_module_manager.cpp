@@ -539,17 +539,21 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName,
     NativeModule* nativeModule = FindNativeModuleByCache(key.c_str());
 #endif
 
-#ifndef IOS_PLATFORM
     if (nativeModule == nullptr) {
+#ifndef IOS_PLATFORM
+
 #ifdef ANDROID_PLATFORM
-        HILOG_DEBUG("module '%{public}s' does not in cache", strCutName.c_str());
+        HILOG_WARN("module '%{public}s' does not in cache", strCutName.c_str());
         nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule);
 #else
-        HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
+        HILOG_WARN("module '%{public}s' does not in cache", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule);
 #endif
-    }
+
+#else
+    nativeModule = FindNativeModuleByCache(moduleName);
 #endif
+    }
     MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
 
     (void) pthread_mutex_unlock(&mutex_);
