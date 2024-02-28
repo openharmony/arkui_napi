@@ -66,6 +66,8 @@ ArkNativeReference::~ArkNativeReference()
 {
     if (deleteSelf_ && engine_->GetReferenceManager()) {
         engine_->GetReferenceManager()->ReleaseHandler(this);
+        prev_ = nullptr;
+        next_ = nullptr;
     }
     if (value_.IsEmpty()) {
         return;
@@ -141,14 +143,8 @@ void ArkNativeReference::FreeGlobalCallBack(void* ref)
 
 void ArkNativeReference::NativeFinalizeCallBack(void* ref)
 {
-    #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "NativeFinalizeCallBack");
-    #endif
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
     that->FinalizeCallback();
-    #ifdef ENABLE_HITRACE
-    FinishTrace(HITRACE_TAG_ACE);
-    #endif
 }
 
 void ArkNativeReference::SetDeleteSelf()
