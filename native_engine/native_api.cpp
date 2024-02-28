@@ -616,19 +616,21 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
-    CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
     if (buf == nullptr) {
+        CHECK_ARG(env, result);
         *result = stringVal->Length();
     } else if (bufsize != 0) {
         int copied = stringVal->WriteLatin1(buf, bufsize);
         buf[copied] = '\0';
-        *result = copied;
-    } else {
+        if (result != nullptr) {
+            *result = copied;
+        }
+    } else if (result != nullptr) {
         *result = 0;
     }
 
@@ -644,19 +646,21 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
-    CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
     if (buf == nullptr) {
+        CHECK_ARG(env, result);
         *result = stringVal->Utf8Length(vm) - 1;
     } else if (bufsize != 0) {
         int copied = stringVal->WriteUtf8(buf, bufsize - 1, true) - 1;
         buf[copied] = '\0';
-        *result = copied;
-    } else {
+        if (result != nullptr) {
+            *result = copied;
+        }
+    } else if (result != nullptr) {
         *result = 0;
     }
 
@@ -671,22 +675,26 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
-    CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
     if (buf == nullptr) {
+        CHECK_ARG(env, result);
         *result = stringVal->Length();
     } else if (bufsize == 1) {
         buf[0] = '\0';
-        *result = 0;
+        if (result != nullptr) {
+            *result = 0;
+        }
     } else if (bufsize != 0) {
         int copied = stringVal->WriteUtf16(buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
         buf[copied] = '\0';
-        *result = copied;
-    } else {
+        if (result != nullptr) {
+            *result = copied;
+        }
+    } else if (result != nullptr) {
         *result = 0;
     }
 
