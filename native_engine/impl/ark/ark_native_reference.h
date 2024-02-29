@@ -79,17 +79,21 @@ private:
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
-    NapiNativeFinalize napiCallback_ = nullptr;
+    NapiNativeFinalize napiCallback_ {nullptr};
     void* data_ = nullptr;
     void* hint_ = nullptr;
 
     bool hasDelete_ {false};
     bool finalRun_ {false};
 
+    NativeReference* prev_ {nullptr};
+    NativeReference* next_ {nullptr};
+
     void FinalizeCallback();
 
     static void FreeGlobalCallBack(void* ref);
     static void NativeFinalizeCallBack(void* ref);
+    friend class NativeReferenceManager;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_NATIVE_REFERENCE_H */
