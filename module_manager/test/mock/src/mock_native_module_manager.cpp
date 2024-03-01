@@ -55,14 +55,14 @@ void MockResetModuleManagerState()
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
-    const char* relativePath, bool internal, const bool isAppModule)
+    const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo)
 {
     GTEST_LOG_(INFO) << g_mockFindNativeModuleByDisk;
     return g_mockFindNativeModuleByDisk;
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const char* path,
-    const char* pathKey, const bool isAppModule)
+    const char* pathKey, const bool isAppModule, std::string& errInfo)
 {
     GTEST_LOG_(INFO) << g_mockLoadModuleLibrary;
     return g_mockLoadModuleLibrary;
