@@ -3253,3 +3253,35 @@ NAPI_EXTERN napi_status napi_run_module_path(napi_env env, const char* path, con
     *result = engine->RunScriptForAbc(path, const_cast<char*>(entryPoint));
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode)
+{
+    CHECK_ENV(env);
+
+    if (mode < napi_event_mode_default || mode > napi_event_mode_nowait) {
+        HILOG_ERROR("invalid mode %{public}d", static_cast<int32_t>(mode));
+        return napi_status::napi_invalid_arg;
+    }
+
+    auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    auto result = nativeEngine->RunEventLoop(mode);
+    if (result != napi_status::napi_ok) {
+        HILOG_ERROR("failed due to error %{public}d", static_cast<int32_t>(result));
+        return result;
+    }
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env)
+{
+    CHECK_ENV(env);
+
+    auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    auto result = nativeEngine->StopEventLoop();
+    if (result != napi_status::napi_ok) {
+        HILOG_ERROR("stop event loop failed due to error %{public}d", static_cast<int32_t>(result));
+        return result;
+    }
+    return napi_clear_last_error(env);
+}

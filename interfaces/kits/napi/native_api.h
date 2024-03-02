@@ -127,6 +127,8 @@ NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
                                            napi_finalize finalize_cb,
                                            void* finalize_hint,
                                            napi_ref* result);
+NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode);
+NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env);
 
 #ifdef __cplusplus
 }

@@ -240,6 +240,10 @@ public:
     {
         jsThreadType_ = JSThreadType::TASKPOOL_THREAD;
     }
+    void MarkNativeThread()
+    {
+        jsThreadType_ = JSThreadType::NATIVE_THREAD;
+    }
     bool IsWorkerThread() const
     {
         return jsThreadType_ == JSThreadType::WORKER_THREAD;
@@ -255,6 +259,10 @@ public:
     bool IsMainThread() const
     {
         return jsThreadType_ == JSThreadType::MAIN_THREAD;
+    }
+    bool IsNativeThread() const
+    {
+        return jsThreadType_ == JSThreadType::NATIVE_THREAD;
     }
 
     bool CheckAndSetWorkerVersion(WorkerVersion expected, WorkerVersion desired)
@@ -426,6 +434,18 @@ public:
         return 0;
     }
 
+    /**
+     * @brief run the uv loop in the engine by the designated uv run mode
+     *
+     * @param mode the specified uv mode that utilized to tell uv which mode will be used to run the uv loop
+     */
+    napi_status RunEventLoop(napi_event_mode mode);
+
+    /**
+     * @brief stop the uv loop in the engine
+     */
+    napi_status StopEventLoop();
+
 private:
     void StartCleanupTimer();
 protected:
@@ -468,7 +488,7 @@ private:
     uv_sem_t uvSem_;
 
     // the old worker api use before api9, the new worker api start with api9
-    enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD};
+    enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD, NATIVE_THREAD };
     JSThreadType jsThreadType_ = JSThreadType::MAIN_THREAD;
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
@@ -492,6 +512,9 @@ private:
     std::atomic_bool isStopping_ { false };
     bool cleanupTimeout_ = false;
     uv_timer_t timer_;
+
+    std::mutex loopRunningMutex_;
+    bool isLoopRunning_ = false;
 };
 
 class TryCatch : public panda::TryCatch {

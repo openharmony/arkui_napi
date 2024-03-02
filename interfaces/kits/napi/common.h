@@ -23,4 +23,9 @@ typedef enum {
     napi_qos_user_initiated = 3,
 } napi_qos_t;
 
+typedef enum {
+    napi_event_mode_default = 0,
+    napi_event_mode_nowait = 1,
+} napi_event_mode;
+
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_API_H */
