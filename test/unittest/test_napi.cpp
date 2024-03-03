@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define private public
+#define protected public
+
+#include <chrono>
+#include <thread>
 
 #include "test.h"
 #include "test_common.h"
@@ -36,6 +42,9 @@ static constexpr int INT_ZERO = 0;
 static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
 static constexpr int INT_THREE = 3;
+static constexpr int THREAD_SIZE = 5;
+static constexpr int RUN_LOOP_THREAD_SLEEP = 3; // 3s
+static constexpr int STOP_LOOP_THREAD_SLEEP = 5; // 5s
 
 class NapiBasicTest : public NativeEngineTest {
 public:
@@ -3768,4 +3777,284 @@ HWTEST_F(NapiBasicTest, CreateObjectWithNamedPropertiesTest001, testing::ext::Te
     napi_value val_res;
     ASSERT_CHECK_CALL(napi_get_named_property(env, obj2, "b", &val_res));
     ASSERT_TRUE(checkPropertyEqualsTo(val_res, "x", val_false));
+}
+
+/**
+ * @tc.name: runEventLoopTest001
+ * @tc.desc: Test napi_run_event_loop with nullptr env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    napi_status res = napi_run_event_loop(nullptr, napi_event_mode_default);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: runEventLoopTest002
+ * @tc.desc: Test napi_run_event_loop with nullptr env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest002, testing::ext::TestSize.Level1)
+{
+    napi_status res = napi_run_event_loop(nullptr, napi_event_mode_nowait);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: runEventLoopTest003
+ * @tc.desc: Test napi_run_event_loop with nullptr loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->Deinit();
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
+    engine_->Init();
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: runEventLoopTest004
+ * @tc.desc: Test napi_run_event_loop with nullptr loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->Deinit();
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
+    engine_->Init();
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: runEventLoopTest005
+ * @tc.desc: Test napi_run_event_loop with main thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    // main thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
+    ASSERT_EQ(res, napi_generic_failure);
+}
+
+/**
+ * @tc.name: runEventLoopTest006
+ * @tc.desc: Test napi_run_event_loop with main thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    // main thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
+    ASSERT_EQ(res, napi_generic_failure);
+}
+
+/**
+ * @tc.name: runEventLoopTest007
+ * @tc.desc: Test napi_run_event_loop with worker thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkWorkerThread();
+    napi_env env = (napi_env)engine_;
+    // worker thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: runEventLoopTest008
+ * @tc.desc: Test napi_run_event_loop with worker thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest008, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkWorkerThread();
+    napi_env env = (napi_env)engine_;
+    // worker thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: runEventLoopTest009
+ * @tc.desc: Test napi_run_event_loop with taskpool thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest009, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkTaskPoolThread();
+    napi_env env = (napi_env)engine_;
+    // taskpool thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: runEventLoopTest010
+ * @tc.desc: Test napi_run_event_loop with taskpool thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, runEventLoopTest010, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkTaskPoolThread();
+    napi_env env = (napi_env)engine_;
+    // taskpool thread does not support napi_run_event_loop func
+    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: stopEventLoopTest001
+ * @tc.desc: Test napi_stop_event_loop with nullptr env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    napi_status res = napi_stop_event_loop(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: stopEventLoopTest002
+ * @tc.desc: Test napi_stop_event_loop with nullptr loop.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->Deinit();
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_stop_event_loop(env);
+    engine_->Init();
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: stopEventLoopTest003
+ * @tc.desc: Test napi_stop_event_loop with main thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    // main thread does not support napi_run_event_loop func
+    napi_status res = napi_stop_event_loop(env);
+    ASSERT_EQ(res, napi_generic_failure);
+}
+
+/**
+ * @tc.name: stopEventLoopTest004
+ * @tc.desc: Test napi_stop_event_loop with worker thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkWorkerThread();
+    napi_env env = (napi_env)engine_;
+    // worker thread does not support napi_run_event_loop func
+    napi_status res = napi_stop_event_loop(env);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: stopEventLoopTest005
+ * @tc.desc: Test napi_stop_event_loop with taskpool thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkTaskPoolThread();
+    napi_env env = (napi_env)engine_;
+    // taskpool thread does not support napi_run_event_loop func
+    napi_status res = napi_stop_event_loop(env);
+    ASSERT_EQ(res, napi_generic_failure);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: stopEventLoopTest006
+ * @tc.desc: Test napi_stop_event_loop before running the loop.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, stopEventLoopTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkNativeThread();
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_stop_event_loop(env);
+    ASSERT_EQ(res, napi_ok);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+}
+
+/**
+ * @tc.name: multipleThreadRunEventLoopTest001
+ * @tc.desc: Test napi_run_event_loop with multiple threads.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->MarkNativeThread();
+    napi_env env = (napi_env)engine_;
+
+    // 1. create five child threads to call napi_run_event_loop
+    auto runFunc = [](const napi_env &env, napi_event_mode mode) {
+        std::this_thread::sleep_for(std::chrono::seconds(RUN_LOOP_THREAD_SLEEP));
+        napi_status res = napi_run_event_loop(env, mode);
+        ASSERT_EQ(res, napi_ok);
+    };
+
+    for (int32_t index = 0; index < THREAD_SIZE; ++index) {
+        std::thread runThread = std::thread(runFunc, std::ref(env), napi_event_mode_nowait);
+        runThread.detach();
+    }
+    // 2. create async work to stop the loop
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {
+            std::this_thread::sleep_for(std::chrono::seconds(STOP_LOOP_THREAD_SLEEP));
+        },
+        [](napi_env env, napi_status status, void* data) {
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+            // stop the loop after the task is processed
+            napi_status res = napi_stop_event_loop(env);
+            ASSERT_EQ(res, napi_ok);
+        },
+        asyncWorkContext, &asyncWorkContext->work);
+    napi_queue_async_work(env, asyncWorkContext->work);
+    // 3. run the loop
+    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
+    ASSERT_EQ(res, napi_ok);
+    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
 }
