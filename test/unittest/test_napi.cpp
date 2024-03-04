@@ -300,7 +300,7 @@ HWTEST_F(NapiBasicTest, StringTest001, testing::ext::TestSize.Level1)
     size_t bufferSize = 0;
     size_t strLength = 0;
     ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
-    ASSERT_GT(bufferSize, (size_t)0);
+    ASSERT_GT(bufferSize, static_cast<size_t>(0));
     buffer = new char[bufferSize + 1]{ 0 };
     ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
     ASSERT_STREQ(testStr, buffer);
@@ -958,7 +958,7 @@ HWTEST_F(NapiBasicTest, DataViewTest001, testing::ext::TestSize.Level1)
     ASSERT_TRUE(retIsArrayBuffer);
     ASSERT_EQ(arrayBufferPtr, data);
     ASSERT_EQ(arrayBufferSize, byteLength);
-    ASSERT_EQ((size_t)0, byteOffset);
+    ASSERT_EQ(static_cast<size_t>(0), byteOffset);
 }
 
 /**
