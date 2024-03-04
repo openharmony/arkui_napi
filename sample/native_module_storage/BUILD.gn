@@ -15,10 +15,8 @@ import("//build/ohos.gni")
 
 ohos_shared_library("storage") {
   include_dirs = [
-    "//third_party/libuv/include",
     "//third_party/node/src",
     "//foundation/arkui/napi/interfaces/kits",
-    "//third_party/bounds_checking_function/include",
   ]
 
   cflags = [
@@ -28,10 +26,13 @@ ohos_shared_library("storage") {
 
   sources = [ "js_storage.cpp" ]
 
-  deps = [
-    "//foundation/arkui/napi/:ace_napi",
-    "//third_party/bounds_checking_function:libsec_static",
+  deps = [ "//foundation/arkui/napi/:ace_napi" ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "libuv:uv",
   ]
+
 
   relative_install_dir = "module"
 

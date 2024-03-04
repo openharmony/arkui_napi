@@ -27,7 +27,10 @@
                 "ets_runtime",
                 "hilog",
                 "hitrace",
-                "init"
+                "init",
+                "libuv",
+                "node",
+                "bounds_checking_function" 
             ],
             "third_party": [
                 "icu",
@@ -41,7 +44,7 @@
             "group_type": {
                 "base_group": [
                     "//foundation/arkui/napi:napi_packages",
-                    "//foundation/arkui/napi:napi_packages_ndk"
+                    "//foundation/arkui/napi:napi_packages_ndk",
                 ],
                 "fwk_group": [],
                 "service_group": []
