@@ -44,7 +44,7 @@
             "group_type": {
                 "base_group": [
                     "//foundation/arkui/napi:napi_packages",
-                    "//foundation/arkui/napi:napi_packages_ndk",
+                    "//foundation/arkui/napi:napi_packages_ndk"
                 ],
                 "fwk_group": [],
                 "service_group": []
