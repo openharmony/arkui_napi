@@ -33,7 +33,6 @@ ohos_shared_library("storage") {
     "libuv:uv",
   ]
 
-
   relative_install_dir = "module"
 
   subsystem_name = "arkui"
