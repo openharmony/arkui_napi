@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "../../../third_party/node/src/js_native_api.h"
-#include "../../../third_party/node/src/node_api.h"
+#include "third_party/node/src/js_native_api.h"
+#include "third_party/node/src/node_api.h"
 #include "native_common.h"
 
 typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
