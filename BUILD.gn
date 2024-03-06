@@ -164,24 +164,6 @@ group("napi_packages") {
   }
 }
 
-ohos_ndk_library("libnapi_ndk") {
-  ndk_description_file = "./libnapi.ndk.json"
-  min_compact_version = "1"
-  output_name = "ace_napi"
-}
-
-ohos_ndk_headers("napi_header") {
-  dest_dir = "$ndk_headers_out_dir/napi"
-  sources = [
-    "interfaces/kits/napi/common.h",
-    "interfaces/kits/napi/native_api.h",
-  ]
-}
-
-group("napi_packages_ndk") {
-  deps = [ ":libnapi_ndk" ]
-}
-
 if (!build_ohos_ndk && !is_arkui_x) {
   group("napi_packages_test") {
     testonly = true
