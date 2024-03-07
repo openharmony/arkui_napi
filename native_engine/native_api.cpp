@@ -3275,7 +3275,7 @@ NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode)
     auto result = nativeEngine->RunEventLoop(mode);
     if (result != napi_status::napi_ok) {
         HILOG_ERROR("failed due to error %{public}d", static_cast<int32_t>(result));
-        return result;
+        return napi_set_last_error(env, result);
     }
 
     return napi_clear_last_error(env);
@@ -3289,7 +3289,7 @@ NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env)
     auto result = nativeEngine->StopEventLoop();
     if (result != napi_status::napi_ok) {
         HILOG_ERROR("stop event loop failed due to error %{public}d", static_cast<int32_t>(result));
-        return result;
+        return napi_set_last_error(env, result);
     }
     return napi_clear_last_error(env);
 }
