@@ -1436,6 +1436,19 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
     }
 }
 
+void ArkNativeEngine::DumpCpuProfile(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
+{
+    if (dumpFormat == DumpFormat::JSON) {
+        DFXJSNApi::DumpCpuProfile(vm_, 0, isVmMode, isPrivate, false, isFullGC);
+    }
+    if (dumpFormat == DumpFormat::BINARY) {
+        DFXJSNApi::DumpCpuProfile(vm_, 1, isVmMode, isPrivate);
+    }
+    if (dumpFormat == DumpFormat::OTHER) {
+        DFXJSNApi::DumpCpuProfile(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
+    }
+}
+
 void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
 {
     if (dumpFormat == DumpFormat::JSON) {
