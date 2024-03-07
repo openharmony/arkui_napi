@@ -22,6 +22,7 @@ config("ace_napi_config") {
     "interfaces/kits",
     "native_engine",
     "native_engine/impl/ark",
+    "//third_party/libuv/include",
     "//third_party/node/src",
   ]
   defines = []
@@ -54,7 +55,7 @@ config("module_manager_config") {
   include_dirs = [ "module_manager" ]
 }
 
-ohos_static_library("ace_napi_static") {
+ohos_source_set("ace_napi_static") {
   defines = []
   public_configs = [ ":ace_napi_config" ]
   deps = []
@@ -95,11 +96,9 @@ ohos_static_library("ace_napi_static") {
     deps += [
       "//third_party/icu/icu4c:shared_icui18n",
       "//third_party/icu/icu4c:shared_icuuc",
+      "//third_party/libuv:uv",
     ]
-    external_deps += [
-      "ets_runtime:libark_jsruntime",
-      "libuv:uv",
-    ]
+    external_deps += [ "ets_runtime:libark_jsruntime" ]
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
@@ -117,15 +116,15 @@ if (is_arkui_x) {
   }
 } else {
   ohos_shared_library("ace_napi") {
-    deps = [ ":ace_napi_static" ]
+    deps = [
+      ":ace_napi_static",
+      "//third_party/bounds_checking_function:libsec_shared",
+    ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
     ]
-
-    public_external_deps = [ "libuv:uv" ]
-
-    external_deps = [ "bounds_checking_function:libsec_shared" ]
+    public_deps = [ "//third_party/libuv:uv" ]
 
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]

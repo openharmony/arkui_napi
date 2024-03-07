@@ -16,16 +16,17 @@ import("//build/ohos.gni")
 ohos_shared_library("callback") {
   include_dirs = [
     "//foundation/arkui/napi/interfaces/kits",
+    "//third_party/libuv/include",
     "//third_party/node/src",
+    "//third_party/bounds_checking_function/include",
   ]
 
   sources = [ "js_callback.cpp" ]
 
-  deps = [ "//foundation/arkui/napi/:ace_napi" ]
-
-  external_deps = [
-    "bounds_checking_function:libsec_shared",
-    "libuv:uv",
+  deps = [
+    "//foundation/arkui/napi/:ace_napi",
+    "//third_party/bounds_checking_function:libsec_static",
+    "//third_party/libuv:uv",
   ]
 
   relative_install_dir = "module"
