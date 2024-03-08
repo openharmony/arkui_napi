@@ -2383,7 +2383,8 @@ NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t
 }
 
 NAPI_EXTERN napi_status napi_run_actor(napi_env env,
-                                       std::vector<uint8_t>& buffer,
+                                       uint8_t* buffer,
+                                       size_t bufferSize,
                                        const char* descriptor,
                                        napi_value* result,
                                        char* entryPoint)
@@ -2392,7 +2393,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunActor(buffer, descriptor, entryPoint);
+    *result = engine->RunActor(buffer, bufferSize, descriptor, entryPoint);
     return GET_RETURN_STATUS(env);
 }
 

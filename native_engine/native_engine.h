@@ -109,7 +109,8 @@ private:
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
-using GetAssetFunc = std::function<void(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)>;
+using GetAssetFunc = std::function<void(const std::string& uri, uint8_t **buff, size_t *buffSize,
+                                        std::string& ami, bool &useSecureMem, bool isRestricted)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
@@ -161,7 +162,8 @@ public:
     virtual napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) = 0;
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
-    virtual napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor, char* entryPoint = nullptr) = 0;
+    virtual napi_value RunActor(uint8_t* buffer, size_t bufferSize,
+        const char* descriptor, char* entryPoint = nullptr) = 0;
 
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
@@ -302,7 +304,8 @@ public:
 
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
-    virtual bool CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami);
+    virtual bool CallGetAssetFunc(const std::string& uri, uint8_t **buff, size_t *buffSize,
+        std::string& ami, bool &useSecureMem, bool isRestricted);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
 
     // adapt worker to ace container
@@ -371,6 +374,7 @@ public:
     {
         return false;
     }
+    virtual void ThrowException(const char* msg);
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
     virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
@@ -385,6 +389,8 @@ public:
     // run script by path
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
+    bool GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
+        std::string& ami, bool isRestrictedWorker = false);
 
     const char* GetModuleFileName();
 
