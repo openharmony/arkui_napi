@@ -151,7 +151,7 @@ public:
 
     // Run buffer script
     napi_value RunBufferScript(std::vector<uint8_t>& buffer) override;
-    napi_value RunActor(std::vector<uint8_t>& buffer, const char* descriptor, char* entryPoint = nullptr) override;
+    napi_value RunActor(uint8_t* buffer, size_t size, const char* descriptor, char* entryPoint = nullptr) override;
     // Set lib path
     NAPI_EXPORT void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     napi_value CreateInstance(napi_value constructor, napi_value const* argv, size_t argc) override;
@@ -242,7 +242,6 @@ public:
     std::string GetOhmurl(std::string str);
     Local<JSValueRef> NapiLoadNativeModule(std::string path);
     ModuleTypes CheckLoadType(const std::string &path);
-    void ThrowException(const char* msg);
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
