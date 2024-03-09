@@ -2414,7 +2414,7 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
     CHECK_ENV(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->NapiLoadModule(path, module_info);
+    *result = engine->NapiLoadModuleWithInfo(path, module_info);
     return napi_clear_last_error(env);
 }
 // Memory management
