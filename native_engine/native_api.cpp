@@ -836,9 +836,6 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::JSValueRef> value = obj->Get(vm, propKey);
-    if (value->IsFunction()) {
-        FunctionSetContainerId(vm, value);
-    }
     *result = JsValueFromLocalValue(value);
 
     return GET_RETURN_STATUS(env);
@@ -934,9 +931,6 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::JSValueRef> value = obj->Get(vm, key);
-    if (value->IsFunction()) {
-        FunctionSetContainerId(vm, value);
-    }
     *result = JsValueFromLocalValue(value);
 
     return GET_RETURN_STATUS(env);
@@ -1005,9 +999,6 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::JSValueRef> value = obj->Get(vm, index);
-    if (value->IsFunction()) {
-        FunctionSetContainerId(vm, value);
-    }
     *result = JsValueFromLocalValue(value);
 
     return GET_RETURN_STATUS(env);
