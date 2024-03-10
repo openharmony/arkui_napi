@@ -615,14 +615,16 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
     funcInfo->callback = cb;
     funcInfo->data = value;
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::New(vm, ArkNativeFunctionCallBack,
-                                                           [](void* externalPointer, void* data) {
-                                                                auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-                                                                if (info != nullptr) {
-                                                                    delete info;
-                                                                }
-                                                           },
-                                                           reinterpret_cast<void*>(funcInfo), true);
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
+        vm, ArkNativeFunctionCallBack,
+        [](void* externalPointer, void* data) {
+            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
+            if (info != nullptr) {
+                delete info;
+            }
+        },
+        reinterpret_cast<void*>(funcInfo), true
+    );
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, name);
     fn->SetName(vm, fnName);
     return fn;
