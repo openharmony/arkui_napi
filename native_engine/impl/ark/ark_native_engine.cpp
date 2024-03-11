@@ -96,33 +96,6 @@ panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
     return LocalValueFromJsValue(v);
 }
 
-void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &value)
-{
-    panda::Local<panda::FunctionRef> funcValue(value);
-    if (funcValue->IsNative(vm)) {
-        return;
-    }
-
-    auto extraInfo = funcValue->GetData(vm);
-    if (extraInfo != nullptr) {
-        return;
-    }
-
-    NapiFunctionInfo *funcInfo = NapiFunctionInfo::CreateNewInstance();
-    if (funcInfo == nullptr) {
-        HILOG_ERROR("funcInfo is nullptr");
-        return;
-    }
-    funcValue->SetData(vm, reinterpret_cast<void*>(funcInfo),
-        [](void *externalPointer, void *data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-            if (info != nullptr) {
-                delete info;
-                info = nullptr;
-            }
-        }, true);
-}
-
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
 bool IsFileNameFormat(char c)
 {
@@ -516,15 +489,11 @@ size_t NapiNativeCallbackInfo::GetArgc() const
 
 size_t NapiNativeCallbackInfo::GetArgv(napi_value* argv, size_t argc)
 {
-    auto *vm = info->GetVM();
     if (argc > 0) {
         size_t i = 0;
         size_t buffer = GetArgc();
         for (; i < buffer && i < argc; i++) {
             panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
-            if (value->IsFunction()) {
-                FunctionSetContainerId(vm, value);
-            }
             argv[i] = JsValueFromLocalValue(value);
         }
         return i;
@@ -540,13 +509,7 @@ napi_value NapiNativeCallbackInfo::GetThisVar()
 
 napi_value NapiNativeCallbackInfo::GetFunction()
 {
-    auto *vm = info->GetVM();
-    panda::Local<panda::JSValueRef> newValue = info->GetNewTargetRef();
-    if (newValue->IsFunction()) {
-        FunctionSetContainerId(vm, newValue);
-    }
-
-    return JsValueFromLocalValue(newValue);
+    return JsValueFromLocalValue(info->GetNewTargetRef());
 }
 
 NapiFunctionInfo* NapiNativeCallbackInfo::GetFunctionInfo()
