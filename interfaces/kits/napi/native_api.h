@@ -129,6 +129,8 @@ NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
                                            napi_ref* result);
 NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode);
 NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env);
+NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env *env);
+NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env *env);
 
 #ifdef __cplusplus
 }

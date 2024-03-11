@@ -24,6 +24,7 @@
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
 #include "native_engine/impl/ark/ark_native_reference.h"
+#include "native_engine/native_create_env.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
@@ -3284,4 +3285,22 @@ NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env)
         return napi_set_last_error(env, result);
     }
     return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env* env)
+{
+    if (NativeCreateEnv::g_createNapiEnvCallback == nullptr) {
+        HILOG_ERROR("invalid create callback");
+        return napi_status::napi_invalid_arg;
+    }
+    return NativeCreateEnv::g_createNapiEnvCallback(env);
+}
+
+NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env* env)
+{
+    if (NativeCreateEnv::g_destroyNapiEnvCallback == nullptr) {
+        HILOG_ERROR("invalid destroy callback");
+        return napi_status::napi_invalid_arg;
+    }
+    return NativeCreateEnv::g_destroyNapiEnvCallback(env);
 }
