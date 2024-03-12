@@ -2399,9 +2399,9 @@ NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_va
 }
 
 NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
-                                                   napi_value* result,
                                                    const char* path,
-                                                   const char* module_info)
+                                                   const char* module_info,
+                                                   napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
