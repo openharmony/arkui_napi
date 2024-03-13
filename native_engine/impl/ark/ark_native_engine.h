@@ -67,6 +67,9 @@ void NapiDefinePropertyInner(napi_env env,
 bool NapiDefineProperty(napi_env env, panda::Local<panda::ObjectRef> &obj, NapiPropertyDescriptor propertyDescriptor);
 NAPI_EXPORT panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v);
 NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local);
+#ifdef ENABLE_CONTAINER_SCOPE
+void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
+#endif
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
     void* data, const NapiPropertyDescriptor* properties, size_t length);
 panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
