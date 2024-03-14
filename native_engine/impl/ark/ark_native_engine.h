@@ -199,6 +199,8 @@ public:
     bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) override;
+    bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth = 0)
+        override;
 
     bool DeleteWorker(NativeEngine* workerEngine) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
