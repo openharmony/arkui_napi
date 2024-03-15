@@ -1108,6 +1108,17 @@ NAPI_EXTERN napi_status napi_is_sendable_object(napi_env env, napi_value value, 
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    *result = nativeValue->IsJSShared();
+    return napi_clear_last_error(env);
+}
+
 // Methods to compare values
 NAPI_EXTERN napi_status napi_strict_equals(napi_env env, napi_value lhs, napi_value rhs, bool* result)
 {
