@@ -823,8 +823,13 @@ napi_status NativeEngine::RunEventLoop(napi_event_mode mode)
     }
     isLoopRunning_ = true;
     lock.unlock();
-    HILOG_DEBUG("uv loop is running");
-    uv_run(loop_, static_cast<uv_run_mode>(mode));
+    HILOG_DEBUG("uv loop is running with mode %{public}d", mode);
+    if (mode == napi_event_mode_default) {
+        uv_run(loop_, UV_RUN_DEFAULT);
+    }
+    if (mode == napi_event_mode_nowait) {
+        uv_run(loop_, UV_RUN_NOWAIT);
+    }
     HILOG_DEBUG("uv loop is stopped");
     lock.lock();
     isLoopRunning_ = false;
