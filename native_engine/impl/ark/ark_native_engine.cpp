@@ -19,6 +19,7 @@
 #include <sys/prctl.h>
 #endif
 
+#include <sstream>
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
 #include "native_engine/native_property.h"
@@ -33,8 +34,20 @@
 #include "core/common/container_scope.h"
 #endif
 #ifdef ENABLE_HITRACE
+#include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #include "parameter.h"
+#include "musl_preinit_common.h"
+struct alignas(8) HookJsConfig { // 8 is 8 bit
+    uint8_t maxJsStackDepth = 0;
+    bool jsStackReport = false;
+    bool jsFpUnwind = false;
+    char filterNapiName[64] = { "" };
+};
+static HookJsConfig* g_hookJsConfig = nullptr;
+static std::once_flag g_hookOnceFlag;
+static std::string JS_CALL_STACK_DEPTH_SEP = ","; // ',' is js call stack depth separator
+static std::string JS_SYMBOL_FILEPATH_SEP = "|";  // '|' is js symbol and filepath separator
 #endif
 
 using panda::JsiRuntimeCallInfo;
@@ -80,6 +93,7 @@ static constexpr uint64_t SEC_TO_MILSEC = 1000;
 #endif
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
+std::atomic<uint64_t> g_chainId = 0;
 #endif
 
 std::string ArkNativeEngine::tempModuleName_ {""};
@@ -494,7 +508,23 @@ ArkNativeEngine::~ArkNativeEngine()
     StopMonitorJSHeapUsage();
 }
 
-static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
+#ifdef ENABLE_HITRACE
+static inline bool CheckHookConfig(const std::string &nameRef)
+{
+    if (g_hookJsConfig == nullptr || g_hookJsConfig->jsStackReport == false ||
+        g_hookJsConfig->maxJsStackDepth == 0 || !g_hookJsConfig->jsFpUnwind) {
+        HILOG_ERROR("g_hookJsConfig is Invalid value");
+        return false;
+    } else if (g_hookJsConfig->filterNapiName[0] != '\0' &&
+        nameRef.find(g_hookJsConfig->filterNapiName) != std::string::npos) {
+        HILOG_ERROR("filterNapiName is Invalid value");
+        return false;
+    }
+    return true;
+}
+#endif
+
+static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
 {
 #ifdef ENABLE_HITRACE
         if (ArkNativeEngine::napiProfilerEnabled) {
@@ -505,15 +535,65 @@ static inline void StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo
             char threadName[128];
             prctl(PR_GET_NAME, threadName);
             StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+            bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+            if (!hookFlag) {
+                HILOG_DEBUG("hookFlag is false!");
+                return 0;
+            }
+            if (g_hookJsConfig == nullptr) {
+                std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
+            }
+            if (!CheckHookConfig(nameRef->ToString())) {
+                HILOG_ERROR("CheckHookConfig failed!");
+                return 0;
+            }
+            std::string rawStack;
+            std::vector<JsFrameInfo> jsFrames;
+            uint64_t nestChainId = 0;
+            jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
+            auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
+            auto engine = reinterpret_cast<NativeEngine*>(info->env);
+            engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
+            std::stringstream ssRawStack;
+            for (size_t i = 0; i < jsFrames.size(); i++) {
+                ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
+                    jsFrames[i].pos;
+                if (i < jsFrames.size() - 1) {
+                    ssRawStack << JS_CALL_STACK_DEPTH_SEP;
+                }
+            }
+            rawStack = ssRawStack.str();
+            OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
+            OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+            // resolve nested calls to napi and ts
+            if (hitraceId.IsValid()) {
+                nestChainId = hitraceId.GetChainId();
+            }
+            uint64_t chainId = ++g_chainId;
+            hitraceId.SetChainId(chainId);
+            OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+            __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
+            return nestChainId;
         }
 #endif
+    return 0;
 }
 
-static inline void FinishNapiProfilerTrace()
+static inline void FinishNapiProfilerTrace(uint64_t value)
 {
 #ifdef ENABLE_HITRACE
     if (ArkNativeEngine::napiProfilerEnabled) {
         FinishTrace(HITRACE_TAG_ACE);
+        OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+        if (hitraceId.IsValid()) {
+            OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
+            OHOS::HiviewDFX::HiTraceChain::ClearId();
+        }
+        // resolve nested calls to napi and ts
+        if (value) {
+            hitraceId.SetChainId(value);
+            OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+        }
     }
 #endif
 }
@@ -585,7 +665,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     }
 
     NapiNativeCallbackInfo cbInfo(runtimeInfo);
-    StartNapiProfilerTrace(runtimeInfo);
+    uint64_t nestChainId = StartNapiProfilerTrace(runtimeInfo);
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
@@ -605,7 +685,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         localRet = LocalValueFromJsValue(result);
     }
 
-    FinishNapiProfilerTrace();
+    FinishNapiProfilerTrace(nestChainId);
     // Fixme: Rethrow error to engine while clear lastException_
     if (!engine->lastException_.IsEmpty()) {
         engine->lastException_.Empty();
@@ -1589,6 +1669,26 @@ bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo
         jsframe.functionName = jf.functionName;
         jsframe.pos = jf.pos;
         jsframe.nativePointer = jf.nativePointer;
+        jsFrames.emplace_back(jsframe);
+    }
+    return sign;
+#else
+    HILOG_WARN("ARK does not support dfx on windows");
+    return false;
+#endif
+}
+
+bool ArkNativeEngine::BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth)
+{
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    std::vector<ArkJsFrameInfo> arkJsFrames;
+    bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, gettid(), arkJsFrames);
+    for (size_t i = 0; i < arkJsFrames.size() && i < maxJsStackDepth; i++) {
+        struct JsFrameInfo jsframe;
+        jsframe.fileName = arkJsFrames[i].fileName;
+        jsframe.functionName = arkJsFrames[i].functionName;
+        jsframe.pos = arkJsFrames[i].pos;
+        jsframe.nativePointer = arkJsFrames[i].nativePointer;
         jsFrames.emplace_back(jsframe);
     }
     return sign;
