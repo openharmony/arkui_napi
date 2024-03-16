@@ -4058,3 +4058,29 @@ HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSiz
     ASSERT_EQ(res, napi_ok);
     engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
 }
+
+/**
+ * @tc.name: loadModuleWithInfo001
+ * @tc.desc: Test napi_load_module_with_info with nullptr env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, loadModuleWithInfo001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_value result;
+    napi_status res = napi_load_module_with_info(nullptr, nullptr, nullptr, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: loadModuleWithInfo002
+ * @tc.desc: Test napi_load_module_with_info with nullptr result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, loadModuleWithInfo002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_load_module_with_info(env, "@ohos.hilog", nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
