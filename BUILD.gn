@@ -35,10 +35,10 @@ config("ace_napi_config") {
     defines += [ "SIMULATOR" ]
   }
   if (is_ohos) {
-    defines += [
-      "OHOS_PLATFORM",
-      "HOOK_ENABLE",
-    ]
+    defines += [ "OHOS_PLATFORM" ]
+    if (use_musl && !is_asan) {
+      defines += [ "HOOK_ENABLE" ]
+    }
   } else if (is_mingw) {
     defines += [ "WINDOWS_PLATFORM" ]
     cflags_cc += [ "-std=c++17" ]
