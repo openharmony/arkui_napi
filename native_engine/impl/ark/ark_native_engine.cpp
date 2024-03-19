@@ -513,11 +513,9 @@ static inline bool CheckHookConfig(const std::string &nameRef)
 {
     if (g_hookJsConfig == nullptr || g_hookJsConfig->jsStackReport == false ||
         g_hookJsConfig->maxJsStackDepth == 0 || !g_hookJsConfig->jsFpUnwind) {
-        HILOG_ERROR("g_hookJsConfig is Invalid value");
         return false;
     } else if (g_hookJsConfig->filterNapiName[0] != '\0' &&
         nameRef.find(g_hookJsConfig->filterNapiName) != std::string::npos) {
-        HILOG_ERROR("filterNapiName is Invalid value");
         return false;
     }
     return true;
@@ -544,7 +542,6 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtime
                 std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
             }
             if (!CheckHookConfig(nameRef->ToString())) {
-                HILOG_ERROR("CheckHookConfig failed!");
                 return 0;
             }
             std::string rawStack;
