@@ -50,7 +50,7 @@ NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_val
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, napi_value recorder, napi_value* object);
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value value);
 NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t>& buffer, napi_value* result);
-NAPI_EXTERN napi_status napi_run_actor(napi_env env, uint8_t* buffer, size_t bufferSize,
+NAPI_EXTERN napi_status napi_run_actor(napi_env env, std::vector<uint8_t>& buffer,
                                        const char* descriptor, napi_value* result, char* entryPoint = nullptr);
 NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
                                   napi_value js_object,
