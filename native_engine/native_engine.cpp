@@ -472,17 +472,14 @@ bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
     }
     return false;
 }
-
-bool NativeEngine::CallGetAssetFunc(const std::string& uri, uint8_t** content, size_t* contentSize,
-                                    std::string& ami, bool &useSecureMem, bool isRestrictedWorker)
+bool NativeEngine::CallGetAssetFunc(const std::string& uri, std::vector<uint8_t>& content, std::string& ami)
 {
     if (getAssetFunc_ != nullptr) {
-        getAssetFunc_(uri, content, contentSize, ami, useSecureMem, isRestrictedWorker);
+        getAssetFunc_(uri, content, ami);
         return true;
     }
     return false;
 }
-
 bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
     if (offWorkerFunc_ != nullptr) {
@@ -676,55 +673,36 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
 
 napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
 {
-    uint8_t* scriptContent = nullptr;
-    size_t scriptContentSize = 0;
+    std::vector<uint8_t> scriptContent;
+    std::string pathStr(path);
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, ami, IsRestrictedWorkerThread())) {
-        HILOG_ERROR("RunScriptForAbc: GetAbcBuffer failed");
-        if (panda::JSNApi::HasPendingException(GetEcmaVm())) {
-            HandleUncaughtException();
-        }
+    if (!CallGetAssetFunc(pathStr, scriptContent, ami)) {
+        HILOG_ERROR("Get asset error");
         return nullptr;
     }
     // if buffer is empty, return directly.
-    if (scriptContentSize == 0) {
-        HILOG_ERROR("asset size is %{public}zu", scriptContentSize);
-        ThrowException("RunScriptForAbc: abc file is empty.");
+    if (scriptContent.size() == 0) {
+        HILOG_ERROR("asset size is %{public}zu", scriptContent.size());
+        auto vm = GetEcmaVm();
+        Local<panda::JSValueRef> error =
+            panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, "RunScriptForAbc: abc file is empty."));
+        panda::JSNApi::ThrowException(vm, error);
         return nullptr;
     }
-    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
+    return RunActor(scriptContent, ami.c_str(), entryPoint);
 }
 
 napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
 {
-    uint8_t* scriptContent = nullptr;
-    size_t scriptContentSize = 0;
+    std::vector<uint8_t> scriptContent;
+    std::string pathStr(path);
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, ami, IsRestrictedWorkerThread())) {
-        HILOG_ERROR("RunScript: GetAbcBuffer failed");
-        if (panda::JSNApi::HasPendingException(GetEcmaVm())) {
-            HandleUncaughtException();
-        }
+    if (!CallGetAssetFunc(pathStr, scriptContent, ami)) {
+        HILOG_ERROR("Get asset error");
         return nullptr;
     }
-    HILOG_INFO("asset size is %{public}zu", scriptContentSize);
-    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
-}
-
-bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-    std::string& ami, bool isRestrictedWorker)
-{
-    std::string pathStr(path);
-    bool useSecureMem = false;
-    if (!CallGetAssetFunc(pathStr, buffer, bufferSize, ami, useSecureMem, isRestrictedWorker)) {
-        HILOG_ERROR("Get asset error");
-        return false;
-    }
-    if (useSecureMem && !panda::JSNApi::CheckSecureMem(reinterpret_cast<uintptr_t>(*buffer))) {
-        ThrowException("GetAbcBuffer secure memory check failed, please execute in secure memory.");
-        return false;
-    }
-    return true;
+    HILOG_INFO("asset size is %{public}zu", scriptContent.size());
+    return RunActor(scriptContent, ami.c_str(), entryPoint);
 }
 
 void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint)
@@ -852,11 +830,4 @@ napi_status NativeEngine::StopEventLoop()
     uv_stop(loop_);
     HILOG_DEBUG("uv loop is stopped");
     return napi_status::napi_ok;
-}
-
-void NativeEngine::ThrowException(const char* msg)
-{
-    auto vm = GetEcmaVm();
-    Local<panda::JSValueRef> error = panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, msg));
-    panda::JSNApi::ThrowException(vm, error);
 }
