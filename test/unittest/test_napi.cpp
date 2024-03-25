@@ -1624,6 +1624,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
             env, nullptr, resourceName, [](napi_env value, void* data) {},
             [](napi_env env, napi_status status, void* data) {
                 AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+                ASSERT_EQ(status, napi_status::napi_cancelled);
                 napi_delete_async_work(env, asyncWorkContext->work);
                 delete asyncWorkContext;
             },
@@ -3991,7 +3992,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
         },
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            ASSERT_EQ(status, napi_status::napi_cancelled);
+            ASSERT_NE(status, napi_status::napi_cancelled);
             napi_delete_async_work(env, asyncWorkContext->work);
             delete asyncWorkContext;
         },
