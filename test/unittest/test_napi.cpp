@@ -125,7 +125,7 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest002, testing::ext::TestSize.Lev
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     napi_value data = nullptr;
-    napi_serialize(env, object, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
     napi_value result = nullptr;
     napi_deserialize(env, data, &result);
@@ -175,7 +175,7 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Lev
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     napi_value data = nullptr;
-    napi_serialize(env, object, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
     napi_value result = nullptr;
     napi_deserialize(env, data, &result);
@@ -1820,7 +1820,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest001, testing::ext::TestSize.Leve
     uint32_t value = 1000;
     napi_create_uint32(env, value, &num);
     napi_value data = nullptr;
-    napi_serialize(env, num, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, num, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
     napi_value result = nullptr;
@@ -1848,7 +1848,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest002, testing::ext::TestSize.Leve
     uint32_t value = 1000;
     napi_create_uint32(env, value, &num);
     napi_value data = nullptr;
-    napi_serialize(env, num, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, num, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
     napi_value result1 = nullptr;
@@ -1886,7 +1886,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest003, testing::ext::TestSize.Leve
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     napi_value data = nullptr;
-    napi_serialize(env, object, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
     napi_value result1 = nullptr;
@@ -1934,7 +1934,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest004, testing::ext::TestSize.Leve
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     napi_value data = nullptr;
-    napi_serialize(env, object, undefined, undefined, false, true, &data);
+    napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
     napi_value result1 = nullptr;

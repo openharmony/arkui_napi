@@ -2723,9 +2723,9 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_serialize(napi_env env, napi_value object, napi_value transfer_list,
-                                       napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
-                                       napi_value* result)
+NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, napi_value transfer_list,
+                                             napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
+                                             napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
