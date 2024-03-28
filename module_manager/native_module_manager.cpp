@@ -42,7 +42,7 @@ std::mutex g_instanceMutex;
 
 NativeModuleManager::NativeModuleManager()
 {
-    HILOG_INFO("enter");
+    HILOG_DEBUG("enter");
     pthread_mutex_init(&mutex_, nullptr);
     moduleLoadChecker_ = std::make_unique<ModuleLoadChecker>();
 }
@@ -782,7 +782,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
-        errInfo = "load module failed. " +  std::string(dlerror());
+        char* dlerr = dlerror();
+        auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
+        errInfo = "load module failed. " +  std::string(dlerrMsg);
         HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 
@@ -796,7 +798,9 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         lib = dlopen(path, RTLD_LAZY);
     }
     if (lib == nullptr) {
-        errInfo = "load app module failed. " +  std::string(dlerror());
+        char* dlerr = dlerror();
+        auto dlerrMsg = dlerr != nullptr ? dlerr: "dlerror msg is empty";
+        errInfo = "load app module failed. " +  std::string(dlerrMsg);
         HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 #endif
@@ -845,7 +849,9 @@ bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
     if (!dlclose(handle)) {
         return true;
     }
-    HILOG_WARN("dlclose failed: %{public}s", dlerror());
+    char* dlerr = dlerror();
+    auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
+    HILOG_WARN("dlclose failed: %{public}s", dlerrMsg);
 #endif
     return false;
 }
