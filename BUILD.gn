@@ -131,6 +131,7 @@ if (is_arkui_x) {
       ":ace_napi_static",
       "//third_party/bounds_checking_function:libsec_shared",
     ]
+    external_deps = [ "hilog:libhilog" ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",

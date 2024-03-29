@@ -18,7 +18,7 @@
 
 #ifdef LINUX_PLATFORM
 #include <cstdint>
-#endif
+#endif /* LINUX_PLATFORM */
 #include <cstring>
 #include <string>
 
@@ -41,6 +41,12 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 #define HILOG_PRINT(Level, fmt, ...) \
     PrintLog(LogLevel::Level, "[%-20s(%s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__);
 
+#define HILOG_FATAL(fmt, ...) HILOG_PRINT(Fatal, fmt, ##__VA_ARGS__)
+#define HILOG_ERROR(fmt, ...) HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
+#define HILOG_WARN(fmt, ...) HILOG_PRINT(Warn, fmt, ##__VA_ARGS__)
+#define HILOG_INFO(fmt, ...) HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
+#define HILOG_DEBUG(fmt, ...) HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
+
 #else
 
 #include "hilog/log.h"
@@ -62,12 +68,22 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN,
     (void)OHOS::HiviewDFX::HiLog::Level( \
         LOG_LABEL, "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 
-#endif
+#define HILOG_FATAL(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, \
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+#define HILOG_ERROR(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, \
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+#define HILOG_WARN(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, \
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+#define HILOG_INFO(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, \
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
+#define HILOG_DEBUG(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
+    "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
 
-#define HILOG_FATAL(fmt, ...) HILOG_PRINT(Fatal, fmt, ##__VA_ARGS__)
-#define HILOG_ERROR(fmt, ...) HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
-#define HILOG_WARN(fmt, ...) HILOG_PRINT(Warn, fmt, ##__VA_ARGS__)
-#define HILOG_INFO(fmt, ...) HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
-#define HILOG_DEBUG(fmt, ...) HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
+#endif /* MAC_PLATFORM */
 
 #endif /* FOUNDATION_ACE_NAPI_UTILS_LOG_H */
