@@ -392,7 +392,7 @@ public:
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
     bool GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-        std::string& ami, bool isRestrictedWorker = false);
+        std::string& ami, bool isRestrictedWorker = false, bool relativeWorker = true);
 
     const char* GetModuleFileName();
 
