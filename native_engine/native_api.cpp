@@ -29,6 +29,7 @@
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_create_env.h"
 #include "native_engine/native_property.h"
+#include "native_engine/native_sendable.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
 #include "securec.h"
@@ -1118,7 +1119,8 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
 
     auto nativeValue = LocalValueFromJsValue(value);
     *result = nativeValue->IsUndefined() || nativeValue->IsNull() || nativeValue->IsNumber() ||
-              nativeValue->IsString() || nativeValue->IsBoolean() || nativeValue->IsJSShared() || nativeValue->IsBigInt();
+              nativeValue->IsString() || nativeValue->IsBoolean() || nativeValue->IsJSShared() ||
+              nativeValue->IsBigInt();
     return napi_clear_last_error(env);
 }
 

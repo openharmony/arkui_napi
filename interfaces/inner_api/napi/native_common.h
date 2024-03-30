@@ -60,6 +60,18 @@
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_default, nullptr \
     }
 
+#define DECLARE_NAPI_INSTANCE_PROPERTY(name, val)                                           \
+    {                                                                                       \
+        (name), nullptr, nullptr, nullptr, nullptr, val,                                    \
+            static_cast<napi_property_attributes>(NATIVE_INSTANCE | napi_writable), nullptr \
+    }
+
+#define DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY(name)                                                \
+    {                                                                                              \
+        (name), nullptr, nullptr, nullptr, nullptr, nullptr,                                       \
+            static_cast<napi_property_attributes>(NATIVE_INSTANCE_OBJECT | napi_writable), nullptr \
+    }
+
 #define DECLARE_NAPI_DEFAULT_PROPERTY(name, val)                                          \
     {                                                                                     \
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_default_jsproperty, nullptr \
