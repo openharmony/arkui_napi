@@ -124,7 +124,7 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest002, testing::ext::TestSize.Lev
         env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), nullptr);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
     napi_value result = nullptr;
@@ -174,7 +174,7 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Lev
     ASSERT_EQ(status, napi_status::napi_ok);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
     napi_value result = nullptr;
@@ -1819,7 +1819,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest001, testing::ext::TestSize.Leve
     napi_value num = nullptr;
     uint32_t value = 1000;
     napi_create_uint32(env, value, &num);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, num, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
@@ -1847,7 +1847,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest002, testing::ext::TestSize.Leve
     napi_value num = nullptr;
     uint32_t value = 1000;
     napi_create_uint32(env, value, &num);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, num, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
@@ -1885,7 +1885,7 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest003, testing::ext::TestSize.Leve
     ASSERT_EQ(status, napi_status::napi_ok);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
     ASSERT_NE(data, nullptr);
 
@@ -1933,8 +1933,160 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest004, testing::ext::TestSize.Leve
 
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
-    napi_value data = nullptr;
+    void* data = nullptr;
     napi_serialize_inner(env, object, undefined, undefined, false, true, &data);
+    ASSERT_NE(data, nullptr);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+    napi_value obj1 = nullptr;
+    napi_get_named_property(env, result1, "objKey", &obj1);
+    ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
+
+    napi_value result2 = nullptr;
+    napi_deserialize(env, data, &result2);
+    ASSERT_CHECK_VALUE_TYPE(env, result2, napi_object);
+    napi_value num1 = nullptr;
+    napi_get_named_property(env, result2, "numKey", &num1);
+    uint32_t value1 = 0;
+    napi_get_value_uint32(env, num1, &value1);
+    ASSERT_EQ(value1, 1000);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeTest005
+ * @tc.desc: Test serialize & deserialize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+
+    napi_value num = nullptr;
+    uint32_t value = 1000;
+    napi_create_uint32(env, value, &num);
+    void* data = nullptr;
+    napi_serialize(env, num, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+
+    napi_value result = nullptr;
+    napi_deserialize(env, data, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+    napi_delete_serialization_data(env, data);
+    int32_t resultData = 0;
+    napi_get_value_int32(env, result, &resultData);
+    ASSERT_EQ(resultData, 1000);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeTest006
+ * @tc.desc: Test serialize & deserialize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+
+    napi_value num = nullptr;
+    uint32_t value = 1000;
+    napi_create_uint32(env, value, &num);
+    void* data = nullptr;
+    napi_serialize(env, num, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_number);
+    int32_t resultData1 = 0;
+    napi_get_value_int32(env, result1, &resultData1);
+    ASSERT_EQ(resultData1, 1000);
+
+    napi_value result2 = nullptr;
+    napi_deserialize(env, data, &result2);
+    ASSERT_CHECK_VALUE_TYPE(env, result2, napi_number);
+    int32_t resultData2 = 0;
+    napi_get_value_int32(env, result2, &resultData2);
+    ASSERT_EQ(resultData2, 1000);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeTest007
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value hint = nullptr;
+    napi_create_object(env, &hint);
+    napi_status status = napi_coerce_to_native_binding_object(env, object,
+        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), reinterpret_cast<void*>(hint));
+    ASSERT_EQ(status, napi_status::napi_ok);
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    napi_serialize(env, object, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+    napi_value number1 = nullptr;
+    napi_get_named_property(env, result1, "number", &number1);
+    ASSERT_CHECK_VALUE_TYPE(env, number1, napi_number);
+    uint32_t numData1 = 0;
+    napi_get_value_uint32(env, number1, &numData1);
+    ASSERT_EQ(numData1, 2000);
+
+    napi_value result2 = nullptr;
+    napi_deserialize(env, data, &result2);
+    ASSERT_CHECK_VALUE_TYPE(env, result2, napi_object);
+    napi_value number2 = nullptr;
+    napi_get_named_property(env, result2, "number", &number2);
+    ASSERT_CHECK_VALUE_TYPE(env, number2, napi_number);
+    uint32_t numData2 = 0;
+    napi_get_value_uint32(env, number2, &numData2);
+    ASSERT_EQ(numData2, 2000);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeTest008
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value num = nullptr;
+    uint32_t value = 1000;
+    napi_create_uint32(env, value, &num);
+    napi_set_named_property(env, object, "numKey", num);
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    napi_set_named_property(env, object, "objKey", obj);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    napi_serialize(env, object, undefined, undefined, &data);
     ASSERT_NE(data, nullptr);
 
     napi_value result1 = nullptr;

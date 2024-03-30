@@ -2725,9 +2725,30 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_serialize(napi_env env,
+                                       napi_value object,
+                                       napi_value transfer_list,
+                                       napi_value clone_list,
+                                       void** result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, transfer_list);
+    CHECK_ARG(env, clone_list);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(object);
+    auto transferList = LocalValueFromJsValue(transfer_list);
+    auto cloneList = LocalValueFromJsValue(clone_list);
+    *result = panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, false, true);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, napi_value transfer_list,
                                              napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
-                                             napi_value* result)
+                                             void** result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
@@ -2738,35 +2759,32 @@ NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, na
     auto nativeValue = LocalValueFromJsValue(object);
     auto transferList = LocalValueFromJsValue(transfer_list);
     auto cloneList = LocalValueFromJsValue(clone_list);
-    void* res =
+    *result =
         panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, defaultTransfer, defaultCloneSendable);
-    *result = reinterpret_cast<napi_value>(res);
 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_deserialize(napi_env env, napi_value recorder, napi_value* object)
+NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value* object)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, recorder);
+    CHECK_ARG(env, buffer);
     CHECK_ARG(env, object);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto recorderValue = reinterpret_cast<void*>(recorder);
-    Local<panda::JSValueRef> res = panda::JSNApi::DeserializeValue(vm, recorderValue, reinterpret_cast<void*>(engine));
+    Local<panda::JSValueRef> res = panda::JSNApi::DeserializeValue(vm, buffer, reinterpret_cast<void*>(engine));
     *object = JsValueFromLocalValue(res);
 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value value)
+NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffer)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, value);
+    CHECK_ARG(env, buffer);
 
-    void* data = reinterpret_cast<void*>(value);
-    panda::JSNApi::DeleteSerializationData(data);
+    panda::JSNApi::DeleteSerializationData(buffer);
 
     return napi_clear_last_error(env);
 }
