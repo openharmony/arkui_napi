@@ -187,7 +187,7 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
     char name[NAME_BUFFER_SIZE] = {0};
     if (asyncResourceName != nullptr) {
         auto val = LocalValueFromJsValue(asyncResourceName);
-        size_t strLength = 0;
+        [[maybe_unused]] size_t strLength = 0;
         auto vm = GetEcmaVm();
         LocalScope scope(vm);
         auto str = val->ToString(vm);

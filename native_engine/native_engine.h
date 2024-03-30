@@ -119,6 +119,7 @@ using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool su
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
+using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 
 class NAPI_EXPORT NativeEngine {
 public:

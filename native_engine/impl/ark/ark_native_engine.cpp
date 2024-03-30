@@ -1858,16 +1858,8 @@ bool ArkNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
 bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames)
 {
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
-    std::vector<ArkJsFrameInfo> arkJsFrames;
+    std::vector<JsFrameInfo> arkJsFrames;
     bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, tid, arkJsFrames);
-    for (auto jf : arkJsFrames) {
-        struct JsFrameInfo jsframe;
-        jsframe.fileName = jf.fileName;
-        jsframe.functionName = jf.functionName;
-        jsframe.pos = jf.pos;
-        jsframe.nativePointer = jf.nativePointer;
-        jsFrames.emplace_back(jsframe);
-    }
     return sign;
 #else
     HILOG_WARN("ARK does not support dfx on windows");
@@ -1878,10 +1870,10 @@ bool ArkNativeEngine::BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo
 bool ArkNativeEngine::BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth)
 {
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
-    std::vector<ArkJsFrameInfo> arkJsFrames;
+    std::vector<JsFrameInfo> arkJsFrames;
     bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, gettid(), arkJsFrames);
     for (size_t i = 0; i < arkJsFrames.size() && i < maxJsStackDepth; i++) {
-        struct JsFrameInfo jsframe;
+        JsFrameInfo jsframe;
         jsframe.fileName = arkJsFrames[i].fileName;
         jsframe.functionName = arkJsFrames[i].functionName;
         jsframe.pos = arkJsFrames[i].pos;
@@ -2304,4 +2296,132 @@ void ArkNativeEngine::StopMonitorJSHeapUsage()
 #else
     HILOG_ERROR("StopMonitorJSHeapUsage does not support dfx");
 #endif
+}
+
+std::string HybridStackDumper::PrintJsFrame(const JsFrameInfo& jsFrame)
+{
+    return "  at " + jsFrame.functionName + " (" + jsFrame.fileName + ":" + jsFrame.pos + ")\n";
+}
+
+bool HybridStackDumper::IsJsNativePcEqual(uintptr_t *jsNativePointer, uint64_t nativePc, uint64_t nativeOffset)
+{
+    uint64_t jsPc_ = (uint64_t)jsNativePointer;
+    if (nativePc - nativeOffset == jsPc_) {
+        return true;
+    }
+    return false;
+}
+
+void HybridStackDumper::BuildJsNativeMixStack(std::vector<JsFrames>& jsFrames,
+    std::vector<DfxFrame>& nativeFrames)
+{
+    uint32_t jsIdx = 0;
+    uint32_t nativeIdx = 0;
+    std::string hybridStackStr = "";
+    bool matchJsFrame = false;
+    while (jsIdx < jsFrames.size() && jsFrames[jsIdx].nativePointer == nullptr) {
+        jsIdx++;
+    }
+
+    while (jsIdx < jsFrames.size() && nativeIdx < nativeFrames.size()) {
+        if (jsFrames[jsIdx].nativePointer == nullptr) {
+            hybridStackStr += PrintJsFrame(jsFrames[jsIdx]);
+            jsIdx++;
+            continue;
+        }
+
+        if (IsJsNativePcEqual(jsFrames[jsIdx].nativePointer, nativeFrames[nativeIdx].pc,
+            nativeFrames[nativeIdx].funcOffset)) {
+            HILOG_DEBUG("HybridStackDumper::BuildJsNativeMixStack pc register values matched.");
+            std::vector<DfxFrame> frame;
+            frame.push_back(nativeFrames[nativeIdx]);
+            hybridStackStr += Unwinder::GetFramesStr(frame);
+            hybridStackStr += PrintJsFrame(jsFrames[jsIdx]);
+            nativeIdx++;
+            jsIdx++;
+            matchJsFrame = true;
+        } else {
+            hybridStackStr += Unwinder::GetFramesStr(nativeFrames);
+            nativeIdx++;
+        }
+    }
+
+    std::string jsStack;
+    if (!matchJsFrame && jsFrames.size() > 0) {
+        jsIdx = 0;
+        while (jsIdx < jsFrames.size()) {
+            jsStack += PrintJsFrame(jsFrames[jsIdx]);
+            jsIdx++;
+        }
+    }
+
+    while (nativeIdx < nativeFrames.size()) {
+        std::vector<DfxFrame> frames;
+        frames.push_back(nativeFrames[nativeIdx]);
+        hybridStackStr += Unwinder::GetFramesStr(frames);
+        nativeIdx++;
+    }
+
+    jsStack += hybridStackStr;
+    Write(jsStack);
+    Write("\n");
+}
+
+bool HybridStackDumper::DumpMixFrame(const EcmaVM* vm)
+{
+    unwinder_ = std::make_shared<Unwinder>();
+    bool hasNativeFrame = false;
+    std::vector<DfxFrame> nativeFrames;
+    if (getpid() == gettid()) {
+        hasNativeFrame = true;
+        unwinder_->IgnoreMixstack(true);
+        if (!unwinder_->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipframes_)) {
+            hasNativeFrame = false;
+            HILOG_ERROR("Failed to unwind local");
+        }
+        nativeFrames = unwinder_->GetFrames();
+    }
+
+    bool hasJsFrame = true;
+    std::vector<JsFrameInfo> jsFrames;
+
+    // if we failed to get native frame, target thread may not be seized
+    hasJsFrame = DFXJSNApi::BuildJsStackInfoList(vm, gettid(), jsFrames)
+
+    if (jsFrames.size() == 0) {
+        hasJsFrame = false;
+    }
+
+    if (!hasNativeFrame && !hasJsFrame) {
+        HILOG_ERROR("Failed to unwind native frames and js frames.");
+        return false;
+    }
+
+    if (hasNativeFrame && !hasJsFrame) {
+        Write(Unwinder::GetFramesStr(nativeFrames));
+        Write("\n");
+        return true;
+    }
+    BuildJsNativeMixStack(jsFrames, nativeFrames);
+    return true;
+}
+
+void HybridStackDumper::Write(const std::string& outStr)
+{
+    stack_.append(outStr);
+}
+
+std::string HybridStackDumper::DumpMixStackLocked(const EcmaVM* vm)
+
+{
+    stack_.clear();
+    DumpMixFrame(vm);
+    
+    return stack_;
+}
+
+std::string HybridStackDumper::GetMixStack(const EcmaVM* vm)
+{
+    HybridStackDumper stackDumper;
+    return stackDumper.DumpMixStackLocked(vm);
 }

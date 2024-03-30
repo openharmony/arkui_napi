@@ -3213,6 +3213,20 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& stack)
+{
+    CHECK_ENV(env);
+
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    stack = HybridStackDumper::GetMixStack(vm);
+#else
+    HILOG_WARN("GetHybridStacktrace env get hybrid stack failed");
+#endif
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result)
 {
     CHECK_ENV(env);

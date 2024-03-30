@@ -25,6 +25,7 @@
         "deps": {
             "components": [
                 "ets_runtime",
+                "faultloggerd",
                 "hilog",
                 "hitrace",
                 "init"
@@ -32,6 +33,7 @@
             "third_party": [
                 "icu",
                 "jerryscript",
+                "jsoncpp",
                 "libuv",
                 "node",
                 "bounds_checking_function"

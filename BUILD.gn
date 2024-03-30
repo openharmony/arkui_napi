@@ -83,6 +83,7 @@ ohos_source_set("ace_napi_static") {
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
+      "faultloggerd:libunwinder",
     ]
     defines += [ "ENABLE_HITRACE" ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
@@ -101,6 +102,7 @@ ohos_source_set("ace_napi_static") {
       "//third_party/icu/icu4c:static_icui18n",
       "//third_party/icu/icu4c:static_icuuc",
       "//third_party/libuv:uv_static",
+      "//third_party/jsoncpp:jsoncpp",
     ]
     configs += [ "${ets_runtime_path}:ark_jsruntime_public_config" ]
   } else {

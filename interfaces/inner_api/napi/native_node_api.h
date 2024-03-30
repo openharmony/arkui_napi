@@ -93,6 +93,7 @@ NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value,
 NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_is_sendable_object(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack);
+NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& stack);
 NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          napi_value object,
                                                          const char* utf8name,

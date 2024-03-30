@@ -31,6 +31,7 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_engine.h"
+#include "unwinder.h"
 
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
@@ -48,7 +49,9 @@ struct ApiCheckContext {
     panda::EscapeLocalScope& scope;
 };
 }
-using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
+using JsFrameInfo = panda::ecmascript::JsFrameInfo;
+using DfxFrame = OHOS::HiviewDFX::DfxFrame;
+using Unwinder = OHOS::HiviewDFX::Unwinder;
 
 using panda::DFXJSNApi;
 using panda::Local;
@@ -324,5 +327,26 @@ private:
     bool isLimitedWorker_ = false;
     bool isReady_ = false;
     struct JsHeapDumpWork *dumpWork_ = nullptr;
+};
+
+//only for get hybrid stack, please don't modify.
+class HybridStackDumper {
+public:
+    HybridStackDumper() = default;
+    ~HybridStackDumper() = default;
+    static std::string GetMixStack(const EcmaVM *vm);
+
+private:
+    bool DumpMixFrame(const EcmaVM* vm);
+    bool IsJsNativePcEqual(uintptr_t *jsNativePointer, uint64_t nativePc, uint64_t nativeOffset);
+    void BuildJsNativeMixStack(std::vector<JsFrameInfo>& jsFrames, std::vector<DfxFrame>& nativeFrames);
+    void Write(const std::string& outStr);
+    std::string DumpMixStackLocked(const EcmaVM *vm);
+    std::string PrintJsFrame(const JsFrameInfo& jsFrame);
+
+private:
+    uint8_t skipframes_ = 0;
+    std::shared_ptr<Unwinder> unwinder_ {nullptr};
+    std::string stack_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
