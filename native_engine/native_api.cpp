@@ -26,9 +26,13 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
+#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
+#include "native_engine/impl/ark/ark_native_hybrid_stack.h"
+#endif
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_create_env.h"
 #include "native_engine/native_property.h"
+#include "native_engine/native_sendable.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
 #include "securec.h"
@@ -1118,7 +1122,8 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
 
     auto nativeValue = LocalValueFromJsValue(value);
     *result = nativeValue->IsUndefined() || nativeValue->IsNull() || nativeValue->IsNumber() ||
-              nativeValue->IsString() || nativeValue->IsBoolean() || nativeValue->IsJSShared() || nativeValue->IsBigInt();
+              nativeValue->IsString() || nativeValue->IsBoolean() || nativeValue->IsJSShared() ||
+              nativeValue->IsBigInt();
     return napi_clear_last_error(env);
 }
 
@@ -2723,9 +2728,30 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_serialize(napi_env env,
+                                       napi_value object,
+                                       napi_value transfer_list,
+                                       napi_value clone_list,
+                                       void** result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, transfer_list);
+    CHECK_ARG(env, clone_list);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(object);
+    auto transferList = LocalValueFromJsValue(transfer_list);
+    auto cloneList = LocalValueFromJsValue(clone_list);
+    *result = panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, false, true);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, napi_value transfer_list,
                                              napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
-                                             napi_value* result)
+                                             void** result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
@@ -2736,35 +2762,32 @@ NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, na
     auto nativeValue = LocalValueFromJsValue(object);
     auto transferList = LocalValueFromJsValue(transfer_list);
     auto cloneList = LocalValueFromJsValue(clone_list);
-    void* res =
+    *result =
         panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, defaultTransfer, defaultCloneSendable);
-    *result = reinterpret_cast<napi_value>(res);
 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_deserialize(napi_env env, napi_value recorder, napi_value* object)
+NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value* object)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, recorder);
+    CHECK_ARG(env, buffer);
     CHECK_ARG(env, object);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto recorderValue = reinterpret_cast<void*>(recorder);
-    Local<panda::JSValueRef> res = panda::JSNApi::DeserializeValue(vm, recorderValue, reinterpret_cast<void*>(engine));
+    Local<panda::JSValueRef> res = panda::JSNApi::DeserializeValue(vm, buffer, reinterpret_cast<void*>(engine));
     *object = JsValueFromLocalValue(res);
 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, napi_value value)
+NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffer)
 {
     CHECK_ENV(env);
-    CHECK_ARG(env, value);
+    CHECK_ARG(env, buffer);
 
-    void* data = reinterpret_cast<void*>(value);
-    panda::JSNApi::DeleteSerializationData(data);
+    panda::JSNApi::DeleteSerializationData(buffer);
 
     return napi_clear_last_error(env);
 }
@@ -3210,6 +3233,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     HILOG_WARN("GetStacktrace env get stack failed");
 #endif
     stack = engine->ExecuteTranslateBySourceMap(rawStack);
+    
     return napi_clear_last_error(env);
 }
 
@@ -3217,7 +3241,7 @@ NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& s
 {
     CHECK_ENV(env);
 
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if defined(OHOS_PLATFORM) && !defined(is_arkui_x)
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     stack = HybridStackDumper::GetMixStack(vm);

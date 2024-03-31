@@ -28,12 +28,12 @@
                 "faultloggerd",
                 "hilog",
                 "hitrace",
+                "jsoncpp",
                 "init"
             ],
             "third_party": [
                 "icu",
                 "jerryscript",
-                "jsoncpp",
                 "libuv",
                 "node",
                 "bounds_checking_function"

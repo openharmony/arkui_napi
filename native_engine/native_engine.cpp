@@ -681,9 +681,6 @@ napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
     std::string ami;
     if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, ami, IsRestrictedWorkerThread())) {
         HILOG_ERROR("RunScriptForAbc: GetAbcBuffer failed");
-        if (panda::JSNApi::HasPendingException(GetEcmaVm())) {
-            HandleUncaughtException();
-        }
         return nullptr;
     }
     // if buffer is empty, return directly.
@@ -702,17 +699,18 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
     std::string ami;
     if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, ami, IsRestrictedWorkerThread())) {
         HILOG_ERROR("RunScript: GetAbcBuffer failed");
-        if (panda::JSNApi::HasPendingException(GetEcmaVm())) {
-            HandleUncaughtException();
-        }
         return nullptr;
     }
-    HILOG_INFO("asset size is %{public}zu", scriptContentSize);
+    // if buffer is empty, return directly.
+    if (scriptContentSize == 0) {
+        HILOG_ERROR("RunScript: buffer size is empty, please check abc path");
+        return nullptr;
+    }
     return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
 }
 
 bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-    std::string& ami, bool isRestrictedWorker)
+    std::string& ami, bool isRestrictedWorker, bool relativeWorker)
 {
     std::string pathStr(path);
     bool useSecureMem = false;
@@ -720,8 +718,8 @@ bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* buff
         HILOG_ERROR("Get asset error");
         return false;
     }
-    if (useSecureMem && !panda::JSNApi::CheckSecureMem(reinterpret_cast<uintptr_t>(*buffer))) {
-        ThrowException("GetAbcBuffer secure memory check failed, please execute in secure memory.");
+    if (useSecureMem && relativeWorker && !panda::JSNApi::CheckSecureMem(reinterpret_cast<uintptr_t>(*buffer))) {
+        HILOG_ERROR("GetAbcBuffer secure memory check failed, please check abc signature.");
         return false;
     }
     return true;

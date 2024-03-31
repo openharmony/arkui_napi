@@ -21,9 +21,13 @@
 
 #include <sstream>
 #include "ark_native_deferred.h"
+#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
+#include "ark_native_hybrid_stack.h"
+#endif
 #include "ark_native_reference.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
+#include "native_sendable.h"
 #include "securec.h"
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
@@ -322,80 +326,6 @@ PropertyAttribute GetPropertyAttributeFromNapiPropertyDescriptor(napi_env env,
     return attr;
 }
 
-void InitSendablePropertiesInfo(napi_env env,
-                                const EcmaVM* vm,
-                                FunctionRef::SendablePropertiesInfo& info,
-                                const NapiPropertyDescriptor& propertyDescriptor,
-                                size_t& length)
-{
-    Local<panda::StringRef> key;
-    if (propertyDescriptor.utf8name != nullptr) {
-        key = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
-    } else {
-        key = LocalValueFromJsValue(propertyDescriptor.name);
-    }
-    Local<panda::JSValueRef> value = LocalValueFromJsValue(propertyDescriptor.value);
-
-    info.keys->Set(vm, length, key);
-    info.values->Set(vm, length, value);
-    PropertyAttribute attr = GetPropertyAttributeFromNapiPropertyDescriptor(env, propertyDescriptor);
-    info.attributes[length] = attr;
-    ++length;
-}
-
-FunctionRef::SendablePropertiesInfos CreateSendablePropertiesInfos(napi_env env,
-                                                                   const NapiPropertyDescriptor* properties,
-                                                                   size_t propertiesLength)
-{
-    size_t instancePropertiesLength = 0;
-    // index 0 is name
-    size_t staticPropertiesLength = 1;
-    // index 0 is constructor
-    size_t nonStaticPropertiesLength = 1;
-    for (size_t i = 0; i < propertiesLength; i++) {
-        if (properties[i].attributes & NATIVE_INSTANCE) {
-            ++instancePropertiesLength;
-        } else if (properties[i].attributes & NATIVE_STATIC) {
-            ++staticPropertiesLength;
-        } else {
-            ++nonStaticPropertiesLength;
-        }
-    }
-
-    const EcmaVM* vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    FunctionRef::SendablePropertiesInfo instancePropertiesInfo = { panda::ArrayRef::New(vm, instancePropertiesLength),
-                                                                   panda::ArrayRef::New(vm, instancePropertiesLength),
-                                                                   new PropertyAttribute[instancePropertiesLength] };
-    FunctionRef::SendablePropertiesInfo staticPropertiesInfo = { panda::ArrayRef::New(vm, staticPropertiesLength),
-                                                                 panda::ArrayRef::New(vm, staticPropertiesLength),
-                                                                 new PropertyAttribute[staticPropertiesLength] };
-    FunctionRef::SendablePropertiesInfo nonStaticPropertiesInfo = { panda::ArrayRef::New(vm, nonStaticPropertiesLength),
-                                                                    panda::ArrayRef::New(vm, nonStaticPropertiesLength),
-                                                                    new PropertyAttribute[nonStaticPropertiesLength] };
-
-    instancePropertiesLength = 0;
-    // index 0 is name
-    staticPropertiesLength = 1;
-    // index 0 is constructor
-    nonStaticPropertiesLength = 1;
-
-    for (size_t i = 0; i < propertiesLength; ++i) {
-        if (properties[i].attributes & NATIVE_INSTANCE) {
-            InitSendablePropertiesInfo(env, vm, instancePropertiesInfo, properties[i], instancePropertiesLength);
-        } else if (properties[i].attributes & NATIVE_STATIC) {
-            InitSendablePropertiesInfo(env, vm, staticPropertiesInfo, properties[i], staticPropertiesLength);
-        } else {
-            InitSendablePropertiesInfo(env, vm, nonStaticPropertiesInfo, properties[i], nonStaticPropertiesLength);
-        }
-    }
-
-    return {
-        instancePropertiesInfo,
-        staticPropertiesInfo,
-        nonStaticPropertiesInfo,
-    };
-}
-
 panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
                                                         const char* name,
                                                         NapiNativeCallback callback,
@@ -424,7 +354,7 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
         localParent = LocalValueFromJsValue(parent);
     }
 
-    auto propertiesInfos = CreateSendablePropertiesInfos(env, properties, propertiesLength);
+    auto infos = NativeSendable::CreateSendablePropertiesInfos(env, properties, propertiesLength);
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewSendableClassFunction(
         vm, ArkNativeFunctionCallBack,
         [](void* externalPointer, void* data) {
@@ -433,13 +363,7 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
                 delete info;
             }
         },
-        reinterpret_cast<void*>(funcInfo), fnName, propertiesInfos, localParent, true, true);
-    delete[] propertiesInfos.instancePropertiesInfo.attributes;
-    delete[] propertiesInfos.staticPropertiesInfo.attributes;
-    delete[] propertiesInfos.nonStaticPropertiesInfo.attributes;
-    propertiesInfos.instancePropertiesInfo.attributes = nullptr;
-    propertiesInfos.staticPropertiesInfo.attributes = nullptr;
-    propertiesInfos.nonStaticPropertiesInfo.attributes = nullptr;
+        reinterpret_cast<void*>(funcInfo), fnName, infos, localParent, true);
 
     return fn;
 }
@@ -1031,7 +955,11 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     } else {
         propertyName = LocalValueFromJsValue(propertyDescriptor.name);
     }
-    NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
+    if (obj->IsJSShared()) {
+        NativeSendable::NapiDefineSendabledProperty(env, obj, propertyDescriptor, propertyName, result);
+    } else {
+        NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
+    }
     Local<panda::ObjectRef> excep = panda::JSNApi::GetUncaughtException(vm);
     if (!excep.IsNull()) {
         HILOG_DEBUG("ArkNativeObject::DefineProperty occur Exception");
@@ -2298,110 +2226,69 @@ void ArkNativeEngine::StopMonitorJSHeapUsage()
 #endif
 }
 
+#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
 std::string HybridStackDumper::PrintJsFrame(const JsFrameInfo& jsFrame)
 {
-    return "  at " + jsFrame.functionName + " (" + jsFrame.fileName + ":" + jsFrame.pos + ")\n";
+    return "    at " + jsFrame.functionName + " (" + jsFrame.fileName + ":" + jsFrame.pos + ")\n";
 }
 
-bool HybridStackDumper::IsJsNativePcEqual(uintptr_t *jsNativePointer, uint64_t nativePc, uint64_t nativeOffset)
+std::string HybridStackDumper::MatchJsFrameByFlag(const std::vector<JsFrameInfo>& jsFrames, uint32_t& jsIndex)
 {
-    uint64_t jsPc_ = (uint64_t)jsNativePointer;
-    if (nativePc - nativeOffset == jsPc_) {
-        return true;
+    std::string jsStack = "";
+    if (jsIndex == jsFrames.size()) {
+        return jsStack;
     }
-    return false;
+
+    do {
+        jsStack += PrintJsFrame(jsFrames[jsIndex]);
+        jsIndex++;
+    } while (jsIndex < jsFrames.size() && jsFrames[jsIndex].nativePointer == nullptr);
+
+    return jsStack;
 }
 
-void HybridStackDumper::BuildJsNativeMixStack(std::vector<JsFrames>& jsFrames,
+void HybridStackDumper::BuildJsNativeMixStack(std::vector<JsFrameInfo>& jsFrames,
     std::vector<DfxFrame>& nativeFrames)
 {
-    uint32_t jsIdx = 0;
-    uint32_t nativeIdx = 0;
+    uint32_t jsIndex = 0;
     std::string hybridStackStr = "";
-    bool matchJsFrame = false;
-    while (jsIdx < jsFrames.size() && jsFrames[jsIdx].nativePointer == nullptr) {
-        jsIdx++;
+    if (nativeFrames.empty()) {
+        for (auto jsFrame : jsFrames) {
+            hybridStackStr += PrintJsFrame(jsFrame);
+        }
+        Write(hybridStackStr);
+        Write("\n");
     }
 
-    while (jsIdx < jsFrames.size() && nativeIdx < nativeFrames.size()) {
-        if (jsFrames[jsIdx].nativePointer == nullptr) {
-            hybridStackStr += PrintJsFrame(jsFrames[jsIdx]);
-            jsIdx++;
-            continue;
-        }
-
-        if (IsJsNativePcEqual(jsFrames[jsIdx].nativePointer, nativeFrames[nativeIdx].pc,
-            nativeFrames[nativeIdx].funcOffset)) {
-            HILOG_DEBUG("HybridStackDumper::BuildJsNativeMixStack pc register values matched.");
-            std::vector<DfxFrame> frame;
-            frame.push_back(nativeFrames[nativeIdx]);
-            hybridStackStr += Unwinder::GetFramesStr(frame);
-            hybridStackStr += PrintJsFrame(jsFrames[jsIdx]);
-            nativeIdx++;
-            jsIdx++;
-            matchJsFrame = true;
-        } else {
-            hybridStackStr += Unwinder::GetFramesStr(nativeFrames);
-            nativeIdx++;
+    std::string nativeStacksStr = Unwinder::GetFramesStr(nativeFrames);
+    std::stringstream ss(nativeStacksStr);
+    std::string nativeStackStr;
+    while (std::getline(ss, nativeStackStr)) {
+        hybridStackStr += nativeStackStr;
+        hybridStackStr += "\n";
+        if (nativeStackStr.find(flag_) != std::string::npos) {
+            hybridStackStr += MatchJsFrameByFlag(jsFrames, jsIndex);
         }
     }
 
-    std::string jsStack;
-    if (!matchJsFrame && jsFrames.size() > 0) {
-        jsIdx = 0;
-        while (jsIdx < jsFrames.size()) {
-            jsStack += PrintJsFrame(jsFrames[jsIdx]);
-            jsIdx++;
-        }
-    }
-
-    while (nativeIdx < nativeFrames.size()) {
-        std::vector<DfxFrame> frames;
-        frames.push_back(nativeFrames[nativeIdx]);
-        hybridStackStr += Unwinder::GetFramesStr(frames);
-        nativeIdx++;
-    }
-
-    jsStack += hybridStackStr;
-    Write(jsStack);
+    Write(hybridStackStr);
     Write("\n");
 }
 
 bool HybridStackDumper::DumpMixFrame(const EcmaVM* vm)
 {
     unwinder_ = std::make_shared<Unwinder>();
-    bool hasNativeFrame = false;
     std::vector<DfxFrame> nativeFrames;
     if (getpid() == gettid()) {
-        hasNativeFrame = true;
         unwinder_->IgnoreMixstack(true);
-        if (!unwinder_->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipframes_)) {
-            hasNativeFrame = false;
+        if (unwinder_->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipframes_)) {
+            nativeFrames = unwinder_->GetFrames();
+        } else {
             HILOG_ERROR("Failed to unwind local");
         }
-        nativeFrames = unwinder_->GetFrames();
     }
-
-    bool hasJsFrame = true;
     std::vector<JsFrameInfo> jsFrames;
-
-    // if we failed to get native frame, target thread may not be seized
-    hasJsFrame = DFXJSNApi::BuildJsStackInfoList(vm, gettid(), jsFrames)
-
-    if (jsFrames.size() == 0) {
-        hasJsFrame = false;
-    }
-
-    if (!hasNativeFrame && !hasJsFrame) {
-        HILOG_ERROR("Failed to unwind native frames and js frames.");
-        return false;
-    }
-
-    if (hasNativeFrame && !hasJsFrame) {
-        Write(Unwinder::GetFramesStr(nativeFrames));
-        Write("\n");
-        return true;
-    }
+    DFXJSNApi::BuildJsStackInfoList(vm, gettid(), jsFrames);
     BuildJsNativeMixStack(jsFrames, nativeFrames);
     return true;
 }
@@ -2412,7 +2299,6 @@ void HybridStackDumper::Write(const std::string& outStr)
 }
 
 std::string HybridStackDumper::DumpMixStackLocked(const EcmaVM* vm)
-
 {
     stack_.clear();
     DumpMixFrame(vm);
@@ -2424,4 +2310,24 @@ std::string HybridStackDumper::GetMixStack(const EcmaVM* vm)
 {
     HybridStackDumper stackDumper;
     return stackDumper.DumpMixStackLocked(vm);
+}
+#endif
+
+void ArkNativeEngine::WrapSendableObj(napi_env env,
+                                      napi_value js_object,
+                                      void* native_object,
+                                      panda::NativePointerCallback finalize_cb)
+{
+    Local<ObjectRef> nativeObject = LocalValueFromJsValue(js_object);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    nativeObject->SetNativePointerFieldCount(vm, 1);
+    nativeObject->SetNativePointerField(vm, 0, native_object, finalize_cb, nullptr, 0);
+}
+
+void ArkNativeEngine::UnwrapSendableObj(napi_env env, napi_value js_object, void** result)
+{
+    Local<ObjectRef> nativeObject = LocalValueFromJsValue(js_object);
+    auto native_object = nativeObject->GetNativePointerField(0);
+    *result = native_object;
 }

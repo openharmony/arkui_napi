@@ -395,7 +395,7 @@ public:
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
     bool GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-        std::string& ami, bool isRestrictedWorker = false);
+        std::string& ami, bool isRestrictedWorker = false, bool relativeWorker = true);
 
     const char* GetModuleFileName();
 
@@ -435,6 +435,13 @@ public:
 
     virtual napi_value NapiLoadModule(const char* path, const char* module_info) = 0;
     virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) = 0;
+
+    // note: remove this after napi works well with sendable.
+    virtual void WrapSendableObj(napi_env env,
+                                 napi_value js_object,
+                                 void* native_object,
+                                 panda::NativePointerCallback finalize_cb) = 0;
+    virtual void UnwrapSendableObj(napi_env env, napi_value js_object, void** result) = 0;
 
     double NewAsyncId()
     {
