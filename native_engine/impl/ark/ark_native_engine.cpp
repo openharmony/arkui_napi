@@ -2135,7 +2135,12 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
         dumpWork_->limitSize = limitSize;
         dumpWork_->isReady = &isReady_;
         uv_loop_t *loop = GetUVLoop();
-        uv_queue_work(loop, &(dumpWork_->work), [](uv_work_t *) {}, AsyncAfterWorkCallback);
+        int status = uv_queue_work(loop, &(dumpWork_->work), [](uv_work_t *) {}, AsyncAfterWorkCallback);
+        if (status != 0) {
+            HILOG_ERROR("In JudgmentDump, uv_queue_work failed");
+            delete dumpWork_;
+            return;
+        }
         while (!isReady_) {
             condition_.wait(lock);
         }
