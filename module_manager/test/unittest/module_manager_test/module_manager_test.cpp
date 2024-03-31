@@ -282,9 +282,14 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
     std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
     ASSERT_NE(nullptr, moduleManager);
     MockFindNativeModuleByDisk(nullptr);
+    char nativeModulePath[3][4096];
+    nativeModulePath[0][0] = 0;
+    nativeModulePath[1][0] = 0;
+    nativeModulePath[2][0] = 0;
 
     std::string errInfo = "";
-    EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false, errInfo), nullptr);
+    EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false, errInfo,
+        nativeModulePath), nullptr);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 end";
 }
 

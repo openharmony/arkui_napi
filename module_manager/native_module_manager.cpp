@@ -227,19 +227,20 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
 
     std::string loadPath;
     std::string name = isAppModule ? (prefix_ + "/" + moduleName) : moduleName;
-    NativeModule* module = FindNativeModuleByCache(name.c_str());
-    if (module != nullptr) {
-        char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
-        const char* pathKey = "default";
-        if (!GetNativeModulePath(moduleName, pathKey, "", isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-            HILOG_ERROR("get native module path failed");
-            return loadPath;
-        }
-        loadPath = nativeModulePath[0];
-        if (isAppModule && IsExistedPath(pathKey)) {
-            loadPath = std::string(appLibPathMap_[pathKey]) + "/" + nativeModulePath[0];
-        }
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    const char* pathKey = "default";
+    if (!GetNativeModulePath(moduleName, pathKey, "", isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+        HILOG_ERROR("get native module path failed");
         return loadPath;
+    }
+    NativeModule* module = FindNativeModuleByCache(name.c_str(), nativeModulePath);
+    if (module == nullptr) {
+        HILOG_ERROR("get module file name failed");
+        return loadPath;
+    }
+    loadPath = nativeModulePath[0];
+    if (isAppModule && IsExistedPath(pathKey)) {
+        loadPath = std::string(appLibPathMap_[pathKey]) + "/" + nativeModulePath[0];
     }
     HILOG_ERROR("get module file name failed, moduleName is %{public}s", moduleName);
     return loadPath;
@@ -279,6 +280,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->getABCCode = nativeModule->getABCCode;
     lastNativeModule_->next = nullptr;
     lastNativeModule_->moduleLoaded = true;
+    lastNativeModule_->systemFilePath = "";
 
     HILOG_DEBUG("register module name is '%{public}s', isAppModule is %{public}d",
         lastNativeModule_->name, isAppModule_);
@@ -547,9 +549,12 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #endif
 
     (void)pthread_mutex_lock(&mutex_);
-
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    nativeModulePath[0][0] = 0;
+    nativeModulePath[1][0] = 0;
+    nativeModulePath[2][0] = 0; // 2 : Element index value
 #ifdef ANDROID_PLATFORM
-    NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str());
+    NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath);
 #else
     std::string key(moduleName);
     isAppModule_ = isAppModule;
@@ -561,7 +566,12 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         key = prefix_ + '/' + moduleName;
         HILOG_INFO("key is %{public}s", key.c_str());
     }
-    NativeModule* nativeModule = FindNativeModuleByCache(key.c_str());
+    if (!GetNativeModulePath(moduleName, prefix_.c_str(), relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+        errInfo = "failed to get native file path of module " + std::string(moduleName);
+        HILOG_WARN("%{public}s", errInfo.c_str());
+        return nullptr;
+    }
+    NativeModule* nativeModule = FindNativeModuleByCache(key.c_str(), nativeModulePath);
 #endif
 
     if (nativeModule == nullptr) {
@@ -570,15 +580,15 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #ifdef ANDROID_PLATFORM
         HILOG_WARN("module '%{public}s' does not in cache", strCutName.c_str());
         nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath,
-            internal, isAppModule, errInfo);
+            internal, isAppModule, errInfo, nativeModulePath);
 #else
         HILOG_WARN("module '%{public}s' does not in cache", moduleName);
         nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath,
-            internal, isAppModule, errInfo);
+            internal, isAppModule, errInfo, nativeModulePath);
 #endif
 
 #else
-    nativeModule = FindNativeModuleByCache(moduleName);
+    nativeModule = FindNativeModuleByCache(moduleName, nativeModulePath);
 #endif
     }
     MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
@@ -893,17 +903,9 @@ bool NativeModuleManager::CheckModuleExist(const char* modulePath)
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
-    const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo)
+    const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
+    char nativeModulePath[][NAPI_PATH_MAX])
 {
-    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
-    nativeModulePath[0][0] = 0;
-    nativeModulePath[1][0] = 0;
-    nativeModulePath[2][0] = 0; // 2 : Element index value
-    if (!GetNativeModulePath(moduleName, path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        errInfo = "failed to get native file path of module " + std::string(moduleName);
-        HILOG_WARN("%{public}s", errInfo.c_str());
-        return nullptr;
-    }
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
@@ -960,6 +962,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         }
 
         lastNativeModule_->moduleName = moduleName;
+        lastNativeModule_->systemFilePath = strdup(loadPath);
         if (strcmp(lastNativeModule_->moduleName, lastNativeModule_->name)) {
             HILOG_WARN("mismatch: moduleName is %{public}s, name is %{public}s",
                 lastNativeModule_->moduleName, lastNativeModule_->name);
@@ -1003,6 +1006,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             }
         } else {
             RegisterByBuffer(moduleKey, abcBuffer, len);
+            lastNativeModule_->systemFilePath = strdup(loadPath);
         }
     }
     if (lastNativeModule_) {
@@ -1091,7 +1095,8 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
     return moduleDeleted;
 }
 
-NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName)
+NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName,
+    char nativeModulePath[][NAPI_PATH_MAX])
 {
     NativeModule* result = nullptr;
     NativeModule* preNativeModule = nullptr;
@@ -1100,8 +1105,20 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
             || !strcasecmp(temp->name, moduleName)) {
-            result = temp;
-            break;
+            if (strcmp(temp->name, moduleName)) {
+                HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
+                           moduleName, temp->name);
+            }
+            int label = 0;
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+            while (label < NATIVE_PATH_NUMBER && strcmp(temp->systemFilePath, nativeModulePath[label])) {
+                label++;
+            }
+#endif
+            if (label < NATIVE_PATH_NUMBER || !strcmp(temp->systemFilePath, "")) {
+                result = temp;
+                break;
+            }
         }
         preNativeModule = temp;
     }
