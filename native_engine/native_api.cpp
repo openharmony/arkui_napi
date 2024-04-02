@@ -3405,3 +3405,14 @@ NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env* env)
     }
     return NativeCreateEnv::g_destroyNapiEnvCallback(env);
 }
+
+NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    *result = nativeValue->IsConcurrentFunction();
+    return napi_clear_last_error(env);
+}

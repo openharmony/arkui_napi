@@ -151,6 +151,7 @@ NAPI_EXTERN napi_status napi_serialize(napi_env env,
                                        void** result);
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value* object);
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffer);
+NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value value, bool* result);
 
 #ifdef __cplusplus
 }
