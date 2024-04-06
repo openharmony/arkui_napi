@@ -46,8 +46,14 @@ public:
 
     ~Engine()
     {
-        delete arkNativeEngine_;
-        JSNApi::DestroyJSVM(vm_);
+        if (arkNativeEngine_ != nullptr) {
+            delete arkNativeEngine_;
+            arkNativeEngine_ = nullptr;
+        }
+        if (vm_ != nullptr) {
+            JSNApi::DestroyJSVM(vm_);
+            vm_ = nullptr;
+        }
     }
 private:
     EcmaVM* vm_ {nullptr};
