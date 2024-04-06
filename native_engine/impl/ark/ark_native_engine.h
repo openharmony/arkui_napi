@@ -48,7 +48,7 @@ struct ApiCheckContext {
     panda::EscapeLocalScope& scope;
 };
 }
-using ArkJsFrameInfo = panda::ecmascript::JsFrameInfo;
+using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 
 using panda::DFXJSNApi;
 using panda::Local;

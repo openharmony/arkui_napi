@@ -25,8 +25,10 @@
         "deps": {
             "components": [
                 "ets_runtime",
+                "faultloggerd",
                 "hilog",
                 "hitrace",
+                "jsoncpp",
                 "init"
             ],
             "third_party": [

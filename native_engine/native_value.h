@@ -24,6 +24,9 @@
 
 namespace panda {
 class JsiRuntimeCallInfo;
+namespace ecmascript {
+struct JsFrameInfo;
+}
 }
 
 class NativeEngine;
@@ -48,13 +51,6 @@ struct NativeObjectInfo {
     void* nativeObject = nullptr;
     NativeFinalize callback = nullptr;
     void* hint = nullptr;
-};
-
-struct JsFrameInfo {
-    std::string functionName;
-    std::string fileName;
-    std::string pos;
-    uintptr_t *nativePointer = nullptr;
 };
 
 struct NapiFunctionInfo {
