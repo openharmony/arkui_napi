@@ -17,8 +17,6 @@
 
 #include "native_engine/impl/ark/ark_native_reference.h"
 
-NativeReferenceManager::NativeReferenceManager() : references_(nullptr) {}
-
 NativeReferenceManager::~NativeReferenceManager()
 {
     for (auto handler = references_; handler != nullptr; handler = references_) {

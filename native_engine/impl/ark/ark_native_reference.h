@@ -28,6 +28,10 @@ using panda::Global;
 using panda::JSValueRef;
 using panda::Local;
 using panda::LocalScope;
+enum class FinalizerState {
+    DESTRUCTION,
+    COLLECTION,
+};
 
 class ArkNativeReference : public NativeReference {
 public:
@@ -38,7 +42,8 @@ public:
                        bool deleteSelf = false,
                        NapiNativeFinalize napiCallback = nullptr,
                        void* data = nullptr,
-                       void* hint = nullptr);
+                       void* hint = nullptr,
+                       bool isAsyncCall = false);
     ArkNativeReference(ArkNativeEngine* engine,
                        const EcmaVM* vm,
                        Local<JSValueRef> value,
@@ -46,7 +51,8 @@ public:
                        bool deleteSelf,
                        NapiNativeFinalize napiCallback,
                        void* data,
-                       void* hint);
+                       void* hint,
+                       bool isAsyncCall = false);
     ~ArkNativeReference() override;
 
     uint32_t Ref() override;
@@ -79,6 +85,7 @@ private:
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
+    bool isAsyncCall_ {false};
     NapiNativeFinalize napiCallback_ {nullptr};
     void* data_ = nullptr;
     void* hint_ = nullptr;
@@ -89,7 +96,7 @@ private:
     NativeReference* prev_ {nullptr};
     NativeReference* next_ {nullptr};
 
-    void FinalizeCallback();
+    void FinalizeCallback(FinalizerState state);
 
     static void FreeGlobalCallBack(void* ref);
     static void NativeFinalizeCallBack(void* ref);

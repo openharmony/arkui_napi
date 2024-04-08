@@ -168,6 +168,8 @@ public:
     // Create native reference
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+    NativeReference* CreateAsyncReference(napi_value value, uint32_t initialRefcount, bool flag = false,
+        NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
     void* CreateRuntime(bool isLimitedWorker = false) override;
     panda::Local<panda::ObjectRef> LoadArkModule(const void *buffer, int32_t len, const std::string& fileName);
@@ -238,6 +240,18 @@ public:
     uint64_t GetCurrentTickMillseconds();
     void JudgmentDump(size_t limitSize);
     void NotifyNativeCalling(const void *nativeAddress);
+
+    void PostFinalizeTasks();
+
+    std::vector<RefFinalizer> &GetPendingFinalizers()
+    {
+        return pendingFinalizers_;
+    }
+
+    std::vector<RefFinalizer> &GetPendingAsyncFinalizers()
+    {
+        return pendingAsyncFinalizers_;
+    }
 
     void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
     void HandleUncaughtException() override;
@@ -330,5 +344,7 @@ private:
     bool isLimitedWorker_ = false;
     bool isReady_ = false;
     struct JsHeapDumpWork *dumpWork_ = nullptr;
+    std::vector<RefFinalizer> pendingFinalizers_;
+    std::vector<RefFinalizer> pendingAsyncFinalizers_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

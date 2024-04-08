@@ -120,6 +120,7 @@ using SourceMapCallback = std::function<std::string(const std::string& rawStack)
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
+using RefFinalizer = std::pair<NapiNativeFinalize, std::tuple<NativeEngine*, void*, void*>>;
 
 class NAPI_EXPORT NativeEngine {
 public:
@@ -169,6 +170,9 @@ public:
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
     virtual NativeReference* CreateReference(napi_value value, uint32_t initialRefcount,
+        bool flag = false, NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
+
+    virtual NativeReference* CreateAsyncReference(napi_value value, uint32_t initialRefcount,
         bool flag = false, NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) = 0;
 
     virtual NativeAsyncWork* CreateAsyncWork(napi_value asyncResource,
