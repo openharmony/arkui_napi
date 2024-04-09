@@ -439,6 +439,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                                                                                      isLimitedWorker_(isLimitedWorker)
 {
     HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
+    panda::JSNApi::SetEnv(vm, this);
 #ifdef ENABLE_HITRACE
     if (!ArkNativeEngine::napiProfilerParamReaded) {
         char napiProfilerParam[NAPI_PROFILER_PARAM_SIZE] = {0};
@@ -776,7 +777,11 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     bool getStackBeforeCallNapiSuccess = false;
     JSNApi::GetStackBeforeCallNapiSuccess(vm, getStackBeforeCallNapiSuccess);
     auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
-    auto engine = reinterpret_cast<NativeEngine*>(info->env);
+    auto env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
+    if (env == nullptr) {
+        env = info->env;
+    }
+    auto engine = reinterpret_cast<NativeEngine*>(env);
     auto cb = info->callback;
     if (engine == nullptr) {
         HILOG_ERROR("native engine is null");
@@ -793,7 +798,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     napi_value result = nullptr;
     if (cb != nullptr) {
         panda::JsiNativeScope nativeScope(vm);
-        result = cb(info->env, &cbInfo);
+        result = cb(env, &cbInfo);
     }
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
@@ -2308,7 +2313,7 @@ std::string HybridStackDumper::DumpMixStackLocked(const EcmaVM* vm)
 {
     stack_.clear();
     DumpMixFrame(vm);
-    
+
     return stack_;
 }
 
