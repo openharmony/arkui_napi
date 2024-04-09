@@ -906,12 +906,11 @@ NAPI_EXTERN napi_status napi_set_named_property(napi_env env, napi_value object,
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(object);
-    auto propKey = LocalValueFromJsValue(value);
+    auto propVal = LocalValueFromJsValue(value);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    obj->Set(vm, key, propKey);
+    Local<panda::ObjectRef> obj(nativeValue);
+    obj->Set(vm, utf8name, propVal);
 
     return GET_RETURN_STATUS(env);
 }
@@ -946,9 +945,8 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     auto nativeValue = LocalValueFromJsValue(object);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    Local<panda::JSValueRef> value = obj->Get(vm, key);
+    Local<panda::ObjectRef> obj(nativeValue);
+    Local<panda::JSValueRef> value = obj->Get(vm, utf8name);
 #ifdef ENABLE_CONTAINER_SCOPE
     if (value->IsFunction()) {
         FunctionSetContainerId(vm, value);
