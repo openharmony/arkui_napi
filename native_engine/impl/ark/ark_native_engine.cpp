@@ -222,7 +222,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
 #endif
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack<true>,
         [](void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                 if (info != nullptr) {
@@ -773,6 +773,7 @@ NapiFunctionInfo* NapiNativeCallbackInfo::GetFunctionInfo()
     return reinterpret_cast<NapiFunctionInfo*>(info->GetData());
 }
 
+template <bool changeState>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 {
     EcmaVM *vm = runtimeInfo->GetVM();
@@ -800,8 +801,12 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 
     napi_value result = nullptr;
     if (cb != nullptr) {
-        panda::JsiNativeScope nativeScope(vm);
-        result = cb(env, &cbInfo);
+        if constexpr (changeState) {
+            panda::JsiNativeScope nativeScope(vm);
+            result = cb(env, &cbInfo);
+        } else {
+            result = cb(env, &cbInfo);
+        }
     }
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
