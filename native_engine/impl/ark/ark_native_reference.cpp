@@ -29,12 +29,14 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        bool deleteSelf,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
-                                       void* hint)
+                                       void* hint,
+                                       bool isAsyncCall)
     : engine_(engine),
       vm_(vm),
       value_(vm, LocalValueFromJsValue(value)),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
+      isAsyncCall_(isAsyncCall),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint)
@@ -49,12 +51,14 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        bool deleteSelf,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
-                                       void* hint)
+                                       void* hint,
+                                       bool isAsyncCall)
     : engine_(engine),
       vm_(vm),
       value_(vm, value),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
+      isAsyncCall_(isAsyncCall),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint)
@@ -74,7 +78,7 @@ ArkNativeReference::~ArkNativeReference()
     }
     hasDelete_ = true;
     value_.FreeGlobalHandleAddr();
-    FinalizeCallback();
+    FinalizeCallback(FinalizerState::DESTRUCTION);
 }
 
 uint32_t ArkNativeReference::Ref()
@@ -120,10 +124,24 @@ void* ArkNativeReference::GetData()
     return data_;
 }
 
-void ArkNativeReference::FinalizeCallback()
+void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
     if (napiCallback_ != nullptr) {
-        napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);
+        if (state == FinalizerState::COLLECTION) {
+            if (isAsyncCall_) {
+                engine_->GetPendingAsyncFinalizers().emplace_back(std::make_pair(napiCallback_,
+                                                                                 std::make_tuple(engine_,
+                                                                                                 data_,
+                                                                                                 hint_)));
+            } else {
+                engine_->GetPendingFinalizers().emplace_back(std::make_pair(napiCallback_,
+                                                                            std::make_tuple(engine_,
+                                                                                            data_,
+                                                                                            hint_)));
+            }
+        } else {
+            napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);
+        }
     }
     napiCallback_ = nullptr;
     data_ = nullptr;
@@ -144,7 +162,7 @@ void ArkNativeReference::FreeGlobalCallBack(void* ref)
 void ArkNativeReference::NativeFinalizeCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
-    that->FinalizeCallback();
+    that->FinalizeCallback(FinalizerState::COLLECTION);
 }
 
 void ArkNativeReference::SetDeleteSelf()

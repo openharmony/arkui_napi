@@ -21,13 +21,13 @@
 
 class NAPI_EXPORT NativeReferenceManager {
 public:
-    NativeReferenceManager();
+    NativeReferenceManager() = default;
     virtual ~NativeReferenceManager();
 
     void CreateHandler(NativeReference* reference);
     void ReleaseHandler(NativeReference* reference);
 
 private:
-    NativeReference *references_;
+    NativeReference *references_ {nullptr};
 };
 #endif /* FOUNDATION_ACE_NAPI_REFERENCE_MANAGER_NATIVE_REFERENCE_MANAGER_H */
