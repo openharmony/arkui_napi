@@ -1448,6 +1448,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     std::string bundleName = OHOS::system::GetParameter("persist.ark.arkbundlename", "");
+    std::string memConfigProperty = OHOS::system::GetParameter("persist.ark.mem_config_property", "");
     size_t gcThreadNum = OHOS::system::GetUintParameter<size_t>("persist.ark.gcthreads", 7);
     size_t longPauseTime = OHOS::system::GetUintParameter<size_t>("persist.ark.longpausetime", 40);
     bool asmInterpreterEnabled = OHOS::system::GetBoolParameter("persist.ark.asminterpreter", true);
@@ -1456,6 +1457,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     option.SetEnableBuiltinsLazy(builtinsLazyEnabled);
     option.SetArkProperties(arkProperties);
     option.SetArkBundleName(bundleName);
+    option.SetMemConfigProperty(memConfigProperty);
     option.SetGcThreadNum(gcThreadNum);
     option.SetLongPauseTime(longPauseTime);
     option.SetEnableAsmInterpreter(asmInterpreterEnabled);
@@ -1482,7 +1484,6 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
     arkEngine->SetHostEngine(engine);
-
     auto cleanEnv = [vm]() {
         if (vm != nullptr) {
             HILOG_DEBUG("cleanEnv is called");
@@ -1490,7 +1491,6 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
         }
     };
     arkEngine->SetCleanEnv(cleanEnv);
-
     if (hostVM != nullptr) {
         panda::JSNApi::AddWorker(const_cast<EcmaVM*>(hostVM), vm);
     }
