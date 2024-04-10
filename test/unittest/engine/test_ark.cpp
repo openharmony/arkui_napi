@@ -101,3 +101,9 @@ HWTEST_F(NativeEngineTest, SuspendVM001, testing::ext::TestSize.Level0)
     delete args;
     args = nullptr;
 }
+
+HWTEST_F(NativeEngineTest, CreateRuntimeFunc001, testing::ext::TestSize.Level0)
+{
+    auto result = engine_->CreateRuntime(true);
+    ASSERT_TRUE(result);
+}
