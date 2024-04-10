@@ -1565,6 +1565,9 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
     arkEngine->SetHostEngine(engine);
+    // sync apiVersion
+    arkEngine->SetApiVersion(engine);
+
     auto cleanEnv = [vm]() {
         if (vm != nullptr) {
             HILOG_DEBUG("cleanEnv is called");
