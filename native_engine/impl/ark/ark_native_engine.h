@@ -58,7 +58,7 @@ using panda::JSValueRef;
 using panda::JsiRuntimeCallInfo;
 using panda::PropertyAttribute;
 
-template <bool changeState = false>
+template <bool changeState = true>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
 void NapiDefinePropertyInner(napi_env env,
                              Local<panda::ObjectRef> &obj,
