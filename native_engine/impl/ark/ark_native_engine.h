@@ -147,6 +147,10 @@ public:
     bool IsExecutingPendingJob() const override;
     void* GetCurrentTaskInfo() const override;
     void TerminateExecution() const override;
+    // judge_typedarray
+    NAPI_EXPORT bool Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
+                                           const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                                           size_t byte_offset, size_t length, napi_value* result) override;
     // Call function
     napi_value CallFunction(napi_value thisVar,
                             napi_value function,
