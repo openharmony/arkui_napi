@@ -17,6 +17,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_CREATE_ENV_H
 
 #include <functional>
+#include <mutex>
 
 #include "node_api.h"
 
@@ -25,18 +26,12 @@ public:
     using CreateNapiEnvCallback = std::function<napi_status(napi_env *env)>;
     using DestroyNapiEnvCallback = std::function<napi_status(napi_env *env)>;
 
+    static std::mutex g_callbackMutex;
     static CreateNapiEnvCallback g_createNapiEnvCallback;
     static DestroyNapiEnvCallback g_destroyNapiEnvCallback;
 
-    static void RegCreateNapiEnvCallback(CreateNapiEnvCallback callback)
-    {
-        g_createNapiEnvCallback = callback;
-    }
-
-    static void RegDestroyNapiEnvCallback(DestroyNapiEnvCallback callback)
-    {
-        g_destroyNapiEnvCallback = callback;
-    }
+    static void RegCreateNapiEnvCallback(CreateNapiEnvCallback callback);
+    static void RegDestroyNapiEnvCallback(DestroyNapiEnvCallback callback);
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_CREATE_ENV_H */

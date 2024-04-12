@@ -17,3 +17,16 @@
 
 NativeCreateEnv::CreateNapiEnvCallback NativeCreateEnv::g_createNapiEnvCallback = nullptr;
 NativeCreateEnv::DestroyNapiEnvCallback NativeCreateEnv::g_destroyNapiEnvCallback = nullptr;
+std::mutex NativeCreateEnv::g_callbackMutex;
+
+void NativeCreateEnv::RegCreateNapiEnvCallback(CreateNapiEnvCallback callback)
+{
+    std::lock_guard<std::mutex> lock(g_callbackMutex);
+    g_createNapiEnvCallback = callback;
+}
+
+void NativeCreateEnv::RegDestroyNapiEnvCallback(DestroyNapiEnvCallback callback)
+{
+    std::lock_guard<std::mutex> lock(g_callbackMutex);
+    g_destroyNapiEnvCallback = callback;
+}
