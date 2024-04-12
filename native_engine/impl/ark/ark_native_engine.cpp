@@ -2348,6 +2348,7 @@ void HybridStackDumper::BuildJsNativeMixStack(std::vector<JsFrameInfo>& jsFrames
         }
         Write(hybridStackStr);
         Write("\n");
+        return;
     }
 
     std::string nativeStacksStr = Unwinder::GetFramesStr(nativeFrames);
