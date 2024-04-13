@@ -2827,8 +2827,10 @@ NAPI_EXTERN napi_status napi_serialize(napi_env env,
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(object);
     auto transferList = LocalValueFromJsValue(transfer_list);
+    RETURN_STATUS_IF_FALSE(env, transferList->IsUndefined() || transferList->IsJSArray(vm), napi_invalid_arg);
     auto cloneList = LocalValueFromJsValue(clone_list);
-    *result = panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, false, true);
+    RETURN_STATUS_IF_FALSE(env, cloneList->IsUndefined() || cloneList->IsJSArray(vm), napi_invalid_arg);
+    *result = panda::JSNApi::SerializeValue(vm, nativeValue, transferList, cloneList, false, false);
 
     return napi_clear_last_error(env);
 }
