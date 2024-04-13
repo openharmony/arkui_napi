@@ -222,7 +222,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
 #endif
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack<true>,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
         [](void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                 if (info != nullptr) {
