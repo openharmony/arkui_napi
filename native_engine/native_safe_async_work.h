@@ -27,6 +27,12 @@
 
 #include "native_async_context.h"
 
+#if defined(ENABLE_EVENT_HANDLER)
+namespace OHOS::AppExecFwk {
+    class EventHandler;
+}
+#endif
+
 enum class SafeAsyncCode {
     UNKNOWN = 0,
     SAFE_ASYNC_QUEUE_FULL,
@@ -67,6 +73,7 @@ public:
     virtual bool Ref();
     virtual bool Unref();
     virtual void* GetContext();
+    virtual napi_status PostTask(void *data, int32_t priority, bool isTail);
 
 private:
     void ProcessAsyncHandle();
@@ -89,6 +96,11 @@ private:
     std::queue<void*> queue_;
     std::condition_variable condition_;
     SafeAsyncStatus status_ = SafeAsyncStatus::UNKNOW;
+#if defined(ENABLE_EVENT_HANDLER)
+    std::mutex eventHandlerMutex_;
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
+#endif
+
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t containerScopeId_;
 #endif

@@ -60,4 +60,8 @@ static inline napi_status napi_set_last_error(napi_env env,
         ? napi_ok                                                              \
         : napi_set_last_error((env), napi_pending_exception))
 
+#define CHECK_WITH_RETURN(condition, status)   \
+    if (!(condition)) {                        \
+        return status;                         \
+    }
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */

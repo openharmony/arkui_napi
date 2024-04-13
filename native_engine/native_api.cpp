@@ -3525,3 +3525,23 @@ NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value val
     *result = nativeValue->IsConcurrentFunction();
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threadsafe_function func,
+                                                                    void *data,
+                                                                    napi_threadsafe_priority priority,
+                                                                    bool isTail)
+{
+    CHECK_ENV(func);
+
+    if (priority < napi_priority_immediate || priority > napi_priority_idle) {
+        HILOG_ERROR("invalid priority %{public}d", static_cast<int32_t>(priority));
+        return napi_status::napi_invalid_arg;
+    }
+    auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(func);
+    int32_t innerPriority = static_cast<int32_t>(priority);
+    auto res = safeAsyncWork->PostTask(data, innerPriority, isTail);
+    if (res != napi_ok) {
+        HILOG_ERROR("post task failed due to error %{public}d", res);
+    }
+    return res;
+}

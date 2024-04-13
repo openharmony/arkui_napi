@@ -28,4 +28,11 @@ typedef enum {
     napi_event_mode_nowait = 1,
 } napi_event_mode;
 
+typedef enum {
+    napi_priority_immediate = 0,
+    napi_priority_high = 1,
+    napi_priority_low = 2,
+    napi_priority_idle = 3,
+} napi_threadsafe_priority;
+
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_API_H */

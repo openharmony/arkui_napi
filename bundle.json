@@ -25,6 +25,7 @@
         "deps": {
             "components": [
                 "ets_runtime",
+                "eventhandler",
                 "faultloggerd",
                 "hilog",
                 "hitrace",

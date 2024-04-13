@@ -31,6 +31,11 @@
 using OHOS::Ace::ContainerScope;
 #endif
 
+#if defined(ENABLE_EVENT_HANDLER)
+#include "event_handler.h"
+using namespace OHOS::AppExecFwk;
+#endif
+
 // static methods start
 void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
 {
@@ -88,6 +93,19 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
 #ifdef ENABLE_CONTAINER_SCOPE
     containerScopeId_ = ContainerScope::CurrentId();
+#endif
+
+#if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<EventRunner> runner = nullptr;
+    if (engine_->IsMainThread()) {
+        runner = EventRunner::GetMainEventRunner();
+    } else {
+        runner = EventRunner::Current();
+    }
+
+    if (runner != nullptr) {
+        eventHandler_ = std::make_shared<EventHandler>(runner);
+    }
 #endif
 }
 
@@ -344,4 +362,40 @@ bool NativeSafeAsyncWork::IsSameTid()
 {
     auto tid = pthread_self();
     return (tid == engine_->GetTid()) ? true : false;
+}
+
+napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isTail)
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    HILOG_DEBUG("NativeSafeAsyncWork::PostTask called");
+    std::unique_lock<std::mutex> lock(eventHandlerMutex_);
+    if (engine_ == nullptr || eventHandler_ == nullptr) {
+        HILOG_ERROR("post task failed due to nullptr engine or eventHandler");
+        return napi_status::napi_generic_failure;
+    }
+    // the task will be execute at main thread or worker thread
+    auto task = [this, data]() {
+        HILOG_DEBUG("The task is executing in main thread or worker thread");
+        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get();
+        if (this->callJsCallback_ != nullptr) {
+            this->callJsCallback_(engine_, func_, context_, data);
+        } else {
+            CallJs(engine_, func_, context_, data);
+        }
+    };
+
+    bool res = false;
+    if (isTail) {
+        HILOG_DEBUG("The task is posted from tail");
+        res = eventHandler_->PostTask(task, static_cast<EventQueue::Priority>(priority));
+    } else {
+        HILOG_DEBUG("The task is posted from head");
+        res = eventHandler_->PostTaskAtFront(task, std::string(), static_cast<EventQueue::Priority>(priority));
+    }
+
+    return res ? napi_status::napi_ok : napi_status::napi_generic_failure;
+#else
+    HILOG_WARN("EventHandler feature is not supported");
+    return napi_status::napi_generic_failure;
+#endif
 }
