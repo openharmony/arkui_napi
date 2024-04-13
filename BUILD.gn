@@ -85,12 +85,16 @@ ohos_source_set("ace_napi_static") {
     }
   } else if (!is_mingw && !is_mac && !is_linux && is_ohos_standard_system) {
     external_deps += [
+      "eventhandler:libeventhandler",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
     ]
-    defines += [ "ENABLE_HITRACE" ]
+    defines += [
+      "ENABLE_HITRACE",
+      "ENABLE_EVENT_HANDLER",
+    ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
       deps += [ ":ace_container_scope" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]

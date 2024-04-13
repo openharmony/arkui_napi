@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +15,11 @@
 
 #include "test.h"
 
+#include <chrono>
+#include <thread>
 #include <uv.h>
 
+#include "event_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "securec.h"
@@ -32,6 +35,12 @@ struct FinalCbData_t {
     int32_t id = 0;
 };
 
+struct CallbackData {
+    napi_threadsafe_function tsfn;
+    napi_async_work work;
+    napi_threadsafe_priority priority;
+};
+
 static constexpr int32_t SEND_DATA_TEST = 11;
 static constexpr int32_t CALL_JS_CB_DATA_TEST_ID = 101;
 static constexpr int32_t FINAL_CB_DATA_TEST_ID = 1001;
@@ -40,6 +49,25 @@ static constexpr int32_t THREAD_COUNT = 2;
 static constexpr int32_t THREAD_COUNT_FOUR = 4;
 static constexpr int32_t MAX_QUEUE_SIZE = 3;
 static constexpr int32_t SUCCESS_COUNT_JS_FOUR = 4;
+static constexpr int32_t CALL_THREAD_SAFE_SLEEP = 2; // 2s
+static constexpr int32_t FIRST_TASK_SLEEP = 4; // 4s
+static constexpr int32_t INVALID_NAPI_THREAD_SAFE_PRIORITY = -1;
+static constexpr int32_t ADD_FIRST_NUMBER = 1;
+static constexpr int32_t ADD_SECOND_NUMBER = 2;
+static constexpr int32_t ADD_SUMMARY_RESULT = 3;
+static constexpr int32_t ARGS_SIZE = 2;
+static constexpr int32_t FIRST_RECEIVER = 1;
+static constexpr int32_t SECOND_RECEIVER = 2;
+static constexpr int32_t THIRD_RECEIVER = 3;
+static constexpr int32_t FOURTH_RECEIVER = 4;
+static constexpr int32_t FIFTH_RECEIVER = 5;
+static constexpr int32_t DATA_LENGTH = 40;
+static constexpr int32_t THREAD_SIZE = 5;
+static constexpr int32_t FIRST_THREAD_INDEX = 0;
+static constexpr int32_t SECOND_THREAD_INDEX = 1;
+static constexpr int32_t THIRD_THREAD_INDEX = 2;
+static constexpr int32_t FOURTH_THREAD_INDEX = 3;
+static constexpr int32_t FIFTH_THREAD_INDEX = 4;
 
 static pid_t g_mainTid = 0;
 static CallJsCbData_t g_jsData;
@@ -57,7 +85,10 @@ static int32_t g_sendDatas[SEND_DATAS_LENGTH];
 static int32_t  callSuccessCount = 0;
 static int32_t  callSuccessCountJS = 0;
 static int32_t  callSuccessCountJSFour = 0;
-bool  acquireFlag = false;
+bool acquireFlag = false;
+static int32_t g_receiveCnt = 0;
+static bool g_isTailA = false;
+static bool g_isTailB = false;
 
 static void TsFuncCallJs(napi_env env, napi_value tsfn_cb, void* context, void* data)
 {
@@ -361,6 +392,110 @@ static void TsFuncThreadInternal(napi_env env,
     HILOG_INFO("TsFuncThreadInternal end");
 }
 
+static napi_value JsCallback(napi_env env, napi_callback_info info)
+{
+    size_t agrc = ARGS_SIZE;
+    napi_value argv[ARGS_SIZE] = { nullptr };
+    napi_get_cb_info(env, info, &agrc, argv, nullptr, nullptr);
+
+    int32_t number1 = 0;
+    napi_get_value_int32(env, argv[0], &number1);
+
+    int32_t number2 = 0;
+    napi_get_value_int32(env, argv[1], &number2);
+
+    napi_value result = nullptr;
+    napi_create_int32(env, number1 + number2, &result);
+    return result;
+}
+
+static void CallJsCallback(napi_env env, napi_value jsCb)
+{
+    napi_value undefined;
+    napi_get_undefined(env, &undefined);
+    napi_value numberOne = nullptr;
+    napi_create_int32(env, ADD_FIRST_NUMBER, &numberOne);
+    napi_value numberTwo = nullptr;
+    napi_create_int32(env, ADD_SECOND_NUMBER, &numberTwo);
+    napi_value argv[ARGS_SIZE] = { numberOne, numberTwo };
+
+    napi_value result = nullptr;
+    napi_call_function(env, undefined, jsCb, ARGS_SIZE, argv, &result);
+
+    int32_t res = 0;
+    napi_get_value_int32(env, result, &res);
+    EXPECT_EQ(res, ADD_SUMMARY_RESULT);
+}
+
+static void CallJs(napi_env env, napi_value jsCb, void *context, void *data)
+{
+    EXPECT_NE(env, nullptr);
+
+    g_receiveCnt++;
+    if (g_receiveCnt == FIRST_RECEIVER) {
+        std::this_thread::sleep_for(std::chrono::seconds(FIRST_TASK_SLEEP));
+        return;
+    }
+    // check data string
+    char *testData = reinterpret_cast<char *>(data);
+    EXPECT_NE(testData, nullptr) << "testData is nullptr";
+    int32_t ret = 0;
+    if (g_receiveCnt == SECOND_RECEIVER) {
+        if (!g_isTailB) {
+            ret = strcmp(testData, "hello world from B");
+        } else {
+            ret = strcmp(testData, "hello world from A");
+        }
+    }
+    if (g_receiveCnt == THIRD_RECEIVER) {
+        if (!g_isTailB) {
+            ret = strcmp(testData, "hello world from A");
+        } else {
+            ret = strcmp(testData, "hello world from B");
+        }
+    }
+    EXPECT_EQ(ret, 0);
+
+    CallJsCallback(env, jsCb);
+    if (g_receiveCnt == THIRD_RECEIVER) {
+        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        EXPECT_NE(runner, nullptr);
+        runner->Stop();
+    }
+}
+
+static void CallJsWithDiffPriority(napi_env env, napi_value jsCb, void *context, void *data)
+{
+    EXPECT_NE(env, nullptr);
+
+    g_receiveCnt++;
+    if (g_receiveCnt == FIRST_RECEIVER) {
+        std::this_thread::sleep_for(std::chrono::seconds(FIRST_TASK_SLEEP));
+        return;
+    }
+    // check data string
+    char *testData = reinterpret_cast<char *>(data);
+    EXPECT_NE(testData, nullptr) << "testData is nullptr";
+    int32_t ret = 0;
+    if (g_receiveCnt == SECOND_RECEIVER) {
+        ret = strcmp(testData, "hello world from A");
+    } else if (g_receiveCnt == THIRD_RECEIVER) {
+        ret = strcmp(testData, "hello world from B");
+    } else if (g_receiveCnt == FOURTH_RECEIVER) {
+        ret = strcmp(testData, "hello world from C");
+    } else if (g_receiveCnt == FIFTH_RECEIVER) {
+        ret = strcmp(testData, "hello world from D");
+    }
+    EXPECT_EQ(ret, 0);
+
+    CallJsCallback(env, jsCb);
+    if (g_receiveCnt == FIFTH_RECEIVER) {
+        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+        EXPECT_NE(runner, nullptr);
+        runner->Stop();
+    }
+}
+
 class NapiThreadsafeTest : public NativeEngineTest {
 public:
     static void SetUpTestCase()
@@ -375,7 +510,200 @@ public:
 
     void SetUp() override {}
     void TearDown() override {}
+
+    void CallThreadSafeWithSamePriorityTest(napi_threadsafe_priority priority);
+    void CallThreadSafeWithDiffPriorityTest();
+    void CallThreadSafeWithDiffPriorityMultipleThreadTest();
 };
+
+void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_threadsafe_priority priority)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value resourceName = 0;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    CallbackData *callbackData = new CallbackData();
+    callbackData->priority = priority;
+    napi_value testFunc = nullptr;
+    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
+
+    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
+        0, 1, callbackData, nullptr, callbackData, CallJs, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+
+    g_receiveCnt = 0;
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {
+            CallbackData* callbackData = (CallbackData*)data;
+            char *testDataA = (char *)malloc(DATA_LENGTH);
+            memset(testDataA, 0, DATA_LENGTH);
+            strcpy(testDataA, "hello world from A");
+
+            char *testDataB = (char *)malloc(DATA_LENGTH);
+            memset(testDataB, 0, DATA_LENGTH);
+            strcpy(testDataB, "hello world from B");
+            // first call function to post a sleep task, then the next execution from event queue which
+            // contains two tasks.
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+            EXPECT_EQ(status, napi_ok);
+            std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, callbackData->priority, g_isTailA);
+            EXPECT_EQ(status, napi_ok);
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, callbackData->priority, g_isTailB);
+            EXPECT_EQ(status, napi_ok);
+        },
+        [](napi_env env, napi_status status, void* data) {
+            CallbackData* callbackData = (CallbackData*)data;
+            napi_delete_async_work(env, callbackData->work);
+            auto status1 = napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
+            EXPECT_EQ(status1, napi_ok);
+            delete callbackData;
+        },
+        callbackData, &callbackData->work);
+    napi_queue_async_work(env, callbackData->work);
+
+    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
+}
+
+void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
+{
+    napi_env env = (napi_env)engine_;
+    napi_value resourceName = 0;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    CallbackData *callbackData = new CallbackData();
+    napi_value testFunc = nullptr;
+    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
+
+    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
+        0, 1, callbackData, nullptr, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+
+    g_receiveCnt = 0;
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {
+            CallbackData* callbackData = (CallbackData*)data;
+            char *testDataA = (char *)malloc(DATA_LENGTH);
+            memset(testDataA, 0, DATA_LENGTH);
+            strcpy(testDataA, "hello world from A");
+
+            char *testDataB = (char *)malloc(DATA_LENGTH);
+            memset(testDataB, 0, DATA_LENGTH);
+            strcpy(testDataB, "hello world from B");
+
+            char *testDataC = (char *)malloc(DATA_LENGTH);
+            memset(testDataC, 0, DATA_LENGTH);
+            strcpy(testDataC, "hello world from C");
+
+            char *testDataD = (char *)malloc(DATA_LENGTH);
+            memset(testDataD, 0, DATA_LENGTH);
+            strcpy(testDataD, "hello world from D");
+            // first call function to post a sleep task, then the next execution from event queue which
+            // contains four different priority tasks.
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+            EXPECT_EQ(status, napi_ok);
+            std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+            EXPECT_EQ(status, napi_ok);
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, napi_priority_high);
+            EXPECT_EQ(status, napi_ok);
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataC, napi_priority_low);
+            EXPECT_EQ(status, napi_ok);
+            status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataD, napi_priority_idle);
+            EXPECT_EQ(status, napi_ok);
+        },
+        [](napi_env env, napi_status status, void* data) {
+            CallbackData* callbackData = (CallbackData*)data;
+            napi_delete_async_work(env, callbackData->work);
+            auto status1 = napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
+            EXPECT_EQ(status1, napi_ok);
+            delete callbackData;
+        },
+        callbackData, &callbackData->work);
+    napi_queue_async_work(env, callbackData->work);
+
+    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
+}
+
+void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
+{
+    napi_env env = (napi_env)engine_;
+    napi_value resourceName = 0;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    CallbackData *callbackData = new CallbackData();
+    napi_value testFunc = nullptr;
+    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
+
+    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
+        0, 1, callbackData, nullptr, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+
+    g_receiveCnt = 0;
+    auto runFunc = [callbackData](const napi_env &env, int32_t threadIndex) {
+        if (threadIndex == FIRST_THREAD_INDEX) {
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate);
+            EXPECT_EQ(status, napi_ok);
+        }
+
+        if (threadIndex == SECOND_THREAD_INDEX) {
+            char *testDataA = (char *)malloc(DATA_LENGTH);
+            memset(testDataA, 0, DATA_LENGTH);
+            strcpy(testDataA, "hello world from A");
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+            EXPECT_EQ(status, napi_ok);
+        }
+
+        if (threadIndex == THIRD_THREAD_INDEX) {
+            char *testDataB = (char *)malloc(DATA_LENGTH);
+            memset(testDataB, 0, DATA_LENGTH);
+            strcpy(testDataB, "hello world from B");
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, napi_priority_high);
+            EXPECT_EQ(status, napi_ok);
+        }
+
+        if (threadIndex == FOURTH_THREAD_INDEX) {
+            char *testDataC = (char *)malloc(DATA_LENGTH);
+            memset(testDataC, 0, DATA_LENGTH);
+            strcpy(testDataC, "hello world from C");
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataC, napi_priority_low);
+            EXPECT_EQ(status, napi_ok);
+        }
+
+        if (threadIndex == FIFTH_THREAD_INDEX) {
+            char *testDataD = (char *)malloc(DATA_LENGTH);
+            memset(testDataD, 0, DATA_LENGTH);
+            strcpy(testDataD, "hello world from D");
+            auto status =
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataD, napi_priority_idle);
+            EXPECT_EQ(status, napi_ok);
+        }
+    };
+    std::thread runFirstThread = std::thread(runFunc, std::ref(env), 0);
+    runFirstThread.detach();
+    std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
+    for (int32_t index = 1; index < THREAD_SIZE; ++index) {
+        std::thread runThread = std::thread(runFunc, std::ref(env), index);
+        runThread.detach();
+    }
+
+    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
+}
 
 /**
  * @tc.name: ThreadsafeTest001
@@ -721,4 +1049,249 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest011, testing::ext::TestSize.Level1)
     EXPECT_EQ(status, napi_ok);
 
     HILOG_INFO("Threadsafe_Test_1100 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityArgsCheckTest001
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityArgsCheckTest001, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest001 start");
+    auto status =
+        napi_call_threadsafe_function_with_priority(nullptr, nullptr, napi_priority_immediate);
+    EXPECT_EQ(status, napi_invalid_arg);
+    HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest001 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityArgsCheckTest002
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityArgsCheckTest002, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest002 start");
+    napi_env env = (napi_env)engine_;
+    napi_value resourceName = 0;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    CallbackData *callbackData = new CallbackData();
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, callbackData, nullptr, callbackData, CallJs, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+    status =
+        napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr,
+            static_cast<napi_threadsafe_priority>(INVALID_NAPI_THREAD_SAFE_PRIORITY));
+    delete callbackData;
+    HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest002 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest001
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest001, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest001 start");
+    g_isTailA = true;
+    g_isTailB = true;
+    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    HILOG_INFO("ThreadsafeWithPriorityTest001 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest002
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest002, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest002 start");
+    g_isTailA = false;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    HILOG_INFO("ThreadsafeWithPriorityTest002 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest003
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest003, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest003 start");
+    g_isTailA = true;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    HILOG_INFO("ThreadsafeWithPriorityTest003 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest004
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest004, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest004 start");
+    g_isTailA = true;
+    g_isTailB = true;
+    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    HILOG_INFO("ThreadsafeWithPriorityTest004 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest005
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest005, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest005 start");
+    g_isTailA = false;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    HILOG_INFO("ThreadsafeWithPriorityTest005 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest006
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest006, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest006 start");
+    g_isTailA = true;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    HILOG_INFO("ThreadsafeWithPriorityTest006 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest007
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest007, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest007 start");
+    g_isTailA = true;
+    g_isTailB = true;
+    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    HILOG_INFO("ThreadsafeWithPriorityTest007 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest008
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest008, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest008 start");
+    g_isTailA = false;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    HILOG_INFO("ThreadsafeWithPriorityTest008 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest009
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest009, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest009 start");
+    g_isTailA = true;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    HILOG_INFO("ThreadsafeWithPriorityTest009 end");
+}
+
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest010
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest010, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest010 start");
+    g_isTailA = true;
+    g_isTailB = true;
+    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    HILOG_INFO("ThreadsafeWithPriorityTest010 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest011
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest011, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest005 start");
+    g_isTailA = false;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    HILOG_INFO("ThreadsafeWithPriorityTest011 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest012
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest012, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest012 start");
+    g_isTailA = true;
+    g_isTailB = false;
+    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    HILOG_INFO("ThreadsafeWithPriorityTest012 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest013
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest013, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest013 start");
+    CallThreadSafeWithDiffPriorityTest();
+    HILOG_INFO("ThreadsafeWithPriorityTest013 end");
+}
+
+/**
+ * @tc.name: ThreadsafeWithPriorityTest014
+ * @tc.desc: Test napi_call_threadsafe_function_with_priority.
+ * @tc.type: FUNC
+ * @tc.require: I99QUH
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest014, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeWithPriorityTest014 start");
+    CallThreadSafeWithDiffPriorityMultipleThreadTest();
+    HILOG_INFO("ThreadsafeWithPriorityTest014 end");
 }

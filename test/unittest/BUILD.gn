@@ -70,7 +70,10 @@ ohos_unittest("test_ark_unittest_threadsafe") {
 
   external_deps = [ "bounds_checking_function:libsec_shared" ]
 
-  external_deps += [ "hilog:libhilog" ]
+  external_deps += [
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+  ]
   external_deps += [ "ets_runtime:libark_jsruntime" ]
 }
 
