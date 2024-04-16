@@ -958,12 +958,10 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
-    Local<panda::ObjectRef> obj(nativeValue);
-    Local<panda::JSValueRef> value = obj->Get(vm, utf8name);
+    Local<panda::JSValueRef> value = JSNApi::NapiGetNamedProperty(vm, reinterpret_cast<uintptr_t>(object), utf8name);
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
 #ifdef ENABLE_CONTAINER_SCOPE
     if (value->IsFunction()) {
         FunctionSetContainerId(vm, value);
