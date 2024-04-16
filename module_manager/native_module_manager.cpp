@@ -304,6 +304,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libm.so",
         "libz.so",
         "libclang_rt.asan.so",
+        "libclang_rt.tsan.so",
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
