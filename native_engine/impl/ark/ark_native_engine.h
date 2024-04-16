@@ -142,6 +142,7 @@ public:
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
     bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) override;
+    void ClearCurrentTaskInfo() override;
     bool HasPendingJob() const override;
     bool IsProfiling() const override;
     bool IsExecutingPendingJob() const override;

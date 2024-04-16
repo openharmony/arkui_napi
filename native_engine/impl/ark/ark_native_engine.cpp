@@ -1204,6 +1204,11 @@ void* ArkNativeEngine::GetCurrentTaskInfo() const
     return JSNApi::GetCurrentTaskInfo(vm_);
 }
 
+void ArkNativeEngine::ClearCurrentTaskInfo()
+{
+    JSNApi::ClearCurrentTaskInfo(vm_);
+}
+
 void ArkNativeEngine::TerminateExecution() const
 {
     DFXJSNApi::TerminateExecution(vm_);

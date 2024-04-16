@@ -150,6 +150,7 @@ public:
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) = 0;
     virtual bool InitTaskPoolFunc(napi_env env, napi_value func, void* taskInfo) = 0;
+    virtual void ClearCurrentTaskInfo() = 0;
     virtual bool HasPendingJob() const = 0;
     virtual bool IsProfiling() const = 0;
     virtual bool IsExecutingPendingJob() const = 0;
