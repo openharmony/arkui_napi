@@ -34,7 +34,7 @@
 #define ALLOW_ALL_SHARED_LIBS "allow_all_shared_libs"
 
 namespace {
-    constexpr static int32_t NATIVE_PATH_NUMBER = 3;
+constexpr static int32_t NATIVE_PATH_NUMBER = 3;
 } // namespace
 
 NativeModuleManager* NativeModuleManager::instance_ = NULL;
@@ -857,6 +857,26 @@ bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
     return false;
 }
 
+char* NativeModuleManager::GetNativeLoadPath(
+    char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength, bool isAppModule)
+{
+    if (isAppModule) {
+        return nativeModulePath[0];
+    }
+    for (size_t i = 0; i < NATIVE_PATH_NUMBER - 1; i++) {
+        char *loadPath = nativeModulePath[i];
+        if (loadPath) {
+            std::ifstream inFile(loadPath, std::ios::ate | std::ios::binary);
+            if (inFile.is_open()) {
+                inFile.close();
+                return loadPath;
+            }
+        }
+    }
+    HILOG_ERROR("%{public}s does not exist", nativeModulePath[0]);
+    return nullptr;
+}
+
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo)
 {
@@ -882,13 +902,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         moduleKey = moduleKey + '/' + moduleName;
     }
 
-    // load primary module path first
-    char* loadPath = nativeModulePath[0];
-    HILOG_DEBUG("moduleName: %{public}s. get primary module path: %{public}s", moduleName, loadPath);
-    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo);
-    if (lib == nullptr) {
-        loadPath = nativeModulePath[1];
-        HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
+    LIBHANDLE lib = nullptr;
+    char* loadPath = GetNativeLoadPath(nativeModulePath, NAPI_PATH_MAX, isAppModule);
+    if (loadPath) {
         lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo);
     }
 
