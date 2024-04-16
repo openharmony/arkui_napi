@@ -239,6 +239,7 @@ public:
     bool IsMixedDebugEnabled();
     void JsHeapStart();
     uint64_t GetCurrentTickMillseconds();
+    bool JudgmentDumpExecuteTask(int pid);
     void JudgmentDump(size_t limitSize);
     void NotifyNativeCalling(const void *nativeAddress);
 

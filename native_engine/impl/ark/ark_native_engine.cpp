@@ -2198,6 +2198,48 @@ void AsyncAfterWorkCallback(uv_work_t* req, int status)
     delete work;
 }
 
+bool ArkNativeEngine::JudgmentDumpExecuteTask(int pid)
+{
+    // VM destructed but syncTask is executed.
+    if (needStop_ || !DFXJSNApi::isOverLimit(vm_)) {
+        return false;
+    }
+    DFXJSNApi::SetOverLimit(vm_, false);
+    HILOG_INFO("dumpheapSnapshot ready");
+    time_t startTime = time(nullptr);
+    g_lastHeapDumpTime = GetCurrentTickMillseconds();
+    if ((pid = fork()) < 0) {
+        HILOG_ERROR("ready dumpheapSnapshot Fork error, err:%{public}d", errno);
+        sleep(g_checkInterval);
+        return false;
+    }
+    if (pid == 0) {
+        AllowCrossThreadExecution();
+        DumpHeapSnapshot(true, DumpFormat::JSON, false, false);
+        HILOG_INFO("dumpheapSnapshot successful, now you can check some file");
+        _exit(0);
+    }
+    while (true) {
+        int status = 0;
+        pid_t p = waitpid(pid, &status, 0);
+        if (p < 0) {
+            HILOG_ERROR("dumpheapSnapshot Waitpid return p=%{public}d, err:%{public}d", p, errno);
+            break;
+        }
+        if (p == pid) {
+            HILOG_ERROR("dumpheapSnapshot dump process exited status is %{public}d", status);
+            break;
+        }
+        if (time(nullptr) > startTime + TIME_OUT) {
+            HILOG_ERROR("time out to wait child process, killing forkpid %{public}d", pid);
+            kill(pid, SIGKILL);
+            break;
+        }
+        usleep(DEFAULT_SLEEP_TIME);
+    }
+    return true;
+}
+
 void ArkNativeEngine::JudgmentDump(size_t limitSize)
 {
     if (!limitSize) {
@@ -2225,42 +2267,8 @@ void ArkNativeEngine::JudgmentDump(size_t limitSize)
             condition_.wait(lock);
         }
         isReady_ = false;
-        // VM destructed but syncTask is executed.
-        if (needStop_ || !DFXJSNApi::isOverLimit(vm_)) {
+        if (JudgmentDumpExecuteTask(pid) == false) {
             return;
-        }
-        DFXJSNApi::SetOverLimit(vm_, false);
-        HILOG_INFO("dumpheapSnapshot ready");
-        time_t startTime = time(nullptr);
-        g_lastHeapDumpTime = GetCurrentTickMillseconds();
-        if((pid = fork()) < 0) {
-            HILOG_ERROR("ready dumpheapSnapshot Fork error, err:%{public}d", errno);
-            sleep(g_checkInterval);
-            return;
-        }
-        if (pid == 0) {
-            AllowCrossThreadExecution();
-            DumpHeapSnapshot(true, DumpFormat::JSON, false, false);
-            HILOG_INFO("dumpheapSnapshot successful, now you can check some file");
-            _exit(0);
-        }
-        while (true) {
-            int status = 0;
-            pid_t p = waitpid(pid, &status, 0);
-            if (p < 0) {
-                HILOG_ERROR("dumpheapSnapshot Waitpid return p=%{public}d, err:%{public}d", p, errno);
-                break;
-            }
-            if (p == pid) {
-                HILOG_ERROR("dumpheapSnapshot dump process exited status is %{public}d", status);
-                break;
-            }
-            if (time(nullptr) > startTime + TIME_OUT) {
-                HILOG_ERROR("time out to wait child process, killing forkpid %{public}d", pid);
-                kill(pid, SIGKILL);
-                break;
-            }
-            usleep(DEFAULT_SLEEP_TIME);
         }
     }
 }
