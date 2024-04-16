@@ -82,9 +82,9 @@ static uv_thread_t g_uvThreadSecondary;
 static uv_thread_t g_uvTheads2;
 static uv_thread_t g_uvTheads3;
 static int32_t g_sendDatas[SEND_DATAS_LENGTH];
-static int32_t  callSuccessCount = 0;
-static int32_t  callSuccessCountJS = 0;
-static int32_t  callSuccessCountJSFour = 0;
+static int32_t  g_callSuccessCount = 0;
+static int32_t  g_callSuccessCountJS = 0;
+static int32_t  g_callSuccessCountJSFour = 0;
 bool acquireFlag = false;
 static int32_t g_receiveCnt = 0;
 static bool g_isTailA = false;
@@ -107,14 +107,14 @@ static void TsFuncCallJsTwo(napi_env env, napi_value tsfn_cb, void* context, voi
 {
     HILOG_INFO("TsFuncCallJsTwo called");
     TsFuncCallJs(env, tsfn_cb, context, data);
-    callSuccessCountJS++;
+    g_callSuccessCountJS++;
 }
 static void TsFuncCallJsFour(napi_env env, napi_value tsfn_cb, void* context, void* data)
 {
     HILOG_INFO("TsFuncCallJsFour called");
 
     TsFuncCallJs(env, tsfn_cb, context, data);
-    callSuccessCountJSFour++;
+    g_callSuccessCountJSFour++;
 }
 static void TsFuncCallJsMulti(napi_env env,
                               napi_value tsfn_cb,
@@ -169,21 +169,21 @@ static void TsFuncFinalTotal(napi_env env, void* finalizeData, void* hint)
 {
     HILOG_INFO("TsFuncFinalTotal called");
     uv_thread_join(&g_uvThreadTest6);
-    // when add thread,repair  callSuccessCountJS eq  SUCCESS_COUNT_JS_TWO
-    EXPECT_EQ(callSuccessCountJS, SUCCESS_COUNT_JS_FOUR);
+    // when add thread,repair  g_callSuccessCountJS eq  SUCCESS_COUNT_JS_TWO
+    EXPECT_EQ(g_callSuccessCountJS, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("TsFuncFinalTotal end");
 }
 static void TsFuncFinalTotalFour(napi_env env, void* finalizeData, void* hint)
 {
     HILOG_INFO("TsFuncFinalTotalFour called");
     uv_thread_join(&g_uvThreadTest7);
-    EXPECT_EQ(callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
+    EXPECT_EQ(g_callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("TsFuncFinalTotalFour end");
 }
 static void TsFuncFinalCallback(napi_env env, void* finalizeData, void* hint)
 {
     HILOG_INFO("TsFuncFinalCallback called");
-    EXPECT_EQ(callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
+    EXPECT_EQ(g_callSuccessCountJSFour, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("TsFuncFinalCallback end");
 }
 
@@ -290,13 +290,13 @@ static void TsFuncDataSourceThreadCountTotal(void* data)
         EXPECT_EQ(status, napi_ok);
         status = napi_call_threadsafe_function(func, &g_sendData, blockMode);
         if (status == napi_ok) {
-            callSuccessCount++;
+            g_callSuccessCount++;
         }
         status = napi_release_threadsafe_function(func, napi_tsfn_release);
     } else {
         status = napi_call_threadsafe_function(func, &g_sendData, blockMode);
         if (status == napi_ok) {
-            callSuccessCount++;
+            g_callSuccessCount++;
         }
     }
     status = napi_release_threadsafe_function(func, napi_tsfn_release);
@@ -516,6 +516,27 @@ public:
     void CallThreadSafeWithDiffPriorityMultipleThreadTest();
 };
 
+static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_threadsafe_priority priority)
+{
+    char *testData = (char *)malloc(DATA_LENGTH);
+    if (testData == nullptr) {
+        return;
+    }
+    memset_s(testData, DATA_LENGTH, 0, DATA_LENGTH);
+    if (priority == napi_priority_immediate) {
+        strcpy_s(testData, DATA_LENGTH, "hello world from A");
+    } else if (priority == napi_priority_high) {
+        strcpy_s(testData, DATA_LENGTH, "hello world from B");
+    } else if (priority == napi_priority_low) {
+        strcpy_s(testData, DATA_LENGTH, "hello world from C");
+    } else if (priority == napi_priority_idle) {
+        strcpy_s(testData, DATA_LENGTH, "hello world from D");
+    }
+    auto status =
+        napi_call_threadsafe_function_with_priority(tsfn, testData, priority);
+    EXPECT_EQ(status, napi_ok);
+}
+
 void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_threadsafe_priority priority)
 {
     napi_env env = (napi_env)engine_;
@@ -535,23 +556,23 @@ void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_threadsafe_prio
         env, nullptr, resourceName, [](napi_env env, void* data) {
             CallbackData* callbackData = (CallbackData*)data;
             char *testDataA = (char *)malloc(DATA_LENGTH);
-            memset(testDataA, 0, DATA_LENGTH);
-            strcpy(testDataA, "hello world from A");
+            memset_s(testDataA, DATA_LENGTH, 0, DATA_LENGTH);
+            strcpy_s(testDataA, DATA_LENGTH, "hello world from A");
 
             char *testDataB = (char *)malloc(DATA_LENGTH);
-            memset(testDataB, 0, DATA_LENGTH);
-            strcpy(testDataB, "hello world from B");
+            memset_s(testDataA, DATA_LENGTH, 0, DATA_LENGTH);
+            strcpy_s(testDataB, DATA_LENGTH, "hello world from B");
             // first call function to post a sleep task, then the next execution from event queue which
             // contains two tasks.
             auto status =
                 napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
             EXPECT_EQ(status, napi_ok);
             std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, callbackData->priority, g_isTailA);
+            status = napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA,
+                callbackData->priority, g_isTailA);
             EXPECT_EQ(status, napi_ok);
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, callbackData->priority, g_isTailB);
+            status = napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB,
+                callbackData->priority, g_isTailB);
             EXPECT_EQ(status, napi_ok);
         },
         [](napi_env env, napi_status status, void* data) {
@@ -586,39 +607,16 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env env, void* data) {
             CallbackData* callbackData = (CallbackData*)data;
-            char *testDataA = (char *)malloc(DATA_LENGTH);
-            memset(testDataA, 0, DATA_LENGTH);
-            strcpy(testDataA, "hello world from A");
-
-            char *testDataB = (char *)malloc(DATA_LENGTH);
-            memset(testDataB, 0, DATA_LENGTH);
-            strcpy(testDataB, "hello world from B");
-
-            char *testDataC = (char *)malloc(DATA_LENGTH);
-            memset(testDataC, 0, DATA_LENGTH);
-            strcpy(testDataC, "hello world from C");
-
-            char *testDataD = (char *)malloc(DATA_LENGTH);
-            memset(testDataD, 0, DATA_LENGTH);
-            strcpy(testDataD, "hello world from D");
             // first call function to post a sleep task, then the next execution from event queue which
             // contains four different priority tasks.
             auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate);
             EXPECT_EQ(status, napi_ok);
             std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
-            EXPECT_EQ(status, napi_ok);
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, napi_priority_high);
-            EXPECT_EQ(status, napi_ok);
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataC, napi_priority_low);
-            EXPECT_EQ(status, napi_ok);
-            status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataD, napi_priority_idle);
-            EXPECT_EQ(status, napi_ok);
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_high);
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_low);
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_idle);
         },
         [](napi_env env, napi_status status, void* data) {
             CallbackData* callbackData = (CallbackData*)data;
@@ -654,42 +652,14 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
             auto status =
                 napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate);
             EXPECT_EQ(status, napi_ok);
-        }
-
-        if (threadIndex == SECOND_THREAD_INDEX) {
-            char *testDataA = (char *)malloc(DATA_LENGTH);
-            memset(testDataA, 0, DATA_LENGTH);
-            strcpy(testDataA, "hello world from A");
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
-            EXPECT_EQ(status, napi_ok);
-        }
-
-        if (threadIndex == THIRD_THREAD_INDEX) {
-            char *testDataB = (char *)malloc(DATA_LENGTH);
-            memset(testDataB, 0, DATA_LENGTH);
-            strcpy(testDataB, "hello world from B");
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB, napi_priority_high);
-            EXPECT_EQ(status, napi_ok);
-        }
-
-        if (threadIndex == FOURTH_THREAD_INDEX) {
-            char *testDataC = (char *)malloc(DATA_LENGTH);
-            memset(testDataC, 0, DATA_LENGTH);
-            strcpy(testDataC, "hello world from C");
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataC, napi_priority_low);
-            EXPECT_EQ(status, napi_ok);
-        }
-
-        if (threadIndex == FIFTH_THREAD_INDEX) {
-            char *testDataD = (char *)malloc(DATA_LENGTH);
-            memset(testDataD, 0, DATA_LENGTH);
-            strcpy(testDataD, "hello world from D");
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataD, napi_priority_idle);
-            EXPECT_EQ(status, napi_ok);
+        } else if (threadIndex == SECOND_THREAD_INDEX) {
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
+        } else if (threadIndex == THIRD_THREAD_INDEX) {
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_high);
+        } else if (threadIndex == FOURTH_THREAD_INDEX) {
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_low);
+        } else if (threadIndex == FIFTH_THREAD_INDEX) {
+            CallThreadSafeFunc(callbackData->tsfn, napi_priority_idle);
         }
     };
     std::thread runFirstThread = std::thread(runFunc, std::ref(env), 0);
@@ -826,8 +796,8 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest005, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
     napi_threadsafe_function tsFunc = nullptr;
     napi_value resourceName = 0;
-    callSuccessCountJS = 0;
-    callSuccessCount = 0;
+    g_callSuccessCountJS = 0;
+    g_callSuccessCount = 0;
     napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
     g_mainTid = gettid();
     g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
@@ -855,7 +825,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest005, testing::ext::TestSize.Level1)
     }
 
     usleep(200 * 1000);
-    EXPECT_EQ(callSuccessCount, SUCCESS_COUNT_JS_FOUR);
+    EXPECT_EQ(g_callSuccessCount, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("Threadsafe_Test_0500 end");
 }
 
@@ -871,7 +841,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest006, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
     napi_threadsafe_function tsFunc = nullptr;
     napi_value resourceName = 0;
-    callSuccessCount = 0;
+    g_callSuccessCount = 0;
     napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
     g_mainTid = gettid();
     g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
@@ -899,7 +869,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest006, testing::ext::TestSize.Level1)
     }
 
     usleep(200 * 1000);
-    EXPECT_EQ(callSuccessCount, SUCCESS_COUNT_JS_FOUR);
+    EXPECT_EQ(g_callSuccessCount, SUCCESS_COUNT_JS_FOUR);
     HILOG_INFO("Threadsafe_Test_0600 end");
 }
 
