@@ -76,6 +76,7 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
+static constexpr uint64_t BUF_SIZE = 128;
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 struct JsHeapDumpWork {
     bool *isReady = nullptr;
@@ -656,7 +657,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtime
         LocalScope scope(vm);
         Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
         Local<panda::StringRef> nameRef = fn->GetName(vm);
-        char threadName[128];
+        char threadName[BUF_SIZE];
         prctl(PR_GET_NAME, threadName);
         StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
     }
