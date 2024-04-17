@@ -52,6 +52,7 @@ static HookJsConfig* g_hookJsConfig = nullptr;
 static std::once_flag g_hookOnceFlag;
 static std::string JS_CALL_STACK_DEPTH_SEP = ","; // ',' is js call stack depth separator
 static std::string JS_SYMBOL_FILEPATH_SEP = "|";  // '|' is js symbol and filepath separator
+static constexpr uint64_t BUF_SIZE = 128;
 #endif
 
 using panda::JsiRuntimeCallInfo;
@@ -76,7 +77,6 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
-static constexpr uint64_t BUF_SIZE = 128;
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 struct JsHeapDumpWork {
     bool *isReady = nullptr;
