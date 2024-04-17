@@ -23,6 +23,8 @@
 #include "interfaces/inner_api/napi/native_node_api.h"
 #include "utils/log.h"
 
+static constexpr uint64_t NAPI_SPECIAL_STATUS = 5;
+
 inline napi_value JsValueFromLocalValue(panda::Local<panda::JSValueRef> local)
 {
     return reinterpret_cast<napi_value>(*local);
@@ -32,6 +34,17 @@ inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
 {
     panda::Local<panda::JSValueRef> local(reinterpret_cast<uintptr_t>(v));
     return local;
+}
+
+inline bool NapiStatusValidationCheck(panda::Local<panda::JSValueRef> value)
+{
+    // Since we sink napi heavy logics to ark runtime,
+    // we need to check napi status using a special value.
+    // Here we use JSTaggedValue::Hole(0x5) as the special value.
+    if ((*value != nullptr) && (*(uint64_t *)(*value) == NAPI_SPECIAL_STATUS)) {
+        return false;
+    }
+    return true;
 }
 
 #endif  // FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H
