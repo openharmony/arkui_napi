@@ -103,6 +103,7 @@ private:
 
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
+    char* GetNativeLoadPath(char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength, bool isAppModule);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
         bool internal, const bool isAppModule, std::string& errInfo);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
