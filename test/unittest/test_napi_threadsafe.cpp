@@ -38,7 +38,7 @@ struct FinalCbData_t {
 struct CallbackData {
     napi_threadsafe_function tsfn;
     napi_async_work work;
-    napi_threadsafe_priority priority;
+    napi_task_priority priority;
 };
 
 static constexpr int32_t SEND_DATA_TEST = 11;
@@ -511,12 +511,12 @@ public:
     void SetUp() override {}
     void TearDown() override {}
 
-    void CallThreadSafeWithSamePriorityTest(napi_threadsafe_priority priority);
+    void CallThreadSafeWithSamePriorityTest(napi_task_priority priority);
     void CallThreadSafeWithDiffPriorityTest();
     void CallThreadSafeWithDiffPriorityMultipleThreadTest();
 };
 
-static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_threadsafe_priority priority)
+static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_task_priority priority)
 {
     char *testData = (char *)malloc(DATA_LENGTH);
     if (testData == nullptr) {
@@ -533,11 +533,11 @@ static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_threadsafe_pr
         strcpy_s(testData, DATA_LENGTH, "hello world from D");
     }
     auto status =
-        napi_call_threadsafe_function_with_priority(tsfn, testData, priority);
+        napi_call_threadsafe_function_with_priority(tsfn, testData, priority, true);
     EXPECT_EQ(status, napi_ok);
 }
 
-void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_threadsafe_priority priority)
+void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_task_priority priority)
 {
     napi_env env = (napi_env)engine_;
     napi_value resourceName = 0;
@@ -560,12 +560,13 @@ void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_threadsafe_prio
             strcpy_s(testDataA, DATA_LENGTH, "hello world from A");
 
             char *testDataB = (char *)malloc(DATA_LENGTH);
-            memset_s(testDataA, DATA_LENGTH, 0, DATA_LENGTH);
+            memset_s(testDataB, DATA_LENGTH, 0, DATA_LENGTH);
             strcpy_s(testDataB, DATA_LENGTH, "hello world from B");
             // first call function to post a sleep task, then the next execution from event queue which
             // contains two tasks.
             auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate);
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate,
+                    true);
             EXPECT_EQ(status, napi_ok);
             std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
             status = napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA,
@@ -610,7 +611,8 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
             // first call function to post a sleep task, then the next execution from event queue which
             // contains four different priority tasks.
             auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate);
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate,
+                    true);
             EXPECT_EQ(status, napi_ok);
             std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
             CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
@@ -650,7 +652,8 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
     auto runFunc = [callbackData](const napi_env &env, int32_t threadIndex) {
         if (threadIndex == FIRST_THREAD_INDEX) {
             auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate);
+                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate,
+                    true);
             EXPECT_EQ(status, napi_ok);
         } else if (threadIndex == SECOND_THREAD_INDEX) {
             CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
@@ -1031,7 +1034,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityArgsCheckTest001, testing::ex
 {
     HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest001 start");
     auto status =
-        napi_call_threadsafe_function_with_priority(nullptr, nullptr, napi_priority_immediate);
+        napi_call_threadsafe_function_with_priority(nullptr, nullptr, napi_priority_immediate, true);
     EXPECT_EQ(status, napi_invalid_arg);
     HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest001 end");
 }
@@ -1054,7 +1057,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityArgsCheckTest002, testing::ex
     EXPECT_EQ(status, napi_ok);
     status =
         napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr,
-            static_cast<napi_threadsafe_priority>(INVALID_NAPI_THREAD_SAFE_PRIORITY));
+            static_cast<napi_task_priority>(INVALID_NAPI_THREAD_SAFE_PRIORITY), true);
     delete callbackData;
     HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest002 end");
 }

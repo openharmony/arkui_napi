@@ -3526,7 +3526,7 @@ NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value val
 
 NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threadsafe_function func,
                                                                     void *data,
-                                                                    napi_threadsafe_priority priority,
+                                                                    napi_task_priority priority,
                                                                     bool isTail)
 {
     CHECK_ENV(func);
