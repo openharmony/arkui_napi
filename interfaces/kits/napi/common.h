@@ -33,6 +33,6 @@ typedef enum {
     napi_priority_high = 1,
     napi_priority_low = 2,
     napi_priority_idle = 3,
-} napi_threadsafe_priority;
+} napi_task_priority;
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_API_H */
