@@ -53,7 +53,8 @@ typedef napi_value (*RegisterCallback)(napi_env, napi_value);
 typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);
 
 struct NativeModule {
-    const char* name = nullptr;
+    const char* name = nullptr;       /* .nm_modname from native c++ register info */
+    const char* moduleName = nullptr; /* moduleName required or imported */
     const char* fileName = nullptr;
     RegisterCallback registerCallback = nullptr;
     GetJSCodeCallback getABCCode = nullptr;

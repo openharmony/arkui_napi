@@ -55,7 +55,12 @@ NativeModuleManager::~NativeModuleManager()
         NativeModule* nativeModule = firstNativeModule_;
         while (nativeModule != nullptr) {
             nativeModule = nativeModule->next;
-            delete[] firstNativeModule_->name;
+            if (firstNativeModule_->name) {
+                delete[] firstNativeModule_->name;
+            }
+            if (firstNativeModule_->moduleName) {
+                delete[] firstNativeModule_->moduleName;
+            }
             if (firstNativeModule_->jsABCCode) {
                 delete[] firstNativeModule_->jsABCCode;
             }
@@ -209,6 +214,10 @@ bool NativeModuleManager::UnloadNativeModule(const std::string& moduleKey)
 
 std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool isAppModule)
 {
+    if (moduleName == nullptr) {
+        HILOG_ERROR("invalid param. moduleName is nullptr");
+        return "";
+    }
     HILOG_INFO("moduleName is '%{public}s', isAppModule is %{public}d", moduleName, isAppModule);
 
     std::string loadPath;
@@ -227,7 +236,7 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
         }
         return loadPath;
     }
-    HILOG_ERROR("get module file name failed");
+    HILOG_ERROR("get module file name failed, moduleName is %{public}s", moduleName);
     return loadPath;
 }
 
@@ -258,6 +267,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     lastNativeModule_->fileName = nativeModule->fileName;
     lastNativeModule_->isAppModule = isAppModule_;
     lastNativeModule_->name = moduleName;
+    lastNativeModule_->moduleName = nullptr;  /* we update moduleName latter */
     lastNativeModule_->refCount = nativeModule->refCount;
     lastNativeModule_->registerCallback = nativeModule->registerCallback;
     lastNativeModule_->getJSCode = nativeModule->getJSCode;
@@ -800,7 +810,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     if (lib == nullptr) {
         char* dlerr = dlerror();
-        auto dlerrMsg = dlerr != nullptr ? dlerr: "dlerror msg is empty";
+        auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
         errInfo = "load app module failed. " +  std::string(dlerrMsg);
         HILOG_ERROR("%{public}s", errInfo.c_str());
     }
@@ -922,9 +932,25 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     }
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
-    if (lastNativeModule_ && !abcBuffer && strcmp(lastNativeModule_->name, moduleKey.c_str())) {
-        HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
-                   moduleKey.c_str(), lastNativeModule_->name);
+    if (lastNativeModule_ && !abcBuffer) {
+        /* success to load module from disk. we need to update moduleName */
+        if (lastNativeModule_->moduleName) {
+            HILOG_ERROR("module loaded from disk. moduleName should be nullptr. But moduleName is %{public}s, "
+                "name is %{public}s", lastNativeModule_->moduleName, lastNativeModule_->name);
+            return nullptr;
+        }
+        const char* moduleName = strdup(moduleKey.c_str());
+        if (moduleName == nullptr) {
+            HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
+            return nullptr;
+        }
+
+        lastNativeModule_->moduleName = moduleName;
+        if (strcmp(lastNativeModule_->moduleName, lastNativeModule_->name)) {
+            HILOG_WARN("mismatch: moduleName is %{public}s, name is %{public}s",
+                lastNativeModule_->moduleName, lastNativeModule_->name);
+            HILOG_WARN("suggestion: keep .nm_modname the same as moduleName imported or required");
+        }
     }
 
     if (!internal) {
@@ -967,7 +993,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     }
     if (lastNativeModule_) {
         lastNativeModule_->moduleLoaded = true;
-        HILOG_DEBUG("last native module name is %{public}s", lastNativeModule_->name);
+        HILOG_DEBUG("last native info: name is %{public}s, moduleName is %{public}s",
+            lastNativeModule_->name, lastNativeModule_->moduleName);
         MoveApiAllowListCheckerPtr(apiAllowListChecker, lastNativeModule_);
     }
     return lastNativeModule_;
@@ -983,15 +1010,16 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 
     char *moduleName = strdup(moduleKey.c_str());
     if (moduleName == nullptr) {
-        HILOG_ERROR("strdup failed. tmpName is %{public}s", moduleKey.c_str());
+        HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
         return;
     }
-    lastNativeModule_->name = moduleName;
+    lastNativeModule_->moduleName = moduleName;
+    lastNativeModule_->name = strdup(moduleName);
     lastNativeModule_->jsABCCode = abcBuffer;
     lastNativeModule_->jsCodeLen = static_cast<int32_t>(len);
     lastNativeModule_->next = nullptr;
 
-    HILOG_INFO("NativeModule Register by buffer success. module name is '%{public}s'", lastNativeModule_->name);
+    HILOG_INFO("Register by buffer success. module name is '%{public}s'", lastNativeModule_->moduleName);
 }
 
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)
@@ -1004,12 +1032,15 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
     }
 
     NativeModule* nativeModule = firstNativeModule_;
-    if (!strcasecmp(nativeModule->name, moduleKey.c_str())) {
+    if (!strcasecmp(nativeModule->moduleName, moduleKey.c_str())) {
         if (firstNativeModule_ == lastNativeModule_) {
             lastNativeModule_ = nullptr;
         }
         firstNativeModule_ = firstNativeModule_->next;
         delete[] nativeModule->name;
+        if (nativeModule->moduleName) {
+            delete[] nativeModule->moduleName;
+        }
         if (firstNativeModule_->jsABCCode) {
             delete[] firstNativeModule_->jsABCCode;
         }
@@ -1022,14 +1053,17 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
     NativeModule* prev = firstNativeModule_;
     NativeModule* curr = prev->next;
     while (curr != nullptr) {
-        if (!strcasecmp(curr->name, moduleKey.c_str())) {
+        if (!strcasecmp(curr->moduleName, moduleKey.c_str())) {
             if (curr == lastNativeModule_) {
                 lastNativeModule_ = prev;
             }
             prev->next = curr->next;
             delete[] curr->name;
-            if (firstNativeModule_->jsABCCode) {
-                delete[] firstNativeModule_->jsABCCode;
+            if (curr->moduleName) {
+                delete[] curr->moduleName;
+            }
+            if (curr->jsABCCode) {
+                delete[] curr->jsABCCode;
             }
             delete curr;
             HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
@@ -1050,11 +1084,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
-        if (!strcasecmp(temp->name, moduleName)) {
-            if (strcmp(temp->name, moduleName)) {
-                HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
-                           moduleName, temp->name);
-            }
+        if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
+            || !strcasecmp(temp->name, moduleName)) {
             result = temp;
             break;
         }
@@ -1063,7 +1094,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 
     if (result && !result->moduleLoaded) {
         if (result == lastNativeModule_) {
-            HILOG_WARN("module '%{public}s' does not load", result->name);
+            HILOG_WARN("module '%{public}s' found in cache but does not load", result->moduleName);
             return nullptr;
         }
         if (preNativeModule) {
@@ -1074,10 +1105,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
         result->next = nullptr;
         lastNativeModule_->next = result;
         lastNativeModule_ = result;
-        HILOG_WARN("module '%{public}s' does not found", moduleName);
+        HILOG_WARN("module '%{public}s' found in cache but does not load", result->moduleName);
         return nullptr;
     }
-    HILOG_DEBUG("module '%{public}s' %{public}s found in cache", moduleName, (result == nullptr) ? "not" : "");
     return result;
 }
 
