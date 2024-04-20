@@ -32,10 +32,8 @@ struct JsFrameInfo;
 class NativeEngine;
 class NativeReference;
 
-struct NapiNativeCallbackInfo;
-
 // To be refactor
-typedef napi_value (*NapiNativeCallback)(napi_env env, NapiNativeCallbackInfo*);
+typedef napi_value (*NapiNativeCallback)(napi_env env, panda::JsiRuntimeCallInfo*);
 typedef void (*NativeFinalize)(NativeEngine* engine, void* data, void* hint);
 typedef void (*NativeAsyncExecuteCallback)(NativeEngine* engine, void* data);
 typedef void (*NativeAsyncCompleteCallback)(NativeEngine* engine, int status, void* data);
@@ -55,24 +53,11 @@ struct NativeObjectInfo {
 
 struct NapiFunctionInfo {
     static NapiFunctionInfo* CreateNewInstance() { return new(std::nothrow) NapiFunctionInfo(); }
-    napi_env env = nullptr;
     NapiNativeCallback callback = nullptr;
     void* data = nullptr;
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId = -1;
 #endif
-};
-
-// To be refactor
-struct NapiNativeCallbackInfo {
-    explicit NapiNativeCallbackInfo(panda::JsiRuntimeCallInfo* runtimeInfo): info(runtimeInfo) { };
-    size_t GetArgc() const;
-    size_t GetArgv(napi_value* argv, size_t argc);
-    napi_value GetThisVar();
-    napi_value GetFunction();
-    NapiFunctionInfo* GetFunctionInfo();
-private:
-    panda::JsiRuntimeCallInfo* info = nullptr;
 };
 
 typedef void (*NaitveFinalize)(NativeEngine* env, void* data, void* hint);
