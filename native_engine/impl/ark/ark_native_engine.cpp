@@ -52,6 +52,7 @@ static HookJsConfig* g_hookJsConfig = nullptr;
 static std::once_flag g_hookOnceFlag;
 static std::string JS_CALL_STACK_DEPTH_SEP = ","; // ',' is js call stack depth separator
 static std::string JS_SYMBOL_FILEPATH_SEP = "|";  // '|' is js symbol and filepath separator
+static constexpr uint64_t BUF_SIZE = 128;
 #endif
 
 using panda::JsiRuntimeCallInfo;
@@ -651,53 +652,58 @@ static inline bool CheckHookConfig(const std::string &nameRef)
 static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo *runtimeInfo)
 {
 #ifdef ENABLE_HITRACE
-        if (ArkNativeEngine::napiProfilerEnabled) {
-            EcmaVM *vm = runtimeInfo->GetVM();
-            LocalScope scope(vm);
-            Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
-            Local<panda::StringRef> nameRef = fn->GetName(vm);
-            char threadName[128];
-            prctl(PR_GET_NAME, threadName);
-            StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
-            bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
-            if (!hookFlag) {
-                HILOG_DEBUG("hookFlag is false!");
-                return 0;
-            }
-            if (g_hookJsConfig == nullptr) {
-                std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
-            }
-            if (!CheckHookConfig(nameRef->ToString())) {
-                return 0;
-            }
-            std::string rawStack;
-            std::vector<JsFrameInfo> jsFrames;
-            uint64_t nestChainId = 0;
-            jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
-            auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
-            auto engine = reinterpret_cast<NativeEngine*>(info->env);
-            engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
-            std::stringstream ssRawStack;
-            for (size_t i = 0; i < jsFrames.size(); i++) {
-                ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
-                    jsFrames[i].pos;
-                if (i < jsFrames.size() - 1) {
-                    ssRawStack << JS_CALL_STACK_DEPTH_SEP;
-                }
-            }
-            rawStack = ssRawStack.str();
-            OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
-            OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
-            // resolve nested calls to napi and ts
-            if (hitraceId.IsValid()) {
-                nestChainId = hitraceId.GetChainId();
-            }
-            uint64_t chainId = ++g_chainId;
-            hitraceId.SetChainId(chainId);
-            OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
-            __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
-            return nestChainId;
+    if (ArkNativeEngine::napiProfilerEnabled) {
+        EcmaVM *vm = runtimeInfo->GetVM();
+        LocalScope scope(vm);
+        Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+        Local<panda::StringRef> nameRef = fn->GetName(vm);
+        char threadName[BUF_SIZE];
+        prctl(PR_GET_NAME, threadName);
+        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+    }
+    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+    if (!hookFlag) {
+        HILOG_DEBUG("hookFlag is false!");
+        return 0;
+    }
+    EcmaVM *vm = runtimeInfo->GetVM();
+    LocalScope scope(vm);
+    Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+    Local<panda::StringRef> nameRef = fn->GetName(vm);
+    if (g_hookJsConfig == nullptr) {
+        std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
+    }
+    if (!CheckHookConfig(nameRef->ToString())) {
+        return 0;
+    }
+    std::string rawStack;
+    std::vector<JsFrameInfo> jsFrames;
+    uint64_t nestChainId = 0;
+    jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
+    auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
+    auto engine = reinterpret_cast<NativeEngine*>(info->env);
+    engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
+    std::stringstream ssRawStack;
+    for (size_t i = 0; i < jsFrames.size(); i++) {
+        ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
+            jsFrames[i].pos;
+        if (i < jsFrames.size() - 1) {
+            ssRawStack << JS_CALL_STACK_DEPTH_SEP;
         }
+    }
+    rawStack = ssRawStack.str();
+    OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
+    OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+    // resolve nested calls to napi and ts
+    if (hitraceId.IsValid()) {
+        nestChainId = hitraceId.GetChainId();
+    }
+    uint64_t chainId = ++g_chainId;
+    hitraceId.SetChainId(chainId);
+    OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+    __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
+    return nestChainId;
+        
 #endif
     return 0;
 }
@@ -707,17 +713,23 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
 #ifdef ENABLE_HITRACE
     if (ArkNativeEngine::napiProfilerEnabled) {
         FinishTrace(HITRACE_TAG_ACE);
-        OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
-        if (hitraceId.IsValid()) {
-            OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
-            OHOS::HiviewDFX::HiTraceChain::ClearId();
-        }
-        // resolve nested calls to napi and ts
-        if (value) {
-            hitraceId.SetChainId(value);
-            OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
-        }
     }
+    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+    if (!hookFlag) {
+        HILOG_DEBUG("hookFlag is false!");
+        return;
+    }
+    OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+    if (hitraceId.IsValid()) {
+        OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
+    }
+    // resolve nested calls to napi and ts
+    if (value) {
+        hitraceId.SetChainId(value);
+        OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+    }
+    
 #endif
 }
 
