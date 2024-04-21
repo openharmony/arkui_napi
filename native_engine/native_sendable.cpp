@@ -113,13 +113,12 @@ Local<JSValueRef> NativeSendable::NapiNativeCreateSendableFunction(napi_env env,
         HILOG_ERROR("funcInfo is nullptr");
         return JSValueRef::Undefined(vm);
     }
-    funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
 
     Local<FunctionRef> fn = FunctionRef::NewSendable(
         vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
+        [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
                 delete info;
