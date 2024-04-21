@@ -27,9 +27,9 @@ ohos_prebuilt_shared_library("libjsvm") {
 }
 
 action("build_libjsvm") {
-  deps = [ "//third_party/musl:musl_all" ]
+  external_deps = [ "node:node_header_notice" ]
   script = "build_jsvm.sh"
-  sources = [ "//third_party/node/src/jsvm.h" ]
+  sources = []
   outputs = [ "$target_gen_dir/libjsvm.so" ]
   args = [
     "--target_gen_dir",
