@@ -68,6 +68,7 @@ static HookJsConfig* g_hookJsConfig = nullptr;
 static std::once_flag g_hookOnceFlag;
 static std::string JS_CALL_STACK_DEPTH_SEP = ","; // ',' is js call stack depth separator
 static std::string JS_SYMBOL_FILEPATH_SEP = "|";  // '|' is js symbol and filepath separator
+static constexpr uint64_t BUF_SIZE = 128;
 #endif
 
 using panda::JsiRuntimeCallInfo;
@@ -137,6 +138,9 @@ panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 #ifdef ENABLE_CONTAINER_SCOPE
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &value)
 {
+    if (!value->IsFunction()) {
+        return;
+    }
     panda::Local<panda::FunctionRef> funcValue(value);
     if (funcValue->IsNative(vm)) {
         return;
@@ -154,7 +158,7 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &v
     }
     funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
     funcValue->SetData(vm, reinterpret_cast<void*>(funcInfo),
-        [](void *externalPointer, void *data) {
+        [](void* env, void *externalPointer, void *data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
                 delete info;
@@ -232,7 +236,6 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
         HILOG_ERROR("funcInfo is nullptr");
         return panda::JSValueRef::Undefined(vm);
     }
-    funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -240,7 +243,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
 #endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
+        [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                 if (info != nullptr) {
                     delete info;
@@ -279,13 +282,12 @@ Local<panda::JSValueRef> NapiNativeCreateSendableFunction(napi_env env,
         HILOG_ERROR("funcInfo is nullptr");
         return JSValueRef::Undefined(vm);
     }
-    funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewSendable(
         vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
+        [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
                 delete info;
@@ -355,7 +357,6 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
     if (funcInfo == nullptr) {
         HILOG_ERROR("funcInfo is nullptr");
     }
-    funcInfo->env = env;
     funcInfo->callback = callback;
     funcInfo->data = data;
 
@@ -374,7 +375,7 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
     auto infos = NativeSendable::CreateSendablePropertiesInfos(env, properties, propertiesLength);
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewSendableClassFunction(
         vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
+        [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
                 delete info;
@@ -669,83 +670,71 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
 {
 #ifdef ENABLE_HITRACE
     if (ArkNativeEngine::napiProfilerEnabled) {
-        EcmaVM* vm = runtimeInfo->GetVM();
+        EcmaVM *vm = runtimeInfo->GetVM();
         LocalScope scope(vm);
         Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
         Local<panda::StringRef> nameRef = fn->GetName(vm);
-        char threadName[128];
+        char threadName[BUF_SIZE];
         prctl(PR_GET_NAME, threadName);
         StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
-        bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
-        if (!hookFlag) {
-            HILOG_DEBUG("hookFlag is false!");
-            return 0;
-        }
-        if (g_hookJsConfig == nullptr) {
-            std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
-        }
-        // add memtrace function
-        if (g_hookJsConfig->jsStackReport == NAPI_CALL_STACK) {
-            OHOS::HiviewDFX::HiTraceChain::ClearId();
-            std::unique_ptr<OHOS::HiviewDFX::HiTraceId> arkCallBackTraceId =
-                std::make_unique<OHOS::HiviewDFX::HiTraceId>(
-                    OHOS::HiviewDFX::HiTraceChain::Begin("New ArkCallBackTrace", 0));
-            char buffer[256] = {0}; // 256 : buffer size of tag name
-            (void)sprintf_s(buffer, sizeof(buffer), "napi@0x%x@%s", arkCallBackTraceId->GetChainId(),
-                            nameRef->ToString().c_str());
-            uint64_t addr = reinterpret_cast<uint64_t>(cb);
-            ++g_chainId;
-            (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true);
-        }
-        if (!CheckHookConfig(nameRef->ToString())) {
-            return 0;
-        }
-        BlockHookScope blockHook; // not hook the internal memory allocation of the StartNapiProfilerTrace
-        std::string rawStack;
-        std::vector<JsFrameInfo> jsFrames;
-        uint64_t nestChainId = 0;
-        jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
-        auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
-        auto engine = reinterpret_cast<NativeEngine*>(info->env);
-        engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
-        std::stringstream ssRawStack;
-        for (size_t i = 0; i < jsFrames.size(); i++) {
-            ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":"
-                       << jsFrames[i].pos;
-            if (i < jsFrames.size() - 1) {
-                ssRawStack << JS_CALL_STACK_DEPTH_SEP;
-            }
-        }
-        rawStack = ssRawStack.str();
-        OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
-        OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
-            // resolve nested calls to napi and ts
-            /**
-             * resolve nested calls to napi and ts
-             * example: napiStart1
-             *              |
-             *          chainId1
-             *              |
-             *          napiStart2
-             *              |
-             *      nestChainId = chainId1
-             *          chainId2
-             *              |
-             *          napiEnd2
-             *              |
-             *      chainId1 = nestChainId
-             *              |
-             *          napiEnd1
-             */
-        if (hitraceId.IsValid()) {
-            nestChainId = hitraceId.GetChainId();
-        }
-        uint64_t chainId = ++g_chainId;
-        hitraceId.SetChainId(chainId);
-        OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
-        __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
-        return nestChainId;
     }
+    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+    if (!hookFlag) {
+        HILOG_DEBUG("hookFlag is false!");
+        return 0;
+    }
+    EcmaVM* vm = runtimeInfo->GetVM();
+    LocalScope scope(vm);
+    Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+    Local<panda::StringRef> nameRef = fn->GetName(vm);
+    if (g_hookJsConfig == nullptr) {
+        std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
+    }
+    // add memtrace function
+    if (g_hookJsConfig->jsStackReport == NAPI_CALL_STACK && !g_hookJsConfig->jsFpUnwind) {
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
+        std::unique_ptr<OHOS::HiviewDFX::HiTraceId> arkCallBackTraceId = std::make_unique<OHOS::HiviewDFX::HiTraceId>(
+            OHOS::HiviewDFX::HiTraceChain::Begin("New ArkCallBackTrace", 0));
+        char buffer[256] = {0}; // 256 : buffer size of tag name
+        (void)sprintf_s(buffer, sizeof(buffer), "napi:0x%x:%s", arkCallBackTraceId->GetChainId(),
+                        nameRef->ToString().c_str());
+        uint64_t addr = reinterpret_cast<uint64_t>(cb);
+        ++g_chainId;
+        (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true); // 8: the size of addr
+        return 0;
+    }
+    if (!CheckHookConfig(nameRef->ToString())) {
+        return 0;
+    }
+    BlockHookScope blockHook; // block hook
+    std::string rawStack;
+    std::vector<JsFrameInfo> jsFrames;
+    uint64_t nestChainId = 0;
+    jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
+    auto env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
+    std::stringstream ssRawStack;
+    for (size_t i = 0; i < jsFrames.size(); i++) {
+        ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
+            jsFrames[i].pos;
+        if (i < jsFrames.size() - 1) {
+            ssRawStack << JS_CALL_STACK_DEPTH_SEP;
+        }
+    }
+    rawStack = ssRawStack.str();
+    OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
+    OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+    // resolve nested calls to napi and ts
+    if (hitraceId.IsValid()) {
+        nestChainId = hitraceId.GetChainId();
+    }
+    uint64_t chainId = ++g_chainId;
+    hitraceId.SetChainId(chainId);
+    OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+    __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
+    return nestChainId;
+        
 #endif
     return 0;
 }
@@ -755,70 +744,24 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
 #ifdef ENABLE_HITRACE
     if (ArkNativeEngine::napiProfilerEnabled) {
         FinishTrace(HITRACE_TAG_ACE);
-        OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
-        if (hitraceId.IsValid()) {
-            OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
-            OHOS::HiviewDFX::HiTraceChain::ClearId();
-        }
-        // resolve nested calls to napi and ts
-        if (value) {
-            hitraceId.SetChainId(value);
-            OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
-        }
     }
-#endif
-}
-
-size_t NapiNativeCallbackInfo::GetArgc() const
-{
-    return static_cast<size_t>(info->GetArgsNumber());
-}
-
-size_t NapiNativeCallbackInfo::GetArgv(napi_value* argv, size_t argc)
-{
-#ifdef ENABLE_CONTAINER_SCOPE
-    auto *vm = info->GetVM();
-#endif
-    if (argc > 0) {
-        size_t i = 0;
-        size_t buffer = GetArgc();
-        for (; i < buffer && i < argc; i++) {
-            panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
-#ifdef ENABLE_CONTAINER_SCOPE
-            if (value->IsFunction()) {
-                FunctionSetContainerId(vm, value);
-            }
-#endif
-            argv[i] = JsValueFromLocalValue(value);
-        }
-        return i;
+    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+    if (!hookFlag) {
+        HILOG_DEBUG("hookFlag is false!");
+        return;
     }
-
-    return GetArgc();
-}
-
-napi_value NapiNativeCallbackInfo::GetThisVar()
-{
-    return JsValueFromLocalValue(info->GetThisRef());
-}
-
-napi_value NapiNativeCallbackInfo::GetFunction()
-{
-#ifdef ENABLE_CONTAINER_SCOPE
-    auto *vm = info->GetVM();
-    panda::Local<panda::JSValueRef> newValue = info->GetNewTargetRef();
-    if (newValue->IsFunction()) {
-        FunctionSetContainerId(vm, newValue);
+    OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
+    if (hitraceId.IsValid()) {
+        OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
     }
-    return JsValueFromLocalValue(newValue);
-#else
-    return JsValueFromLocalValue(info->GetNewTargetRef());
+    // resolve nested calls to napi and ts
+    if (value) {
+        hitraceId.SetChainId(value);
+        OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
+    }
+    
 #endif
-}
-
-NapiFunctionInfo* NapiNativeCallbackInfo::GetFunctionInfo()
-{
-    return reinterpret_cast<NapiFunctionInfo*>(info->GetData());
 }
 
 template <bool changeState>
@@ -830,9 +773,6 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     JSNApi::GetStackBeforeCallNapiSuccess(vm, getStackBeforeCallNapiSuccess);
     auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
     auto env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
-    if (env == nullptr) {
-        env = info->env;
-    }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto cb = info->callback;
     if (engine == nullptr) {
@@ -840,7 +780,6 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         return **JSValueRef::Undefined(vm);
     }
 
-    NapiNativeCallbackInfo cbInfo(runtimeInfo);
     uint64_t nestChainId = StartNapiProfilerTrace(runtimeInfo, reinterpret_cast<void *>(cb));
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {
@@ -851,9 +790,9 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     if (cb != nullptr) {
         if constexpr (changeState) {
             panda::JsiNativeScope nativeScope(vm);
-            result = cb(env, &cbInfo);
+            result = cb(env, runtimeInfo);
         } else {
-            result = cb(env, &cbInfo);
+            result = cb(env, runtimeInfo);
         }
     }
 
@@ -890,7 +829,6 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
         HILOG_ERROR("funcInfo is nullptr");
         return JSValueRef::Undefined(vm);
     }
-    funcInfo->env = env;
     funcInfo->callback = cb;
     funcInfo->data = value;
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -899,7 +837,7 @@ Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
         vm, ArkNativeFunctionCallBack,
-        [](void* externalPointer, void* data) {
+        [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
                 delete info;
