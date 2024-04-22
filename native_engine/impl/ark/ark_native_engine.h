@@ -235,6 +235,7 @@ public:
     static void PromiseRejectCallback(void* values);
 
     void SetMockModuleList(const std::map<std::string, std::string> &list) override;
+    int32_t GetObjectHash(napi_env env, napi_value src) override;
 
     // debugger
     bool IsMixedDebugEnabled();

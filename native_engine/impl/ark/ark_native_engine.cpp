@@ -2390,3 +2390,11 @@ void ArkNativeEngine::UnwrapSendableObj(napi_env env, napi_value js_object, void
     auto native_object = nativeObject->GetNativePointerField(0);
     *result = native_object;
 }
+
+int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(src);
+    return DFXJSNApi::GetObjectHash(vm, nativeValue);
+}
