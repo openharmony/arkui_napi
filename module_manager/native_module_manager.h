@@ -103,12 +103,12 @@ private:
 
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
-    char* GetNativeLoadPath(char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength, bool isAppModule);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
         bool internal, const bool isAppModule, std::string& errInfo);
     NativeModule* FindNativeModuleByCache(const char* moduleName);
+    bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
-        const bool isAppModule, std::string& errInfo);
+        const bool isAppModule, std::string& errInfo, uint32_t& errReason);
     bool CheckModuleRestricted(const std::string& moduleName);
     const uint8_t* GetFileBuffer(const std::string& filePath, const std::string& moduleKey, size_t &len);
     bool UnloadModuleLibrary(LIBHANDLE handle);
