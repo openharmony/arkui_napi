@@ -35,6 +35,11 @@
 
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 3;
+
+enum ModuleLoadFailedReason : uint32_t {
+    MODULE_LOAD_SUCCESS = 0,
+    MODULE_NOT_EXIST    = 1,
+};
 } // namespace
 
 NativeModuleManager* NativeModuleManager::instance_ = NULL;
@@ -765,7 +770,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const char* path,
-    const char* pathKey, const bool isAppModule, std::string& errInfo)
+    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
 {
     if (strlen(path) == 0) {
         errInfo = "load module " + moduleKey  + " failed. module path is empty";
@@ -785,12 +790,20 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     StartTrace(HITRACE_TAG_ACE, path);
 #endif
 #if defined(WINDOWS_PLATFORM)
+    if (CheckModuleExist(path) == false) {
+        errReason = MODULE_NOT_EXIST;
+        return nullptr;
+    }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
         errInfo = "load module failed. " + std::to_string(GetLastError());
         HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
+    if (CheckModuleExist(path) == false) {
+        errReason = MODULE_NOT_EXIST;
+        return nullptr;
+    }
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
         char* dlerr = dlerror();
@@ -867,24 +880,16 @@ bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
     return false;
 }
 
-char* NativeModuleManager::GetNativeLoadPath(
-    char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength, bool isAppModule)
+bool NativeModuleManager::CheckModuleExist(const char* modulePath)
 {
-    if (isAppModule) {
-        return nativeModulePath[0];
-    }
-    for (size_t i = 0; i < NATIVE_PATH_NUMBER - 1; i++) {
-        char *loadPath = nativeModulePath[i];
-        if (loadPath) {
-            std::ifstream inFile(loadPath, std::ios::ate | std::ios::binary);
-            if (inFile.is_open()) {
-                inFile.close();
-                return loadPath;
-            }
+    if (modulePath) {
+        std::ifstream inFile(modulePath, std::ios::ate | std::ios::binary);
+        if (inFile.is_open()) {
+            inFile.close();
+            return true;
         }
     }
-    HILOG_ERROR("%{public}s does not exist", nativeModulePath[0]);
-    return nullptr;
+    return false;
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
@@ -912,10 +917,19 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         moduleKey = moduleKey + '/' + moduleName;
     }
 
-    LIBHANDLE lib = nullptr;
-    char* loadPath = GetNativeLoadPath(nativeModulePath, NAPI_PATH_MAX, isAppModule);
-    if (loadPath) {
-        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo);
+    // load primary module path first
+    char* loadPath = nativeModulePath[0];
+    HILOG_DEBUG("moduleName is %{public}s. get primary module path is %{public}s", moduleName, loadPath);
+    uint32_t errReason0 = MODULE_LOAD_SUCCESS;
+    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason0);
+    if (lib == nullptr) {
+        loadPath = nativeModulePath[1];
+        HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
+        uint32_t errReason1 = MODULE_LOAD_SUCCESS;
+        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason1);
+        if (lib == nullptr && errReason0 == MODULE_NOT_EXIST && errReason1 == MODULE_NOT_EXIST) {
+            HILOG_ERROR("%{public}s does not exist", nativeModulePath[0]);
+        }
     }
 
     const uint8_t* abcBuffer = nullptr;

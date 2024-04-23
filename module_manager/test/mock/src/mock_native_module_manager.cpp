@@ -62,7 +62,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const char* path,
-    const char* pathKey, const bool isAppModule, std::string& errInfo)
+    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
 {
     GTEST_LOG_(INFO) << g_mockLoadModuleLibrary;
     return g_mockLoadModuleLibrary;
