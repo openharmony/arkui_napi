@@ -2338,13 +2338,11 @@ bool HybridStackDumper::DumpMixFrame(const EcmaVM* vm)
 {
     unwinder_ = std::make_shared<Unwinder>();
     std::vector<DfxFrame> nativeFrames;
-    if (getpid() == gettid()) {
-        unwinder_->IgnoreMixstack(true);
-        if (unwinder_->UnwindLocal(false, DEFAULT_MAX_FRAME_NUM, skipframes_)) {
-            nativeFrames = unwinder_->GetFrames();
-        } else {
-            HILOG_ERROR("Failed to unwind local");
-        }
+    unwinder_->IgnoreMixstack(true);
+    if (unwinder_->UnwindLocal(false, false, DEFAULT_MAX_FRAME_NUM, skipframes_)) {
+        nativeFrames = unwinder_->GetFrames();
+    } else {
+        HILOG_ERROR("Failed to unwind local");
     }
     std::vector<JsFrameInfo> jsFrames;
     DFXJSNApi::BuildJsStackInfoList(vm, gettid(), jsFrames);
