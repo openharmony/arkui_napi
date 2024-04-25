@@ -378,6 +378,7 @@ public:
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
     virtual void NotifyForceExpandState(int32_t value) = 0;
     virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
+    virtual int32_t GetObjectHash(napi_env env, napi_value src) = 0;
 
     void RegisterWorkerFunction(const NativeEngine* engine);
     virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
