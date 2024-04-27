@@ -30,6 +30,8 @@
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr size_t DESTRUCTION_TIMEOUT = 3000;
+static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
+static constexpr int32_t API11 = 11;
 
 using panda::JSValueRef;
 using panda::Local;
@@ -559,9 +561,14 @@ void NativeEngine::SetApiVersion(int32_t apiVersion)
     apiVersion_ = apiVersion;
 }
 
-void NativeEngine::SetApiVersion(NativeEngine* engine)
+int32_t NativeEngine::GetApiVersion()
 {
-    apiVersion_ = engine->apiVersion_;
+    return apiVersion_;
+}
+
+bool NativeEngine::IsApplicationApiVersionAPI11Plus()
+{
+    return apiVersion_ > API11;
 }
 
 void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
@@ -684,23 +691,40 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
 }
 
+// this interface for restrictedWorker with entryPoint to execute mergeabc
 napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
 {
+    EcmaVM* vm = const_cast<EcmaVM*>(GetEcmaVm());
+    panda::EscapeLocalScope scope(vm);
+    std::string normalizedPath = panda::JSNApi::NormalizePath(path);
     uint8_t* scriptContent = nullptr;
     size_t scriptContentSize = 0;
     std::vector<uint8_t> content;
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, IsRestrictedWorkerThread())) {
-        HILOG_ERROR("RunScriptForAbc: GetAbcBuffer failed");
+    if (!GetAbcBuffer(normalizedPath.c_str(), &scriptContent, &scriptContentSize,
+        content, ami, true)) {
+        HILOG_ERROR("RunScript: GetAbcBuffer failed");
         return nullptr;
     }
+    HILOG_DEBUG("RunScriptForAbc: GetAmi: %{private}s", ami.c_str());
     // if buffer is empty, return directly.
     if (scriptContentSize == 0) {
         HILOG_ERROR("asset size is %{public}zu", scriptContentSize);
         ThrowException("RunScriptForAbc: abc file is empty.");
         return nullptr;
     }
-    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
+    panda::JSNApi::SetModuleInfo(vm, ami, std::string(entryPoint));
+    if (panda::JSNApi::HasPendingException(vm)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    panda::JSNApi::Execute(vm, ami, entryPoint, false, true);
+    if (panda::JSNApi::HasPendingException(vm)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
 napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
@@ -709,10 +733,11 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
     size_t scriptContentSize = 0;
     std::vector<uint8_t> content;
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, IsRestrictedWorkerThread())) {
+    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami)) {
         HILOG_ERROR("RunScript: GetAbcBuffer failed");
         return nullptr;
     }
+    HILOG_DEBUG("RunScript: GetAmi: %{private}s", ami.c_str());
     // if buffer is empty, return directly.
     if (scriptContentSize == 0) {
         HILOG_ERROR("RunScript: buffer size is empty, please check abc path");
@@ -721,20 +746,38 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
     return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
 }
 
+napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
+{
+    auto vm = GetEcmaVm();
+    panda::EscapeLocalScope scope(vm);
+    uint8_t* scriptContent = nullptr;
+    size_t scriptContentSize = 0;
+    std::vector<uint8_t> content;
+    std::string ami;
+    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, true)) {
+        HILOG_ERROR("RunScriptInRestrictedThread: GetAbcBuffer failed");
+        return nullptr;
+    }
+    HILOG_DEBUG("RunScriptInRestrictedThread: GetAmi: %{private}s", ami.c_str());
+    panda::JSNApi::Execute(vm, ami, PANDA_MAIN_FUNCTION, false, true);
+    if (panda::JSNApi::HasPendingException(vm)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
+}
+
 /* buffer, bufferSize is for secureMem; content is for normalMem.
  * If output is not secureMem, fullfill buffer, bufferSize with content data and size.
  */
 bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-    std::vector<uint8_t>& content, std::string& ami, bool isRestrictedWorker, bool relativeWorker)
+    std::vector<uint8_t>& content, std::string& ami, bool isRestrictedWorker)
 {
     std::string pathStr(path);
     bool useSecureMem = false;
     if (!CallGetAssetFunc(pathStr, buffer, bufferSize, content, ami, useSecureMem, isRestrictedWorker)) {
         HILOG_ERROR("Get asset error");
-        return false;
-    }
-    if (useSecureMem && relativeWorker && !panda::JSNApi::CheckSecureMem(reinterpret_cast<uintptr_t>(*buffer))) {
-        HILOG_ERROR("GetAbcBuffer secure memory check failed, please check abc signature.");
         return false;
     }
     if (!useSecureMem) {

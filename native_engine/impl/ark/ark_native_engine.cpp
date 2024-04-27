@@ -1535,6 +1535,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     option.SetEnableAsmInterpreter(asmInterpreterEnabled);
     option.SetAsmOpcodeDisableRange(asmOpcodeDisableRange);
     option.SetIsWorker();
+    option.SetIsRestrictedWorker(isLimitedWorker);
     HILOG_DEBUG("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d, bundlename = %{public}s",
         arkProperties, bundleName.c_str());
 #endif
@@ -1557,7 +1558,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     arkEngine->RegisterWorkerFunction(engine);
     arkEngine->SetHostEngine(engine);
     // sync apiVersion
-    arkEngine->SetApiVersion(engine);
+    arkEngine->SetApiVersion(engine->GetApiVersion());
 
     auto cleanEnv = [vm]() {
         if (vm != nullptr) {
@@ -1622,33 +1623,41 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
+#define EXECUTE_BUFFER(functionName)                                                                 \
+    if (panda::JSNApi::IsBundle(vm_)) {                                                              \
+        /* FA doesn't enable securemem */                                                            \
+        ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);            \
+    } else if (bufferSize != 0) {                                                                    \
+        if (entryPoint == nullptr) {                                                                 \
+            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule"); \
+            /* this path for bundle and abc compiled by single module js */                          \
+            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);   \
+        } else {                                                                                     \
+            /* this path for mergeabc with specific entryPoint */                                    \
+            /* entryPoint: bundleName/moduleName/xxx/xxx */                                          \
+            panda::JSNApi::SetModuleInfo(vm_, desc, std::string(entryPoint));                        \
+            if (panda::JSNApi::HasPendingException(vm_)) {                                           \
+                HandleUncaughtException();                                                           \
+                return nullptr;                                                                      \
+            }                                                                                        \
+            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc);            \
+        }                                                                                            \
+    } else {                                                                                         \
+        /* this path for worker */                                                                   \
+        ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                \
+    }
+
 napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
 {
     panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
-    if (panda::JSNApi::IsBundle(vm_)) {
-        ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);
-    } else if (bufferSize != 0) {
-        if (entryPoint == nullptr) {
-            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule");
-            // this path for bundle and abc compiled by single module js
-            ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);
-        } else {
-            // this path for mergeabc with specific entryPoint
-            // entryPoint: bundleName/moduleName/xxx/xxx
-            panda::JSNApi::SetModuleInfo(vm_, desc, std::string(entryPoint));
-            if (panda::JSNApi::HasPendingException(vm_)) {
-                HandleUncaughtException();
-                return nullptr;
-            }
-            ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, entryPoint, desc);
-        }
+    // if apiVersion > API11, use secure path.
+    if (IsApplicationApiVersionAPI11Plus()) {
+        EXECUTE_BUFFER(ExecuteSecure);
     } else {
-        // this path for worker
-        ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);
+        EXECUTE_BUFFER(Execute);
     }
-
     if (panda::JSNApi::HasPendingException(vm_)) {
         HandleUncaughtException();
         return nullptr;
