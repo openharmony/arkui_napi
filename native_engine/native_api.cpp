@@ -1096,7 +1096,7 @@ NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* resu
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSArray(vm);
+    *result = nativeValue->IsJSArray(vm) || nativeValue->IsSharedArray();
     return napi_clear_last_error(env);
 }
 
@@ -1924,7 +1924,7 @@ NAPI_EXTERN napi_status napi_is_arraybuffer(napi_env env, napi_value value, bool
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsArrayBuffer();
+    *result = nativeValue->IsArrayBuffer() || nativeValue->IsSharedArrayBuffer();
 
     return napi_clear_last_error(env);
 }
@@ -1994,7 +1994,7 @@ NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool*
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsTypedArray();
+    *result = nativeValue->IsTypedArray() || nativeValue->IsSharedTypedArray();
 
     return napi_clear_last_error(env);
 }
@@ -2677,7 +2677,7 @@ NAPI_EXTERN napi_status napi_is_map(napi_env env, napi_value value, bool* result
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsMap();
+    *result = nativeValue->IsMap() || nativeValue->IsSharedMap();
     return napi_clear_last_error(env);
 }
 
@@ -2688,7 +2688,7 @@ NAPI_EXTERN napi_status napi_is_set(napi_env env, napi_value value, bool* result
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsSet();
+    *result = nativeValue->IsSet() || nativeValue->IsSharedSet();
     return napi_clear_last_error(env);
 }
 
@@ -3260,7 +3260,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     HILOG_WARN("GetStacktrace env get stack failed");
 #endif
     stack = engine->ExecuteTranslateBySourceMap(rawStack);
-    
+
     return napi_clear_last_error(env);
 }
 
