@@ -311,6 +311,8 @@ public:
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
     void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
     bool GetIsBundle() override;
+    std::string GetBundleName() override;
+    bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
 
     void WrapSendableObj(napi_env env,
                          napi_value js_object,
