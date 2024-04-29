@@ -947,12 +947,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (lastNativeModule_ && !abcBuffer) {
-        /* success to load module from disk. we need to update moduleName */
-        if (lastNativeModule_->moduleName) {
-            HILOG_ERROR("module loaded from disk. moduleName should be nullptr. But moduleName is %{public}s, "
-                "name is %{public}s", lastNativeModule_->moduleName, lastNativeModule_->name);
-            return nullptr;
-        }
         const char* moduleName = strdup(moduleKey.c_str());
         if (moduleName == nullptr) {
             HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
