@@ -688,7 +688,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
     Local<panda::StringRef> nameRef = fn->GetName(vm);
     if (g_hookJsConfig == nullptr) {
-        std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_js_config(); });
+        std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_config(); });
     }
     // add memtrace function
     if (g_hookJsConfig->jsStackReport == NAPI_CALL_STACK && !g_hookJsConfig->jsFpUnwind) {
@@ -732,7 +732,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     uint64_t chainId = ++g_chainId;
     hitraceId.SetChainId(chainId);
     OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
-    __send_hook_js_rawstack(chainId, rawStack.c_str(), rawStack.size() + 1);
+    __send_hook_misc_data(chainId, rawStack.c_str(), rawStack.size() + 1, 1);
     return nestChainId;
         
 #endif
