@@ -680,7 +680,6 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     }
     bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
     if (!hookFlag) {
-        HILOG_DEBUG("hookFlag is false!");
         return 0;
     }
     EcmaVM* vm = runtimeInfo->GetVM();
@@ -747,7 +746,6 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
     }
     bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
     if (!hookFlag) {
-        HILOG_DEBUG("hookFlag is false!");
         return;
     }
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
