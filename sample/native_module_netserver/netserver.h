@@ -102,6 +102,8 @@ private:
     static void AfterShutdown(uv_shutdown_t* req, int status);
     static void AfterWrite(uv_write_t* req, int status);
     static void AfterRead(uv_stream_t*, ssize_t nread, const uv_buf_t* buf);
+    static void TakeDiffactionsByStatus(uv_stream_t* handle, ssize_t nread,
+                                        const uv_buf_t* buf, NetServer* that);
     static void OnClose(uv_handle_t* peer);
     static void OnServerClose(uv_handle_t* handle);
     static void OnConnection(uv_stream_t*, int status);

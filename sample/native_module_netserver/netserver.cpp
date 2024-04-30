@@ -149,6 +149,54 @@ void NetServer::AfterWrite(uv_write_t* req, int status)
     that->Emit("error", nullptr);
 }
 
+void NetServer::TakeDiffactionsByStatus(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf, NetServer* that)
+{
+    WriteReq* wr = nullptr;
+    uv_shutdown_t* sreq = nullptr;
+    if (nread < 0) {
+        free(buf->base);
+        sreq = (uv_shutdown_t*)malloc(sizeof(*sreq));
+        if (sreq == nullptr) {
+            HILOG_ERROR("sreq is null");
+            return;
+        }
+        sreq->data = that;
+        uv_shutdown(sreq, handle, AfterShutdown);
+        return;
+    }
+
+    if (!that->serverClosed_) {
+        for (int i = 0; i < nread; i++) {
+            if (buf->base[i] != 'Q') {
+                continue;
+            }
+            if (i + 1 < nread && buf->base[i + 1] == 'S') {
+                free(buf->base);
+                uv_close((uv_handle_t*)handle, OnClose);
+                return;
+            } else {
+                uv_close((uv_handle_t*)&that->tcpServer_, OnServerClose);
+                that->serverClosed_ = 1;
+                return;
+            }
+        }
+    }
+
+    that->Emit("read", nullptr);
+    wr = (WriteReq*)malloc(sizeof(WriteReq));
+    if (wr == nullptr) {
+        HILOG_ERROR("wr is null");
+        free(buf->base);
+        return;
+    }
+
+    wr->buf = uv_buf_init(buf->base, nread);
+    wr->req.data = that;
+    if (uv_write(&wr->req, handle, &wr->buf, 1, AfterWrite) != 0) {
+        that->Emit("error", nullptr);
+    }
+}
+
 void NetServer::AfterRead(uv_stream_t* handle, ssize_t nread, const uv_buf_t* buf)
 {
     if (handle == nullptr) {
@@ -162,58 +210,12 @@ void NetServer::AfterRead(uv_stream_t* handle, ssize_t nread, const uv_buf_t* bu
     }
 
     NetServer* that = (NetServer*)handle->data;
-    WriteReq* wr = nullptr;
-    uv_shutdown_t* sreq = nullptr;
-
-    if (nread < 0) {
-        free(buf->base);
-        sreq = (uv_shutdown_t*)malloc(sizeof(*sreq));
-        if (sreq == nullptr) {
-            HILOG_ERROR("sreq is null");
-            return;
-        }
-        sreq->data = that;
-        uv_shutdown(sreq, handle, AfterShutdown);
-        return;
-    }
-
     if (nread == 0) {
         free(buf->base);
         return;
     }
 
-    if (!that->serverClosed_) {
-        for (int i = 0; i < nread; i++) {
-            if (buf->base[i] == 'Q') {
-                if (i + 1 < nread && buf->base[i + 1] == 'S') {
-                    free(buf->base);
-                    uv_close((uv_handle_t*)handle, OnClose);
-                    return;
-                } else {
-                    uv_close((uv_handle_t*)&that->tcpServer_, OnServerClose);
-                    that->serverClosed_ = 1;
-                    return;
-                }
-            }
-        }
-    }
-
-    that->Emit("read", nullptr);
-
-    wr = (WriteReq*)malloc(sizeof(WriteReq));
-    if (wr == nullptr) {
-        HILOG_ERROR("wr is null");
-        free(buf->base);
-        return;
-    }
-
-    wr->buf = uv_buf_init(buf->base, nread);
-
-    wr->req.data = that;
-
-    if (uv_write(&wr->req, handle, &wr->buf, 1, AfterWrite) != 0) {
-        that->Emit("error", nullptr);
-    }
+    TakeDiffactionsByStatus(handle, nread, buf, that);
 }
 
 void NetServer::AfterShutdown(uv_shutdown_t* req, int status)
