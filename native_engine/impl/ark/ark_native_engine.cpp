@@ -1233,6 +1233,52 @@ napi_value ArkNativeEngine::CallFunction(
     return JsValueFromLocalValue(scope.Escape(value));
 }
 
+bool ArkNativeEngine::Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
+                                            const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                                            size_t byte_offset, size_t length, napi_value* result)
+{
+    switch (typedArrayType) {
+        case NATIVE_INT8_ARRAY:
+            typedArray = panda::Int8ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_UINT8_ARRAY:
+            typedArray = panda::Uint8ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_UINT8_CLAMPED_ARRAY:
+            typedArray = panda::Uint8ClampedArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_INT16_ARRAY:
+            typedArray = panda::Int16ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_UINT16_ARRAY:
+            typedArray = panda::Uint16ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_INT32_ARRAY:
+            typedArray = panda::Int32ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_UINT32_ARRAY:
+            typedArray = panda::Uint32ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_FLOAT32_ARRAY:
+            typedArray = panda::Float32ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_FLOAT64_ARRAY:
+            typedArray = panda::Float64ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_BIGINT64_ARRAY:
+            typedArray = panda::BigInt64ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_BIGUINT64_ARRAY:
+            typedArray = panda::BigUint64ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        default:
+            *result = nullptr;
+            return false;
+    }
+    *result = JsValueFromLocalValue(typedArray);
+    return true;
+}
+
 bool ArkNativeEngine::RunScriptPath(const char* path)
 {
     panda::JSExecutionScope executionScope(vm_);

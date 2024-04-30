@@ -2188,45 +2188,10 @@ NAPI_EXTERN napi_status napi_create_typedarray(napi_env env,
     Local<panda::ArrayBufferRef> arrayBuf = value->ToObject(vm);
     Local<panda::TypedArrayRef> typedArray(panda::JSValueRef::Undefined(vm));
 
-    switch (typedArrayType) {
-        case NATIVE_INT8_ARRAY:
-            typedArray = panda::Int8ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_UINT8_ARRAY:
-            typedArray = panda::Uint8ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_UINT8_CLAMPED_ARRAY:
-            typedArray = panda::Uint8ClampedArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_INT16_ARRAY:
-            typedArray = panda::Int16ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_UINT16_ARRAY:
-            typedArray = panda::Uint16ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_INT32_ARRAY:
-            typedArray = panda::Int32ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_UINT32_ARRAY:
-            typedArray = panda::Uint32ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_FLOAT32_ARRAY:
-            typedArray = panda::Float32ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_FLOAT64_ARRAY:
-            typedArray = panda::Float64ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_BIGINT64_ARRAY:
-            typedArray = panda::BigInt64ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_BIGUINT64_ARRAY:
-            typedArray = panda::BigUint64ArrayRef::New(vm, arrayBuf, byte_offset, length);
-            break;
-        default:
-            *result = nullptr;
-            return napi_set_last_error(env, napi_invalid_arg);
+    if (reinterpret_cast<NativeEngine*>(env)->Napi_Judge_TypedArray(typedArrayType, typedArray, vm,
+                                                                    arrayBuf, byte_offset, length, result) == false) {
+        return napi_set_last_error(env, napi_invalid_arg);
     }
-    *result = JsValueFromLocalValue(typedArray);
     return GET_RETURN_STATUS(env);
 }
 
