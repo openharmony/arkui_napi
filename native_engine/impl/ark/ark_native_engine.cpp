@@ -1715,6 +1715,18 @@ bool ArkNativeEngine::GetIsBundle()
     return panda::JSNApi::IsBundle(vm_);
 }
 
+std::string ArkNativeEngine::GetBundleName()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::GetBundleName(vm_);
+}
+
+bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl)
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsExecuteModuleInAbcFile(vm_, bundleName, moduleName, ohmurl);
+}
+
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
     int32_t len, const std::string& fileName)
 {
