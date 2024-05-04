@@ -858,14 +858,13 @@ NAPI_EXTERN napi_status napi_has_property(napi_env env, napi_value object, napi_
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
-
-    auto nativeValue = LocalValueFromJsValue(object);
-    auto propKey = LocalValueFromJsValue(key);
+    
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    *result = obj->Has(vm, propKey);
+    Local<panda::JSValueRef> hasResult = JSNApi::NapiHasProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                                 reinterpret_cast<uintptr_t>(key));
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
+    *result = hasResult->BooleaValue();
 
     return GET_RETURN_STATUS(env);
 }
@@ -877,13 +876,11 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(object);
-    auto propKey = LocalValueFromJsValue(key);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    Local<panda::JSValueRef> value = obj->Get(vm, propKey);
+    Local<panda::JSValueRef> value = JSNApi::NapiGetProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                             reinterpret_cast<uintptr_t>(key));
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
 #ifdef ENABLE_CONTAINER_SCOPE
     FunctionSetContainerId(vm, value);
 #endif
@@ -899,14 +896,14 @@ NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, na
     CHECK_ARG(env, key);
 
     auto nativeValue = LocalValueFromJsValue(object);
-    auto propKey = LocalValueFromJsValue(key);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    bool deleteResult = obj->Delete(vm, propKey);
+    auto deleteResult = JSNApi::NapiDeleteProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                   reinterpret_cast<uintptr_t>(key));
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(deleteResult), napi_object_expected);
     if (result) {
-        *result = deleteResult;
+        *result = deleteResult->BooleaValue();
     }
 
     return GET_RETURN_STATUS(env);
@@ -919,15 +916,13 @@ NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, n
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(object);
-    auto propKey = LocalValueFromJsValue(key);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
-    Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    bool hasResult = obj->HasOwnProperty(vm, propKey);
+    auto hasResult = JSNApi::NapiHasOwnProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                reinterpret_cast<uintptr_t>(key));
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
     if (result) {
-        *result = hasResult;
+        *result = hasResult->BooleaValue();
     }
 
     return GET_RETURN_STATUS(env);
