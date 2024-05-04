@@ -70,7 +70,6 @@ using panda::ecmascript::EcmaVM;
 
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
-static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 
 class HandleScopeWrapper {
 public:
@@ -2420,32 +2419,6 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
     return napi_clear_last_error(env);
 }
 
-// Runnint a buffer script, only used in ark
-NAPI_EXTERN napi_status napi_run_buffer_script(napi_env env, std::vector<uint8_t>& buffer, napi_value* result)
-{
-    NAPI_PREAMBLE(env);
-    CHECK_ARG(env, result);
-
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
-    if (panda::JSNApi::HasPendingException(vm)) {
-        if (engine->GetNapiUncaughtExceptionCallback() != nullptr) {
-            LocalScope scope(vm);
-            Local<ObjectRef> exception = panda::JSNApi::GetAndClearUncaughtException(vm);
-            auto value = JsValueFromLocalValue(exception);
-            if (!exception.IsEmpty() && !exception->IsHole()) {
-                engine->GetNapiUncaughtExceptionCallback()(value);
-            }
-        }
-        *result = nullptr;
-    }
-
-    Local<PrimitiveRef> value = panda::JSValueRef::Undefined(vm);
-    *result = JsValueFromLocalValue(value);
-    return GET_RETURN_STATUS(env);
-}
-
 NAPI_EXTERN napi_status napi_run_actor(napi_env env,
                                        uint8_t* buffer,
                                        size_t bufferSize,
@@ -3175,7 +3148,16 @@ NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, nap
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunScript(path);
+    std::string pathStr(path);
+    if (engine->IsApplicationApiVersionAPI11Plus()) {
+        pathStr = panda::JSNApi::NormalizePath(path);
+    }
+    HILOG_DEBUG("napi_run_script_path path: %{public}s", pathStr.c_str());
+    if (engine->IsRestrictedWorkerThread()) {
+        *result = engine->RunScriptInRestrictedThread(pathStr.c_str());
+    } else {
+        *result = engine->RunScript(pathStr.c_str());
+    }
     return GET_RETURN_STATUS(env);
 }
 
@@ -3354,16 +3336,6 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, st
         Local<panda::StringRef> stringVal = nativeValue->ToString(vm);
         result = stringVal->ToString();
     }
-    return napi_clear_last_error(env);
-}
-
-NAPI_EXTERN napi_status napi_run_module_path(napi_env env, const char* path, const char* entryPoint, napi_value* result)
-{
-    CHECK_ENV(env);
-    CHECK_ARG(env, result);
-
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunScriptForAbc(path, const_cast<char*>(entryPoint));
     return napi_clear_last_error(env);
 }
 

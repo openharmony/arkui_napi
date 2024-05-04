@@ -341,7 +341,8 @@ public:
     virtual void SetHostEngine(NativeEngine* engine);
     virtual NativeEngine* GetHostEngine() const;
     virtual void SetApiVersion(int32_t apiVersion);
-    virtual void SetApiVersion(NativeEngine* engine);
+    virtual int32_t GetApiVersion();
+    virtual bool IsApplicationApiVersionAPI11Plus();
 
     using CleanupCallback = CleanupHookCallback::Callback;
     virtual void AddCleanupHook(CleanupCallback fun, void* arg);
@@ -408,8 +409,9 @@ public:
     // run script by path
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
+    napi_value RunScriptInRestrictedThread(const char* path);
     bool GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize, std::vector<uint8_t>& content,
-        std::string& ami, bool isRestrictedWorker = false, bool relativeWorker = true);
+        std::string& ami, bool isRestrictedWorker = false);
 
     const char* GetModuleFileName();
 
@@ -519,6 +521,7 @@ private:
     pthread_t tid_ = 0;
     std::unordered_map<std::string, int32_t> extensionInfos_;
     uv_sem_t uvSem_;
+    // Application's sdk version
     int32_t apiVersion_ = 8;
 
     // the old worker api use before api9, the new worker api start with api9
