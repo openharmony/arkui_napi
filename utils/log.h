@@ -39,7 +39,7 @@ enum class LogLevel : uint32_t {
 NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 
 #define HILOG_PRINT(Level, fmt, ...) \
-    PrintLog(LogLevel::Level, "[%-20s(%s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__);
+    PrintLog(LogLevel::Level, "[%-20s(%s)] " fmt, __FILENAME__, __FUNCTION__, ##__VA_ARGS__)
 
 #define HILOG_FATAL(fmt, ...) HILOG_PRINT(Fatal, fmt, ##__VA_ARGS__)
 #define HILOG_ERROR(fmt, ...) HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
