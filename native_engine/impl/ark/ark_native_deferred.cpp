@@ -43,9 +43,7 @@ void ArkNativeDeferred::Resolve(napi_value data)
     OHOS::Ace::ContainerScope containerScope(scopeId_);
 #endif
     auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Local<JSValueRef> value = LocalValueFromJsValue(data);
-    deferred_->Resolve(vm, value);
+    deferred_->Resolve(vm, reinterpret_cast<uintptr_t>(data));
 }
 
 void ArkNativeDeferred::Reject(napi_value reason)
@@ -54,7 +52,5 @@ void ArkNativeDeferred::Reject(napi_value reason)
     OHOS::Ace::ContainerScope containerScope(scopeId_);
 #endif
     auto vm = engine_->GetEcmaVm();
-    LocalScope scope(vm);
-    Local<JSValueRef> value = LocalValueFromJsValue(reason);
-    deferred_->Reject(vm, value);
+    deferred_->Reject(vm, reinterpret_cast<uintptr_t>(reason));
 }
