@@ -49,14 +49,15 @@ struct ApiCheckContext {
 };
 }
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
+using DFXJSNApi = panda::DFXJSNApi;
+using LocalScope = panda::LocalScope;
+using JSNApi = panda::JSNApi;
+using JSValueRef = panda::JSValueRef;
+using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
+using PropertyAttribute = panda::PropertyAttribute;
 
-using panda::DFXJSNApi;
+// indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
-using panda::LocalScope;
-using panda::JSNApi;
-using panda::JSValueRef;
-using panda::JsiRuntimeCallInfo;
-using panda::PropertyAttribute;
 
 template <bool changeState = true>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
@@ -72,7 +73,7 @@ NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
 #endif
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
-    void* data, const NapiPropertyDescriptor* properties, size_t length);
+                                                void* data, const NapiPropertyDescriptor* properties, size_t length);
 Local<JSValueRef> NapiDefineSendableClass(napi_env env,
                                           const char* name,
                                           NapiNativeCallback callback,
@@ -83,7 +84,7 @@ Local<JSValueRef> NapiDefineSendableClass(napi_env env,
 panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
                                                               const napi_property_descriptor *properties,
                                                               Local<panda::JSValueRef> *keys,
-                                                              PropertyAttribute *attrs);
+                                                              panda::PropertyAttribute *attrs);
 
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,

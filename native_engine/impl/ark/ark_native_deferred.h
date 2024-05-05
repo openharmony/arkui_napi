@@ -24,9 +24,9 @@
 class ArkNativeEngine;
 
 using panda::Global;
-using panda::JSValueRef;
+using JSValueRef = panda::JSValueRef;
 using panda::Local;
-using panda::PromiseCapabilityRef;
+using PromiseCapabilityRef = panda::PromiseCapabilityRef;
 
 class ArkNativeDeferred : public NativeDeferred {
 public:
