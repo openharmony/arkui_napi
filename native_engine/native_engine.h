@@ -53,19 +53,6 @@ struct NativeErrorExtendedInfo {
     int errorCode = 0;
 };
 
-struct ExceptionInfo {
-    const char* message_ = nullptr;
-    int32_t lineno_ = 0;
-    int32_t colno_ = 0;
-
-    ~ExceptionInfo()
-    {
-        if (message_ != nullptr) {
-            delete[] message_;
-        }
-    }
-};
-
 enum LoopMode {
     LOOP_DEFAULT, LOOP_ONCE, LOOP_NOWAIT
 };
