@@ -76,8 +76,8 @@ do_env() {
     # init workspace
     out_dir=${TARGET_GEN_DIR}/out
     workdir=${NODE_PATH}
-    [ -d ${out_dir} ] || mkdir -p ${out_dir}
-    [ -L ${workdir}/out ] || ln -s ${out_dir} ${workdir}/out
+    [ -d "${out_dir}" ] || mkdir -p ${out_dir}
+    [ -L "${workdir}/out" ] || ln -s ${out_dir} ${workdir}/out
 
     argurment+=" -s"
     argurment+=" -fstack-protector-strong"
