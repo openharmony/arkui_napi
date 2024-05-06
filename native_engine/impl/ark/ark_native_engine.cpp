@@ -666,22 +666,9 @@ static inline bool CheckHookConfig(const std::string &nameRef)
 }
 #endif
 
-static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtimeInfo, void* cb)
-{
 #ifdef ENABLE_HITRACE
-    if (ArkNativeEngine::napiProfilerEnabled) {
-        EcmaVM *vm = runtimeInfo->GetVM();
-        LocalScope scope(vm);
-        Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
-        Local<panda::StringRef> nameRef = fn->GetName(vm);
-        char threadName[BUF_SIZE];
-        prctl(PR_GET_NAME, threadName);
-        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
-    }
-    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
-    if (!hookFlag) {
-        return 0;
-    }
+static bool AddMemtraceFunction(panda::JsiRuntimeCallInfo* runtimeInfo, void* cb, std::stringstream &ssRawStack)
+{
     EcmaVM* vm = runtimeInfo->GetVM();
     LocalScope scope(vm);
     Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
@@ -700,20 +687,17 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         uint64_t addr = reinterpret_cast<uint64_t>(cb);
         ++g_chainId;
         (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true); // 8: the size of addr
-        return 0;
+        return false;
     }
     if (!CheckHookConfig(nameRef->ToString())) {
-        return 0;
+        return false;
     }
     BlockHookScope blockHook; // block hook
-    std::string rawStack;
     std::vector<JsFrameInfo> jsFrames;
-    uint64_t nestChainId = 0;
     jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
     auto env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
-    std::stringstream ssRawStack;
     for (size_t i = 0; i < jsFrames.size(); i++) {
         ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
             jsFrames[i].pos;
@@ -721,7 +705,32 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
             ssRawStack << JS_CALL_STACK_DEPTH_SEP;
         }
     }
-    rawStack = ssRawStack.str();
+    return true;
+}
+#endif
+
+static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtimeInfo, void* cb)
+{
+#ifdef ENABLE_HITRACE
+    if (ArkNativeEngine::napiProfilerEnabled) {
+        EcmaVM *vm = runtimeInfo->GetVM();
+        LocalScope scope(vm);
+        Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+        Local<panda::StringRef> nameRef = fn->GetName(vm);
+        char threadName[BUF_SIZE];
+        prctl(PR_GET_NAME, threadName);
+        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+    }
+    bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
+    std::stringstream ssRawStack;
+    if (!hookFlag) {
+        return 0;
+    }
+    if (!AddMemtraceFunction(runtimeInfo, cb, ssRawStack)) {
+        return 0;
+    }
+    std::string rawStack = ssRawStack.str();
+    uint64_t nestChainId = 0;
     OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
     // resolve nested calls to napi and ts
