@@ -234,13 +234,13 @@ void NativeEngine::SetLastError(int errorCode, uint32_t engineErrorCode, void* e
     lastError_.reserved = engineReserved;
 }
 
-void SubEncodeToUtf8(const EcmaVM* vm,
-                     Local<JSValueRef>& nativeValue,
-                     Local<StringRef>& nativeString,
-                     char* buffer,
-                     int32_t* written,
-                     size_t bufferSize,
-                     int32_t* nchars)
+static void SubEncodeToUtf8(const EcmaVM* vm,
+                            Local<JSValueRef>& nativeValue,
+                            Local<StringRef>& nativeString,
+                            char* buffer,
+                            int32_t* written,
+                            size_t bufferSize,
+                            int32_t* nchars)
 {
     int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
@@ -285,18 +285,18 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     SubEncodeToUtf8(vm, nativeValue, nativeString, buffer, written, bufferSize, nchars);
 }
 
-void SubEncodeToChinese(const EcmaVM* vm,
-                        Local<JSValueRef>& nativeValue,
-                        Local<StringRef>& nativeString,
-                        std::string& buffer,
-                        const char* encode)
+static void SubEncodeToChinese(const EcmaVM* vm,
+                               Local<JSValueRef>& nativeValue,
+                               Local<StringRef>& nativeString,
+                               std::string& buffer,
+                               const char* encode)
 {
     int32_t length = static_cast<int32_t>(nativeString->Length());
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";
     tempBuf.resize(writableSize + 1);
-    UErrorCode ErrorCode = U_ZERO_ERROR;
+    UErrorCode errorCode = U_ZERO_ERROR;
     const char* encFrom = "utf8";
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
     for (int32_t i = 0; i < length; i++) {
@@ -304,9 +304,9 @@ void SubEncodeToChinese(const EcmaVM* vm,
         int32_t len = str->Utf8Length(vm) - 1;
         if ((pos + len) >= writableSize) {
             char outBuf[writableSize] = {0};
-            ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
-            if (ErrorCode != U_ZERO_ERROR) {
-                HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+            ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &errorCode);
+            if (errorCode != U_ZERO_ERROR) {
+                HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(errorCode));
                 return;
             }
             buffer += outBuf;
@@ -318,9 +318,9 @@ void SubEncodeToChinese(const EcmaVM* vm,
     }
     if (pos > 0) {
         char outBuf[writableSize] = {0};
-        ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &ErrorCode);
-        if (ErrorCode != U_ZERO_ERROR) {
-            HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(ErrorCode));
+        ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &errorCode);
+        if (errorCode != U_ZERO_ERROR) {
+            HILOG_ERROR("ucnv_convert is failed : ErrorCode = %{public}d", static_cast<int32_t>(errorCode));
             return;
         }
         buffer += outBuf;
