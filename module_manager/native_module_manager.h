@@ -56,6 +56,7 @@ struct NativeModule {
     const char* name = nullptr;       /* .nm_modname from native c++ register info */
     const char* moduleName = nullptr; /* moduleName required or imported */
     const char* fileName = nullptr;
+    const char* systemFilePath = nullptr;
     RegisterCallback registerCallback = nullptr;
     GetJSCodeCallback getABCCode = nullptr;
     GetJSCodeCallback getJSCode = nullptr;
@@ -105,8 +106,8 @@ private:
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
-        bool internal, const bool isAppModule, std::string& errInfo);
-    NativeModule* FindNativeModuleByCache(const char* moduleName);
+        bool internal, const bool isAppModule, std::string& errInfo, char nativeModulePath[][NAPI_PATH_MAX]);
+    NativeModule* FindNativeModuleByCache(const char* moduleName, char nativeModulePath[][NAPI_PATH_MAX]);
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
         const bool isAppModule, std::string& errInfo, uint32_t& errReason);
