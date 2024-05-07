@@ -109,6 +109,7 @@ bool NativeAsyncWork::Queue()
 #endif
     if (status != 0) {
         HILOG_ERROR("uv_queue_work failed");
+        engine_->DecreaseWaitingRequestCounter();
         return false;
     }
     return true;
@@ -133,6 +134,7 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 #endif
     if (status != 0) {
         HILOG_ERROR("uv_queue_work_with_qos failed");
+        engine_->DecreaseWaitingRequestCounter();
         return false;
     }
     return true;
