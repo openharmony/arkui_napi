@@ -123,13 +123,13 @@ bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
 
-// To be delete
+// This interface is using by ace_engine
 napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local)
 {
     return JsValueFromLocalValue(local);
 }
 
-// To be delete
+// This interface is using by ace_engine
 panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 {
     return LocalValueFromJsValue(v);
@@ -295,54 +295,6 @@ Local<panda::JSValueRef> NapiNativeCreateSendableFunction(napi_env env,
         },
         reinterpret_cast<void*>(funcInfo), true);
     return fn;
-}
-
-PropertyAttribute GetPropertyAttributeFromNapiPropertyDescriptor(napi_env env,
-                                                                 NapiPropertyDescriptor propertyDescriptor)
-{
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    Local<panda::JSValueRef> propertyName = LocalValueFromJsValue(propertyDescriptor.name);
-    if (propertyDescriptor.utf8name != nullptr) {
-        propertyName = panda::StringRef::NewFromUtf8(vm, propertyDescriptor.utf8name);
-    }
-
-    bool writable = (propertyDescriptor.attributes & NATIVE_WRITABLE) != 0;
-    bool enumable = (propertyDescriptor.attributes & NATIVE_ENUMERABLE) != 0;
-    bool configable = (propertyDescriptor.attributes & NATIVE_CONFIGURABLE) != 0;
-
-    PropertyAttribute attr;
-    std::string fullName;
-    if (propertyDescriptor.getter != nullptr || propertyDescriptor.setter != nullptr) {
-        Local<panda::JSValueRef> localGetter = panda::JSValueRef::Undefined(vm);
-        Local<panda::JSValueRef> localSetter = panda::JSValueRef::Undefined(vm);
-
-        if (propertyDescriptor.getter != nullptr) {
-            localGetter = NapiNativeCreateSendableFunction(env, (fullName + "getter").c_str(),
-                                                           propertyDescriptor.getter, propertyDescriptor.data);
-        }
-        if (propertyDescriptor.setter != nullptr) {
-            localSetter = NapiNativeCreateSendableFunction(env, (fullName + "setter").c_str(),
-                                                           propertyDescriptor.setter, propertyDescriptor.data);
-        }
-        Local<JSValueRef> val = panda::ObjectRef::CreateSendableAccessorData(vm, localGetter, localSetter);
-        attr = PropertyAttribute(val, false, enumable, configable);
-    } else if (propertyDescriptor.method != nullptr) {
-        if (propertyDescriptor.utf8name != nullptr) {
-            fullName += propertyDescriptor.utf8name;
-        } else {
-            fullName += propertyName->IsString()
-                            ? Local<panda::StringRef>(propertyName)->ToString()
-                            : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString();
-        }
-        Local<panda::JSValueRef> func =
-            NapiNativeCreateSendableFunction(env, fullName.c_str(), propertyDescriptor.method, propertyDescriptor.data);
-        attr = PropertyAttribute(func, writable, enumable, configable);
-    } else {
-        Local<panda::JSValueRef> val = LocalValueFromJsValue(propertyDescriptor.value);
-        attr = PropertyAttribute(val, writable, enumable, configable);
-    }
-    return attr;
 }
 
 panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
@@ -818,7 +770,8 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     return **localRet;
 }
 
-Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name, NapiNativeCallback cb, void* value)
+static Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const char* name,
+                                                         NapiNativeCallback cb, void* value)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
@@ -1790,7 +1743,7 @@ std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
     }
     std::string sourceCodeInfo = "SourceCode:\n";
     sourceCodeInfo.append(sourceCodeStr).append("\n");
-    for (uint32_t k = 0; k < column - 1; k++) {
+    for (uint32_t k = 1; k < column; k++) {
         sourceCodeInfo.push_back(' ');
     }
     sourceCodeInfo.append("^\n");
