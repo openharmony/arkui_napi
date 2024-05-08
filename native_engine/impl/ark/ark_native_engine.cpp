@@ -1449,6 +1449,18 @@ NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_
     return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint, true);
 }
 
+void ArkNativeEngine::OutputErrorMessage(int ret, std::vector<RefFinalizer> *finalizers, uv_work_t *work)
+{
+    HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
+    for (auto iter : (*finalizers)) {
+        std::tuple<NativeEngine*, void*, void*> &param = iter.second;
+        (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
+                    std::get<1>(param), std::get<2>(param)); // 2 is the param.
+    }
+    delete work;
+    delete finalizers;
+}
+
 void ArkNativeEngine::PostFinalizeTasks()
 {
     if (!pendingAsyncFinalizers_.empty()) {
@@ -1470,14 +1482,7 @@ void ArkNativeEngine::PostFinalizeTasks()
             delete asynWork;
         });
         if (ret != 0) {
-            HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-            for (auto iter : (*asyncFinalizers)) {
-                std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-                (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                            std::get<1>(param), std::get<2>(param)); // 2 is the param.
-            }
-            delete asynWork;
-            delete asyncFinalizers;
+            OutputErrorMessage(ret, asyncFinalizers, asynWork);
         }
     }
     if (pendingFinalizers_.empty()) {
@@ -1500,21 +1505,13 @@ void ArkNativeEngine::PostFinalizeTasks()
         delete finalizers;
     });
     if (ret != 0) {
-        HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-        for (auto iter : (*syncFinalizers)) {
-            std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-            (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                         std::get<1>(param), std::get<2>(param)); // 2 is the param.
-        }
-        delete syncWork;
-        delete syncFinalizers;
+        OutputErrorMessage(ret, syncFinalizers, syncWork);
     }
 }
 
-NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker)
-{
-    panda::RuntimeOption option;
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+void ArkNativeEngine::SetAttribute(bool isLimitedWorker, panda::RuntimeOption option)
+{
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     std::string bundleName = OHOS::system::GetParameter("persist.ark.arkbundlename", "");
     std::string memConfigProperty = OHOS::system::GetParameter("persist.ark.mem_config_property", "");
@@ -1535,6 +1532,14 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     option.SetIsRestrictedWorker(isLimitedWorker);
     HILOG_DEBUG("ArkNativeEngineImpl::CreateRuntimeFunc ark properties = %{public}d, bundlename = %{public}s",
         arkProperties, bundleName.c_str());
+}
+#endif
+
+NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker)
+{
+    panda::RuntimeOption option;
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    SetAttribute(isLimitedWorker, option);
 #endif
     option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
     const int64_t poolSize = 0x1000000;
