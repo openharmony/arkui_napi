@@ -561,12 +561,11 @@ NAPI_EXTERN napi_status napi_get_value_double(napi_env env, napi_value value, do
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(value);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
-    Local<panda::NumberRef> NumberVal = nativeValue->ToNumber(vm);
-    *result = NumberVal->Value();
+    panda::JSValueRef* nativeValue = reinterpret_cast<panda::JSValueRef*>(value);
+    bool isNumber = false;
+    double dValue = nativeValue->GetValueDouble(isNumber);
+    RETURN_STATUS_IF_FALSE(env, isNumber, napi_number_expected);
+    *result = dValue;
     return napi_clear_last_error(env);
 }
 
@@ -576,10 +575,11 @@ NAPI_EXTERN napi_status napi_get_value_int32(napi_env env, napi_value value, int
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    *result = nativeValue->Int32Value(vm);
+    panda::JSValueRef* nativeValue = reinterpret_cast<panda::JSValueRef*>(value);
+    bool isNumber = false;
+    int32_t i32Value = nativeValue->GetValueInt32(isNumber);
+    RETURN_STATUS_IF_FALSE(env, isNumber, napi_number_expected);
+    *result = i32Value;
 
     return napi_clear_last_error(env);
 }
@@ -590,10 +590,11 @@ NAPI_EXTERN napi_status napi_get_value_uint32(napi_env env, napi_value value, ui
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    *result = nativeValue->Uint32Value(vm);
+    panda::JSValueRef* nativeValue = reinterpret_cast<panda::JSValueRef*>(value);
+    bool isNumber = false;
+    uint32_t u32Value = nativeValue->GetValueUint32(isNumber);
+    RETURN_STATUS_IF_FALSE(env, isNumber, napi_number_expected);
+    *result = u32Value;
     return napi_clear_last_error(env);
 }
 
@@ -603,10 +604,11 @@ NAPI_EXTERN napi_status napi_get_value_int64(napi_env env, napi_value value, int
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsNumber(), napi_number_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    *result = nativeValue->IntegerValue(vm);
+    panda::JSValueRef* nativeValue = reinterpret_cast<panda::JSValueRef*>(value);
+    bool isNumber = false;
+    int64_t i64Value = nativeValue->GetValueInt64(isNumber);
+    RETURN_STATUS_IF_FALSE(env, isNumber, napi_number_expected);
+    *result = i64Value;
     return napi_clear_last_error(env);
 }
 
@@ -616,12 +618,11 @@ NAPI_EXTERN napi_status napi_get_value_bool(napi_env env, napi_value value, bool
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
-    Local<panda::JSValueRef> val = LocalValueFromJsValue(value);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, val->IsBoolean(), napi_boolean_expected);
-    Local<panda::BooleanRef> boolVal = val->ToBoolean(vm);
-    *result = boolVal->Value();
+    panda::JSValueRef* nativeValue = reinterpret_cast<panda::JSValueRef*>(value);
+    bool isBool = false;
+    bool bValue = nativeValue->GetValueBool(isBool);
+    RETURN_STATUS_IF_FALSE(env, isBool, napi_boolean_expected);
+    *result = bValue;
     return napi_clear_last_error(env);
 }
 
