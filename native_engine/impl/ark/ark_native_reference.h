@@ -23,11 +23,12 @@
 
 class ArkNativeEngine;
 
-using panda::EcmaVM;
+using EcmaVM = panda::EcmaVM;
 using panda::Global;
-using panda::JSValueRef;
+using JSValueRef = panda::JSValueRef;
 using panda::Local;
-using panda::LocalScope;
+using LocalScope = panda::LocalScope;
+
 enum class FinalizerState {
     DESTRUCTION,
     COLLECTION,

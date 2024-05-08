@@ -19,7 +19,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_property.h"
 
-using panda::FunctionRef;
+using FunctionRef = panda::FunctionRef;
 using panda::Local;
 
 class NativeSendable {
