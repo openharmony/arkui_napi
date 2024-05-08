@@ -90,6 +90,44 @@ static napi_value TestPromise(napi_env env, napi_callback_info)
 /*
  * Promise or async callback
  */
+void NapiCreateAsyncWork(napi_env env, napi_value resourceName, AsyncCallbackInfo* asyncCallbackInfo)
+{
+    napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            AsyncCallbackInfo* asyncCallbackInfo = (AsyncCallbackInfo*)data;
+
+            napi_value callback = nullptr;
+            napi_value undefined = nullptr;
+            napi_value result = nullptr;
+            napi_value callbackResult = nullptr;
+            napi_create_string_utf8(env, "TestPromiseOrAsyncCallback", NAPI_AUTO_LENGTH, &result);
+            napi_get_undefined(env, &undefined);
+
+            if (true) {
+                napi_get_reference_value(env, asyncCallbackInfo->callback[0], &callback);
+                napi_call_function(env, undefined, callback, 1, &result, &callbackResult);
+            } else {
+                if (asyncCallbackInfo->callback[1]) {
+                    napi_get_reference_value(env, asyncCallbackInfo->callback[1], &callback);
+                    napi_call_function(env, undefined, callback, 1, &result, &callbackResult);
+                } else {
+                    napi_throw_error(env, "error", "foo");
+                }
+            }
+
+            if (asyncCallbackInfo->callback[0] != nullptr) {
+                napi_delete_reference(env, asyncCallbackInfo->callback[0]);
+            }
+            if (asyncCallbackInfo->callback[1] != nullptr) {
+                napi_delete_reference(env, asyncCallbackInfo->callback[1]);
+            }
+            napi_delete_async_work(env, asyncCallbackInfo->asyncWork);
+            delete asyncCallbackInfo;
+        },
+        (void*)asyncCallbackInfo, &asyncCallbackInfo->asyncWork);
+}
+
 static napi_value TestPromiseOrAsyncCallback(napi_env env, napi_callback_info info)
 {
     size_t argc = 2;
@@ -114,52 +152,15 @@ static napi_value TestPromiseOrAsyncCallback(napi_env env, napi_callback_info in
             napi_create_reference(env, args[i], 1, &asyncCallbackInfo->callback[i]);
         }
 
-        napi_create_async_work(
-            env, nullptr, resourceName, [](napi_env env, void* data) {},
-            [](napi_env env, napi_status status, void* data) {
-                AsyncCallbackInfo* asyncCallbackInfo = (AsyncCallbackInfo*)data;
-
-                napi_value callback = nullptr;
-                napi_value undefined = nullptr;
-                napi_value result = nullptr;
-                napi_value callbackResult = nullptr;
-                napi_create_string_utf8(env, "TestPromiseOrAsyncCallback", NAPI_AUTO_LENGTH, &result);
-                napi_get_undefined(env, &undefined);
-
-                if (true) {
-                    napi_get_reference_value(env, asyncCallbackInfo->callback[0], &callback);
-                    napi_call_function(env, undefined, callback, 1, &result, &callbackResult);
-                } else {
-                    if (asyncCallbackInfo->callback[1]) {
-                        napi_get_reference_value(env, asyncCallbackInfo->callback[1], &callback);
-                        napi_call_function(env, undefined, callback, 1, &result, &callbackResult);
-                    } else {
-                        napi_throw_error(env, "error", "foo");
-                    }
-                }
-
-                if (asyncCallbackInfo->callback[0] != nullptr) {
-                    napi_delete_reference(env, asyncCallbackInfo->callback[0]);
-                }
-                if (asyncCallbackInfo->callback[1] != nullptr) {
-                    napi_delete_reference(env, asyncCallbackInfo->callback[1]);
-                }
-                napi_delete_async_work(env, asyncCallbackInfo->asyncWork);
-                delete asyncCallbackInfo;
-            },
-            (void*)asyncCallbackInfo, &asyncCallbackInfo->asyncWork);
-
+        NapiCreateAsyncWork(env, resourceName, asyncCallbackInfo);
         NAPI_CALL(env, napi_queue_async_work(env, asyncCallbackInfo->asyncWork));
-
         return nullptr;
     } else {
         napi_value resourceName = nullptr;
         napi_create_string_latin1(env, "TestPromiseOrAsyncCallback2", NAPI_AUTO_LENGTH, &resourceName);
-
         napi_deferred deferred = nullptr;
         napi_value promise = nullptr;
         NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
-
         asyncCallbackInfo->deferred = deferred;
 
         napi_create_async_work(
