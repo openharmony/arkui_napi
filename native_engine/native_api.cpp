@@ -279,6 +279,30 @@ NAPI_EXTERN napi_status napi_create_array_with_length(napi_env env, size_t lengt
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_create_sendable_array(napi_env env, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ArrayRef> object = panda::ArrayRef::NewSendable(vm, 0);
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_sendable_array_with_length(napi_env env, size_t length, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ArrayRef> object = panda::ArrayRef::NewSendable(vm, length);
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_create_double(napi_env env, double value, napi_value* result)
 {
     CHECK_ENV(env);
@@ -1945,6 +1969,24 @@ NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t byte_length,
+                                                         void** data, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, data);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    uint8_t** values = (uint8_t**)(data);
+    Local<panda::ArrayBufferRef> res = panda::ArrayBufferRef::NewSendable(vm, byte_length);
+    if (values != nullptr) {
+        *values = reinterpret_cast<uint8_t*>(res->GetBuffer());
+    }
+    *result = JsValueFromLocalValue(res);
+
+    return GET_RETURN_STATUS(env);
+}
+
 NAPI_EXTERN napi_status napi_create_external_arraybuffer(napi_env env,
                                                          void* external_data,
                                                          size_t byte_length,
@@ -2248,6 +2290,85 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     }
     if (byte_offset != nullptr) {
         *byte_offset = typedArray->ByteOffset(vm);
+    }
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
+                                                        napi_typedarray_type type,
+                                                        size_t length,
+                                                        napi_value arraybuffer,
+                                                        size_t byte_offset,
+                                                        napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, arraybuffer);
+    CHECK_ARG(env, result);
+
+    auto value = LocalValueFromJsValue(arraybuffer);
+    auto typedArrayType = (NativeTypedArrayType)type;
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, value->IsSharedArrayBuffer(), napi_status::napi_arraybuffer_expected);
+    Local<panda::ArrayBufferRef> arrayBuf = value->ToObject(vm);
+    Local<panda::TypedArrayRef> sendableTypedArray(panda::JSValueRef::Undefined(vm));
+
+    if (reinterpret_cast<NativeEngine*>(env)->Napi_Judge_Sendable_TypedArray(typedArrayType, sendableTypedArray, vm,
+                                                                             arrayBuf, byte_offset,
+                                                                             length, result) == false) {
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_get_sendable_typedarray_info(napi_env env,
+                                                          napi_value typedarray,
+                                                          napi_typedarray_type* type,
+                                                          size_t* length,
+                                                          void** data,
+                                                          napi_value* arraybuffer,
+                                                          size_t* byte_offset)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, typedarray);
+
+    auto value = LocalValueFromJsValue(typedarray);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, value->IsSharedTypedArray(), napi_status::napi_invalid_arg);
+    Local<panda::TypedArrayRef> typedArray = value->ToObject(vm);
+    if (type != nullptr) {
+        NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
+        if (typedArray->IsJSSharedInt8Array()) {
+            thisType = NATIVE_INT8_ARRAY;
+        } else if (typedArray->IsJSSharedUint8Array()) {
+            thisType = NATIVE_UINT8_ARRAY;
+        } else if (typedArray->IsJSSharedInt16Array()) {
+            thisType = NATIVE_INT16_ARRAY;
+        } else if (typedArray->IsJSSharedUint16Array()) {
+            thisType = NATIVE_UINT16_ARRAY;
+        } else if (typedArray->IsJSSharedInt32Array()) {
+            thisType = NATIVE_INT32_ARRAY;
+        } else if (typedArray->IsJSSharedUint32Array()) {
+            thisType = NATIVE_UINT32_ARRAY;
+        } else {
+            return napi_set_last_error(env, napi_invalid_arg);
+        }
+        *type = (napi_typedarray_type)(thisType);
+    }
+    if (length != nullptr) {
+        *length = typedArray->SendableByteLength(vm);
+    }
+    if (data != nullptr) {
+        *data = static_cast<uint8_t*>(typedArray->SendableGetArrayBuffer(vm)->GetBuffer()) +
+                typedArray->SendableByteOffset(vm);
+    }
+    if (arraybuffer != nullptr) {
+        *arraybuffer = JsValueFromLocalValue(typedArray->SendableGetArrayBuffer(vm));
+    }
+    if (byte_offset != nullptr) {
+        *byte_offset = typedArray->SendableByteOffset(vm);
     }
 
     return napi_clear_last_error(env);
@@ -2913,6 +3034,23 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
         if (!bufObj->IsDetach()) {
             bufObj->Detach(vm);
         }
+    } else {
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_detach_sendable_arraybuffer(napi_env env, napi_value arraybuffer)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, arraybuffer);
+
+    auto nativeValue = LocalValueFromJsValue(arraybuffer);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSharedArrayBuffer(), napi_object_expected);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
+    if (!bufObj->SendableIsDetach()) {
+        bufObj->SendableDetach(vm);
     } else {
         return napi_set_last_error(env, napi_invalid_arg);
     }

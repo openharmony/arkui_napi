@@ -153,6 +153,24 @@ NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value*
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffer);
 NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value value, bool* result);
 
+NAPI_EXTERN napi_status napi_create_sendable_array(napi_env env, napi_value* result);
+NAPI_EXTERN napi_status napi_create_sendable_array_with_length(napi_env env, size_t length, napi_value* result);
+NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t byte_length,
+                                                         void** data, napi_value* result);
+NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
+                                                        napi_typedarray_type type,
+                                                        size_t length,
+                                                        napi_value arraybuffer,
+                                                        size_t byte_offset,
+                                                        napi_value* result);
+NAPI_EXTERN napi_status napi_get_sendable_typedarray_info(napi_env env,
+                                                          napi_value typedarray,
+                                                          napi_typedarray_type* type,
+                                                          size_t* length,
+                                                          void** data,
+                                                          napi_value* arraybuffer,
+                                                          size_t* byte_offset);
+NAPI_EXTERN napi_status napi_detach_sendable_arraybuffer(napi_env env, napi_value arraybuffer);
 
 NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threadsafe_function func,
                                                                     void *data,
