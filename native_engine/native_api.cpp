@@ -900,7 +900,7 @@ NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, n
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
-    bool hasResult = obj->Has(vm, propKey);
+    bool hasResult = obj->HasOwnProperty(vm, propKey);
     if (result) {
         *result = hasResult;
     }
