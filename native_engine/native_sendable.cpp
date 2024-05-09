@@ -37,6 +37,9 @@ FunctionRef::SendablePropertiesInfos NativeSendable::CreateSendablePropertiesInf
         } else if (properties[i].attributes & NATIVE_INSTANCE_OBJECT) {
             InitSendablePropertiesInfo(env, infos.instancePropertiesInfo, properties[i],
                                        FunctionRef::SendableType::OBJECT);
+        } else if (properties[i].attributes & NATIVE_INSTANCE_GENERIC) {
+            InitSendablePropertiesInfo(env, infos.instancePropertiesInfo, properties[i],
+                                       FunctionRef::SendableType::GENERIC);
         } else {
             InitSendablePropertiesInfo(env, infos.nonStaticPropertiesInfo, properties[i]);
         }
