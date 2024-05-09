@@ -1343,6 +1343,8 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
         HILOG_ERROR("napi_define_class strncpy_s failed");
         *result = nullptr;
     } else {
+        auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+        panda::JsiFastNativeScope fastNativeScope(vm);
         EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
         auto resultValue = NapiDefineClass(env, newName, callback, data, nativeProperties, property_count);
         *result = JsValueFromLocalValue(scope.Escape(resultValue));
@@ -1638,11 +1640,11 @@ NAPI_EXTERN napi_status napi_get_value_external(napi_env env, napi_value value, 
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
+    bool isNativePointer = false;
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsNativePointer(), napi_object_expected);
-    Local<panda::NativePointerRef> object = nativeValue->ToNativePointer(vm);
-    *result = object->Value();
+    void* ret = nativeValue->GetNativePointerValue(vm, isNativePointer);
+    RETURN_STATUS_IF_FALSE(env, isNativePointer, napi_object_expected);
+    *result = ret;
     return napi_clear_last_error(env);
 }
 
@@ -2306,21 +2308,10 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
 
     auto nativeValue = LocalValueFromJsValue(dataview);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsDataView(), napi_status::napi_invalid_arg);
-    Local<panda::DataViewRef> dataViewObj = nativeValue->ToObject(vm);
-    if (bytelength != nullptr) {
-        *bytelength = dataViewObj->ByteLength();
-    }
-    if (data != nullptr) {
-        *data = dataViewObj->GetArrayBuffer(vm)->GetBuffer();
-    }
-    if (arraybuffer != nullptr) {
-        *arraybuffer = JsValueFromLocalValue(dataViewObj->GetArrayBuffer(vm));
-    }
-    if (byte_offset != nullptr) {
-        *byte_offset = dataViewObj->ByteOffset();
-    }
+    bool isDataView = false;
+    nativeValue->GetDataViewInfo(vm, isDataView, bytelength, data,
+        reinterpret_cast<panda::JSValueRef**>(arraybuffer), byte_offset);
+    RETURN_STATUS_IF_FALSE(env, isDataView, napi_status::napi_invalid_arg);
 
     return napi_clear_last_error(env);
 }
@@ -2831,15 +2822,14 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    auto isArrayBuffer = nativeValue->IsArrayBuffer();
-    Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
+    bool isArrayBuffer = false;
+    bool isDetach = nativeValue->IsDetachedArraybuffer(isArrayBuffer);
     if (isArrayBuffer) {
-        *result = bufObj->IsDetach();
+        *result = isDetach;
+        return napi_clear_last_error(env);
     } else {
         return napi_set_last_error(env, napi_invalid_arg);
     }
-    return napi_clear_last_error(env);
 }
 
 NAPI_EXTERN napi_status napi_get_all_property_names(
@@ -2907,13 +2897,9 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    auto isArrayBuffer = nativeValue->IsArrayBuffer();
-    Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
-    if (isArrayBuffer) {
-        if (!bufObj->IsDetach()) {
-            bufObj->Detach(vm);
-        }
-    } else {
+    bool isArrayBuffer = false;
+    nativeValue->DetachedArraybuffer(vm, isArrayBuffer);
+    if (!isArrayBuffer) {
         return napi_set_last_error(env, napi_invalid_arg);
     }
     return napi_clear_last_error(env);
