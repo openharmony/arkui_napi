@@ -377,6 +377,7 @@ public:
     virtual size_t GetHeapUsedSize() = 0;
     virtual size_t GetHeapObjectSize() = 0;
     virtual size_t GetHeapLimitSize() = 0;
+    virtual size_t GetProcessHeapLimitSize() = 0;
     virtual void NotifyApplicationState(bool inBackground) = 0;
     virtual void NotifyIdleStatusControl(std::function<void(bool)> callback) = 0;
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
