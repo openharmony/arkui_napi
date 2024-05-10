@@ -81,6 +81,9 @@ Local<JSValueRef> NapiDefineSendableClass(napi_env env,
                                           const NapiPropertyDescriptor* properties,
                                           size_t propertiesLength,
                                           napi_value parent);
+panda::Local<panda::ObjectRef> NapiCreateSObjectWithProperties(napi_env env,
+                                                               size_t propertyCount,
+                                                               const NapiPropertyDescriptor* properties);
 panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size_t propertyCount,
                                                               const napi_property_descriptor *properties,
                                                               Local<panda::JSValueRef> *keys,

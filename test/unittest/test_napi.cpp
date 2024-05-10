@@ -1768,6 +1768,36 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest001, testing::ext::TestSize.Level1)
     ASSERT_STREQ(testStr, tmpTestStr1);
 }
 
+HWTEST_F(NapiBasicTest, WrapSendableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testClass = nullptr;
+    napi_define_sendable_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 0, nullptr, nullptr, &testClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testClass, 0, nullptr, &instanceValue);
+
+    const char* testStr = "test";
+    napi_wrap_sendable(
+        env, instanceValue, (void*)testStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr);
+
+    char* tmpTestStr = nullptr;
+    napi_unwrap_sendable(env, instanceValue, (void**)&tmpTestStr);
+    ASSERT_STREQ(testStr, tmpTestStr);
+
+    char* tmpTestStr1 = nullptr;
+    napi_remove_wrap_sendable(env, instanceValue, (void**)&tmpTestStr1);
+    ASSERT_STREQ(testStr, tmpTestStr1);
+}
+
 /**
  * @tc.name: StrictEqualsTest001
  * @tc.desc: Test date type.
@@ -2265,6 +2295,37 @@ HWTEST_F(NapiBasicTest, WrapWithSizeTest001, testing::ext::TestSize.Level1)
     napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
     ASSERT_STREQ(testWrapStr, tempTestStr1);
 
+}
+
+HWTEST_F(NapiBasicTest, WrapSendableWithSizeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testWrapClass = nullptr;
+    napi_define_sendable_class(
+        env, "TestWrapClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 0, nullptr, nullptr, &testWrapClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testWrapClass, 0, nullptr, &instanceValue);
+
+    const char* testWrapStr = "testWrapStr";
+    size_t size = sizeof(*testWrapStr) / sizeof(char);
+    napi_wrap_sendable_with_size(
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, size, nullptr);
+
+    char* tempTestStr = nullptr;
+    napi_unwrap_sendable(env, instanceValue, (void**)&tempTestStr);
+    ASSERT_STREQ(testWrapStr, tempTestStr);
+
+    char* tempTestStr1 = nullptr;
+    napi_remove_wrap_sendable(env, instanceValue, (void**)&tempTestStr1);
+    ASSERT_STREQ(testWrapStr, tempTestStr1);
 }
 
 /**
@@ -4199,6 +4260,72 @@ HWTEST_F(NapiBasicTest, CreateObjectWithPropertiesTest001, testing::ext::TestSiz
     ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
     ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
     auto checkPropertyEqualsTo = [env] (napi_value obj, const char *keyStr, napi_value expect) -> bool {
+        napi_value result;
+        napi_get_named_property(env, obj, keyStr, &result);
+        bool equal = false;
+        napi_strict_equals(env, result, expect, &equal);
+        return equal;
+    };
+    // get obj1.x == true
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_true));
+    // set obj1.x = false
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj1, "x", val_false));
+    // get obj1.x == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj1, "x", val_false));
+    // get obj2.a == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "a", val_false));
+    // get obj2.b == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "b", val_false));
+    // set obj2.b = true (useless)
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj2, "b", val_true));
+    // get obj2.b == false
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "b", val_false));
+    // get obj2.c == obj1
+    ASSERT_TRUE(checkPropertyEqualsTo(obj2, "c", obj1));
+    // get obj2.c.x == false
+    napi_value val_res;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj2, "c", &val_res));
+    ASSERT_TRUE(checkPropertyEqualsTo(val_res, "x", val_false));
+}
+
+static napi_value SendableGetter(napi_env env, napi_callback_info info)
+{
+    napi_value res;
+    napi_get_boolean(env, false, &res);
+    return res;
+}
+
+static napi_value SendableSetter(napi_env env, napi_callback_info info)
+{
+    napi_value res;
+    napi_get_boolean(env, true, &res);
+    return res;
+}
+
+HWTEST_F(NapiBasicTest, CreateSendableObjectWithPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value excep;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
+    napi_value val_false;
+    napi_value val_true;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, false, &val_false));
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &val_true));
+    napi_property_descriptor desc1[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", val_true),
+    };
+    napi_value obj1;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc1, &obj1));
+    napi_value obj2;
+    napi_property_descriptor desc2[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("a", val_false),
+        DECLARE_NAPI_GETTER_SETTER("b", SendableGetter, SendableSetter),
+        DECLARE_NAPI_DEFAULT_PROPERTY("c", obj1),
+    };
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 3, desc2, &obj2));
+    ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
+    ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
+    auto checkPropertyEqualsTo = [env](napi_value obj, const char* keyStr, napi_value expect) -> bool {
         napi_value result;
         napi_get_named_property(env, obj, keyStr, &result);
         bool equal = false;

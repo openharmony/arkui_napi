@@ -141,9 +141,26 @@ NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
                                                    const napi_property_descriptor* properties,
                                                    napi_value parent,
                                                    napi_value* result);
-
+NAPI_EXTERN napi_status napi_create_sendable_object_with_properties(napi_env env,
+                                                                    size_t property_count,
+                                                                    const napi_property_descriptor* properties,
+                                                                    napi_value* result);
 NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result);
-
+NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
+                                           napi_value js_object,
+                                           void* native_object,
+                                           napi_finalize finalize_cb,
+                                           void* finalize_hint,
+                                           napi_ref* result);
+NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
+                                                     napi_value js_object,
+                                                     void* native_object,
+                                                     napi_finalize finalize_cb,
+                                                     void* finalize_hint,
+                                                     size_t native_binding_size,
+                                                     napi_ref* result);
+NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result);
+NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result);
 NAPI_EXTERN napi_status napi_serialize(napi_env env,
                                        napi_value object,
                                        napi_value transfer_list,
