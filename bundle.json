@@ -35,7 +35,8 @@
                 "libuv",
                 "node",
                 "bounds_checking_function",
-                "init"
+                "init",
+                "ability_runtime"
             ],
             "third_party": [
                 "icu",

@@ -74,7 +74,7 @@ int64_t FFIDataManager::NewFFIDataId()
         // 0 represents invalid status in CJ RemoteData, will be handled by CJ Exception
         return 0;
     }
-    HiLog::Info(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}d" PRId64, curFFIDataId_,
+    HiLog::Info(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}zu", curFFIDataId_,
         ffiDataStore_.size());
     return curFFIDataId_;
 }

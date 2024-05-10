@@ -1,0 +1,81 @@
+# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//foundation/arkui/napi/napi.gni")
+
+import("//build/test.gni")
+import("//foundation/arkui/napi/test/unittest/ut.gni")
+
+if (is_standard_system) {
+  module_output_path = "ace_engine/napi"
+} else {
+  module_output_path = "ace_engine_full/napi"
+}
+
+ohos_unittest("test_ark_interop_helper") {
+  module_out_path = module_output_path
+
+  include_dirs = ark_include
+  include_dirs += [
+    "../../../interfaces/inner_api/cjffi/ark_interop/",
+    "../../../interfaces/inner_api/cjffi/ark_interop_helper/",
+  ]
+
+  cflags = [ "-g3" ]
+
+  sources = [ "test_ark_interop_helper.cpp" ]
+
+  deps = [
+    "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
+    "../../../interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
+  ]
+  deps += [ "../../..:ace_napi" ]
+}
+
+ohos_unittest("test_ark_interop") {
+  module_out_path = module_output_path
+
+  include_dirs = ark_include
+  include_dirs += [
+    "../../../interfaces/inner_api/cjffi/ark_interop/",
+    "../../../interfaces/inner_api/cjffi/ark_interop_helper/",
+  ]
+
+  cflags = [ "-g3" ]
+
+  sources = [ "test_ark_interop.cpp" ]
+
+  deps = [
+    "../../..:ace_napi",
+    "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
+    "../../../interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
+    "//third_party/libuv:uv",
+  ]
+  defines = []
+  if (use_clang_coverage) {
+    defines += [ "CLANG_COVERAGE" ]
+  }
+
+  external_deps = [
+    "ets_runtime:libark_jsruntime",
+    "hilog:libhilog",
+  ]
+}
+
+group("cj_native_unittest") {
+  testonly = true
+  deps = [
+    ":test_ark_interop",
+    ":test_ark_interop_helper",
+  ]
+}
