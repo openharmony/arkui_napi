@@ -326,12 +326,6 @@ public:
     std::string GetBundleName() override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
 
-    void WrapSendableObj(napi_env env,
-                         napi_value js_object,
-                         void* native_object,
-                         panda::NativePointerCallback finalize_cb) override;
-    void UnwrapSendableObj(napi_env env, napi_value js_object, void** result) override;
-
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
 
