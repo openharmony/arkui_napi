@@ -2421,24 +2421,6 @@ std::string HybridStackDumper::GetMixStack(const EcmaVM* vm)
 }
 #endif
 
-void ArkNativeEngine::WrapSendableObj(napi_env env,
-                                      napi_value js_object,
-                                      void* native_object,
-                                      panda::NativePointerCallback finalize_cb)
-{
-    Local<ObjectRef> nativeObject = LocalValueFromJsValue(js_object);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    nativeObject->SetNativePointerFieldCount(vm, 1);
-    nativeObject->SetNativePointerField(vm, 0, native_object, finalize_cb, nullptr, 0);
-}
-
-void ArkNativeEngine::UnwrapSendableObj(napi_env env, napi_value js_object, void** result)
-{
-    Local<ObjectRef> nativeObject = LocalValueFromJsValue(js_object);
-    auto native_object = nativeObject->GetNativePointerField(0);
-    *result = native_object;
-}
 
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
 {
