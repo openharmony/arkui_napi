@@ -32,12 +32,12 @@ public:
                                             NapiPropertyDescriptor& propertyDescriptor,
                                             Local<panda::JSValueRef>& propertyName,
                                             bool& result);
-
-private:
     static void InitSendablePropertiesInfo(napi_env env,
                                            FunctionRef::SendablePropertiesInfo& info,
                                            NapiPropertyDescriptor propertyDescriptor,
                                            FunctionRef::SendableType type = FunctionRef::SendableType::NONE);
+
+private:
     static Local<panda::JSValueRef> NapiNativeCreateSendableFunction(napi_env env,
                                                                      const char* name,
                                                                      NapiNativeCallback cb,

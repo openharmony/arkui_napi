@@ -404,7 +404,6 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     }
 }
 
-
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
                                                                                      vm_(vm),
                                                                                      topScope_(vm),
@@ -687,7 +686,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
     __send_hook_misc_data(chainId, rawStack.c_str(), rawStack.size() + 1, 1);
     return nestChainId;
-        
+
 #endif
     return 0;
 }
@@ -712,7 +711,7 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
         hitraceId.SetChainId(value);
         OHOS::HiviewDFX::HiTraceChain::SetId(hitraceId);
     }
-    
+
 #endif
 }
 
@@ -970,6 +969,20 @@ panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size
         keys[i] = panda::StringRef::NewFromUtf8(vm, utf8name);
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::NewWithProperties(vm, propertyCount, keys, attrs);
+    return scope.Escape(object);
+}
+
+panda::Local<panda::ObjectRef> NapiCreateSObjectWithProperties(napi_env env,
+                                                               size_t propertyCount,
+                                                               const NapiPropertyDescriptor* properties)
+{
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::EscapeLocalScope scope(vm);
+    FunctionRef::SendablePropertiesInfo info;
+    for (size_t i = 0; i < propertyCount; ++i) {
+        NativeSendable::InitSendablePropertiesInfo(env, info, properties[i]);
+    }
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewSWithProperties(vm, info);
     return scope.Escape(object);
 }
 
