@@ -643,13 +643,15 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         std::call_once(g_hookOnceFlag, []() { g_hookJsConfig = (HookJsConfig*)__get_hook_config(); });
     }
     // add memtrace function
-    if (g_hookJsConfig->jsStackReport == NAPI_CALL_STACK && !g_hookJsConfig->jsFpUnwind) {
+    if (g_hookJsConfig != nullptr && g_hookJsConfig->jsStackReport == NAPI_CALL_STACK && !g_hookJsConfig->jsFpUnwind) {
         OHOS::HiviewDFX::HiTraceChain::ClearId();
         std::unique_ptr<OHOS::HiviewDFX::HiTraceId> arkCallBackTraceId = std::make_unique<OHOS::HiviewDFX::HiTraceId>(
             OHOS::HiviewDFX::HiTraceChain::Begin("New ArkCallBackTrace", 0));
         char buffer[256] = {0}; // 256 : buffer size of tag name
-        (void)sprintf_s(buffer, sizeof(buffer), "napi:0x%x:%s", arkCallBackTraceId->GetChainId(),
-                        nameRef->ToString().c_str());
+        if (sprintf_s(buffer, sizeof(buffer), "napi:0x%x:%s", arkCallBackTraceId->GetChainId(),
+                      nameRef->ToString().c_str()) == -1) {
+            return 0;
+        }
         uint64_t addr = reinterpret_cast<uint64_t>(cb);
         ++g_chainId;
         (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true); // 8: the size of addr
