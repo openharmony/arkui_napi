@@ -2033,6 +2033,11 @@ size_t ArkNativeEngine::GetHeapLimitSize()
     return DFXJSNApi::GetHeapLimitSize(vm_);
 }
 
+size_t ArkNativeEngine::GetProcessHeapLimitSize()
+{
+    return DFXJSNApi::GetProcessHeapLimitSize();
+}
+
 void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
@@ -2111,6 +2116,12 @@ size_t ArkNativeEngine::GetHeapObjectSize()
 }
 
 size_t ArkNativeEngine::GetHeapLimitSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetProcessHeapLimitSize()
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return 0;
