@@ -2443,7 +2443,7 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
     auto typedArrayType = (NativeTypedArrayType)type;
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, value->IsSharedArrayBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, value->IsSendableArrayBuffer(), napi_status::napi_arraybuffer_expected);
     Local<panda::ArrayBufferRef> arrayBuf = value->ToObject(vm);
     Local<panda::TypedArrayRef> sendableTypedArray(panda::JSValueRef::Undefined(vm));
 
