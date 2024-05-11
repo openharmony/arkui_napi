@@ -58,8 +58,21 @@ public:
         GTEST_LOG_(INFO) << "NapiBasicTest TearDownTestCase";
     }
 
-    void SetUp() override {}
-    void TearDown() override {}
+    void SetUp() override
+    {
+        napi_env env = reinterpret_cast<napi_env>(engine_);
+        napi_open_handle_scope(env, &scope_);
+    }
+
+    void TearDown() override
+    {
+        napi_env env = reinterpret_cast<napi_env>(engine_);
+        napi_value exception = nullptr;
+        napi_get_and_clear_last_exception(env, &exception);
+        napi_close_handle_scope(env, scope_);
+    }
+private:
+    napi_handle_scope scope_ = nullptr;
 };
 
 static const napi_type_tag typeTags[5] = { // 5:array element size is 5.
@@ -4715,4 +4728,360 @@ HWTEST_F(NapiBasicTest, loadModuleWithInfo002, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
     napi_status res = napi_load_module_with_info(env, "@ohos.hilog", nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateSendableArray001
+ * @tc.desc: Test napi_create_sendable_array abnormal argument.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArray001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    res = napi_create_sendable_array(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateSendableArray002
+ * @tc.desc: Test napi_create_sendable_array.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArray002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_array(env, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArray = false;
+    res = napi_is_array(env, result, &isArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArray, true);
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, result, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 0);
+
+    napi_value undefined = nullptr;
+    res = napi_get_undefined(env, &undefined);
+    ASSERT_EQ(res, napi_ok);
+
+    res = napi_set_element(env, result, 0, undefined);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: CreateSendableArrayWithLength001
+ * @tc.desc: Test napi_create_sendable_array_with_length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayWithLength001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    res = napi_create_sendable_array_with_length(env, 0, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateSendableArrayWithLength002
+ * @tc.desc: Test napi_create_sendable_array_with_length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayWithLength002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_array_with_length(env, 0, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArray = false;
+    res = napi_is_array(env, result, &isArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArray, true);
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, result, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 0);
+}
+
+/**
+ * @tc.name: CreateSendableArrayWithLength003
+ * @tc.desc: Test napi_create_sendable_array_with_length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayWithLength003, testing::ext::TestSize.Level1)
+{
+    static uint32_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_array_with_length(env, LENGTH, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArray = false;
+    res = napi_is_array(env, result, &isArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArray, true);
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, result, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, LENGTH);
+
+    napi_value value = nullptr;
+    napi_value boolTrue = nullptr;
+    bool ret = false;
+    res = napi_get_boolean(env, true, &boolTrue);
+    ASSERT_EQ(res, napi_ok);
+
+    res = napi_set_element(env, result, 0, boolTrue);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_element(env, result, 0, &value);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_value_bool(env, value, &ret);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(ret, true);
+
+    res = napi_set_element(env, result, LENGTH - 1, boolTrue);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_element(env, result, LENGTH - 1, &value);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_value_bool(env, value, &ret);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(ret, true);
+}
+
+/**
+ * @tc.name: CreateSendableArrayWithLength004
+ * @tc.desc: Test napi_create_sendable_array_with_length.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayWithLength004, testing::ext::TestSize.Level1)
+{
+    static uint32_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_array_with_length(env, LENGTH, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArray = false;
+    res = napi_is_array(env, result, &isArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArray, true);
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, result, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, LENGTH);
+
+    napi_value value = nullptr;
+    napi_value boolTrue = nullptr;
+    bool ret = false;
+    res = napi_get_boolean(env, true, &boolTrue);
+    ASSERT_EQ(res, napi_ok);
+
+    res = napi_get_element(env, result, 1, &value);
+    ASSERT_EQ(res, napi_ok);
+    napi_valuetype type = napi_undefined;
+    res = napi_typeof(env, value, &type);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(napi_undefined, napi_undefined);
+
+    res = napi_set_element(env, result, LENGTH, boolTrue);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_element(env, result, LENGTH, &value);
+    ASSERT_EQ(res, napi_ok);
+    res = napi_get_value_bool(env, value, &ret);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(ret, true);
+
+    res = napi_get_element(env, result, LENGTH + 1, &value);
+    ASSERT_EQ(res, napi_ok);
+    napi_valuetype getType = napi_undefined;
+    res = napi_typeof(env, value, &getType);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(getType, napi_undefined);
+}
+
+/**
+ * @tc.name: CreateSendableArrayBuffer001
+ * @tc.desc: Test napi_create_sendable_arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayBuffer001, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, nullptr, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    void *data;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &data, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    res = napi_create_sendable_arraybuffer(env, LENGTH, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateSendableArrayBuffer002
+ * @tc.desc: Test napi_create_sendable_arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableArrayBuffer002, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *data;
+    napi_value result = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &data, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArrayBuffer = false;
+    res = napi_is_arraybuffer(env, result, &isArrayBuffer);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArrayBuffer, true);
+
+    void *getData = nullptr;
+    size_t length = 0;
+    res = napi_get_arraybuffer_info(env, result, &getData, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, LENGTH);
+    ASSERT_EQ(getData, data);
+}
+
+/**
+ * @tc.name: CreateSendableTypedArray001
+ * @tc.desc: Test napi_create_sendable_arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableTypedArray001, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *data;
+    napi_value arraybuffer = nullptr;
+    napi_value result = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &data, &arraybuffer);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, arraybuffer, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    res = napi_create_sendable_typedarray(env, napi_uint8_clamped_array, LENGTH / 2, arraybuffer, 1, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    res = napi_create_sendable_typedarray(env, napi_uint8_array, LENGTH / 2, arraybuffer, 1, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    res = napi_create_sendable_typedarray(env, napi_uint8_array, LENGTH / 2, nullptr, 1, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: CreateSendableTypedArray002
+ * @tc.desc: Test napi_create_sendable_arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableTypedArray002, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    static size_t OFFSET = 128;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *data;
+    napi_value arraybuffer = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &data, &arraybuffer);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value result = nullptr;
+    res = napi_create_sendable_typedarray(env, napi_uint8_array, LENGTH / 2, arraybuffer, OFFSET, &result);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, result, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isTypedArray = false;
+    res = napi_is_typedarray(env, result, &isTypedArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isTypedArray, true);
+
+    napi_typedarray_type type = napi_int8_array;
+    size_t length = 0;
+    void *getData = nullptr;
+    napi_value getArrayBuffer = nullptr;
+    size_t byteOffset = 0;
+    res = napi_get_typedarray_info(env, result, &type, &length, &getData, &getArrayBuffer, &byteOffset);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isEqual = false;
+    res = napi_strict_equals(env, arraybuffer, getArrayBuffer, &isEqual);
+    ASSERT_EQ(res, napi_ok);
+
+    ASSERT_EQ(type, napi_uint8_array);
+    ASSERT_EQ(length, LENGTH / 2);
+    ASSERT_EQ(reinterpret_cast<size_t>(getData), reinterpret_cast<size_t>(data) + OFFSET);
+    ASSERT_EQ(isEqual, true);
+    ASSERT_EQ(byteOffset, OFFSET);
 }
