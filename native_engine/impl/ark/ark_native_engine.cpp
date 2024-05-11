@@ -1208,9 +1208,9 @@ napi_value ArkNativeEngine::CallFunction(
     return JsValueFromLocalValue(scope.Escape(value));
 }
 
-bool ArkNativeEngine::Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
-                                            const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
-                                            size_t byte_offset, size_t length, napi_value* result)
+bool ArkNativeEngine::NapiNewTypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
+                                        const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                                        size_t byte_offset, size_t length, napi_value* result)
 {
     switch (typedArrayType) {
         case NATIVE_INT8_ARRAY:
@@ -1254,10 +1254,10 @@ bool ArkNativeEngine::Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType,
     return true;
 }
 
-bool ArkNativeEngine::Napi_Judge_Sendable_TypedArray(NativeTypedArrayType typedArrayType,
-                                                     Local<panda::TypedArrayRef> typedArray,
-                                                     const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
-                                                     size_t byte_offset, size_t length, napi_value* result)
+bool ArkNativeEngine::NapiNewSendableTypedArray(NativeTypedArrayType typedArrayType,
+                                                Local<panda::TypedArrayRef> typedArray,
+                                                const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                                                size_t byte_offset, size_t length, napi_value* result)
 {
     switch (typedArrayType) {
         case NATIVE_INT8_ARRAY:
@@ -1286,6 +1286,55 @@ bool ArkNativeEngine::Napi_Judge_Sendable_TypedArray(NativeTypedArrayType typedA
     return true;
 }
 
+NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
+{
+    NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
+    if (typedArray->IsInt8Array()) {
+        thisType = NATIVE_INT8_ARRAY;
+    } else if (typedArray->IsUint8Array()) {
+        thisType = NATIVE_UINT8_ARRAY;
+    } else if (typedArray->IsUint8ClampedArray()) {
+        thisType = NATIVE_UINT8_CLAMPED_ARRAY;
+    } else if (typedArray->IsInt16Array()) {
+        thisType = NATIVE_INT16_ARRAY;
+    } else if (typedArray->IsUint16Array()) {
+        thisType = NATIVE_UINT16_ARRAY;
+    } else if (typedArray->IsInt32Array()) {
+        thisType = NATIVE_INT32_ARRAY;
+    } else if (typedArray->IsUint32Array()) {
+        thisType = NATIVE_UINT32_ARRAY;
+    } else if (typedArray->IsFloat32Array()) {
+        thisType = NATIVE_FLOAT32_ARRAY;
+    } else if (typedArray->IsFloat64Array()) {
+        thisType = NATIVE_FLOAT64_ARRAY;
+    } else if (typedArray->IsBigInt64Array()) {
+        thisType = NATIVE_BIGINT64_ARRAY;
+    } else if (typedArray->IsBigUint64Array()) {
+        thisType = NATIVE_BIGUINT64_ARRAY;
+    }
+
+    return thisType;
+}
+
+NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
+{
+    NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
+    if (typedArray->IsJSSharedInt8Array()) {
+        thisType = NATIVE_INT8_ARRAY;
+    } else if (typedArray->IsJSSharedUint8Array()) {
+        thisType = NATIVE_UINT8_ARRAY;
+    } else if (typedArray->IsJSSharedInt16Array()) {
+        thisType = NATIVE_INT16_ARRAY;
+    } else if (typedArray->IsJSSharedUint16Array()) {
+        thisType = NATIVE_UINT16_ARRAY;
+    } else if (typedArray->IsJSSharedInt32Array()) {
+        thisType = NATIVE_INT32_ARRAY;
+    } else if (typedArray->IsJSSharedUint32Array()) {
+        thisType = NATIVE_UINT32_ARRAY;
+    }
+
+    return thisType;
+}
 
 bool ArkNativeEngine::RunScriptPath(const char* path)
 {

@@ -153,13 +153,15 @@ public:
     void* GetCurrentTaskInfo() const override;
     void TerminateExecution() const override;
     // judge_typedarray
-    NAPI_EXPORT bool Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
-                                           const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
-                                           size_t byte_offset, size_t length, napi_value* result) override;
-    NAPI_EXPORT bool Napi_Judge_Sendable_TypedArray(NativeTypedArrayType typedArrayType,
-                                                    Local<panda::TypedArrayRef> typedArray,
-                                                    const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
-                                                    size_t byte_offset, size_t length, napi_value* result) override;
+    bool NapiNewTypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
+                           const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                           size_t byte_offset, size_t length, napi_value* result) override;
+    bool NapiNewSendableTypedArray(NativeTypedArrayType typedArrayType,
+                                   Local<panda::TypedArrayRef> typedArray,
+                                   const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+                                   size_t byte_offset, size_t length, napi_value* result) override;
+    NativeTypedArrayType GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray) override;
+    NativeTypedArrayType GetSendableTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray) override;
     // Call function
     napi_value CallFunction(napi_value thisVar,
                             napi_value function,

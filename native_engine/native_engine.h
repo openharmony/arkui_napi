@@ -132,14 +132,16 @@ public:
     virtual void* GetJsEngine();
 
     virtual const EcmaVM* GetEcmaVm() const = 0;
-    virtual bool Napi_Judge_TypedArray(NativeTypedArrayType typedArrayType,
-                                       panda::Local<panda::TypedArrayRef> typedArray, const EcmaVM* vm,
-                                       panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
-                                       size_t length, napi_value* result) = 0;
-    virtual bool Napi_Judge_Sendable_TypedArray(NativeTypedArrayType typedArrayType,
-                                       panda::Local<panda::TypedArrayRef> typedArray, const EcmaVM* vm,
-                                       panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
-                                       size_t length, napi_value* result) = 0;
+    virtual bool NapiNewTypedArray(NativeTypedArrayType typedArrayType,
+                                   panda::Local<panda::TypedArrayRef> typedArray, const EcmaVM* vm,
+                                   panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
+                                   size_t length, napi_value* result) = 0;
+    virtual bool NapiNewSendableTypedArray(NativeTypedArrayType typedArrayType,
+                                           panda::Local<panda::TypedArrayRef> typedArray, const EcmaVM* vm,
+                                           panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
+                                           size_t length, napi_value* result) = 0;
+    virtual NativeTypedArrayType GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray) = 0;
+    virtual NativeTypedArrayType GetSendableTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray) = 0;
     virtual void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) = 0;
 
     virtual bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) = 0;
