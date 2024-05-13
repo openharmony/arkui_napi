@@ -3115,23 +3115,6 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_detach_sendable_arraybuffer(napi_env env, napi_value arraybuffer)
-{
-    CHECK_ENV(env);
-    CHECK_ARG(env, arraybuffer);
-
-    auto nativeValue = LocalValueFromJsValue(arraybuffer);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSharedArrayBuffer(), napi_object_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::ArrayBufferRef> bufObj = nativeValue->ToObject(vm);
-    if (!bufObj->IsDetach()) {
-        bufObj->Detach(vm);
-    } else {
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
-    return napi_clear_last_error(env);
-}
-
 NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object, const napi_type_tag* type_tag)
 {
     NAPI_PREAMBLE(env);
