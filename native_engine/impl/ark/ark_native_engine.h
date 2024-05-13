@@ -338,6 +338,8 @@ public:
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
 private:
+    void OutputErrorMessage(int ret, std::vector<RefFinalizer> *finalizers, uv_work_t *work);
+    static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
         NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
