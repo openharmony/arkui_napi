@@ -74,6 +74,7 @@ NativeModuleManager::~NativeModuleManager()
         }
         firstNativeModule_ = nullptr;
         lastNativeModule_ = nullptr;
+        cacheNativeModule_ = nullptr;
     }
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
@@ -789,11 +790,6 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
 
     LIBHANDLE lib = nullptr;
-    lib = GetNativeModuleHandle(moduleKey);
-    if (lib != nullptr) {
-        HILOG_DEBUG("get native module handle success. moduleKey is %{public}s", moduleKey.c_str());
-        return lib;
-    }
 
     HILOG_INFO("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
 #ifdef ENABLE_HITRACE
@@ -947,6 +943,11 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         }
     }
 
+    if (lib == nullptr && cacheNativeModule_ != nullptr) {
+        HILOG_WARN("load moduleName: %{public}s", cacheNativeModule_->name);
+        return cacheNativeModule_;
+    }
+
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (lastNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
@@ -1096,6 +1097,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     NativeModule* preNativeModule = nullptr;
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+    cacheNativeModule_ = nullptr;
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
             || !strcasecmp(temp->name, moduleName)) {
@@ -1112,6 +1114,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
             if (label < NATIVE_PATH_NUMBER || !strcmp(temp->systemFilePath, "")) {
                 result = temp;
                 break;
+            } else {
+                HILOG_WARN("moduleName '%{public}s' is in different path", moduleName);
+                cacheNativeModule_ = temp;
             }
         }
         preNativeModule = temp;

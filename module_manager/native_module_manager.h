@@ -140,6 +140,7 @@ private:
     std::mutex nativeModuleListMutex_;
     NativeModule* firstNativeModule_ = nullptr;
     NativeModule* lastNativeModule_ = nullptr;
+    NativeModule* cacheNativeModule_ = nullptr;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;
