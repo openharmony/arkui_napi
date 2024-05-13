@@ -2028,6 +2028,31 @@ size_t ArkNativeEngine::GetProcessHeapLimitSize()
     return DFXJSNApi::GetProcessHeapLimitSize();
 }
 
+size_t ArkNativeEngine::GetGCCount()
+{
+    return DFXJSNApi::GetGCCount(vm_);
+}
+
+size_t ArkNativeEngine::GetGCDuration()
+{
+    return DFXJSNApi::GetGCDuration(vm_);
+}
+
+size_t ArkNativeEngine::GetAccumulatedAllocateSize()
+{
+    return DFXJSNApi::GetAccumulatedAllocateSize(vm_);
+}
+
+size_t ArkNativeEngine::GetAccumulatedFreeSize()
+{
+    return DFXJSNApi::GetAccumulatedFreeSize(vm_);
+}
+
+size_t ArkNativeEngine::GetFullGCLongTimeCount()
+{
+    return DFXJSNApi::GetFullGCLongTimeCount(vm_);
+}
+
 void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
@@ -2112,6 +2137,36 @@ size_t ArkNativeEngine::GetHeapLimitSize()
 }
 
 size_t ArkNativeEngine::GetProcessHeapLimitSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetGCCount()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetGCDuration()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetAccumulatedAllocateSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetAccumulatedFreeSize()
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return 0;
+}
+
+size_t ArkNativeEngine::GetFullGCLongTimeCount()
 {
     HILOG_WARN("ARK does not support dfx on windows");
     return 0;
