@@ -112,6 +112,7 @@ bool NativeAsyncWork::Queue()
         engine_->DecreaseWaitingRequestCounter();
         return false;
     }
+    HILOG_DEBUG("uv_queue_work succeed");
     return true;
 }
 
@@ -137,6 +138,7 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
         engine_->DecreaseWaitingRequestCounter();
         return false;
     }
+    HILOG_DEBUG("uv_queue_work_with_qos succeed");
     return true;
 }
 
@@ -158,6 +160,7 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
     }
 
     auto that = reinterpret_cast<NativeAsyncWork*>(req->data);
+    HILOG_DEBUG("NativeAsyncWork::AsyncWorkCallback start to execute.");
 
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
@@ -208,6 +211,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 #endif
 
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));
+    HILOG_DEBUG("NativeAsyncWork::AsyncAfterWorkCallback start to execute.");
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Napi complete, " + that->GetTraceDescription());
     HiTraceId currentId = HiTraceChain::GetId();

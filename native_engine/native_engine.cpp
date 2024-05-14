@@ -789,7 +789,7 @@ bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* buff
 
 void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint)
 {
-    HILOG_INFO("NativeEngineWraper::%{public}s, start.", __func__);
+    HILOG_DEBUG("NativeEngineWraper::%{public}s, start.", __func__);
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
     instanceDataInfo_.engine = this;
@@ -800,7 +800,7 @@ void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void*
 
 void NativeEngine::GetInstanceData(void** data)
 {
-    HILOG_INFO("NativeEngineWraper::%{public}s, start.", __func__);
+    HILOG_DEBUG("NativeEngineWraper::%{public}s, start.", __func__);
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     if (data) {
         *data = instanceDataInfo_.nativeObject;
@@ -820,10 +820,10 @@ void NativeEngine::FinalizerInstanceData(void)
 
 const char* NativeEngine::GetModuleFileName()
 {
-    HILOG_INFO("%{public}s, start.", __func__);
+    HILOG_DEBUG("%{public}s, start.", __func__);
     if (moduleFileName_.empty()) {
         NativeModuleManager* moduleManager = GetModuleManager();
-        HILOG_INFO("NativeEngineWraper::GetFileName GetModuleManager");
+        HILOG_DEBUG("NativeEngineWraper::GetFileName GetModuleManager");
         if (moduleManager != nullptr) {
             std::string moduleFileName = moduleManager->GetModuleFileName(moduleName_.c_str(), isAppModule_);
             HILOG_INFO("NativeEngineWraper::GetFileName end filename:%{public}s", moduleFileName.c_str());

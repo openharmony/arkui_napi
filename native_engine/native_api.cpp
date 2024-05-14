@@ -358,8 +358,13 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    size_t realLength = strlen(str);
+    if (length != NAPI_AUTO_LENGTH && length != realLength) {
+        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
+            static_cast<uint64_t>(length), static_cast<uint64_t>(realLength));
+    }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -372,8 +377,13 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    size_t realLength = strlen(str);
+    if (length != NAPI_AUTO_LENGTH && length != realLength) {
+        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
+            static_cast<uint64_t>(length), static_cast<uint64_t>(realLength));
+    }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -389,6 +399,10 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
+    if (length != NAPI_AUTO_LENGTH && length != static_cast<size_t>(char16Length)) {
+        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
+            static_cast<uint64_t>(length), static_cast<uint64_t>(char16Length));
+    }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
         vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
     *result = JsValueFromLocalValue(object);
@@ -2377,6 +2391,7 @@ NAPI_EXTERN napi_status napi_create_typedarray(napi_env env,
 
     if (reinterpret_cast<NativeEngine*>(env)->NapiNewTypedArray(typedArrayType, typedArray, vm,
                                                                 arrayBuf, byte_offset, length, result) == false) {
+        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
     return GET_RETURN_STATUS(env);
@@ -2404,6 +2419,7 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
     if (reinterpret_cast<NativeEngine*>(env)->NapiNewSendableTypedArray(typedArrayType, sendableTypedArray, vm,
                                                                         arrayBuf, byte_offset,
                                                                         length, result) == false) {
+        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
     return GET_RETURN_STATUS(env);
@@ -2459,6 +2475,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *byte_offset = typedArray->ByteOffset(vm);
         }
     } else {
+        HILOG_ERROR("%{public}s invalid arg", __func__);
         napi_set_last_error(env, napi_invalid_arg);
     }
 
@@ -3080,6 +3097,7 @@ NAPI_EXTERN napi_status napi_get_all_property_names(
             break;
         default:
             *result = nullptr;
+            HILOG_ERROR("%{public}s invalid arg", __func__);
             return napi_set_last_error(env, napi_invalid_arg);
     }
 
@@ -3092,6 +3110,7 @@ NAPI_EXTERN napi_status napi_get_all_property_names(
             break;
         default:
             *result = nullptr;
+            HILOG_ERROR("%{public}s invalid arg", __func__);
             return napi_set_last_error(env, napi_invalid_arg);
     }
     Local<panda::ArrayRef> arrayVal = obj->GetAllPropertyNames(vm, filter);
@@ -3110,6 +3129,7 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     bool isArrayBuffer = false;
     nativeValue->DetachedArraybuffer(vm, isArrayBuffer);
     if (!isArrayBuffer) {
+        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
     return napi_clear_last_error(env);
@@ -3147,6 +3167,7 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
         result = obj->Set(vm, key, value);
     }
     if (!result) {
+        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
 
@@ -3241,6 +3262,7 @@ NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, doub
     if (IsDate_result) {
         *result = dateObj->GetTime();
     } else {
+        HILOG_ERROR("%{public}s date expected", __func__);
         return napi_set_last_error(env, napi_date_expected);
     }
 
@@ -3293,6 +3315,7 @@ NAPI_EXTERN napi_status napi_create_bigint_words(napi_env env,
     Local<panda::JSValueRef> value = panda::BigIntRef::CreateBigWords(vm, sign, size, words);
 
     if (panda::JSNApi::HasPendingException(vm)) {
+        HILOG_ERROR("%{public}s pending exception", __func__);
         return napi_set_last_error(env, napi_pending_exception);
     }
     *result = JsValueFromLocalValue(value);
