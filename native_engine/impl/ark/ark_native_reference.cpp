@@ -170,6 +170,11 @@ void ArkNativeReference::SetDeleteSelf()
     deleteSelf_ = true;
 }
 
+bool ArkNativeReference::GetDeleteSelf() const
+{
+    return deleteSelf_;
+}
+
 uint32_t ArkNativeReference::GetRefCount()
 {
     return refCount_;
@@ -183,4 +188,11 @@ bool ArkNativeReference::GetFinalRun()
 napi_value ArkNativeReference::GetNapiValue()
 {
     return Get();
+}
+
+void ArkNativeReference::ResetFinalizer()
+{
+    napiCallback_ = nullptr;
+    data_ = nullptr;
+    hint_ = nullptr;
 }

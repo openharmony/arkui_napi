@@ -1210,10 +1210,11 @@ napi_value ArkNativeEngine::CallFunction(
     return JsValueFromLocalValue(scope.Escape(value));
 }
 
-bool ArkNativeEngine::NapiNewTypedArray(NativeTypedArrayType typedArrayType, Local<panda::TypedArrayRef> typedArray,
-                                        const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+bool ArkNativeEngine::NapiNewTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
+                                        Local<panda::ArrayBufferRef> arrayBuf,
                                         size_t byte_offset, size_t length, napi_value* result)
 {
+    Local<panda::TypedArrayRef> typedArray;
     switch (typedArrayType) {
         case NATIVE_INT8_ARRAY:
             typedArray = panda::Int8ArrayRef::New(vm, arrayBuf, byte_offset, length);
@@ -1256,11 +1257,11 @@ bool ArkNativeEngine::NapiNewTypedArray(NativeTypedArrayType typedArrayType, Loc
     return true;
 }
 
-bool ArkNativeEngine::NapiNewSendableTypedArray(NativeTypedArrayType typedArrayType,
-                                                Local<panda::TypedArrayRef> typedArray,
-                                                const EcmaVM* vm, Local<panda::ArrayBufferRef> arrayBuf,
+bool ArkNativeEngine::NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
+                                                Local<panda::SendableArrayBufferRef> arrayBuf,
                                                 size_t byte_offset, size_t length, napi_value* result)
 {
+    Local<panda::SendableTypedArrayRef> typedArray;
     switch (typedArrayType) {
         case NATIVE_INT8_ARRAY:
             typedArray = panda::SharedInt8ArrayRef::New(vm, arrayBuf, byte_offset, length);
@@ -1318,7 +1319,7 @@ NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::Type
     return thisType;
 }
 
-NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
+NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<panda::SendableTypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
     if (typedArray->IsJSSharedInt8Array()) {
