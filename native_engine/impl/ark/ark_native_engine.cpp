@@ -1618,7 +1618,7 @@ void ArkNativeEngine::PostFinalizeTasks()
 }
 
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-void ArkNativeEngine::SetAttribute(bool isLimitedWorker, panda::RuntimeOption option)
+void ArkNativeEngine::SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option)
 {
     int arkProperties = OHOS::system::GetIntParameter<int>("persist.ark.properties", -1);
     std::string bundleName = OHOS::system::GetParameter("persist.ark.arkbundlename", "");
