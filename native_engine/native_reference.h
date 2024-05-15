@@ -30,8 +30,15 @@ public:
     }
     virtual operator napi_value() = 0;
     virtual void SetDeleteSelf() = 0;
+    virtual bool GetDeleteSelf() const
+    {
+        return false;
+    }
     virtual uint32_t GetRefCount() = 0;
     virtual bool GetFinalRun() = 0;
     virtual napi_value GetNapiValue() = 0;
+    virtual void ResetFinalizer()
+    {
+    }
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H */
