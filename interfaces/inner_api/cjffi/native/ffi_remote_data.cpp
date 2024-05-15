@@ -57,7 +57,7 @@ void FFIDataManager::StoreRemoteData(const sptr<RemoteData>& data)
 int64_t FFIDataManager::NewFFIDataId()
 {
     std::lock_guard<std::mutex> lock(mtx);
-    if (ffiDataStore_.size() >= maxCapacity) {
+    if (static_cast<int64_t>(ffiDataStore_.size()) >= maxCapacity) {
         HiLog::Fatal(LABEL, "FFIData store_ over max capacity: %{public}" PRId64, maxCapacity);
         // 0 represents invalid status in CJ RemoteData, will be handled by CJ Exception
         return 0;
@@ -74,7 +74,7 @@ int64_t FFIDataManager::NewFFIDataId()
         // 0 represents invalid status in CJ RemoteData, will be handled by CJ Exception
         return 0;
     }
-    HiLog::Info(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}d" PRId64, curFFIDataId_,
+    HiLog::Info(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}zu", curFFIDataId_,
         ffiDataStore_.size());
     return curFFIDataId_;
 }
