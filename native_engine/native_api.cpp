@@ -3516,7 +3516,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     data->hint = hint;
 
     size_t nativeBindingSize = 7 * sizeof(void *); // 7 : params num
-    Local<panda::NativePointerRef> value = panda::NativePointerRef::New(vm, data,
+    Local<panda::NativePointerRef> value = panda::NativePointerRef::NewConcurrent(vm, data,
         [](void* env, void* data, void* info) {
             auto externalInfo = reinterpret_cast<panda::JSNApi::NativeBindingInfo*>(data);
             delete externalInfo;
