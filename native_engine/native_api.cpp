@@ -2461,7 +2461,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
         }
     } else {
         HILOG_ERROR("%{public}s invalid arg", __func__);
-        napi_set_last_error(env, napi_invalid_arg);
+        return napi_set_last_error(env, napi_invalid_arg);
     }
 
     return napi_clear_last_error(env);
