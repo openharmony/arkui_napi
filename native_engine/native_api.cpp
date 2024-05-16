@@ -360,8 +360,8 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     size_t realLength = strlen(str);
     if (length != NAPI_AUTO_LENGTH && length != realLength) {
-        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
-            static_cast<uint64_t>(length), static_cast<uint64_t>(realLength));
+        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
+            length, realLength);
     }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
         vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
@@ -379,8 +379,8 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     size_t realLength = strlen(str);
     if (length != NAPI_AUTO_LENGTH && length != realLength) {
-        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
-            static_cast<uint64_t>(length), static_cast<uint64_t>(realLength));
+        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
+            length, realLength);
     }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
         vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
@@ -400,8 +400,8 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
     if (length != NAPI_AUTO_LENGTH && length != static_cast<size_t>(char16Length)) {
-        HILOG_WARN("`length` (%{public}llu) not equals to strlen(`str`) (%{public}llu), result may be unexpected",
-            static_cast<uint64_t>(length), static_cast<uint64_t>(char16Length));
+        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d), result may be unexpected",
+            length, char16Length);
     }
     Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
         vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
