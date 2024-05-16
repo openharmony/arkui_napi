@@ -171,7 +171,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
 #endif
 
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewClassFunction(vm, ArkNativeFunctionCallBack,
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrentClassFunction(vm, ArkNativeFunctionCallBack,
         [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
                 if (info != nullptr) {
@@ -512,6 +512,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     panda::JSNApi::SetWeakFinalizeTaskCallback(vm, [this] () -> void {
         this->PostFinalizeTasks();
     });
+    JSNApi::SetAsyncCleanTaskCallback(vm, std::bind(&ArkNativeEngine::PostAsyncTask, this,
+    std::placeholders::_1));
 }
 
 ArkNativeEngine::~ArkNativeEngine()
@@ -1472,6 +1474,15 @@ NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_
     return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint, true);
 }
 
+void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
+{
+    for (auto iter : (*finalizers)) {
+        std::tuple<NativeEngine*, void*, void*> &param = iter.second;
+        (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
+                    std::get<1>(param), std::get<2>(param)); // 2 is the param.
+    }
+}
+
 void ArkNativeEngine::PostFinalizeTasks()
 {
     if (!pendingAsyncFinalizers_.empty()) {
@@ -1480,25 +1491,17 @@ void ArkNativeEngine::PostFinalizeTasks()
         asyncFinalizers->swap(pendingAsyncFinalizers_);
         asynWork->data = reinterpret_cast<void *>(asyncFinalizers);
 
-        int ret = uv_queue_work(GetUVLoop(), asynWork, [](uv_work_t *asynWork) {
+        int ret = uv_queue_work_with_qos(GetUVLoop(), asynWork, [](uv_work_t *asynWork) {
             std::vector<RefFinalizer> *finalizers = reinterpret_cast<std::vector<RefFinalizer> *>(asynWork->data);
-            for (auto iter : (*finalizers)) {
-                std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-                (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                            std::get<1>(param), std::get<2>(param)); // 2 is the param.
-            }
+            RunCallbacks(finalizers);
             HILOG_DEBUG("uv_queue_work async running ");
             delete finalizers;
         }, [](uv_work_t *asynWork, int32_t) {
             delete asynWork;
-        });
+        }, uv_qos_t(napi_qos_background));
         if (ret != 0) {
             HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-            for (auto iter : (*asyncFinalizers)) {
-                std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-                (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                            std::get<1>(param), std::get<2>(param)); // 2 is the param.
-            }
+            RunCallbacks(asyncFinalizers);
             delete asynWork;
             delete asyncFinalizers;
         }
@@ -1511,26 +1514,54 @@ void ArkNativeEngine::PostFinalizeTasks()
     syncFinalizers->swap(pendingFinalizers_);
     syncWork->data = reinterpret_cast<void *>(syncFinalizers);
 
-    int ret = uv_queue_work(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
+    int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
         std::vector<RefFinalizer> *finalizers = reinterpret_cast<std::vector<RefFinalizer> *>(syncWork->data);
-        for (auto iter : (*finalizers)) {
-            std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-            (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                         std::get<1>(param), std::get<2>(param)); // 2 is the param.
-        }
+        RunCallbacks(finalizers);
         HILOG_DEBUG("uv_queue_work running");
         delete syncWork;
         delete finalizers;
-    });
+    }, uv_qos_t(napi_qos_background));
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-        for (auto iter : (*syncFinalizers)) {
-            std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-            (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                         std::get<1>(param), std::get<2>(param)); // 2 is the param.
-        }
+        RunCallbacks(syncFinalizers);
         delete syncWork;
         delete syncFinalizers;
+    }
+}
+
+void ArkNativeEngine::RunCallbacks(std::vector<NativePointerCallbackData> *callbacks)
+{
+    for (auto iter : (*callbacks)) {
+        std::tuple<void*, void*, void*> &param = iter.second;
+        if (iter.first != nullptr) {
+            (iter.first)(std::get<0>(param), std::get<1>(param), std::get<2>(param)); // 2 is the param.
+        }
+    }
+}
+
+void ArkNativeEngine::PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks)
+{
+    if (callbacks.empty()) {
+        return;
+    }
+    uv_work_t *syncWork = new uv_work_t;
+    std::vector<NativePointerCallbackData> *asyncCallbacks = new std::vector<NativePointerCallbackData>();
+    asyncCallbacks->swap(callbacks);
+    syncWork->data = reinterpret_cast<void *>(asyncCallbacks);
+
+    int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
+        std::vector<NativePointerCallbackData> *finalizers =
+            reinterpret_cast<std::vector<NativePointerCallbackData> *>(syncWork->data);
+        RunCallbacks(finalizers);
+        HILOG_DEBUG("uv_queue_work running");
+        delete syncWork;
+        delete finalizers;
+    }, uv_qos_t(napi_qos_background));
+    if (ret != 0) {
+        HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
+        RunCallbacks(asyncCallbacks);
+        delete asyncCallbacks;
+        delete syncWork;
     }
 }
 
