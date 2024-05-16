@@ -168,8 +168,6 @@ public:
                             size_t argc) override;
     bool RunScriptPath(const char* path) override;
 
-    virtual void StartMonitorJSHeapUsage() override;
-    virtual void StopMonitorJSHeapUsage() override;
     napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
     bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
 
@@ -199,6 +197,9 @@ public:
 
     bool TriggerFatalException(napi_value error) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
+
+    // Set jsdump thresholds
+    void SetJsDumpThresholds(size_t thresholds) override;
 
     // Detect performance to obtain cpuprofiler file
     void StartCpuProfiler(const std::string& fileName = "") override;
@@ -353,13 +354,7 @@ private:
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     static bool napiProfilerParamReaded;
-    std::once_flag flag_;
-    std::unique_ptr<std::thread> threadJsHeap_;
-    std::mutex lock_;
-    std::condition_variable condition_;
     bool isLimitedWorker_ = false;
-    bool isReady_ = false;
-    struct JsHeapDumpWork *dumpWork_ = nullptr;
     std::vector<RefFinalizer> pendingFinalizers_;
     std::vector<RefFinalizer> pendingAsyncFinalizers_;
 };
