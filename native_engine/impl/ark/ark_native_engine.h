@@ -55,6 +55,7 @@ using JSNApi = panda::JSNApi;
 using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 using PropertyAttribute = panda::PropertyAttribute;
+using NativePointerCallbackData = panda::NativePointerCallbackData;
 
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
@@ -260,6 +261,7 @@ public:
     void NotifyNativeCalling(const void *nativeAddress);
 
     void PostFinalizeTasks();
+    void PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks);
 
     std::vector<RefFinalizer> &GetPendingFinalizers()
     {
@@ -337,7 +339,8 @@ public:
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
 private:
-    void OutputErrorMessage(int ret, std::vector<RefFinalizer> *finalizers, uv_work_t *work);
+    static void RunCallbacks(std::vector<RefFinalizer> *finalizers);
+    static void RunCallbacks(std::vector<NativePointerCallbackData> *callbacks);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
