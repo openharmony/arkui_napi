@@ -72,7 +72,6 @@ NAPI_EXTERN NAPI_NO_RETURN void napi_fatal_error(const char* location,
     (void)location_len;
     (void)message_len;
     HILOG_FATAL("FATAL ERROR: %{public}s %{public}s\n", location, message);
-    abort();
 }
 
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env)

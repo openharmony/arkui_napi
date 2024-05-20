@@ -307,9 +307,11 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
                                                         size_t propertiesLength,
                                                         napi_value parent)
 {
+    const EcmaVM* vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
     if (funcInfo == nullptr) {
-        HILOG_ERROR("funcInfo is nullptr");
+        HILOG_FATAL("funcInfo is nullptr");
+        return JSValueRef::Undefined(vm);
     }
     funcInfo->callback = callback;
     funcInfo->data = data;
@@ -319,7 +321,6 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
         className = ArkNativeEngine::tempModuleName_ + "." + name;
     }
 
-    const EcmaVM* vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
     Local<JSValueRef> localParent = JSValueRef::Null(vm);
     if (parent != nullptr) {

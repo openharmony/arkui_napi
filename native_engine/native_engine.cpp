@@ -280,6 +280,7 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
 
     if (buffer == nullptr) {
         HILOG_ERROR("buffer is null");
+        return;
     }
 
     SubEncodeToUtf8(vm, nativeValue, nativeString, buffer, written, bufferSize, nchars);
