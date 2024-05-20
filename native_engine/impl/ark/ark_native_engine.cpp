@@ -524,6 +524,10 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                         return scope.Escape(exports);
                     }
                 }
+                if (module == nullptr) {
+                    HILOG_INFO("%{public}s", errInfo.c_str());
+                    exports = panda::ObjectRef::CreateNativeModuleError(ecmaVm, errInfo);
+                }
                 return scope.Escape(exports);
             },
             nullptr,
