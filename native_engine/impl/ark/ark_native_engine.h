@@ -240,6 +240,11 @@ public:
     size_t GetHeapObjectSize() override;
     size_t GetHeapLimitSize() override;
     size_t GetProcessHeapLimitSize() override;
+    size_t GetGCCount() override;
+    size_t GetGCDuration() override;
+    size_t GetAccumulatedAllocateSize() override;
+    size_t GetAccumulatedFreeSize() override;
+    size_t GetFullGCLongTimeCount() override;
     void NotifyApplicationState(bool inBackground) override;
     void NotifyIdleStatusControl(std::function<void(bool)> callback) override;
     void NotifyIdleTime(int idleMicroSec) override;
