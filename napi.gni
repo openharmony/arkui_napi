@@ -13,24 +13,25 @@
 
 napi_path = "//foundation//arkui/napi"
 ets_runtime_path = "//arkcompiler/ets_runtime"
+is_standlone_build = false
 
 napi_sources = [
-  "$napi_path/callback_scope_manager/native_callback_scope_manager.cpp",
-  "$napi_path/module_manager/module_checker_delegate.cpp",
-  "$napi_path/module_manager/module_load_checker.cpp",
-  "$napi_path/module_manager/native_module_manager.cpp",
-  "$napi_path/native_engine/impl/ark/ark_native_deferred.cpp",
-  "$napi_path/native_engine/impl/ark/ark_native_engine.cpp",
-  "$napi_path/native_engine/impl/ark/ark_native_reference.cpp",
-  "$napi_path/native_engine/native_api.cpp",
-  "$napi_path/native_engine/native_async_work.cpp",
-  "$napi_path/native_engine/native_create_env.cpp",
-  "$napi_path/native_engine/native_engine.cpp",
-  "$napi_path/native_engine/native_node_api.cpp",
-  "$napi_path/native_engine/native_safe_async_work.cpp",
-  "$napi_path/native_engine/native_sendable.cpp",
-  "$napi_path/reference_manager/native_reference_manager.cpp",
-  "$napi_path/utils/log.cpp",
+  "callback_scope_manager/native_callback_scope_manager.cpp",
+  "module_manager/module_checker_delegate.cpp",
+  "module_manager/module_load_checker.cpp",
+  "module_manager/native_module_manager.cpp",
+  "native_engine/impl/ark/ark_native_deferred.cpp",
+  "native_engine/impl/ark/ark_native_engine.cpp",
+  "native_engine/impl/ark/ark_native_reference.cpp",
+  "native_engine/native_api.cpp",
+  "native_engine/native_async_work.cpp",
+  "native_engine/native_create_env.cpp",
+  "native_engine/native_engine.cpp",
+  "native_engine/native_node_api.cpp",
+  "native_engine/native_safe_async_work.cpp",
+  "native_engine/native_sendable.cpp",
+  "reference_manager/native_reference_manager.cpp",
+  "utils/log.cpp",
 ]
 
 declare_args() {
