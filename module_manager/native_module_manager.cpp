@@ -806,10 +806,12 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
+#ifndef ANDROID_PLATFORM
     if (CheckModuleExist(path) == false) {
         errReason = MODULE_NOT_EXIST;
         return nullptr;
     }
+#endif
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
         char* dlerr = dlerror();
