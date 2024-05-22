@@ -16,6 +16,6 @@
 #ifndef ARKNATIVEENGINE_FUZZER_H
 #define ARKNATIVEENGINE_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "arknativeengine_fuzzer"
+#define FUZZ_PROJECT_NAME "runscriptpath_fuzzer"
 
 #endif

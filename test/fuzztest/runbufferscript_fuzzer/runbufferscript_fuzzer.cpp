@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "arknativeengine_fuzzer.h"
+#include "runbufferscript_fuzzer.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
 #include "securec.h"
 
@@ -39,11 +39,6 @@ public:
         arkNativeEngine_->RunBufferScript(buffer);
     }
 
-    void RunScriptPath(const char* path)
-    {
-        arkNativeEngine_->RunScriptPath(path);
-    }
-
     ~Engine()
     {
         if (arkNativeEngine_ != nullptr) {
@@ -63,7 +58,7 @@ private:
 static Engine g_nativeEngine;
 
 namespace OHOS {
-    void ArkNativeEngineFuzzTest(const uint8_t* data, size_t size)
+    void RunBufferScriptFuzzTest(const uint8_t* data, size_t size)
     {
         if (size <= 0) {
             return;
@@ -77,8 +72,6 @@ namespace OHOS {
             UNREACHABLE();
         }
 
-        std::string result(reinterpret_cast<const char*>(data), size);
-        g_nativeEngine.RunScriptPath(result.c_str());
         std::vector<uint8_t> vec(size, *data);
         g_nativeEngine.RunBufferScript(vec);
     }
@@ -88,6 +81,6 @@ namespace OHOS {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     // Run your code on data.
-    OHOS::ArkNativeEngineFuzzTest(data, size);
+    OHOS::RunBufferScriptFuzzTest(data, size);
     return 0;
 }
