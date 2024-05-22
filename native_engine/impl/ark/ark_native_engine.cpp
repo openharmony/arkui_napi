@@ -95,25 +95,6 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-struct JsHeapDumpWork {
-    bool *isReady = nullptr;
-    EcmaVM *vm;
-    uv_work_t work;
-    std::condition_variable *condition;
-    size_t limitSize;
-};
-static constexpr uint32_t DEC_TO_INT = 100;
-static size_t g_threshold = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.threshold", 85);
-static constexpr int TIME_OUT = 20;
-static size_t g_checkInterval = OHOS::system::GetUintParameter<size_t>("persist.ark.leak.checkinterval", 60);
-static constexpr int DEFAULT_SLEEP_TIME = 100000; //poll every 0.1s
-static bool g_enableProperty = false;
-static uint64_t g_lastHeapDumpTime = 0;
-static bool g_debugLeak = OHOS::system::GetBoolParameter("debug.arkengine.tags.enableleak", false);
-static constexpr uint64_t HEAP_DUMP_REPORT_INTERVAL = 24 * 3600 * 1000;
-static constexpr uint64_t SEC_TO_MILSEC = 1000;
-#endif
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 std::atomic<uint64_t> g_chainId = 0;
@@ -168,60 +149,6 @@ void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &v
             }
         }, true);
 }
-#endif
-
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(IOS_PLATFORM)
-bool IsFileNameFormat(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return false;
-    }
-
-    if (c >= 'a' && c <= 'z') {
-        return false;
-    }
-
-    if (c >= 'A' && c <= 'Z') {
-        return false;
-    }
-
-    if (c == '.' || c == '-' || c == '_') {
-        return false;
-    }
-
-    return true;
-}
-
-std::string GetSelfProcName()
-{
-    constexpr uint16_t READ_SIZE = 128;
-    std::ifstream fin;
-    fin.open("/proc/self/comm", std::ifstream::in);
-    if (!fin.is_open()) {
-        HILOG_ERROR("fin.is_open() false");
-        return "";
-    }
-    char readStr[READ_SIZE] = {'\0'};
-    fin.getline(readStr, READ_SIZE - 1);
-    fin.close();
-
-    std::string ret = std::string(readStr);
-    ret.erase(std::remove_if(ret.begin(), ret.end(), IsFileNameFormat), ret.end());
-    return ret;
-}
-
-static bool IsInAppspawn()
-{
-    const char *env = getenv("LD_PRELOAD");
-    if (env && strstr(env, "libclang_rt.asan.so") != nullptr) {
-        return true;
-    }
-    if (GetSelfProcName().find("appspawn") != std::string::npos && getppid() == 1) {
-        return true;
-    }
-    return false;
-}
-
 #endif
 
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
@@ -609,7 +536,6 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
-    StopMonitorJSHeapUsage();
 }
 
 #ifdef ENABLE_HITRACE
@@ -1727,6 +1653,11 @@ void* ArkNativeEngine::CreateRuntime(bool isLimitedWorker)
     return ArkNativeEngine::CreateRuntimeFunc(this, jsEngine_, isLimitedWorker);
 }
 
+void ArkNativeEngine::SetJsDumpThresholds(size_t thresholds)
+{
+    DFXJSNApi::SetJsDumpThresholds(vm_, thresholds);
+}
+
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
@@ -2388,167 +2319,6 @@ void ArkNativeEngine::NotifyNativeCalling(const void *nativeAddress)
 void ArkNativeEngine::AllowCrossThreadExecution() const
 {
     JSNApi::AllowCrossThreadExecution(vm_);
-}
-
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-uint64_t ArkNativeEngine::GetCurrentTickMillseconds()
-{
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
-void AsyncAfterWorkCallback(uv_work_t* req, int status)
-{
-    if (req == nullptr) {
-        HILOG_ERROR("dumpheapSnapshot AsyncAfterWorkCallback req is nullptr");
-        return;
-    }
-    if (status) {
-        HILOG_ERROR("dumpheapSnapshot AsyncAfterWorkCallback failed");
-    }
-    auto work = reinterpret_cast<JsHeapDumpWork*>(req->data);
-    if (work == nullptr) {
-        HILOG_ERROR("dumpheapSnapshot JsHeapDumpWork is nullptr");
-        return;
-    }
-    size_t heapUsedSize = DFXJSNApi::GetHeapUsedSize(work->vm);
-    size_t nowPrecent = heapUsedSize * DEC_TO_INT / (work->limitSize);
-    HILOG_INFO("dumpheapSnapshot nowPrecent is %{public}zu", nowPrecent);
-    if (nowPrecent >= g_threshold) {
-        auto vm = work->vm;
-        DFXJSNApi::GetHeapPrepare(vm);
-        DFXJSNApi::SetOverLimit(vm, true);
-        HILOG_INFO("dumpheapSnapshot GetHeapPrepare done");
-    }
-    *(work->isReady) = true;
-    work->condition->notify_all();
-    delete work;
-}
-
-bool ArkNativeEngine::JudgmentDumpExecuteTask(int pid)
-{
-    // VM destructed but syncTask is executed.
-    if (needStop_ || !DFXJSNApi::isOverLimit(vm_)) {
-        return false;
-    }
-    DFXJSNApi::SetOverLimit(vm_, false);
-    HILOG_INFO("dumpheapSnapshot ready");
-    time_t startTime = time(nullptr);
-    g_lastHeapDumpTime = GetCurrentTickMillseconds();
-    if ((pid = fork()) < 0) {
-        HILOG_ERROR("ready dumpheapSnapshot Fork error, err:%{public}d", errno);
-        sleep(g_checkInterval);
-        return false;
-    }
-    if (pid == 0) {
-        AllowCrossThreadExecution();
-        DumpHeapSnapshot(true, DumpFormat::JSON, false, false);
-        HILOG_INFO("dumpheapSnapshot successful, now you can check some file");
-        _exit(0);
-    }
-    while (true) {
-        int status = 0;
-        pid_t p = waitpid(pid, &status, 0);
-        if (p < 0) {
-            HILOG_ERROR("dumpheapSnapshot Waitpid return p=%{public}d, err:%{public}d", p, errno);
-            break;
-        }
-        if (p == pid) {
-            HILOG_ERROR("dumpheapSnapshot dump process exited status is %{public}d", status);
-            break;
-        }
-        if (time(nullptr) > startTime + TIME_OUT) {
-            HILOG_ERROR("time out to wait child process, killing forkpid %{public}d", pid);
-            kill(pid, SIGKILL);
-            break;
-        }
-        usleep(DEFAULT_SLEEP_TIME);
-    }
-    return true;
-}
-
-void ArkNativeEngine::JudgmentDump(size_t limitSize)
-{
-    if (!limitSize) {
-        return;
-    }
-    size_t nowPrecent = GetHeapObjectSize() * DEC_TO_INT / limitSize;
-    if (g_debugLeak || (nowPrecent >= g_threshold && (g_lastHeapDumpTime == 0 ||
-        GetCurrentTickMillseconds() - g_lastHeapDumpTime > HEAP_DUMP_REPORT_INTERVAL))) {
-        int pid = -1;
-        std::unique_lock<std::mutex> lock(lock_);
-        dumpWork_ = new(std::nothrow) JsHeapDumpWork;
-        dumpWork_->vm = vm_;
-        dumpWork_->work.data = dumpWork_;
-        dumpWork_->condition = &condition_;
-        dumpWork_->limitSize = limitSize;
-        dumpWork_->isReady = &isReady_;
-        uv_loop_t *loop = GetUVLoop();
-        int status = uv_queue_work(loop, &(dumpWork_->work), [](uv_work_t *) {}, AsyncAfterWorkCallback);
-        if (status != 0) {
-            HILOG_ERROR("In JudgmentDump, uv_queue_work failed");
-            delete dumpWork_;
-            return;
-        }
-        while (!isReady_) {
-            condition_.wait(lock);
-        }
-        isReady_ = false;
-        if (JudgmentDumpExecuteTask(pid) == false) {
-            return;
-        }
-    }
-}
-
-void ArkNativeEngine::JsHeapStart()
-{
-    if (pthread_setname_np(pthread_self(), "OS_JsHeapThread") != 0) {
-        HILOG_ERROR("Failed to set threadName for JsHeap, errno:%d", errno);
-    }
-    while (!needStop_) {
-        {
-            std::unique_lock<std::mutex> lock(lock_);
-            condition_.wait_for(lock, std::chrono::milliseconds(g_checkInterval * SEC_TO_MILSEC));
-            if (needStop_) {
-                return;
-            }
-        }
-        size_t limitSize = GetHeapLimitSize();
-        JudgmentDump(limitSize);
-    }
-}
-#endif
-
-void ArkNativeEngine::StartMonitorJSHeapUsage()
-{
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (!g_enableProperty) {
-        return;
-    }
-    if (threadJsHeap_ == nullptr && !IsInAppspawn()) {
-        threadJsHeap_ = std::make_unique<std::thread>(&ArkNativeEngine::JsHeapStart, this);
-        HILOG_DEBUG("JsHeapStart is OK");
-    }
-#else
-    HILOG_ERROR("StartMonitorJSHeapUsage does not support dfx");
-#endif
-}
-
-void ArkNativeEngine::StopMonitorJSHeapUsage()
-{
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (threadJsHeap_ != nullptr) {
-        // Free threadJsHeap_
-        needStop_ = true;
-        condition_.notify_all();
-        if (threadJsHeap_->joinable()) {
-            threadJsHeap_->join();
-            threadJsHeap_ = nullptr;
-        }
-    }
-#else
-    HILOG_ERROR("StopMonitorJSHeapUsage does not support dfx");
-#endif
 }
 
 #if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
