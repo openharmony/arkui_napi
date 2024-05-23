@@ -14,20 +14,21 @@
 import("//build/ohos.gni")
 
 ohos_shared_library("demo") {
-  include_dirs = []
+  include_dirs = [
+    "//third_party/node/src",
+    "../../../napi/interfaces/kits",
+  ]
 
   sources = [
     "demo_javascript_class.cpp",
     "native_module_demo.cpp",
   ]
 
-  deps = [ "../..:ace_napi" ]
-
-  external_deps = [ "node:node_header_notice" ]
+  deps = [ "../../../napi:ace_napi" ]
 
   if ("${current_os}_${current_cpu}" != "mingw_x86_64" &&
       "${current_os}_${current_cpu}" != "mac_x64") {
-    external_deps += [ "hilog:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
   }
 
   relative_install_dir = "module"

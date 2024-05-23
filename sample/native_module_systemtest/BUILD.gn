@@ -13,7 +13,16 @@
 import("//build/ohos.gni")
 ohos_shared_library("systemtestnapi") {
   testonly = true
-  public_configs = [ "../..:ace_napi_config" ]
+  public_configs = [ "//foundation/arkui/napi/:ace_napi_config" ]
+
+  include_dirs = [
+    "//foundation/arkui/ace_engine/frameworks",
+    "//third_party/libuv/include",
+    "//third_party/node/src",
+    "//foundation/arkui/napi/interfaces/kits",
+    "//third_party/bounds_checking_function/include",
+    "//foundation/arkui/napi",
+  ]
 
   cflags = [
     "-fPIC",
@@ -35,13 +44,12 @@ ohos_shared_library("systemtestnapi") {
     "js_test_threadsafe_napi.cpp",
   ]
 
-  deps = [ "../..:ace_napi" ]
-
-  external_deps = [
-    "bounds_checking_function:libsec_shared",
-    "hilog:libhilog",
-    "libuv:uv",
+  deps = [
+    "//foundation/arkui/napi/:ace_napi",
+    "//third_party/bounds_checking_function:libsec_static",
   ]
+
+  external_deps = [ "hilog:libhilog" ]
 
   relative_install_dir = "module"
 
@@ -50,7 +58,7 @@ ohos_shared_library("systemtestnapi") {
 }
 
 import("//build/test.gni")
-import("../../napi.gni")
+import("//foundation/arkui/napi/napi.gni")
 
 group("systemtest") {
   testonly = true
