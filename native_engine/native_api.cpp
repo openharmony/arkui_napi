@@ -70,6 +70,7 @@ using panda::ecmascript::EcmaVM;
 
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
+static constexpr size_t SMALL_STRING_SIZE = 16;
 
 class HandleScopeWrapper {
 public:
@@ -363,9 +364,15 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
         HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
             length, realLength);
     }
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
@@ -382,9 +389,15 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
         HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
             length, realLength);
     }
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
@@ -403,9 +416,15 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
         HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d), result may be unexpected",
             length, char16Length);
     }
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
