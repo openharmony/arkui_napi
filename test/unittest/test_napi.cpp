@@ -5146,3 +5146,293 @@ HWTEST_F(NapiBasicTest, CreateSendableTypedArray002, testing::ext::TestSize.Leve
     ASSERT_EQ(isEqual, true);
     ASSERT_EQ(byteOffset, OFFSET);
 }
+
+/**
+ * @tc.name: CreateSendableTypedArray003
+ * @tc.desc: Test napi_create_sendable_typedarray with non-sendable arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableTypedArray003, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *data;
+    napi_value arraybuffer = nullptr;
+    napi_value result = nullptr;
+    res = napi_create_arraybuffer(env, LENGTH, &data, &arraybuffer);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, arraybuffer, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, false);
+
+    res = napi_create_sendable_typedarray(env, napi_uint8_clamped_array, LENGTH / 2, arraybuffer, 1, &result);
+    ASSERT_EQ(res, napi_arraybuffer_expected);
+}
+
+/**
+ * @tc.name: IsDetachedSendableArrayBufferTest001
+ * @tc.desc: Test is DetachedSendableArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, IsDetachedSendableArrayBufferTest001, testing::ext::TestSize.Level1)
+{
+    static constexpr size_t arrayBufferSize = 1024;
+    napi_env env = (napi_env)engine_;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    napi_create_sendable_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    auto out = napi_detach_arraybuffer(env, arrayBuffer);
+    if (out == napi_ok) {
+        arrayBufferPtr = nullptr;
+    }
+    ASSERT_EQ(out, napi_ok);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeSendableDataTest001
+ * @tc.desc: Test serialize & deserialize sendableArray.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_ok;
+    napi_value excep;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
+    napi_value num = nullptr;
+    uint32_t value = 1000;
+    res = napi_create_uint32(env, value, &num);
+    ASSERT_EQ(res, napi_ok);
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("a", num),
+    };
+    napi_value obj;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &obj));
+    ASSERT_CHECK_VALUE_TYPE(env, obj, napi_object);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    res = napi_serialize(env, obj, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value result1 = nullptr;
+    res = napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+
+    napi_value number1 = nullptr;;
+    napi_get_named_property(env, result1, "a", &number1);
+    ASSERT_CHECK_VALUE_TYPE(env, number1, napi_number);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeSendableDataTest002
+ * @tc.desc: Test serialize & deserialize sendableArray.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env) engine_;
+
+    napi_status res = napi_ok;
+    napi_value sendableArray = nullptr;
+    napi_create_sendable_array(env, &sendableArray);
+    ASSERT_NE(sendableArray, nullptr);
+    bool isShared = false;
+    res = napi_is_sendable(env, sendableArray, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+    bool isArray = false;
+    napi_is_array(env, sendableArray, &isArray);
+    ASSERT_TRUE(isArray);
+    for (size_t i = 0; i < 10; i++) {
+        napi_value num = nullptr;
+        napi_create_uint32(env, i, &num);
+        napi_set_element(env, sendableArray, i, num);
+    }
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, sendableArray, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 10u);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    res = napi_serialize(env, sendableArray, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+
+    res = napi_get_array_length(env, result1, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 10u);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeSendableDataTest003
+ * @tc.desc: Test serialize & deserialize sendableArrayWithLength.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest003, testing::ext::TestSize.Level1)
+{
+    static uint32_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value sendableArray = nullptr;
+    res = napi_create_sendable_array_with_length(env, LENGTH, &sendableArray);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, sendableArray, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+    bool isArray = false;
+    napi_is_array(env, sendableArray, &isArray);
+    ASSERT_TRUE(isArray);
+    for (size_t i = 0; i < 100; i++) {
+        napi_value num = nullptr;
+        napi_create_uint32(env, i, &num);
+        napi_set_element(env, sendableArray, i, num);
+    }
+
+    uint32_t length = 0;
+    res = napi_get_array_length(env, sendableArray, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 1024);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    res = napi_serialize(env, sendableArray, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+
+    res = napi_get_array_length(env, result1, &length);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(length, 1024);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeSendableDataTest004
+ * @tc.desc: Test serialize & deserialize sendableTypedArray.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest004, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    static size_t OFFSET = 128;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *tmpData;
+    napi_value sendableArraybuffer = nullptr;
+    napi_value sendableTypedarray = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &tmpData, &sendableArraybuffer);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, sendableArraybuffer, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    res = napi_create_sendable_typedarray(env, napi_int8_array, LENGTH / 2,
+                                          sendableArraybuffer, OFFSET, &sendableTypedarray);
+    ASSERT_EQ(res, napi_ok);
+
+    isShared = false;
+    res = napi_is_sendable(env, sendableArraybuffer, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isTypedArray = false;
+    res = napi_is_typedarray(env, sendableTypedarray, &isTypedArray);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isTypedArray, true);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    res = napi_serialize(env, sendableTypedarray, undefined, undefined, &data);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value result = nullptr;
+    res = napi_deserialize(env, data, &result);
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+
+    napi_typedarray_type type = napi_uint8_array;
+    size_t length = 0;
+    void *getData = nullptr;
+    napi_value getArrayBuffer = nullptr;
+    size_t byteOffset = 0;
+    res = napi_get_typedarray_info(env, result, &type, &length, &getData, &getArrayBuffer, &byteOffset);
+    ASSERT_EQ(res, napi_ok);
+
+    ASSERT_EQ(type, napi_int8_array);
+    ASSERT_EQ(length, LENGTH / 2);
+    ASSERT_EQ(reinterpret_cast<size_t>(getData), reinterpret_cast<size_t>(tmpData) + OFFSET);
+    ASSERT_EQ(byteOffset, OFFSET);
+
+    napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: SerializeDeSerializeSendableDataTest005
+ * @tc.desc: Test serialize & deserialize sendableArrayBuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest005, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    void *tmpData;
+    napi_value sendableBuffer = nullptr;
+    res = napi_create_sendable_arraybuffer(env, LENGTH, &tmpData, &sendableBuffer);
+    ASSERT_EQ(res, napi_ok);
+
+    bool isShared = false;
+    res = napi_is_sendable(env, sendableBuffer, &isShared);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isShared, true);
+
+    bool isArrayBuffer = false;
+    res = napi_is_arraybuffer(env, sendableBuffer, &isArrayBuffer);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(isArrayBuffer, true);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    res = napi_serialize(env, sendableBuffer, undefined, undefined, &data);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_NE(data, nullptr);
+
+    napi_delete_serialization_data(env, data);
+}
