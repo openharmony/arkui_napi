@@ -39,6 +39,7 @@ FFIDataManager* FFIDataManager::GetInstance()
 
 void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)
 {
+    std::lock_guard<std::mutex> lock(mtx);
     int64_t id = data->GetID();
     // 0 represents invalid status
     if (id == 0) {
@@ -51,6 +52,7 @@ void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)
 
 void FFIDataManager::StoreRemoteData(const sptr<RemoteData>& data)
 {
+    std::lock_guard<std::mutex> lock(mtx);
     remoteDataStore_[data->GetID()] = data;
 }
 

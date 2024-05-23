@@ -27,6 +27,8 @@
 
 namespace OHOS::FFI {
 
+constexpr int64_t MAX_INT64 = 0x7fffffffffffffff;
+
 class RemoteData;
 class FFIData;
 
@@ -37,18 +39,15 @@ public:
     DISALLOW_COPY_AND_MOVE(FFIDataManager);
     FFIDataManager() = default;
 
-    bool FFIDataExist(int64_t id) const
-    {
-        return ffiDataStore_.find(id) != ffiDataStore_.end();
-    }
-
     sptr<FFIData> GetFFIData(int64_t id)
     {
+        std::lock_guard<std::mutex> lock(mtx);
         return ffiDataStore_[id];
     }
 
     sptr<RemoteData> GetRemoteData(int64_t id)
     {
+        std::lock_guard<std::mutex> lock(mtx);
         auto existP = remoteDataStore_[id];
         return existP.promote();
     }
@@ -56,28 +55,35 @@ public:
     void StoreRemoteData(const sptr<RemoteData>& data);
     void RemoveFFIData(int64_t id)
     {
+        std::lock_guard<std::mutex> lock(mtx);
         ffiDataStore_.erase(id);
     }
     void RemoveRemoteData(int64_t id)
     {
+        std::lock_guard<std::mutex> lock(mtx);
         remoteDataStore_.erase(id);
     }
 
     int64_t NewFFIDataId();
 
-    int FFIDataIdSafeIncrease();
-
 private:
     friend class FFIData;
     uint64_t curFFIDataId_ = 0;
-    const int64_t maxId = 0x7fff;
+    const int64_t maxId = MAX_INT64;
     // maxCapacity can be set to a larger number if needed, make sure maxCapacity is not larger than maxId
-    const int64_t maxCapacity = 0x7fff;
+    const int64_t maxCapacity = MAX_INT64;
     static FFIDataManager* instance_;
     std::mutex mtx;
 
     std::unordered_map<int64_t, sptr<FFIData>> ffiDataStore_;
     std::unordered_map<int64_t, wptr<RemoteData>> remoteDataStore_;
+
+    bool FFIDataExist(int64_t id) const
+    {
+        return ffiDataStore_.find(id) != ffiDataStore_.end();
+    }
+
+    int FFIDataIdSafeIncrease();
 };
 
 /**
