@@ -619,6 +619,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     }
     std::string rawStack = ssRawStack.str();
     uint64_t nestChainId = 0;
+    BlockHookScope blockHook; // block hook
     OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
     // resolve nested calls to napi and ts
