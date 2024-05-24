@@ -784,7 +784,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
 {
     if (strlen(path) == 0) {
-        errInfo = "load module " + moduleKey  + " failed. module path is empty";
+        errInfo += "load module " + moduleKey  + " failed. module path is empty";
         HILOG_ERROR("%{public}s", errInfo.c_str());
         return nullptr;
     }
@@ -802,7 +802,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        errInfo = "load module failed. " + std::to_string(GetLastError());
+        errInfo += "load module failed. " + std::to_string(GetLastError());
         HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
@@ -816,7 +816,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-        errInfo = "load module failed. " +  std::string(dlerrMsg);
+        errInfo += "load module failed. " +  std::string(dlerrMsg);
         HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 
@@ -832,7 +832,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-        errInfo = "load app module failed. " +  std::string(dlerrMsg);
+        errInfo += "load app module failed. " +  std::string(dlerrMsg);
         HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 #endif
@@ -921,8 +921,10 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     char* loadPath = nativeModulePath[0];
     HILOG_DEBUG("moduleName is %{public}s. get primary module path is %{public}s", moduleName, loadPath);
     uint32_t errReason0 = MODULE_LOAD_SUCCESS;
+    errInfo = "First attempt: ";
     LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason0);
     if (lib == nullptr) {
+        errInfo += "\nSecond attempt: ";
         loadPath = nativeModulePath[1];
         HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
