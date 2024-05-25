@@ -44,7 +44,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx);
         return ffiDataStore_[id];
     }
-
+        
     sptr<RemoteData> GetRemoteData(int64_t id)
     {
         std::lock_guard<std::mutex> lock(mtx);
@@ -86,6 +86,18 @@ private:
     int FFIDataIdSafeIncrease();
 };
 
+#define CJ_REMOTE_CLASS(className)                               \
+    DECL_TYPE(className, RemoteData)                           \
+public:                                                        \
+    friend class RefBase;                                      \
+    friend class RemoteData;                                   \
+    DISALLOW_COPY_AND_MOVE(className);                         \
+    className() = delete;                                      \
+                                                               \
+protected:                                                     \
+    explicit className(int64_t id) : OHOS::FFI::RemoteData(id) \
+    {}
+
 /**
  * a reference of cj FFIData object.
  *  standard create procedure:
@@ -99,6 +111,7 @@ private:
  *      3. cj: FFIData::onDestroyed
  */
 class FFI_EXPORT RemoteData : public TypeBase, public virtual RefBase {
+    DECL_TYPE(RemoteData, TypeBase)
 public:
     DISALLOW_COPY_AND_MOVE(RemoteData);
 
@@ -115,11 +128,6 @@ public:
         return ref;
     }
 
-    OHOS::FFI::RuntimeType* GetRuntimeType() override
-    {
-        return GetClassType();
-    }
-
     ~RemoteData() override;
 
 protected:
@@ -127,16 +135,6 @@ protected:
 
 private:
     friend class RefBase;
-
-    friend class OHOS::FFI::RuntimeType;
-
-    friend class OHOS::FFI::TypeBase;
-
-    static OHOS::FFI::RuntimeType* GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType = OHOS::FFI::RuntimeType::Create<TypeBase>("RemoteData");
-        return &runtimeType;
-    }
 
 public:
     int64_t GetID() const;
@@ -162,6 +160,7 @@ private:
  *      4. cj: RemoteData.onDestroyed
  */
 class FFI_EXPORT FFIData : public TypeBase, public RefBase {
+    DECL_TYPE(FFIData, TypeBase)
 public:
     DISALLOW_COPY_AND_MOVE(FFIData);
     FFIData() : id_(FFIDataManager::GetInstance()->NewFFIDataId()) {}
@@ -195,11 +194,6 @@ public:
         return store_.find(id) != store_.end();
     }
 
-    OHOS::FFI::RuntimeType* GetRuntimeType() override
-    {
-        return GetClassType();
-    }
-
     int64_t GetID() const
     {
         return id_;
@@ -207,16 +201,6 @@ public:
 
 private:
     int64_t id_;
-
-    friend class OHOS::FFI::RuntimeType;
-
-    friend class OHOS::FFI::TypeBase;
-
-    static OHOS::FFI::RuntimeType* GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType = OHOS::FFI::RuntimeType::Create<TypeBase>("FFIData");
-        return &runtimeType;
-    }
 };
 
 } // namespace OHOS::FFI

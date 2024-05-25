@@ -48,6 +48,10 @@ public:
 
     bool IsType(RuntimeType* target)
     {
+        if (target == nullptr) {
+            return false;
+        }
+        
         if (strcmp(this->GetTypeName(), target->GetTypeName())) {
             return true;
         }
@@ -69,6 +73,22 @@ private:
     const char* name_;
     std::vector<RuntimeType*> parents_;
 };
+
+#define DECL_TYPE(className, inheritedClasses...)                                                                 \
+private:                                                                                                          \
+    friend class OHOS::FFI::RuntimeType;                                                                          \
+    friend class OHOS::FFI::TypeBase;                                                                             \
+    static OHOS::FFI::RuntimeType* GetClassType()                                                                 \
+    {                                                                                                             \
+        static OHOS::FFI::RuntimeType runtimeType = OHOS::FFI::RuntimeType::Create<inheritedClasses>(#className); \
+        return &runtimeType;                                                                                      \
+    }                                                                                                             \
+                                                                                                                  \
+public:                                                                                                           \
+    OHOS::FFI::RuntimeType* GetRuntimeType() override                                                             \
+    {                                                                                                             \
+        return GetClassType();                                                                                    \
+    }
 
 class TypeBase {
 public:

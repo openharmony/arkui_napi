@@ -202,7 +202,7 @@ ohos_shared_library("cj_bind_native") {
   if (is_standard_system) {
     external_deps += [ "c_utils:utils" ]
   }
-
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "arkui"
   part_name = "napi"
 }
@@ -252,7 +252,7 @@ ohos_shared_library("cj_bind_ffi") {
   if (is_standard_system) {
     external_deps += [ "c_utils:utils" ]
   }
-
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "arkui"
   part_name = "napi"
 }
