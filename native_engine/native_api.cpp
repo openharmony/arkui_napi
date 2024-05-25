@@ -2459,7 +2459,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *byte_offset = typedArray->ByteOffset(vm);
         }
     } else {
-        napi_set_last_error(env, napi_invalid_arg);
+        return napi_set_last_error(env, napi_invalid_arg);
     }
 
     return napi_clear_last_error(env);
