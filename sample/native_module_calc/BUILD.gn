@@ -22,17 +22,14 @@ gen_js_obj("calc_js") {
 }
 
 ohos_shared_library("calc") {
-  include_dirs = [
-    "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-  ]
-
   sources = [ "napi_calc.cpp" ]
 
   deps = [
     ":calc_js",
-    "//foundation/arkui/napi:ace_napi",
+    "../..:ace_napi",
   ]
+
+  external_deps = [ "node:node_header_notice" ]
 
   relative_install_dir = "module"
 
@@ -41,14 +38,11 @@ ohos_shared_library("calc") {
 }
 
 ohos_shared_library("number") {
-  include_dirs = [
-    "//third_party/node/src",
-    "//foundation/arkui/napi/interfaces/kits",
-  ]
-
   sources = [ "napi_number.cpp" ]
 
-  deps = [ "//foundation/arkui/napi:ace_napi" ]
+  deps = [ "../..:ace_napi" ]
+
+  external_deps = [ "node:node_header_notice" ]
 
   relative_install_dir = "module"
 
