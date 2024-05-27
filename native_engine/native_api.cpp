@@ -359,18 +359,13 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    size_t realLength = strlen(str);
-    if (length != NAPI_AUTO_LENGTH && length != realLength) {
-        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
-            length, realLength);
-    }
     if (length < SMALL_STRING_SIZE) {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     } else {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     }
 
@@ -384,18 +379,13 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    size_t realLength = strlen(str);
-    if (length != NAPI_AUTO_LENGTH && length != realLength) {
-        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}zu), result may be unexpected",
-            length, realLength);
-    }
     if (length < SMALL_STRING_SIZE) {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     } else {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? realLength : length);
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     }
 
