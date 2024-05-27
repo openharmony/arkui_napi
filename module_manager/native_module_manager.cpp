@@ -555,6 +555,11 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     nativeModulePath[1][0] = 0;
     nativeModulePath[2][0] = 0; // 2 : Element index value
 #ifdef ANDROID_PLATFORM
+    if (!GetNativeModulePath(strCutName.c_str(), path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+        errInfo = "failed to get native file path of module " + std::string(moduleName);
+        HILOG_WARN("%{public}s", errInfo.c_str());
+        return nullptr;
+    }
     NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath);
 #else
     std::string key(moduleName);
