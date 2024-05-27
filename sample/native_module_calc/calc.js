@@ -20,7 +20,7 @@ const number = requireNapi('number');
 function sub(x, y)
 {
     return x - y;
-}
+};
 
 export default {
     add: calc.add,
@@ -29,4 +29,4 @@ export default {
         TYPE_VALUE_0: 0,
         TYPE_VALUE_1: number.Number.ONE,
     }
-}
+};

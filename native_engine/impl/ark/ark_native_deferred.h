@@ -23,14 +23,12 @@
 
 class ArkNativeEngine;
 
-using panda::Global;
 using JSValueRef = panda::JSValueRef;
-using panda::Local;
 using PromiseCapabilityRef = panda::PromiseCapabilityRef;
 
 class ArkNativeDeferred : public NativeDeferred {
 public:
-    ArkNativeDeferred(ArkNativeEngine* engine, Local<PromiseCapabilityRef> deferred);
+    ArkNativeDeferred(ArkNativeEngine* engine, panda::Local<PromiseCapabilityRef> deferred);
     ~ArkNativeDeferred();
     void Resolve(napi_value data) override;
     void Reject(napi_value reason) override;

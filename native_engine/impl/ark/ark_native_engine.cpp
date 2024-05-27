@@ -737,7 +737,7 @@ static Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const cha
     return fn;
 }
 
-Local<JSValueRef> GetProperty(EcmaVM* vm, Local<panda::ObjectRef> &obj, const char* name)
+static Local<JSValueRef> GetProperty(EcmaVM* vm, Local<panda::ObjectRef> &obj, const char* name)
 {
     Local<StringRef> key = StringRef::NewFromUtf8(vm, name);
     Local<JSValueRef> val = obj->Get(vm, key);

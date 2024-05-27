@@ -181,10 +181,13 @@ static panda::JSValueRef* InternalMakeCallback(NativeEngine* engine, panda::Func
         callBackRst = funRef->CallForNapi(vm, obj, argv, argc);
     }
 
-    if (callBackRst == nullptr) {
-        callbackScope->MarkAsFailed();
+    if (callbackScope != nullptr) {
+        if (callBackRst == nullptr) {
+            callbackScope->MarkAsFailed();
+        }
+        callbackScope->Close();
     }
-    callbackScope->Close();
+
     CloseScope(asyncContext, callbackScopeMgr, callbackScope, engine);
     return callBackRst;
 }
