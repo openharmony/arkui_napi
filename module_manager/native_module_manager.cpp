@@ -555,6 +555,11 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     nativeModulePath[1][0] = 0;
     nativeModulePath[2][0] = 0; // 2 : Element index value
 #ifdef ANDROID_PLATFORM
+    if (!GetNativeModulePath(strCutName.c_str(), path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
+        errInfo = "failed to get native file path of module " + std::string(moduleName);
+        HILOG_WARN("%{public}s", errInfo.c_str());
+        return nullptr;
+    }
     NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath);
 #else
     std::string key(moduleName);
@@ -806,10 +811,12 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
+#ifndef ANDROID_PLATFORM
     if (CheckModuleExist(path) == false) {
         errReason = MODULE_NOT_EXIST;
         return nullptr;
     }
+#endif
     lib = dlopen(path, RTLD_LAZY);
     if (lib == nullptr) {
         char* dlerr = dlerror();
