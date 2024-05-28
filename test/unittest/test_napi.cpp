@@ -1575,23 +1575,16 @@ HWTEST_F(NapiBasicTest, SendableClassTest005, testing::ext::TestSize.Level1)
     char* str = new char[TEST_STR_LENGTH];
     size_t length;
     napi_value parent_instance_value;
-    napi_value exception = nullptr;
-    bool isExceptionPending = false;
     ASSERT_CHECK_CALL(napi_create_string_utf8(env, "parentInstance", NAPI_AUTO_LENGTH, &parent_instance_value));
 
-    // initial instance property
+    // get parent instance property on instance
     ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, parent_instance_str, &value));
     ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
-
     // set parent instance property on instance
-    napi_is_exception_pending(env, &isExceptionPending);
-    ASSERT_FALSE(isExceptionPending);
     napi_set_property(env, sendableInstance, parent_instance_str, parent_instance_value);
-    napi_is_exception_pending(env, &isExceptionPending);
-    ASSERT_TRUE(isExceptionPending);
-    napi_get_and_clear_last_exception(env, &exception);
     ASSERT_CHECK_CALL(napi_get_property(env, sendableInstance, parent_instance_str, &value));
-    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, value, str, TEST_STR_LENGTH, &length));
+    ASSERT_STREQ("parentInstance", str);
 
     // get parent static property from constructor
     ASSERT_CHECK_CALL(napi_get_property(env, sendableClass, parent_static_str, &value));
