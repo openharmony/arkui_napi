@@ -28,7 +28,6 @@
 #include "securec.h"
 #include "utils/log.h"
 
-static constexpr int THREAD_PAUSE_THREE = 300 * 1000; // 300 ms
 static constexpr int THREAD_PAUSE_ONE = 100 * 1000; // 100 ms
 static constexpr int MAX_BUFFER_SIZE = 2;
 static constexpr int BUFFER_SIZE_FIVE = 5;
@@ -4212,6 +4211,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
 {
     struct AsyncWorkContext {
         napi_async_work work = nullptr;
+        bool executed = false;
     };
     napi_env env = reinterpret_cast<napi_env>(engine_);
     auto asyncWorkContext = new AsyncWorkContext();
@@ -4219,12 +4219,16 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env value, void* data) {
-            // Simulate long-term running tasks.
-            usleep(THREAD_PAUSE_THREE);
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            asyncWorkContext->executed = true;
         },
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            ASSERT_NE(status, napi_status::napi_cancelled);
+            if (asyncWorkContext->executed) {
+                ASSERT_NE(status, napi_status::napi_ok);
+            } else {
+                ASSERT_NE(status, napi_status::napi_cancelled);
+            }
             napi_delete_async_work(env, asyncWorkContext->work);
             delete asyncWorkContext;
         },
