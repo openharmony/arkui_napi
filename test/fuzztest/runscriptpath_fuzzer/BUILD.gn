@@ -11,20 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//arkcompiler/ets_runtime/js_runtime_config.gni")
-
 ##################################hydra-fuzz###################################
 import("//build/config/features.gni")
 import("//build/ohos.gni")
 import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 ##################################fuzztest#####################################
-ohos_fuzztest("ArkNativeEngineFuzzTest") {
+ohos_fuzztest("RunScriptPathFuzzTest") {
   module_out_path = "arkui/napi"
 
   fuzz_config_file = "."
 
-  sources = [ "arknativeengine_fuzzer.cpp" ]
+  sources = [ "runscriptpath_fuzzer.cpp" ]
 
   configs = [ "../../..:ace_napi_config" ]
 
@@ -38,14 +36,10 @@ ohos_fuzztest("ArkNativeEngineFuzzTest") {
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
   ]
-
-  # hiviewdfx libraries
-  external_deps += hiviewdfx_ext_deps
-  deps += hiviewdfx_deps
 }
 
 group("fuzztest") {
   testonly = true
   deps = []
-  deps += [ ":ArkNativeEngineFuzzTest" ]
+  deps += [ ":RunScriptPathFuzzTest" ]
 }
