@@ -26,9 +26,6 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
-#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
-#include "native_engine/impl/ark/ark_native_hybrid_stack.h"
-#endif
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_create_env.h"
 #include "native_engine/native_property.h"
@@ -3409,7 +3406,7 @@ NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& s
 #if defined(OHOS_PLATFORM) && !defined(is_arkui_x)
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    stack = HybridStackDumper::GetMixStack(vm);
+    stack = DumpHybridStack(vm);
 #else
     HILOG_WARN("GetHybridStacktrace env get hybrid stack failed");
 #endif

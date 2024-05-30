@@ -208,7 +208,6 @@ public:
         bool isPrivate = false, bool isFullGC = true) = 0;
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
-    virtual bool BuildJsStackInfoList(uint32_t tid, std::vector<JsFrameInfo>& jsFrames) = 0;
     virtual bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth = 0)
         = 0;
     virtual bool DeleteWorker(NativeEngine* workerEngine) = 0;
