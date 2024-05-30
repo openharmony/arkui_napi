@@ -70,6 +70,7 @@ using panda::ecmascript::EcmaVM;
 
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
+static constexpr size_t SMALL_STRING_SIZE = 16;
 
 class HandleScopeWrapper {
 public:
@@ -358,9 +359,15 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
@@ -372,9 +379,15 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
@@ -389,9 +402,15 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
-    Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
-        vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
-    *result = JsValueFromLocalValue(object);
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        *result = JsValueFromLocalValue(object);
+    }
 
     return napi_clear_last_error(env);
 }
