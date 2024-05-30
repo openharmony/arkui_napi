@@ -347,6 +347,12 @@ public:
     void DecreaseListeningCounter();
     bool HasListeningCounter();
 
+    static bool IsAlive(NativeEngine* env)
+    {
+        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+        return g_alivedEngine_.find(env) != g_alivedEngine_.end();
+    }
+
     virtual void RunCleanup();
 
     bool IsStopping() const
@@ -541,6 +547,9 @@ private:
 
     std::mutex loopRunningMutex_;
     bool isLoopRunning_ = false;
+
+    static std::mutex g_alivedEngineMutex_;
+    static std::unordered_set<NativeEngine*> g_alivedEngine_;
 };
 
 class TryCatch : public panda::TryCatch {

@@ -170,6 +170,10 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
         }
     } else {
         queue_.emplace(data);
+        if (!NativeEngine::IsAlive(engine_)) {
+            HILOG_ERROR("napi_env has been destoryed");
+            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        }
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
             HILOG_ERROR("uv async send failed %d", ret);
@@ -227,6 +231,10 @@ SafeAsyncCode NativeSafeAsyncWork::Release(NativeThreadSafeFunctionReleaseMode m
 
     if (threadCount_ == 0 ||
         mode == NativeThreadSafeFunctionReleaseMode::NATIVE_TSFUNC_ABORT) {
+        if (!NativeEngine::IsAlive(engine_)) {
+            HILOG_ERROR("napi_env has been destoryed");
+            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        }
         // trigger async handle
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {

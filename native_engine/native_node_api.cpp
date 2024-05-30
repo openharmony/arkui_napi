@@ -186,6 +186,10 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
     CHECK_ARG(env, loop);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!NativeEngine::IsAlive(engine)) {
+        HILOG_ERROR("napi_env has been destoryed!");
+        return napi_status::napi_generic_failure;
+    }
     *loop = engine->GetUVLoop();
 
     return napi_status::napi_ok;
