@@ -654,7 +654,6 @@ static napi_value JSStorageSetSync(napi_env env, napi_callback_info info)
     if (itr == g_keyValueStorage.end()) {
         g_keyValueStorage.insert(std::pair<std::string, std::string>(key, value));
         objectInfo->Emit(nullptr, "change");
-
     } else {
         objectInfo->Emit(nullptr, "error");
         NAPI_ASSERT(env, false, "key already exists");
@@ -688,7 +687,6 @@ static napi_value JSStorageDeleteSync(napi_env env, napi_callback_info info)
     napi_unwrap(env, thisVar, (void**)&objectInfo);
 
     auto itr = g_keyValueStorage.find(key);
-
     if (itr != g_keyValueStorage.end()) {
         g_keyValueStorage.erase(itr);
         objectInfo->Emit(nullptr, "change");

@@ -50,12 +50,12 @@ NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, na
 NAPI_EXTERN napi_status napi_run_actor(napi_env env, uint8_t* buffer, size_t bufferSize,
                                        const char* descriptor, napi_value* result, char* entryPoint = nullptr);
 NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
-                                  napi_value js_object,
-                                  void* native_object,
-                                  napi_finalize finalize_cb,
-                                  void* finalize_hint,
-                                  napi_ref* result,
-                                  size_t native_binding_size);
+                                            napi_value js_object,
+                                            void* native_object,
+                                            napi_finalize finalize_cb,
+                                            void* finalize_hint,
+                                            napi_ref* result,
+                                            size_t native_binding_size);
 NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
                                                   napi_value js_object,
                                                   void* native_object,
