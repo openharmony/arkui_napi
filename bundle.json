@@ -24,7 +24,6 @@
         "ram": "10240KB",
         "deps": {
             "components": [
-                "c_utils",
                 "ets_runtime",
                 "eventhandler",
                 "faultloggerd",
@@ -81,27 +80,6 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_napi"
-                  },
-                  {
-                    "header": {
-                      "header_base": "//foundation/arkui/napi/interfaces/inner_api/cjffi/cj_ffi",
-                      "header_files": [
-                          "cj_common_ffi.h",
-                          "cj_data_ffi.h"
-                      ]
-                    },
-                    "name": "//foundation/arkui/napi:cj_bind_ffi"
-                  },
-                  {
-                    "header": {
-                      "header_base": "//foundation/arkui/napi/interfaces/inner_api/cjffi/native",
-                      "header_files": [
-                          "cj_fn_invoker.h",
-                          "cj_lambda.h",
-                          "runtimetype.h"
-                      ]
-                    },
-                    "name": "//foundation/arkui/napi:cj_bind_native"
                   },
                   {
                     "header": {
