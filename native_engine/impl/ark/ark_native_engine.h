@@ -199,7 +199,7 @@ public:
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
-    bool TriggerFatalException(napi_value error) override;
+    void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
     // Set jsdump thresholds

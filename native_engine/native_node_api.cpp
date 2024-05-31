@@ -87,22 +87,18 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
+NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
 {
     NAPI_PREAMBLE(env);
-    HILOG_INFO("%{public}s, start.", __func__);
     CHECK_ENV(env);
     CHECK_ARG(env, err);
 
+    auto exceptionValue = LocalValueFromJsValue(err);
+    RETURN_STATUS_IF_FALSE(env, exceptionValue->IsError(), napi_invalid_arg);
+
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    if (engine->TriggerFatalException(err)) {
-        HILOG_INFO("%{public}s, end.", __func__);
-        return napi_status::napi_ok;
-    } else {
-        HILOG_INFO("%{public}s, end.", __func__);
-        exit(1);
-        return napi_status::napi_ok;
-    }
+    engine->TriggerFatalException(exceptionValue);
+    return napi_ok;
 }
 
 // Methods to manage simple async operations

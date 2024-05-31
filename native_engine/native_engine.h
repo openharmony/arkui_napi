@@ -233,7 +233,7 @@ public:
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
 
-    virtual bool TriggerFatalException(napi_value error) = 0;
+    virtual void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
     void MarkWorkerThread()

@@ -1832,9 +1832,10 @@ bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
     return ret;
 }
 
-bool ArkNativeEngine::TriggerFatalException(napi_value error)
+void ArkNativeEngine::TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue)
 {
-    return true;
+    panda::JSNApi::ThrowException(GetEcmaVm(), exceptionValue);
+    HandleUncaughtException();
 }
 
 bool ArkNativeEngine::AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue)
