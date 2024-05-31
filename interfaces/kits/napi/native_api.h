@@ -41,7 +41,7 @@
 #endif
 #endif
 
-NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err);
+NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err);
 
 
 NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env,

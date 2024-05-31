@@ -29,6 +29,7 @@
 #include "utils/log.h"
 
 static constexpr int THREAD_PAUSE_ONE = 100 * 1000; // 100 ms
+static constexpr int THREAD_PAUSE_ONE_SECOND = 1000 * 1000; // 1s
 static constexpr int MAX_BUFFER_SIZE = 2;
 static constexpr int BUFFER_SIZE_FIVE = 5;
 static constexpr size_t TEST_STR_LENGTH = 30;
@@ -4218,7 +4219,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
             if (asyncWorkContext->executed) {
-                ASSERT_NE(status, napi_status::napi_ok);
+                ASSERT_EQ(status, napi_status::napi_ok);
             } else {
                 ASSERT_NE(status, napi_status::napi_cancelled);
             }
@@ -4231,6 +4232,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
     // Sleep for a short duration to allow the async work to start executing.
     usleep(THREAD_PAUSE_ONE);
     napi_cancel_async_work(env, asyncWorkContext->work);
+    usleep(THREAD_PAUSE_ONE_SECOND);
 }
 
 static napi_value CreateWithPropertiesTestGetter(napi_env env, napi_callback_info info)
@@ -5432,4 +5434,68 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeSendableDataTest005, testing::ext::T
     ASSERT_NE(data, nullptr);
 
     napi_delete_serialization_data(env, data);
+}
+
+/**
+ * @tc.name: NapiFatalExceptionTest
+ * @tc.desc: Test interface of napi_fatal_exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiFatalExceptionTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    // create error object
+    napi_value code = nullptr;
+    constexpr char codeStr[] = "test code";
+    napi_status res = napi_create_string_utf8(env, codeStr, NAPI_AUTO_LENGTH, &code);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value msg = nullptr;
+    constexpr char msgStr[] = "test message";
+    res = napi_create_string_utf8(env, msgStr, NAPI_AUTO_LENGTH, &msg);
+    ASSERT_EQ(res, napi_ok);
+
+    napi_value error = nullptr;
+    res = napi_create_error(env, code, msg, &error);
+    ASSERT_EQ(res, napi_ok);
+
+    // call napi_fatal_exception interface with nullptr env
+    res = napi_fatal_exception(nullptr, error);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiFatalExceptionTest
+ * @tc.desc: Test interface of napi_fatal_exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiFatalExceptionTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    // create error object
+    napi_value code = nullptr;
+    constexpr char codeStr[] = "test code";
+    napi_status res = napi_create_string_utf8(env, codeStr, NAPI_AUTO_LENGTH, &code);
+    ASSERT_EQ(res, napi_ok);
+
+    // call napi_fatal_exception interface with non-JSError object
+    res = napi_fatal_exception(env, code);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiFatalExceptionTest
+ * @tc.desc: Test interface of napi_fatal_exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiFatalExceptionTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    // call napi_fatal_exception interface with nullptr error
+    auto res = napi_fatal_exception(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
 }
