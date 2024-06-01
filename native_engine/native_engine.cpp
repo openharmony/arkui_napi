@@ -69,7 +69,14 @@ static GetContainerScopeIdCallback getContainerScopeIdFunc_;
 static ContainerScopeCallback initContainerScopeFunc_;
 static ContainerScopeCallback finishContainerScopeFunc_;
 
-NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
+std::mutex NativeEngine::g_alivedEngineMutex_;
+std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
+
+NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
+{
+    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+    g_alivedEngine_.emplace(this);
+}
 
 NativeEngine::~NativeEngine()
 {
@@ -79,6 +86,8 @@ NativeEngine::~NativeEngine()
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
+    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+    g_alivedEngine_.erase(this);
 }
 
 void NativeEngine::Init()
