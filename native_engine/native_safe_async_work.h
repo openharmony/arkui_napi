@@ -87,7 +87,10 @@ private:
     bool IsSameTid();
     bool IsMaxQueueSize();
 
+    SafeAsyncCode ValidEngineCheck();
+
     NativeEngine* engine_ = nullptr;
+    uint64_t engineId_ = 0;
     NativeReference* ref_ = nullptr;
     size_t maxQueueSize_ = 0;
     size_t threadCount_ = 0;

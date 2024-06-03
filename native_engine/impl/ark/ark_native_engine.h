@@ -32,6 +32,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/impl/ark/ark_finalizers_pack.h"
 #include "native_engine/native_engine.h"
+#include "ark_native_options.h"
 
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
@@ -361,8 +362,18 @@ public:
         const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
+    inline bool IsCrossThreadCheckEnabled() const override
+    {
+        return crossThreadCheck_;
+    }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
+
 private:
+    inline NapiOptions *GetNapiOptions() const override
+    {
+        return options_;
+    }
+
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
     static void RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers);
     static void RunCallbacks(AsyncNativeCallbacksPack *callbacks);
@@ -393,5 +404,8 @@ private:
     size_t pendingFinalizersPackNativeBindingSize_ {0};
     ArkFinalizersPack arkFinalizersPack_ {};
     std::vector<RefFinalizer> pendingAsyncFinalizers_ {};
+    // napi options and its cache
+    NapiOptions* options_ { nullptr };
+    bool crossThreadCheck_ { false };
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

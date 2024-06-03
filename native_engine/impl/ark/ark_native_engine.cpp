@@ -362,6 +362,14 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     Local<StringRef> requireInternalName = StringRef::NewFromUtf8(vm, "requireInternal");
     void* requireData = static_cast<void*>(this);
 
+    options_ = new NapiOptions();
+    crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    int napiProperties = OHOS::system::GetIntParameter<int>("persist.ark.napi.properties", -1);
+    if (options_ != nullptr) {
+        options_->SetProperties(napiProperties);
+    }
+#endif
     Local<FunctionRef> requireNapi =
         FunctionRef::New(
             vm,
@@ -567,6 +575,10 @@ ArkNativeEngine::~ArkNativeEngine()
     }
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
+    }
+    if (options_ != nullptr) {
+        delete options_;
+        options_ = nullptr;
     }
 }
 
