@@ -25,7 +25,9 @@
 #include "core/common/container_scope.h"
 #endif
 
+#include <cinttypes>
 #include "ecmascript/napi/include/jsnapi.h"
+#include "native_api_internal.h"
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "utils/log.h"
@@ -50,7 +52,7 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
                                  NativeAsyncCompleteCallback complete,
                                  const std::string &asyncResourceName,
                                  void* data)
-    : work_({ 0 }), engine_(engine), execute_(execute), complete_(complete), data_(data)
+    : work_({ 0 }), engine_(engine), engineId_(engine->GetId()), execute_(execute), complete_(complete), data_(data)
 {
     work_.data = this;
     (void)asyncResourceName;
@@ -93,6 +95,13 @@ NativeAsyncWork::~NativeAsyncWork() = default;
 
 bool NativeAsyncWork::Queue()
 {
+    if (engineId_ != engine_->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+                       "owner env has been destroyed, "
+                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
+    }
+
     uv_loop_t* loop = engine_->GetUVLoop();
     if (loop == nullptr) {
         HILOG_ERROR("Get loop failed");
@@ -120,6 +129,13 @@ bool NativeAsyncWork::Queue()
 
 bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 {
+    if (engineId_ != engine_->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+                       "param env is not equal to its owner, "
+                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
+    }
+
     uv_loop_t* loop = engine_->GetUVLoop();
     if (loop == nullptr) {
         HILOG_ERROR("Get loop failed");
@@ -147,6 +163,13 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 
 bool NativeAsyncWork::Cancel()
 {
+    if (engineId_ != engine_->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+                       "param env is not equal to its owner, "
+                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
+    }
+
     int status = uv_cancel((uv_req_t*)&work_);
     if (status != 0) {
         HILOG_ERROR("uv_cancel failed");
