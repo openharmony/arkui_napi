@@ -41,6 +41,9 @@
 namespace panda::ecmascript {
     class EcmaVM;
 }
+namespace OHOS::AppExecFwk {
+    class EventHandler;
+}
 
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
@@ -108,6 +111,7 @@ using SourceMapTranslateCallback = std::function<bool(std::string& url, int& lin
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using RefFinalizer = std::pair<NapiNativeFinalize, std::tuple<NativeEngine*, void*, void*>>;
+using EventCallback = std::function<void()>;
 
 class NAPI_EXPORT NativeEngine {
 public:
@@ -475,6 +479,12 @@ public:
      */
     napi_status StopEventLoop();
 
+    napi_status SendEvent(const EventCallback &cb, napi_task_priority priority = napi_priority_high);
+    void SetDefaultEventHandler(std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventhandler)
+    {
+        eventHandler_ = eventhandler;
+    }
+
 private:
     void StartCleanupTimer();
 protected:
@@ -532,6 +542,8 @@ private:
     uv_thread_t uvThread_;
 #endif
 
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
+    napi_threadsafe_function defaultFunc_ = nullptr;
     PostTask postTask_ = nullptr;
     CleanEnv cleanEnv_ = nullptr;
     uv_async_t uvAsync_;
