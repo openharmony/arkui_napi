@@ -36,15 +36,19 @@ inline panda::Local<panda::JSValueRef> LocalValueFromJsValue(napi_value v)
     return local;
 }
 
-inline bool NapiStatusValidationCheck(panda::Local<panda::JSValueRef> value)
+inline bool NapiStatusValidationCheck(panda::JSValueRef* value)
 {
-    // Since we sink napi heavy logics to ark runtime,
-    // we need to check napi status using a special value.
-    // Here we use JSTaggedValue::Hole(0x5) as the special value.
-    if ((*value != nullptr) && (*(uint64_t *)(*value) == NAPI_SPECIAL_STATUS)) {
+    if ((value != nullptr) && (*(panda::JSTaggedType *)(value) == NAPI_SPECIAL_STATUS)) {
         return false;
     }
     return true;
 }
 
+inline bool NapiStatusValidationCheck(panda::Local<panda::JSValueRef> value)
+{
+    // Since we sink napi heavy logics to ark runtime,
+    // we need to check napi status using a special value.
+    // Here we use JSTaggedValue::Hole(0x5) as the special value.
+    return NapiStatusValidationCheck(*value);
+}
 #endif  // FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_UTILS_H

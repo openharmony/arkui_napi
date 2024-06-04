@@ -1196,7 +1196,10 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
                                            const napi_value* argv,
                                            napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    CHECK_ENV((env));
+    RETURN_STATUS_IF_FALSE((env), (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
+        napi_pending_exception);
+    napi_clear_last_error((env));
     CHECK_ARG(env, func);
     if (argc > 0) {
         CHECK_ARG(env, argv);
@@ -1216,10 +1219,12 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
 #endif
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
-    if (tryCatch.HasCaught()) {
+    // if pending exception, value will be a pointer to JSTaggedValue::Hole.
+    if (UNLIKELY(!NapiStatusValidationCheck(value))) {
         HILOG_ERROR("pending exception when js function called, print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
         result = nullptr;
+        reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
         return napi_set_last_error(env, napi_pending_exception);
     }
     if (result) {
