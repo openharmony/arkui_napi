@@ -24,7 +24,9 @@
 #endif
 
 #include "ecmascript/napi/include/jsnapi.h"
+#ifdef ENABLE_EVENT_HANDLER
 #include "event_handler.h"
+#endif
 #include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
 #include "utils/log.h"
@@ -39,10 +41,12 @@ using panda::Local;
 using panda::LocalScope;
 using panda::ObjectRef;
 using panda::StringRef;
+#ifdef ENABLE_EVENT_HANDLER
 using namespace OHOS::AppExecFwk;
 typedef struct CallbackWrapper_ {
     EventCallback cb;
 } CallbackWrapper;
+#endif
 
 namespace {
 const char* g_errorMessages[] = {
@@ -95,6 +99,7 @@ NativeEngine::~NativeEngine()
     g_alivedEngine_.erase(this);
 }
 
+#ifdef ENABLE_EVENT_HANDLER
 static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
 {
     if (data != nullptr) {
@@ -105,6 +110,7 @@ static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* contex
         data = nullptr;
     }
 }
+#endif
 
 void NativeEngine::Init()
 {
@@ -119,12 +125,13 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-
+#ifdef ENABLE_EVENT_HANDLER
     napi_env env = reinterpret_cast<napi_env>(this);
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
         nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+#endif
 }
 
 void NativeEngine::Deinit()
@@ -958,6 +965,7 @@ void NativeEngine::ThrowException(const char* msg)
     panda::JSNApi::ThrowException(vm, error);
 }
 
+#ifdef ENABLE_EVENT_HANDLER
 napi_status NativeEngine::SendEvent(const EventCallback &cb, napi_task_priority priority)
 {
     if (eventHandler_) {
@@ -986,3 +994,4 @@ napi_status NativeEngine::SendEvent(const EventCallback &cb, napi_task_priority 
         return napi_status::napi_generic_failure;
     }
 }
+#endif
