@@ -1803,7 +1803,7 @@ HWTEST_F(NapiBasicTest, WrapSendableTest001, testing::ext::TestSize.Level1)
 
     const char* testStr = "test";
     res = napi_wrap_sendable(
-        env, instanceValue, (void*)testStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr);
+        env, instanceValue, (void*)testStr, [](napi_env env, void* data, void* hint) {}, nullptr);
     ASSERT_EQ(res, napi_ok);
 
     char* tmpTestStr = nullptr;
@@ -2336,7 +2336,7 @@ HWTEST_F(NapiBasicTest, WrapSendableWithSizeTest001, testing::ext::TestSize.Leve
     const char* testWrapStr = "testWrapStr";
     size_t size = sizeof(*testWrapStr) / sizeof(char);
     napi_wrap_sendable_with_size(
-        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr, size);
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, size);
 
     char* tempTestStr = nullptr;
     napi_unwrap_sendable(env, instanceValue, (void**)&tempTestStr);
@@ -4421,7 +4421,7 @@ HWTEST_F(NapiBasicTest, CreateSendableObjectWithPropertiesTest002, testing::ext:
     auto data = new char[2];
     *data = 'a';
     *(data + 1) = 0;
-    napi_wrap_sendable(env, obj2, data, nullptr, nullptr, nullptr);
+    napi_wrap_sendable(env, obj2, data, nullptr, nullptr);
     ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
     napi_value func = nullptr;
     napi_value ret = nullptr;

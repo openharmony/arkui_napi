@@ -1654,16 +1654,11 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
                                            napi_value js_object,
                                            void* native_object,
                                            napi_finalize finalize_cb,
-                                           void* finalize_hint,
-                                           napi_ref* result)
+                                           void* finalize_hint)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
-    if (result != nullptr) {
-        HILOG_ERROR("napi_wrap_sendable only support weak ref now");
-        return napi_invalid_arg;
-    }
 
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
@@ -1683,16 +1678,11 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
                                                      void* native_object,
                                                      napi_finalize finalize_cb,
                                                      void* finalize_hint,
-                                                     napi_ref* result,
                                                      size_t native_binding_size)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
-    if (result != nullptr) {
-        HILOG_ERROR("napi_wrap_sendable only support weak ref now");
-        return napi_invalid_arg;
-    }
 
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
