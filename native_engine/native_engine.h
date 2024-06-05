@@ -113,7 +113,6 @@ using SourceMapTranslateCallback = std::function<bool(std::string& url, int& lin
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using RefFinalizer = std::pair<NapiNativeFinalize, std::tuple<NativeEngine*, void*, void*>>;
-using EventCallback = std::function<void()>;
 
 class NAPI_EXPORT NativeEngine {
 public:
@@ -481,7 +480,7 @@ public:
      */
     napi_status StopEventLoop();
 
-    napi_status SendEvent(const EventCallback &cb, napi_task_priority priority = napi_priority_high);
+    napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
 #ifdef ENABLE_EVENT_HANDLER
     void SetDefaultEventHandler(std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventhandler)
     {
