@@ -138,7 +138,7 @@ void NativeEngine::Deinit()
 {
     HILOG_DEBUG("NativeEngine::Deinit");
 #ifdef ENABLE_EVENT_HANDLER
-    napi_release_threadsafe_function(defaultFunc_, NativeThreadSafeFunctionReleaseMode::NATIVE_TSFUNC_ABORT);
+    napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
 #endif
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
