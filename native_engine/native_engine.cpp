@@ -43,10 +43,10 @@ using panda::ObjectRef;
 using panda::StringRef;
 #ifdef ENABLE_EVENT_HANDLER
 using namespace OHOS::AppExecFwk;
+#endif
 typedef struct CallbackWrapper_ {
     EventCallback cb;
 } CallbackWrapper;
-#endif
 
 namespace {
 const char* g_errorMessages[] = {
@@ -99,7 +99,6 @@ NativeEngine::~NativeEngine()
     g_alivedEngine_.erase(this);
 }
 
-#ifdef ENABLE_EVENT_HANDLER
 static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
 {
     if (data != nullptr) {
@@ -110,7 +109,6 @@ static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* contex
         data = nullptr;
     }
 }
-#endif
 
 void NativeEngine::Init()
 {
@@ -125,21 +123,19 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-#ifdef ENABLE_EVENT_HANDLER
+
     napi_env env = reinterpret_cast<napi_env>(this);
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
         nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
-#endif
 }
 
 void NativeEngine::Deinit()
 {
     HILOG_DEBUG("NativeEngine::Deinit");
-#ifdef ENABLE_EVENT_HANDLER
     napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-#endif
+    defaultFunc_ = nullptr;
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
     RunCleanup();
@@ -181,6 +177,8 @@ pthread_t NativeEngine::GetTid() const
 bool NativeEngine::ReinitUVLoop()
 {
     if (loop_ != nullptr) {
+        napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
+        defaultFunc_ = nullptr;
         uv_sem_destroy(&uvSem_);
         uv_close((uv_handle_t*)&uvAsync_, nullptr);
         uv_run(loop_, UV_RUN_ONCE);
@@ -194,6 +192,12 @@ bool NativeEngine::ReinitUVLoop()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
+
+    napi_env env = reinterpret_cast<napi_env>(this);
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
+        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
     return true;
 }
 
@@ -968,15 +972,17 @@ void NativeEngine::ThrowException(const char* msg)
     panda::JSNApi::ThrowException(vm, error);
 }
 
-#ifdef ENABLE_EVENT_HANDLER
 napi_status NativeEngine::SendEvent(const EventCallback &cb, napi_task_priority priority)
 {
+#ifdef ENABLE_EVENT_HANDLER
     if (eventHandler_) {
         if (eventHandler_->PostTask(cb, static_cast<EventQueue::Priority>(priority)))
             return napi_status::napi_ok;
         else
             return napi_status::napi_generic_failure;
-    } else if (defaultFunc_) {
+    } else
+#endif
+    if (defaultFunc_) {
         CallbackWrapper *cbw = new (std::nothrow) CallbackWrapper();
         if (!cbw) {
             HILOG_ERROR("New CallbackWrapper failed!");
@@ -997,4 +1003,3 @@ napi_status NativeEngine::SendEvent(const EventCallback &cb, napi_task_priority 
         return napi_status::napi_generic_failure;
     }
 }
-#endif
