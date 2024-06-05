@@ -45,7 +45,7 @@ using panda::StringRef;
 using namespace OHOS::AppExecFwk;
 #endif
 typedef struct CallbackWrapper_ {
-    EventCallback cb;
+    std::function<void()> cb;
 } CallbackWrapper;
 
 namespace {
@@ -972,7 +972,7 @@ void NativeEngine::ThrowException(const char* msg)
     panda::JSNApi::ThrowException(vm, error);
 }
 
-napi_status NativeEngine::SendEvent(const EventCallback &cb, napi_task_priority priority)
+napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
 {
 #ifdef ENABLE_EVENT_HANDLER
     if (eventHandler_) {
