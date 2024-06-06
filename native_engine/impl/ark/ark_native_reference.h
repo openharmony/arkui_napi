@@ -62,9 +62,11 @@ public:
     void* GetData() override;
     operator napi_value() override;
     void SetDeleteSelf() override;
+    bool GetDeleteSelf() const override;
     uint32_t GetRefCount() override;
     bool GetFinalRun() override;
     napi_value GetNapiValue() override;
+    void ResetFinalizer()  override;
 
 private:
     inline void ArkNativeReferenceConstructor(uint32_t initialRefCount, bool deleteSelf)

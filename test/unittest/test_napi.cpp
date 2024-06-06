@@ -1784,9 +1784,10 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest001, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, WrapSendableTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
+    napi_status res = napi_ok;
 
     napi_value testClass = nullptr;
-    napi_define_sendable_class(
+    res = napi_define_sendable_class(
         env, "TestClass", NAPI_AUTO_LENGTH,
         [](napi_env env, napi_callback_info info) -> napi_value {
             napi_value thisVar = nullptr;
@@ -1794,20 +1795,25 @@ HWTEST_F(NapiBasicTest, WrapSendableTest001, testing::ext::TestSize.Level1)
             return thisVar;
         },
         nullptr, 0, nullptr, nullptr, &testClass);
+    ASSERT_EQ(res, napi_ok);
 
     napi_value instanceValue = nullptr;
-    napi_new_instance(env, testClass, 0, nullptr, &instanceValue);
+    res = napi_new_instance(env, testClass, 0, nullptr, &instanceValue);
+    ASSERT_EQ(res, napi_ok);
 
     const char* testStr = "test";
-    napi_wrap_sendable(
+    res = napi_wrap_sendable(
         env, instanceValue, (void*)testStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr);
+    ASSERT_EQ(res, napi_ok);
 
     char* tmpTestStr = nullptr;
-    napi_unwrap_sendable(env, instanceValue, (void**)&tmpTestStr);
+    res = napi_unwrap_sendable(env, instanceValue, (void**)&tmpTestStr);
+    ASSERT_EQ(res, napi_ok);
     ASSERT_STREQ(testStr, tmpTestStr);
 
     char* tmpTestStr1 = nullptr;
-    napi_remove_wrap_sendable(env, instanceValue, (void**)&tmpTestStr1);
+    res = napi_remove_wrap_sendable(env, instanceValue, (void**)&tmpTestStr1);
+    ASSERT_EQ(res, napi_ok);
     ASSERT_STREQ(testStr, tmpTestStr1);
 }
 
@@ -2330,7 +2336,7 @@ HWTEST_F(NapiBasicTest, WrapSendableWithSizeTest001, testing::ext::TestSize.Leve
     const char* testWrapStr = "testWrapStr";
     size_t size = sizeof(*testWrapStr) / sizeof(char);
     napi_wrap_sendable_with_size(
-        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, size, nullptr);
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr, size);
 
     char* tempTestStr = nullptr;
     napi_unwrap_sendable(env, instanceValue, (void**)&tempTestStr);
@@ -4371,6 +4377,61 @@ HWTEST_F(NapiBasicTest, CreateSendableObjectWithPropertiesTest001, testing::ext:
     napi_value val_res;
     ASSERT_CHECK_CALL(napi_get_named_property(env, obj2, "c", &val_res));
     ASSERT_TRUE(checkPropertyEqualsTo(val_res, "x", val_false));
+}
+
+bool g_funcCalled = false;
+static napi_value Func(napi_env env, napi_callback_info info)
+{
+    napi_value boolTrue = nullptr;
+    napi_value boolFalse = nullptr;
+    napi_get_boolean(env, true, &boolTrue);
+    napi_get_boolean(env, false, &boolFalse);
+
+    if (g_funcCalled) {
+        return boolFalse;
+    }
+
+    char *data = nullptr;
+    napi_value thisVar = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    napi_unwrap_sendable(env, thisVar, reinterpret_cast<void**>(&data));
+    if (*data == 'a') {
+        g_funcCalled = true;
+        delete [] data;
+    }
+
+    return boolTrue;
+}
+
+HWTEST_F(NapiBasicTest, CreateSendableObjectWithPropertiesTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value excep;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
+
+    napi_value obj2;
+    napi_property_descriptor desc2[] = {
+        DECLARE_NAPI_FUNCTION("func", Func),
+    };
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc2, &obj2));
+    bool isShared = false;
+    napi_is_sendable(env, obj2, &isShared);
+    ASSERT_EQ(isShared, true);
+
+    auto data = new char[2];
+    *data = 'a';
+    *(data + 1) = 0;
+    napi_wrap_sendable(env, obj2, data, nullptr, nullptr, nullptr);
+    ASSERT_CHECK_VALUE_TYPE(env, obj2, napi_object);
+    napi_value func = nullptr;
+    napi_value ret = nullptr;
+    napi_get_named_property(env, obj2, "func", &func);
+    ASSERT_EQ(g_funcCalled, false);
+    napi_call_function(env, obj2, func, 0, nullptr, &ret);
+    bool resultBool = false;
+    napi_get_value_bool(env, ret, &resultBool);
+    ASSERT_EQ(resultBool, true);
+    ASSERT_EQ(g_funcCalled, true);
 }
 
 /**
