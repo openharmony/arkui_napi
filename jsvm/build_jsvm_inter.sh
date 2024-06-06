@@ -97,6 +97,7 @@ do_env() {
         cflags="  --target=aarch64-linux-ohos"
         cflags+=" --sysroot=${SYSROOT}"
         cflags+=" -march=armv8-a"
+        cflags+=" -DV8_OS_OH=1"
         cflags+=" -mfpu=neon"
         cflags_host="-m64"
         ARCH="aarch64"
