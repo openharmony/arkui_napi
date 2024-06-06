@@ -36,7 +36,8 @@
                 "node",
                 "bounds_checking_function",
                 "init",
-                "ability_runtime"
+                "ability_runtime",
+                "ace_engine"
             ],
             "third_party": [
                 "icu",
@@ -103,15 +104,6 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:cj_bind_native"
-                  },
-                  {
-                    "header": {
-                      "header_base": "//foundation/arkui/ace_engine/frameworks/core/common/",
-                      "header_files": [
-                          "container_scope.h"
-                      ]
-                    },
-                    "name": "//foundation/arkui/napi:ace_container_scope"
                   },
                   {
                     "header": {
