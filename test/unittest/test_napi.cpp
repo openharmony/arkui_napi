@@ -29,6 +29,7 @@
 #include "utils/log.h"
 
 static constexpr int THREAD_PAUSE_ONE = 100 * 1000; // 100 ms
+static constexpr int THREAD_PAUSE_ONE_SECOND = 1000 * 1000; // 1s
 static constexpr int MAX_BUFFER_SIZE = 2;
 static constexpr int BUFFER_SIZE_FIVE = 5;
 static constexpr size_t TEST_STR_LENGTH = 30;
@@ -4219,7 +4220,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
             if (asyncWorkContext->executed) {
-                ASSERT_NE(status, napi_status::napi_ok);
+                ASSERT_EQ(status, napi_status::napi_ok);
             } else {
                 ASSERT_NE(status, napi_status::napi_cancelled);
             }
@@ -4232,6 +4233,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
     // Sleep for a short duration to allow the async work to start executing.
     usleep(THREAD_PAUSE_ONE);
     napi_cancel_async_work(env, asyncWorkContext->work);
+    usleep(THREAD_PAUSE_ONE_SECOND);
 }
 
 static napi_value CreateWithPropertiesTestGetter(napi_env env, napi_callback_info info)
