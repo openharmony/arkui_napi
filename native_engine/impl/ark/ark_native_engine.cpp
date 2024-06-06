@@ -179,9 +179,14 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
                 }
             },
         reinterpret_cast<void*>(funcInfo), true);
-    Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
+
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
     fn->SetName(vm, fnName);
+
+    if (length == 0) {
+        return fn;
+    }
+    Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
     Local<panda::ObjectRef> fnObj = fn->ToObject(vm);
     for (size_t i = 0; i < length; i++) {
         if (properties[i].attributes & NATIVE_STATIC) {
