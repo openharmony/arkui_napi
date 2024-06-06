@@ -822,7 +822,6 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
         errInfo += "load module failed. " +  std::string(dlerrMsg);
-        HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 
 #elif defined(IOS_PLATFORM)
@@ -838,7 +837,6 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
         errInfo += "load app module failed. " +  std::string(dlerrMsg);
-        HILOG_ERROR("%{public}s", errInfo.c_str());
     }
 #endif
 #ifdef ENABLE_HITRACE
@@ -935,7 +933,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
         lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason1);
         if (lib == nullptr && errReason0 == MODULE_NOT_EXIST && errReason1 == MODULE_NOT_EXIST) {
-            HILOG_ERROR("%{public}s does not exist", nativeModulePath[0]);
+            HILOG_ERROR("%{public}s does not exist, errMsg %{public}s", nativeModulePath[0], errInfo.c_str());
         }
     }
 
