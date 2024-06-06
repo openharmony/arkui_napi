@@ -156,10 +156,12 @@ EXPORT const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Engine ARKTS_CreateEngine();
 EXPORT void* ARKTS_GetNAPIEnv(ARKTS_Engine engine);
-EXPORT void ARKTS_DestroyEngine(ARKTS_Engine);
-EXPORT ARKTS_Env ARKTS_GetContext(ARKTS_Engine);
+EXPORT void ARKTS_DestroyEngine(ARKTS_Engine engine);
+EXPORT ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine);
 
-EXPORT bool ARKTS_ExecuteBin(ARKTS_Env, const char* binName, const char* entryName);
+EXPORT bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const char* entryName, bool forceReload);
+EXPORT ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryName, const char* importName);
+
 EXPORT ARKTS_Value ARKTS_Require(ARKTS_Env, const char* target, bool isNativeModule, bool isAppModule,
     const char* relativePath);
 
@@ -203,8 +205,11 @@ EXPORT int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value);
 EXPORT void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value);
 EXPORT int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value, void* dest, int32_t count);
 
-EXPORT uint64_t ARKTS_GetStackLimit(ARKTS_Env env);
-EXPORT void ARKTS_SetStackLimit(ARKTS_Env env, uint64_t limit);
+EXPORT ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value);
+EXPORT ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t size, const uint8_t bytes[]);
+EXPORT bool ARKTS_IsBigInt(ARKTS_Value value);
+EXPORT int64_t ARKTS_BigIntGetByteSize(ARKTS_Value value);
+EXPORT void ARKTS_BigIntReadBytes(ARKTS_Value value, bool* isNegative, int64_t byteCount, uint8_t bytes[]);
 
 EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 

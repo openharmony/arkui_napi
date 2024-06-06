@@ -48,6 +48,7 @@ ohos_shared_library("ark_interop") {
 
   sources = [
     "ark_interop_async.cpp",
+    "ark_interop_bigint.cpp",
     "ark_interop_engine.cpp",
     "ark_interop_global.cpp",
     "ark_interop_hitrace.cpp",
