@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H
 #define FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H
 
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
