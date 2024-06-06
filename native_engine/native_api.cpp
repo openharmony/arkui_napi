@@ -3613,3 +3613,22 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threads
     }
     return res;
 }
+
+NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, scope);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    *scope = reinterpret_cast<napi_fast_native_scope>(new panda::JsiFastNativeScope(engine->GetEcmaVm()));
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, scope);
+
+    delete reinterpret_cast<panda::JsiFastNativeScope*>(scope);
+    return napi_clear_last_error(env);
+}

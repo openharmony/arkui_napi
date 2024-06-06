@@ -28,6 +28,7 @@ typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
 typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
 typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint); // hint: detach params
 typedef napi_value (*NapiAttachCallback)(napi_env env, void* nativeObject, void* hint); // hint: attach params
+typedef struct napi_fast_native_scope__* napi_fast_native_scope;
 
 typedef struct napi_module_with_js {
     int nm_version = 0;
@@ -105,4 +106,6 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
+NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope);
+NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
