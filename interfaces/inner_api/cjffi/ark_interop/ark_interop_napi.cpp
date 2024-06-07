@@ -738,14 +738,3 @@ ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info)
     auto result = runInfo->GetThisRef();
     return ARKTS_FromHandle(result);
 }
-
-uint64_t ARKTS_GetStackLimit(ARKTS_Env env)
-{
-    ARKTS_ASSERT_I(env, "env is null");
-    return 0;
-}
-
-void ARKTS_SetStackLimit(ARKTS_Env env, uint64_t limit)
-{
-    ARKTS_ASSERT_V(env, "env is null");
-}

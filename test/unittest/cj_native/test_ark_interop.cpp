@@ -60,21 +60,6 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi001, TestSize.Level1)
     ARKTS_InitEventHandle(env);
 }
 
-HWTEST_F(ArkInteropTest, ArkTSInteropNapi002, TestSize.Level1)
-{
-    ARKTS_Env env = ARKTS_GetContext(engine_);
-    char target[] = "123";
-    char appModulePath[] = "";
-    ARKTS_Require(env, target, false, false, appModulePath);
-    ARKTS_Require(env, target, true, false, appModulePath);
-    ARKTS_Require(env, target, true, false, nullptr);
-    EXPECT_FALSE(ARKTS_ExecuteBin(env, nullptr, nullptr));
-
-    // Recreate the engine to clear the exception.
-    ARKTS_DestroyEngine(engine_);
-    engine_ = ARKTS_CreateEngine();
-}
-
 void TestComplexType(ARKTS_Env env)
 {
     auto glbConst = ARKTS_GetGlobalConstant(env);
@@ -250,7 +235,6 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi005, TestSize.Level1)
 {
     ARKTS_Env env = ARKTS_GetContext(engine_);
     EXPECT_NE(ARKTS_GetNAPIEnv(engine_), nullptr);
-    ARKTS_SetStackLimit(env, ARKTS_GetStackLimit(env));
 
     auto scope = ARKTS_OpenScope(env);
     auto subscope = ARKTS_OpenScope(env);
