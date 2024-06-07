@@ -484,7 +484,9 @@ public:
 #ifdef ENABLE_EVENT_HANDLER
     void SetDefaultEventHandler(std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventhandler)
     {
-        eventHandler_ = eventhandler;
+        if (!eventHandler_) {
+            eventHandler_ = eventhandler;
+        }
     }
 #endif
 
