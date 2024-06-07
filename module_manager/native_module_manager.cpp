@@ -326,6 +326,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
+        "libcj_environment.z.so",
         "libbundle_ndk.z.so",
         "libdeviceinfo_ndk.z.so",
         "libEGL.so",
