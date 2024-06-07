@@ -37,8 +37,8 @@ ohos_shared_library("ark_interop_helper_ffi") {
       "ability_runtime:abilitykit_native",
       "ability_runtime:appkit_native",
       "ability_runtime:napi_base_context",
+      "ace_engine:ace_container_scope",
     ]
-    deps += [ "../../../..:ace_container_scope" ]
   }
 
   if (current_os == "mingw") {
