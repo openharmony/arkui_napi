@@ -105,6 +105,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
     if (runner != nullptr) {
         eventHandler_ = std::make_shared<EventHandler>(runner);
+        engine->SetDefaultEventHandler(eventHandler_);
     }
 #endif
 }

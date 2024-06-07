@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H
 #define FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H
 
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -40,6 +41,14 @@ typedef struct napi_module_with_js {
     NAPIGetJSCode nm_get_abc_code = nullptr;
     NAPIGetJSCode nm_get_js_code = nullptr;
 } napi_module_with_js;
+
+typedef enum {
+    napi_eprio_vip = 0,
+    napi_eprio_immediate = 1,
+    napi_eprio_high = 2,
+    napi_eprio_low = 3,
+    napi_eprio_idle = 4,
+} napi_event_priority;
 
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
@@ -106,6 +115,7 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority);
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope);
 NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

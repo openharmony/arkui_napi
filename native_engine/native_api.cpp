@@ -3616,6 +3616,17 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threads
     return res;
 }
 
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority)
+{
+    CHECK_ENV(env);
+
+    if (priority < napi_eprio_vip || priority > napi_eprio_idle) {
+        HILOG_ERROR("invalid priority %{public}d", static_cast<int32_t>(priority));
+        return napi_status::napi_invalid_arg;
+    }
+    NativeEngine *eng = reinterpret_cast<NativeEngine *>(env);
+    return eng->SendEvent(cb, priority);
+}
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope)
 {
     CHECK_ENV(env);

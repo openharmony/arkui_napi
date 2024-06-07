@@ -41,6 +41,11 @@
 namespace panda::ecmascript {
     class EcmaVM;
 }
+#ifdef ENABLE_EVENT_HANDLER
+namespace OHOS::AppExecFwk {
+    class EventHandler;
+}
+#endif
 
 typedef int32_t (*GetContainerScopeIdCallback)(void);
 typedef void (*ContainerScopeCallback)(int32_t);
@@ -475,6 +480,16 @@ public:
      */
     napi_status StopEventLoop();
 
+    napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
+#ifdef ENABLE_EVENT_HANDLER
+    void SetDefaultEventHandler(std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventhandler)
+    {
+        if (!eventHandler_) {
+            eventHandler_ = eventhandler;
+        }
+    }
+#endif
+
 private:
     void StartCleanupTimer();
 protected:
@@ -531,7 +546,10 @@ private:
     bool checkUVLoop_ = false;
     uv_thread_t uvThread_;
 #endif
-
+#ifdef ENABLE_EVENT_HANDLER
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
+#endif
+    napi_threadsafe_function defaultFunc_ = nullptr;
     PostTask postTask_ = nullptr;
     CleanEnv cleanEnv_ = nullptr;
     uv_async_t uvAsync_;
