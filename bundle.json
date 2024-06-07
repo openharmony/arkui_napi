@@ -30,7 +30,6 @@
                 "faultloggerd",
                 "hilog",
                 "hitrace",
-                "jsoncpp",
                 "icu",
                 "libuv",
                 "node",
