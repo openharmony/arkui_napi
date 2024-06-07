@@ -629,6 +629,7 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
     if (!hookFlag) {
         return;
     }
+    BlockHookScope blockHook; // block hook
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
     if (hitraceId.IsValid()) {
         OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
