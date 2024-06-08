@@ -1810,7 +1810,7 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<ArkNativeEngine*>(env);
-    auto ref = new ArkNativeReference(engine, engine->GetEcmaVm(), value, initial_refcount);
+    auto ref = new ArkNativeReference(engine, value, initial_refcount);
 
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
@@ -1884,8 +1884,9 @@ NAPI_EXTERN napi_status napi_get_reference_value(napi_env env, napi_ref ref, nap
     CHECK_ARG(env, result);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
 
-    *result = reference->Get();
+    *result = reference->Get(engine);
     return napi_clear_last_error(env);
 }
 

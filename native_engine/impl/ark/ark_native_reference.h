@@ -37,7 +37,6 @@ enum class FinalizerState {
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
-                       const EcmaVM* vm,
                        napi_value value,
                        uint32_t initialRefcount,
                        bool deleteSelf = false,
@@ -46,7 +45,6 @@ public:
                        void* hint = nullptr,
                        bool isAsyncCall = false);
     ArkNativeReference(ArkNativeEngine* engine,
-                       const EcmaVM* vm,
                        Local<JSValueRef> value,
                        uint32_t initialRefcount,
                        bool deleteSelf,
@@ -59,6 +57,7 @@ public:
     uint32_t Ref() override;
     uint32_t Unref() override;
     napi_value Get() override;
+    napi_value Get(NativeEngine* engine) override;
     void* GetData() override;
     operator napi_value() override;
     void SetDeleteSelf() override;
@@ -84,7 +83,6 @@ private:
     }
 
     ArkNativeEngine* engine_;
-    const EcmaVM* vm_;
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
