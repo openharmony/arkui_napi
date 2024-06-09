@@ -190,7 +190,7 @@ ohos_shared_library("cj_bind_native") {
   part_name = "napi"
 }
 
-ohos_shared_library("cj_bind_ffi_source") {
+ohos_source_set("cj_bind_ffi_source") {
   sources = [
     "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
     "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
