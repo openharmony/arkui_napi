@@ -2930,9 +2930,7 @@ NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffe
     CHECK_ENV(env);
     CHECK_ARG(env, buffer);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    panda::JSNApi::DeleteSerializationData(vm, buffer);
+    panda::JSNApi::DeleteSerializationData(buffer);
 
     return napi_clear_last_error(env);
 }
