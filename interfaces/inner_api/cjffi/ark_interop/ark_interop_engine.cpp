@@ -176,11 +176,13 @@ bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const cha
 
     if (!forceReload) {
         auto existed = engine->loadedAbcs.find(entryPoint);
-        if (existed->second == filePath) {
-            return true;
-        } else {
-            LOGE("can't shadow loaded entryPoint from another .abc, entryPoint: %{public}s", entryPoint);
-            return false;
+        if (existed != engine->loadedAbcs.end()) {
+            if (existed->second == filePath) {
+                return true;
+            } else {
+                LOGE("can't shadow loaded entryPoint from another .abc, entryPoint: %{public}s", entryPoint);
+                return false;
+            }
         }
     }
     if (access(filePath, R_OK) != 0) {
