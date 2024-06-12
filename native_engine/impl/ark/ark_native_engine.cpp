@@ -1723,12 +1723,6 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
             ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);   \
         } else {                                                                                     \
             /* this path for mergeabc with specific entryPoint */                                    \
-            /* entryPoint: bundleName/moduleName/xxx/xxx */                                          \
-            panda::JSNApi::SetModuleInfo(vm_, desc, std::string(entryPoint));                        \
-            if (panda::JSNApi::HasPendingException(vm_)) {                                           \
-                HandleUncaughtException();                                                           \
-                return nullptr;                                                                      \
-            }                                                                                        \
             ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc);            \
         }                                                                                            \
     } else {                                                                                         \

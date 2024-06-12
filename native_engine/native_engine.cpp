@@ -759,11 +759,6 @@ napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
         ThrowException("RunScriptForAbc: abc file is empty.");
         return nullptr;
     }
-    panda::JSNApi::SetModuleInfo(vm, ami, std::string(entryPoint));
-    if (panda::JSNApi::HasPendingException(vm)) {
-        HandleUncaughtException();
-        return nullptr;
-    }
     panda::JSNApi::Execute(vm, ami, entryPoint, false, true);
     if (panda::JSNApi::HasPendingException(vm)) {
         HandleUncaughtException();
