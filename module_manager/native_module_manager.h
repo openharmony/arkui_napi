@@ -61,6 +61,7 @@ struct NativeModule {
     GetJSCodeCallback getABCCode = nullptr;
     GetJSCodeCallback getJSCode = nullptr;
     int32_t version = 0;
+    int32_t flags = 0;
     uint32_t refCount = 0;
     NativeModule* next = nullptr;
     const char* jsCode = nullptr;
@@ -137,7 +138,7 @@ private:
     std::map<std::string, Dl_namespace> nsMap_;
 #endif
 
-    std::mutex nativeModuleListMutex_;
+    mutable std::recursive_mutex nativeModuleListMutex_;
     NativeModule* firstNativeModule_ = nullptr;
     NativeModule* lastNativeModule_ = nullptr;
     NativeModule* cacheNativeModule_ = nullptr;

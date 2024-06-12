@@ -39,6 +39,7 @@ NAPI_EXTERN void napi_module_register(napi_module* mod)
     module.version = mod->nm_version;
     module.fileName = mod->nm_filename;
     module.name = mod->nm_modname;
+    module.flags = mod->nm_flags;
     module.registerCallback = (RegisterCallback)mod->nm_register_func;
 
     moduleManager->Register(&module);
