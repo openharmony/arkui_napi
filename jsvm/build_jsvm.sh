@@ -53,6 +53,7 @@ do_man_process() {
     do_configure > ${out_dir}/log.do_configure
     do_compile   > ${out_dir}/log.do_compile
     do_install   > ${out_dir}/log.do_install
+    do_strip
 }
 
 do_opt_process() {
