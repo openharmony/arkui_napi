@@ -114,12 +114,17 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
         return result;
     }
     auto runtime = OHOS::CJEnvironment::GetInstance();
+    runtime->InitCJChipSDKNS("/system/lib64/chipset-pub-sdk");
     runtime->InitCJAppNS("/data/storage/el1/bundle/libs/arm64");
     runtime->InitCJSDKNS("/data/storage/el1/bundle/libs/arm64/ohos:"
                                  "/data/storage/el1/bundle/libs/arm64/runtime");
     runtime->InitCJSysNS("/system/lib64:/system/lib64/platformsdk:/system/lib64/module:/system/lib64/ndk");
     if (!runtime->StartRuntime()) {
         LOGE("start cjruntime failed");
+        return result;
+    }
+    if (!runtime->StartUIScheduler()) {
+        LOGE("start cj ui context failed");
         return result;
     }
 
