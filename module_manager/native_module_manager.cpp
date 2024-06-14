@@ -35,6 +35,7 @@
 
 namespace {
 constexpr static int32_t NATIVE_PATH_NUMBER = 3;
+constexpr static int32_t IS_APP_MODULE_FLAGS = 100;
 
 enum ModuleLoadFailedReason : uint32_t {
     MODULE_LOAD_SUCCESS = 0,
@@ -56,7 +57,7 @@ NativeModuleManager::~NativeModuleManager()
 {
     HILOG_INFO("enter");
     {
-        std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+        std::lock_guard<std::recursive_mutex> lock(nativeModuleListMutex_);
         NativeModule* nativeModule = firstNativeModule_;
         while (nativeModule != nullptr) {
             nativeModule = nativeModule->next;
@@ -255,7 +256,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     }
 
     HILOG_DEBUG("native module name is '%{public}s'", nativeModule->name);
-    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+    std::lock_guard<std::recursive_mutex> lock(nativeModuleListMutex_);
     if (!CreateNewNativeModule()) {
         HILOG_ERROR("create new nativeModule failed");
         return;
@@ -263,10 +264,14 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 
     const char *nativeModuleName = nativeModule->name == nullptr ? "" : nativeModule->name;
     std::string appName = prefix_ + "/" + nativeModuleName;
-    const char *tmpName = isAppModule_ ? appName.c_str() : nativeModuleName;
-    char *moduleName = strdup(tmpName);
+    std::string tmpName = isAppModule_ ? appName : nativeModuleName;
+    if (nativeModule->flags == IS_APP_MODULE_FLAGS) {
+        std::string prefix = "default/";
+        tmpName = prefix + nativeModuleName;
+    }
+    char *moduleName = strdup(tmpName.c_str());
     if (moduleName == nullptr) {
-        HILOG_ERROR("strdup failed. tmpName is %{public}s", tmpName);
+        HILOG_ERROR("strdup failed. tmpName is %{public}s", tmpName.c_str());
         return;
     }
 
@@ -908,6 +913,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
     char nativeModulePath[][NAPI_PATH_MAX])
 {
+    std::lock_guard<std::recursive_mutex> lock(nativeModuleListMutex_);
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
@@ -956,7 +962,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         return cacheNativeModule_;
     }
 
-    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (lastNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
         if (moduleName == nullptr) {
@@ -1045,7 +1050,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)
 {
-    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+    std::lock_guard<std::recursive_mutex> lock(nativeModuleListMutex_);
 
     if (firstNativeModule_ == nullptr) {
         HILOG_WARN("NativeModule list is empty");
@@ -1104,7 +1109,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     NativeModule* result = nullptr;
     NativeModule* preNativeModule = nullptr;
 
-    std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+    std::lock_guard<std::recursive_mutex> lock(nativeModuleListMutex_);
     cacheNativeModule_ = nullptr;
     for (NativeModule* temp = firstNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
