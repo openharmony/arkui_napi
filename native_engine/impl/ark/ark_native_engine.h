@@ -337,6 +337,7 @@ public:
     bool GetIsBundle() override;
     std::string GetBundleName() override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
+    int GetProcessStartRealTime() override;
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
