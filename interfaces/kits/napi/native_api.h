@@ -179,14 +179,12 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
                                            napi_value js_object,
                                            void* native_object,
                                            napi_finalize finalize_cb,
-                                           void* finalize_hint,
-                                           napi_ref* result);
+                                           void* finalize_hint);
 NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
                                                      napi_value js_object,
                                                      void* native_object,
                                                      napi_finalize finalize_cb,
                                                      void* finalize_hint,
-                                                     napi_ref* result,
                                                      size_t native_binding_size);
 NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result);
 NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result);
