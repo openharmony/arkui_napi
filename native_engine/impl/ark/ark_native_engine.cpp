@@ -1775,6 +1775,12 @@ bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::stri
     return panda::JSNApi::IsExecuteModuleInAbcFile(vm_, bundleName, moduleName, ohmurl);
 }
 
+int ArkNativeEngine::GetProcessStartRealTime()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::GetStartRealTime(vm_);
+}
+
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
     int32_t len, const std::string& fileName)
 {

@@ -412,6 +412,7 @@ public:
     virtual bool GetIsBundle() = 0;
     virtual std::string GetBundleName() = 0;
     virtual bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) = 0;
+    virtual int GetProcessStartRealTime() = 0;
     // run script by path
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
