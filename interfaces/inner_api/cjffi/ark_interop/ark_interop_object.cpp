@@ -20,14 +20,15 @@
 using namespace panda;
 using namespace panda::ecmascript;
 
-ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Value value)
+ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Env env, ARKTS_Value value)
 {
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
     }
     tag = *P_CAST(value, JSValueRef*);
-    return tag.IsString() || tag.IsSymbol();
+    auto vm = P_CAST(env, EcmaVM*);
+    return tag.IsString(vm) || tag.IsSymbol(vm);
 }
 
 ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
@@ -46,21 +47,22 @@ bool ARKTS_IsHeapObject(ARKTS_Value value)
     return v.IsHeapObject();
 }
 
-bool ARKTS_IsObject(ARKTS_Value value)
+bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
 {
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
     }
     v = *P_CAST(value, JSValueRef*);
-    return v.IsObject();
+    auto vm = P_CAST(env, EcmaVM*);
+    return v.IsObject(vm);
 }
 
 bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 {
     ARKTS_ASSERT_F(env, "env is null");
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_F(ARKTSInner_IsJSKey(jkey), "key is not string or symbol");
+    ARKTS_ASSERT_F(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
@@ -85,7 +87,7 @@ void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, 
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
@@ -100,12 +102,12 @@ void ARKTS_DefineAccessors(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, AR
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
 
     auto undefined = ARKTS_CreateUndefined();
 
-    ARKTS_ASSERT_V(accessor.setter == undefined || ARKTS_IsCallable(accessor.setter), "setter not callable");
-    ARKTS_ASSERT_V(accessor.getter == undefined || ARKTS_IsCallable(accessor.getter), "getter not callable");
+    ARKTS_ASSERT_V(accessor.setter == undefined || ARKTS_IsCallable(env, accessor.setter), "setter not callable");
+    ARKTS_ASSERT_V(accessor.getter == undefined || ARKTS_IsCallable(env, accessor.getter), "getter not callable");
     ARKTS_ASSERT_V(accessor.getter != undefined || accessor.setter != undefined, "getter and setter is undefined");
 
     auto vm = P_CAST(env, EcmaVM*);
@@ -126,7 +128,7 @@ void ARKTS_SetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
@@ -140,7 +142,7 @@ ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 {
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_P(ARKTSInner_IsJSKey(jkey), "key is not string or symbol");
+    ARKTS_ASSERT_P(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);

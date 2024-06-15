@@ -229,12 +229,12 @@ ARKTS_Value ARKTS_Require(
     if (!isNativeModule) {
         auto funcName = ARKTS_CreateUtf8(env, "requireInternal", -1);
         auto funcValue = ARKTS_GetProperty(env, global, funcName);
-        ARKTS_ASSERT_P(ARKTS_IsCallable(funcName), "global func requireInternal is undefined");
+        ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcName), "global func requireInternal is undefined");
         return ARKTS_Call(env, funcValue, ARKTS_CreateUndefined(), 1, &targetValue);
     }
     auto funcName = ARKTS_CreateUtf8(env, "requireNapi", -1);
     auto funcValue = ARKTS_GetProperty(env, global, funcName);
-    ARKTS_ASSERT_P(ARKTS_IsCallable(funcValue), "global func requireNapi is undefined");
+    ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcValue), "global func requireNapi is undefined");
 
     if (relativePath) {
         ARKTS_Value args[] = { targetValue, ARKTS_CreateBool(isAppModule), ARKTS_CreateUndefined(),

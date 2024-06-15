@@ -89,8 +89,8 @@ void NativeSendable::InitSendablePropertiesInfo(napi_env env,
         if (propertyDescriptor.utf8name != nullptr) {
             fullName += propertyDescriptor.utf8name;
         } else {
-            fullName += key->IsString() ? Local<StringRef>(key)->ToString()
-                                        : Local<SymbolRef>(key)->GetDescription(vm)->ToString();
+            fullName += key->IsString(vm) ? Local<StringRef>(key)->ToString()
+                                          : Local<SymbolRef>(key)->GetDescription(vm)->ToString();
         }
 
         Local<JSValueRef> func =
@@ -164,8 +164,8 @@ void NativeSendable::NapiDefineSendabledProperty(napi_env env,
         if (propertyDescriptor.utf8name != nullptr) {
             fullName += propertyDescriptor.utf8name;
         } else {
-            fullName += propertyName->IsString() ? Local<StringRef>(propertyName)->ToString()
-                                                 : Local<SymbolRef>(propertyName)->GetDescription(vm)->ToString();
+            fullName += propertyName->IsString(vm) ? Local<StringRef>(propertyName)->ToString()
+                                                   : Local<SymbolRef>(propertyName)->GetDescription(vm)->ToString();
         }
 
         Local<JSValueRef> func =

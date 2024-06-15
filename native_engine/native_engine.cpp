@@ -242,7 +242,7 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         if (buffer == nullptr) {
             strLength = static_cast<size_t>(str->Utf8Length(vm) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
-            int copied = str->WriteUtf8(buffer, NAME_BUFFER_SIZE - 1, true) - 1;
+            int copied = str->WriteUtf8(vm, buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
             strLength = static_cast<size_t>(copied);
         } else {
@@ -298,7 +298,7 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
         if (len > writableSize) {
             break;
         }
-        str->WriteUtf8((buffer + pos), writableSize);
+        str->WriteUtf8(vm, (buffer + pos), writableSize);
         writableSize -= len;
         pos += len;
     }
@@ -318,7 +318,7 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);
-    if (!nativeString->IsString()) {
+    if (!nativeString->IsString(vm)) {
         HILOG_ERROR("nativeValue not is string");
         return;
     }
@@ -359,7 +359,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
             tempBuf.clear();
             pos = 0;
         }
-        str->WriteUtf8((tempBuf.data() + pos), pos + len + 1);
+        str->WriteUtf8(vm, (tempBuf.data() + pos), pos + len + 1);
         pos += len;
     }
     if (pos > 0) {
@@ -384,7 +384,7 @@ void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const 
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);
-    if (!nativeString->IsString()) {
+    if (!nativeString->IsString(vm)) {
         HILOG_ERROR("nativeValue not is string");
         return;
     }

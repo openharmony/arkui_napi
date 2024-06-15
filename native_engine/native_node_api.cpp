@@ -95,7 +95,8 @@ NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
     CHECK_ARG(env, err);
 
     auto exceptionValue = LocalValueFromJsValue(err);
-    RETURN_STATUS_IF_FALSE(env, exceptionValue->IsError(), napi_invalid_arg);
+    auto ecmaVm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, exceptionValue->IsError(ecmaVm), napi_invalid_arg);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->TriggerFatalException(exceptionValue);
@@ -118,6 +119,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto ecmaVm = engine->GetEcmaVm();
     auto asyncResource = LocalValueFromJsValue(async_resource);
     auto asyncResourceName = LocalValueFromJsValue(async_resource_name);
     auto asyncExecute = reinterpret_cast<NativeAsyncExecuteCallback>(execute);
@@ -127,7 +129,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     char name[64] = {0}; // 64:NAME_BUFFER_SIZE
     if (!asyncResourceName->IsNull()) {
         panda::Local<panda::StringRef> nativeString(asyncResourceName);
-        int copied = nativeString->WriteUtf8(name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
+        int copied = nativeString->WriteUtf8(ecmaVm, name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
         name[copied] = '\0';
     }
     auto asyncWork  = new NativeAsyncWork(engine, asyncExecute, asyncComplete, name, data);
@@ -606,8 +608,8 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
     }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(), napi_object_expected);
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(vm), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(vm), napi_function_expected);
     panda::JSValueRef* Obj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* funRef = reinterpret_cast<panda::FunctionRef *>(func);
     panda::JSValueRef* callBackRst;
