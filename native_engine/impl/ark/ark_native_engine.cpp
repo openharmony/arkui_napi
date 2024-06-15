@@ -1763,6 +1763,12 @@ bool ArkNativeEngine::GetIsBundle()
     return panda::JSNApi::IsBundle(vm_);
 }
 
+bool ArkNativeEngine::GetIsNormalizedOhmUrlPack()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsNormalizedOhmUrlPack(vm_);
+}
+
 std::string ArkNativeEngine::GetBundleName()
 {
     LocalScope scope(vm_);
