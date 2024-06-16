@@ -429,7 +429,7 @@ NAPI_EXTERN napi_status napi_create_symbol(napi_env env, napi_value description,
     } else {
         object = LocalValueFromJsValue(description);
     }
-    RETURN_STATUS_IF_FALSE(env, object->IsString(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, object->IsString(vm), napi_invalid_arg);
     Local<panda::SymbolRef> symbol = panda::SymbolRef::New(vm, object);
     *result = JsValueFromLocalValue(symbol);
 
@@ -490,11 +490,11 @@ NAPI_EXTERN napi_status napi_create_error(napi_env env, napi_value code, napi_va
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString(vm) || codeValue->IsNumber(), napi_invalid_arg);
     }
 
     auto msgValue = LocalValueFromJsValue(msg);
-    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(vm), napi_invalid_arg);
 
     Local<panda::JSValueRef> errorVal = panda::Exception::Error(vm, msgValue);
     if (code != nullptr) {
@@ -518,10 +518,10 @@ NAPI_EXTERN napi_status napi_create_type_error(napi_env env, napi_value code, na
     Local<panda::JSValueRef> codeValue = panda::JSValueRef::Undefined(vm);
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString(vm) || codeValue->IsNumber(), napi_invalid_arg);
     }
     auto msgValue = LocalValueFromJsValue(msg);
-    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(vm), napi_invalid_arg);
 
     Local<panda::JSValueRef> errorVal = panda::Exception::Error(vm, msgValue);
     if (code != nullptr) {
@@ -546,10 +546,10 @@ NAPI_EXTERN napi_status napi_create_range_error(napi_env env, napi_value code, n
 
     if (code != nullptr) {
         codeValue = LocalValueFromJsValue(code);
-        RETURN_STATUS_IF_FALSE(env, codeValue->IsString() || codeValue->IsNumber(), napi_invalid_arg);
+        RETURN_STATUS_IF_FALSE(env, codeValue->IsString(vm) || codeValue->IsNumber(), napi_invalid_arg);
     }
     auto msgValue = LocalValueFromJsValue(msg);
-    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, msgValue->IsString(vm), napi_invalid_arg);
 
     Local<panda::JSValueRef> errorVal = panda::Exception::Error(vm, msgValue);
     if (code != nullptr) {
@@ -571,13 +571,15 @@ NAPI_EXTERN napi_status napi_typeof(napi_env env, napi_value value, napi_valuety
 
     auto valueObj = LocalValueFromJsValue(value);
     napi_valuetype resultType;
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+
     if (valueObj->IsNumber()) {
         resultType = napi_number;
-    } else if (valueObj->IsString()) {
+    } else if (valueObj->IsString(vm)) {
         resultType = napi_string;
-    } else if (valueObj->IsFunction()) {
+    } else if (valueObj->IsFunction(vm)) {
         resultType = napi_function;
-    } else if (valueObj->IsNativePointer()) {
+    } else if (valueObj->IsNativePointer(vm)) {
         resultType = napi_external;
     } else if (valueObj->IsNull()) {
         resultType = napi_null;
@@ -585,11 +587,11 @@ NAPI_EXTERN napi_status napi_typeof(napi_env env, napi_value value, napi_valuety
         resultType = napi_boolean;
     } else if (valueObj->IsUndefined()) {
         resultType = napi_undefined;
-    } else if (valueObj->IsSymbol()) {
+    } else if (valueObj->IsSymbol(vm)) {
         resultType = napi_symbol;
-    } else if (valueObj->IsBigInt()) {
+    } else if (valueObj->IsBigInt(vm)) {
         resultType = napi_bigint;
-    } else if (valueObj->IsObject()) {
+    } else if (valueObj->IsObject(vm)) {
         resultType = napi_object;
     } else {
         resultType = napi_undefined;
@@ -680,13 +682,14 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(vm), napi_string_expected);
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
         *result = stringVal->Length();
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteLatin1(buf, bufsize);
+        int copied = stringVal->WriteLatin1(vm, buf, bufsize);
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;
@@ -709,14 +712,13 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
         *result = stringVal->Utf8Length(vm) - 1;
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteUtf8(buf, bufsize - 1, true) - 1;
+        int copied = stringVal->WriteUtf8(vm, buf, bufsize - 1, true) - 1;
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;
@@ -738,7 +740,8 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(), napi_string_expected);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(vm), napi_string_expected);
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
@@ -749,7 +752,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
             *result = 0;
         }
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteUtf16(buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
+        int copied = stringVal->WriteUtf16(vm, buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;
@@ -826,7 +829,7 @@ NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::JSValueRef> val = obj->GetPrototype(vm);
     *result = JsValueFromLocalValue(val);
@@ -843,7 +846,7 @@ NAPI_EXTERN napi_status napi_get_property_names(napi_env env, napi_value object,
     auto napiVal = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, napiVal->IsObject() || napiVal->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, napiVal->IsObject(vm) || napiVal->IsFunction(vm), napi_object_expected);
     auto obj = napiVal->ToObject(vm);
     Local<panda::ArrayRef> arrayVal = obj->GetOwnPropertyNames(vm);
     *result = JsValueFromLocalValue(arrayVal);
@@ -862,7 +865,7 @@ NAPI_EXTERN napi_status napi_set_property(napi_env env, napi_value object, napi_
     auto propValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     obj->Set(vm, propKey, propValue);
 
@@ -915,7 +918,7 @@ NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, na
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto deleteResult = JSNApi::NapiDeleteProperty(vm, reinterpret_cast<uintptr_t>(object),
                                                    reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(deleteResult), napi_object_expected);
@@ -956,7 +959,7 @@ NAPI_EXTERN napi_status napi_set_named_property(napi_env env, napi_value object,
     auto propVal = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj(nativeValue);
     obj->Set(vm, utf8name, propVal);
 
@@ -973,7 +976,7 @@ NAPI_EXTERN napi_status napi_has_named_property(napi_env env, napi_value object,
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     *result = obj->Has(vm, key);
@@ -1016,7 +1019,7 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, utf8name);
     panda::PropertyAttribute property;
@@ -1035,7 +1038,7 @@ NAPI_EXTERN napi_status napi_set_element(napi_env env, napi_value object, uint32
     auto elementValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     obj->Set(vm, index, elementValue);
 
@@ -1051,7 +1054,7 @@ NAPI_EXTERN napi_status napi_has_element(napi_env env, napi_value object, uint32
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     *result = obj->Has(vm, index);
 
@@ -1067,7 +1070,7 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     Local<panda::JSValueRef> value = obj->Get(vm, index);
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -1086,7 +1089,7 @@ NAPI_EXTERN napi_status napi_delete_element(napi_env env, napi_value object, uin
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     bool deleteResult = obj->Delete(vm, index);
     if (result) {
@@ -1108,7 +1111,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(),
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm),
         napi_object_expected);
     Local<panda::ObjectRef> nativeObject = nativeValue->ToObject(vm);
 
@@ -1116,7 +1119,8 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
     for (size_t i = 0; i < property_count; i++) {
         if (nativeProperties[i].utf8name == nullptr) {
             auto name = LocalValueFromJsValue(nativeProperties[i].name);
-            RETURN_STATUS_IF_FALSE(env, !name.IsEmpty() && (name->IsString() || name->IsSymbol()), napi_name_expected);
+            RETURN_STATUS_IF_FALSE(env, !name.IsEmpty() && (name->IsString(vm) || name->IsSymbol(vm)),
+                napi_name_expected);
         }
         NapiDefineProperty(env, nativeObject, nativeProperties[i]);
     }
@@ -1132,7 +1136,7 @@ NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* resu
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSArray(vm) || nativeValue->IsSharedArray();
+    *result = nativeValue->IsJSArray(vm) || nativeValue->IsSharedArray(vm);
     return napi_clear_last_error(env);
 }
 
@@ -1147,7 +1151,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     if (LIKELY(nativeValue->IsJSArray(vm))) {
         Local<panda::ArrayRef> arr(nativeValue);
         *result = arr->Length(vm);
-    } else if (nativeValue->IsSharedArray()) {
+    } else if (nativeValue->IsSharedArray(vm)) {
         Local<panda::SendableArrayRef> arr(nativeValue);
         *result = arr->Length(vm);
     } else {
@@ -1164,9 +1168,10 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSShared() || nativeValue->IsString() || nativeValue->IsNumber() ||
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsJSShared(vm) || nativeValue->IsString(vm) || nativeValue->IsNumber() ||
               nativeValue->IsBoolean() || nativeValue->IsUndefined() || nativeValue->IsNull() ||
-              nativeValue->IsBigInt();
+              nativeValue->IsBigInt(vm);
     return napi_clear_last_error(env);
 }
 
@@ -1202,8 +1207,8 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         CHECK_ARG(env, argv);
     }
 
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
     auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(vm), napi_function_expected);
     panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -1242,8 +1247,10 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
         CHECK_ARG(env, argv);
     }
     CHECK_ARG(env, result);
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef*>(constructor)->IsFunction(), napi_function_expected);
+
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef*>(constructor)->IsFunction(vm),
+        napi_function_expected);
     panda::FunctionRef* constructorVal = reinterpret_cast<panda::FunctionRef*>(constructor);
     panda::JSValueRef* instance = constructorVal->ConstructorOptimize(vm,
         reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)), argc);
@@ -1263,11 +1270,11 @@ NAPI_EXTERN napi_status napi_instanceof(napi_env env, napi_value object, napi_va
     CHECK_ARG(env, constructor);
     CHECK_ARG(env, result);
 
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(object);
     auto nativeConstructor = LocalValueFromJsValue(constructor);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
-    RETURN_STATUS_IF_FALSE(env, nativeConstructor->IsFunction(), napi_function_expected);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeConstructor->IsFunction(vm), napi_function_expected);
     *result = nativeValue->InstanceOf(vm, nativeConstructor);
 
     return GET_RETURN_STATUS(env);
@@ -1461,7 +1468,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     size_t nativeBindingSize = 0;
     auto reference = reinterpret_cast<NativeReference**>(result);
@@ -1508,7 +1515,7 @@ NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
@@ -1554,7 +1561,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
@@ -1592,12 +1599,12 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
-    if (val->IsObject()) {
+    if (val->IsObject(vm)) {
         Local<panda::ObjectRef> ext(val);
         auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
         *result = ref != nullptr ? ref->GetData() : nullptr;
@@ -1616,12 +1623,12 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
-    if (val->IsObject()) {
+    if (val->IsObject(vm)) {
         Local<panda::ObjectRef> ext(val);
         auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
         *result = ref != nullptr ? ref->GetData() : nullptr;
@@ -1663,7 +1670,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     auto external = NativePointerRef::NewSendable(vm, native_object, callback, finalize_hint, 0);
@@ -1687,7 +1694,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     auto external = NativePointerRef::NewSendable(vm, native_object, callback, finalize_hint, native_binding_size);
@@ -1704,11 +1711,11 @@ NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object,
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::ObjectRef> val = nativeObject->Get(vm, key);
-    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(vm), napi_invalid_arg);
     Local<panda::NativePointerRef> ext(val);
     *result = ext->Value();
     return GET_RETURN_STATUS(env);
@@ -1724,11 +1731,11 @@ NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_ob
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::ObjectRef> val = nativeObject->Get(vm, key);
-    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(vm), napi_invalid_arg);
     Local<panda::NativePointerRef> ext(val);
     *result = ext->Value();
     nativeObject->Set(vm, key, JSValueRef::Null(vm));
@@ -1954,8 +1961,8 @@ NAPI_EXTERN napi_status napi_throw(napi_env env, napi_value error)
     CHECK_ARG(env, error);
 
     auto nativeValue = LocalValueFromJsValue(error);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsError(), napi_invalid_arg);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsError(vm), napi_invalid_arg);
     panda::JSNApi::ThrowException(vm, nativeValue);
     return napi_clear_last_error(env);
 }
@@ -2024,7 +2031,8 @@ NAPI_EXTERN napi_status napi_is_error(napi_env env, napi_value value, bool* resu
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsError();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsError(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2064,7 +2072,8 @@ NAPI_EXTERN napi_status napi_is_arraybuffer(napi_env env, napi_value value, bool
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsArrayBuffer() || nativeValue->IsSendableArrayBuffer();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsArrayBuffer(vm) || nativeValue->IsSendableArrayBuffer(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2079,7 +2088,7 @@ NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length
     uint8_t** values = (uint8_t**)(data);
     Local<panda::ArrayBufferRef> res = panda::ArrayBufferRef::New(vm, byte_length);
     if (values != nullptr) {
-        *values = reinterpret_cast<uint8_t*>(res->GetBuffer());
+        *values = reinterpret_cast<uint8_t*>(res->GetBuffer(vm));
     }
     *result = JsValueFromLocalValue(res);
 
@@ -2097,7 +2106,7 @@ NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t by
     uint8_t** values = (uint8_t**)(data);
     Local<panda::SendableArrayBufferRef> res = panda::SendableArrayBufferRef::New(vm, byte_length);
     if (values != nullptr) {
-        *values = reinterpret_cast<uint8_t*>(res->GetBuffer());
+        *values = reinterpret_cast<uint8_t*>(res->GetBuffer(vm));
     }
     *result = JsValueFromLocalValue(res);
 
@@ -2138,13 +2147,13 @@ NAPI_EXTERN napi_status napi_get_arraybuffer_info(napi_env env,
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    if (LIKELY(nativeValue->IsArrayBuffer())) {
+    if (LIKELY(nativeValue->IsArrayBuffer(vm))) {
         Local<panda::ArrayBufferRef> res(nativeValue);
-        *data = res->GetBuffer();
+        *data = res->GetBuffer(vm);
         *byte_length = res->ByteLength(vm);
-    } else if (nativeValue->IsSendableArrayBuffer()) {
+    } else if (nativeValue->IsSendableArrayBuffer(vm)) {
         Local<panda::SendableArrayBufferRef> res(nativeValue);
-        *data = res->GetBuffer();
+        *data = res->GetBuffer(vm);
         *byte_length = res->ByteLength(vm);
     } else {
         return napi_set_last_error(env, napi_arraybuffer_expected);
@@ -2159,7 +2168,8 @@ NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool*
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsTypedArray() || nativeValue->IsSharedTypedArray();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsTypedArray(vm) || nativeValue->IsSharedTypedArray(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2172,7 +2182,8 @@ NAPI_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, bool* res
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsBuffer();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsBuffer(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2199,10 +2210,10 @@ NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** dat
     }
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     Local<panda::BufferRef> obj = BufferRef::New(vm, size);
-    *value = reinterpret_cast<uint8_t*>(obj->GetBuffer());
+    *value = reinterpret_cast<uint8_t*>(obj->GetBuffer(vm));
 
     CHECK_ARG(env, *data);
-    void* ptr = obj->GetBuffer();
+    void* ptr = obj->GetBuffer(vm);
     CHECK_ARG(env, ptr);
 
     *result = JsValueFromLocalValue(obj);
@@ -2239,12 +2250,12 @@ NAPI_EXTERN napi_status napi_create_buffer_copy(napi_env env,
     if (obj->IsUndefined()) {
         HILOG_INFO("engine create buffer_copy failed!");
     }
-    *value = reinterpret_cast<uint8_t*>(obj->GetBuffer());
+    *value = reinterpret_cast<uint8_t*>(obj->GetBuffer(vm));
     if (memcpy_s(*value, length, recvdata, length) != EOK) {
         HILOG_ERROR("memcpy_s failed");
     }
 
-    void* ptr = obj->GetBuffer();
+    void* ptr = obj->GetBuffer(vm);
     CHECK_ARG(env, ptr);
 
     *result = JsValueFromLocalValue(obj);
@@ -2279,7 +2290,7 @@ NAPI_EXTERN napi_status napi_create_external_buffer(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     Local<panda::BufferRef> object = panda::BufferRef::New(vm, data, length, callback, finalize_hint);
-    void* ptr = object->GetBuffer();
+    void* ptr = object->GetBuffer(vm);
     CHECK_ARG(env, ptr);
 
     *result = JsValueFromLocalValue(object);
@@ -2294,9 +2305,9 @@ NAPI_EXTERN napi_status napi_get_buffer_info(napi_env env, napi_value value, voi
     auto nativeValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::BufferRef> res = nativeValue->ToObject(vm);
-    *data = res->GetBuffer();
+    *data = res->GetBuffer(vm);
     *length = res->ByteLength(vm);
 
     return napi_clear_last_error(env);
@@ -2310,7 +2321,7 @@ NAPI_EXTERN napi_status napi_object_freeze(napi_env env, napi_value object)
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToEcmaObject(vm);
     obj->Freeze(vm);
 
@@ -2325,7 +2336,7 @@ NAPI_EXTERN napi_status napi_object_seal(napi_env env, napi_value object)
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToEcmaObject(vm);
     obj->Seal(vm);
 
@@ -2349,7 +2360,7 @@ NAPI_EXTERN napi_status napi_create_typedarray(napi_env env,
     auto typedArrayType = (NativeTypedArrayType)type;
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, value->IsArrayBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, value->IsArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::ArrayBufferRef> arrayBuf = value->ToObject(vm);
 
     if (!reinterpret_cast<NativeEngine*>(env)->NapiNewTypedArray(vm, typedArrayType, arrayBuf,
@@ -2375,7 +2386,7 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
     auto typedArrayType = (NativeTypedArrayType)type;
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, value->IsSendableArrayBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, value->IsSendableArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::SendableArrayBufferRef> arrayBuf(value);
 
     if (!reinterpret_cast<NativeEngine*>(env)->NapiNewSendableTypedArray(vm, typedArrayType,
@@ -2402,7 +2413,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    if (LIKELY(value->IsTypedArray())) {
+    if (LIKELY(value->IsTypedArray(vm))) {
         Local<panda::TypedArrayRef> typedArray = Local<panda::TypedArrayRef>(value);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetTypedArrayType(typedArray));
@@ -2411,7 +2422,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(typedArray->GetArrayBuffer(vm)->GetBuffer()) + typedArray->ByteOffset(vm);
+            *data = static_cast<uint8_t*>(typedArray->GetArrayBuffer(vm)->GetBuffer(vm)) + typedArray->ByteOffset(vm);
         }
         if (arraybuffer != nullptr) {
             *arraybuffer = JsValueFromLocalValue(typedArray->GetArrayBuffer(vm));
@@ -2419,7 +2430,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
         if (byte_offset != nullptr) {
             *byte_offset = typedArray->ByteOffset(vm);
         }
-    } else if (value->IsSharedTypedArray()) {
+    } else if (value->IsSharedTypedArray(vm)) {
         Local<panda::SendableTypedArrayRef> typedArray = Local<panda::SendableTypedArrayRef>(value);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetSendableTypedArrayType(typedArray));
@@ -2428,7 +2439,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(typedArray->GetArrayBuffer(vm)->GetBuffer()) + typedArray->ByteOffset(vm);
+            *data = static_cast<uint8_t*>(typedArray->GetArrayBuffer(vm)->GetBuffer(vm)) + typedArray->ByteOffset(vm);
         }
         if (arraybuffer != nullptr) {
             *arraybuffer = JsValueFromLocalValue(typedArray->GetArrayBuffer(vm));
@@ -2457,7 +2468,7 @@ NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
     auto arrayBufferValue = LocalValueFromJsValue(arraybuffer);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, arrayBufferValue->IsArrayBuffer(), napi_status::napi_arraybuffer_expected);
+    RETURN_STATUS_IF_FALSE(env, arrayBufferValue->IsArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::ArrayBufferRef> res = arrayBufferValue->ToObject(vm);
     if (length + byte_offset > static_cast<size_t>(res->ByteLength(vm))) {
         napi_throw_range_error(
@@ -2480,7 +2491,8 @@ NAPI_EXTERN napi_status napi_is_dataview(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsDataView();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsDataView(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2560,7 +2572,8 @@ NAPI_EXTERN napi_status napi_is_promise(napi_env env, napi_value value, bool* is
     CHECK_ARG(env, is_promise);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *is_promise = nativeValue->IsPromise();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *is_promise = nativeValue->IsPromise(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2654,7 +2667,8 @@ NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsFunction();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsFunction(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2666,7 +2680,8 @@ NAPI_EXTERN napi_status napi_is_arguments_object(napi_env env, napi_value value,
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsArgumentsObject();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsArgumentsObject(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2678,7 +2693,8 @@ NAPI_EXTERN napi_status napi_is_async_function(napi_env env, napi_value value, b
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsAsyncFunction();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsAsyncFunction(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2689,7 +2705,8 @@ NAPI_EXTERN napi_status napi_is_boolean_object(napi_env env, napi_value value, b
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSPrimitiveBoolean();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsJSPrimitiveBoolean(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2701,7 +2718,8 @@ NAPI_EXTERN napi_status napi_is_generator_function(napi_env env, napi_value valu
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsGeneratorFunction();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsGeneratorFunction(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2713,7 +2731,8 @@ NAPI_EXTERN napi_status napi_is_map_iterator(napi_env env, napi_value value, boo
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsMapIterator();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsMapIterator(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2725,7 +2744,8 @@ NAPI_EXTERN napi_status napi_is_set_iterator(napi_env env, napi_value value, boo
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsSetIterator();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsSetIterator(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2737,7 +2757,8 @@ NAPI_EXTERN napi_status napi_is_generator_object(napi_env env, napi_value value,
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsGeneratorObject();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsGeneratorObject(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2749,7 +2770,8 @@ NAPI_EXTERN napi_status napi_is_module_namespace_object(napi_env env, napi_value
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsModuleNamespaceObject();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsModuleNamespaceObject(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2761,7 +2783,8 @@ NAPI_EXTERN napi_status napi_is_proxy(napi_env env, napi_value value, bool* resu
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsProxy();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsProxy(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2772,7 +2795,8 @@ NAPI_EXTERN napi_status napi_is_reg_exp(napi_env env, napi_value value, bool* re
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsRegExp();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsRegExp(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2783,7 +2807,8 @@ NAPI_EXTERN napi_status napi_is_number_object(napi_env env, napi_value value, bo
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSPrimitiveNumber();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsJSPrimitiveNumber(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2795,7 +2820,8 @@ NAPI_EXTERN napi_status napi_is_map(napi_env env, napi_value value, bool* result
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsMap() || nativeValue->IsSharedMap();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2806,7 +2832,8 @@ NAPI_EXTERN napi_status napi_is_set(napi_env env, napi_value value, bool* result
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsSet() || nativeValue->IsSharedSet();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsSet(vm) || nativeValue->IsSharedSet(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2817,7 +2844,8 @@ NAPI_EXTERN napi_status napi_is_string_object(napi_env env, napi_value value, bo
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSPrimitiveString();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsJSPrimitiveString(vm);
 
     return napi_clear_last_error(env);
 }
@@ -2829,7 +2857,8 @@ NAPI_EXTERN napi_status napi_is_symbol_object(napi_env env, napi_value value, bo
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsJSPrimitiveSymbol();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsJSPrimitiveSymbol(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2840,7 +2869,8 @@ NAPI_EXTERN napi_status napi_is_weak_map(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsWeakMap();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsWeakMap(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2851,7 +2881,8 @@ NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsWeakSet();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsWeakSet(vm);
     return napi_clear_last_error(env);
 }
 
@@ -2970,7 +3001,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_int64(
     auto nativeValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(), napi_bigint_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(vm), napi_bigint_expected);
     Local<panda::BigIntRef> bigIntVal = nativeValue->ToBigInt(vm);
     bigIntVal->BigIntToInt64(vm, result, lossless);
 
@@ -2988,7 +3019,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_uint64(
     auto nativeValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(), napi_bigint_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(vm), napi_bigint_expected);
     Local<panda::BigIntRef> bigIntVal = nativeValue->ToBigInt(vm);
     bigIntVal->BigIntToUint64(vm, result, lossless);
 
@@ -3002,7 +3033,8 @@ NAPI_EXTERN napi_status napi_is_date(napi_env env, napi_value value, bool* resul
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsDate();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsDate(vm);
     return napi_clear_last_error(env);
 }
 
@@ -3014,7 +3046,8 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
     bool isArrayBuffer = false;
-    bool isDetach = nativeValue->IsDetachedArraybuffer(isArrayBuffer);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    bool isDetach = nativeValue->IsDetachedArraybuffer(vm, isArrayBuffer);
     if (isArrayBuffer) {
         *result = isDetach;
         return napi_clear_last_error(env);
@@ -3033,7 +3066,7 @@ NAPI_EXTERN napi_status napi_get_all_property_names(
     auto nativeValue = LocalValueFromJsValue(object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject() || nativeValue->IsFunction(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
     Local<panda::ObjectRef> obj = nativeValue->ToObject(vm);
     uint32_t filter = NATIVE_DEFAULT;
     if (key_filter & napi_key_writable) {
@@ -3088,8 +3121,9 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     CHECK_ARG(env, arraybuffer);
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     bool isArrayBuffer = false;
     nativeValue->DetachedArraybuffer(vm, isArrayBuffer);
     if (!isArrayBuffer) {
@@ -3108,7 +3142,7 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     auto obj = nativeValue->ToEcmaObject(vm);
     NapiTypeTag* typeTag = (NapiTypeTag*)type_tag;
     const char name[] = "ACENAPI_TYPETAG";
@@ -3177,7 +3211,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     auto obj = nativeValue->ToEcmaObject(vm);
     NapiTypeTag* typeTag = (NapiTypeTag*)type_tag;
     *result = false;
@@ -3188,7 +3222,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
     if (*result) {
         Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, name);
         Local<panda::JSValueRef> object = obj->Get(vm, key);
-        if (object->IsBigInt()) {
+        if (object->IsBigInt(vm)) {
             int sign;
             size_t size = 2; // 2: Indicates that the number of elements is 2
             NapiTypeTag tag;
@@ -3221,7 +3255,7 @@ NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, doub
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(value);
-    auto IsDate_result = nativeValue->IsDate();
+    auto IsDate_result = nativeValue->IsDate(vm);
     Local<panda::DateRef> dateObj = nativeValue->ToObject(vm);
     if (IsDate_result) {
         *result = dateObj->GetTime();
@@ -3246,7 +3280,8 @@ NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
 
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     NativeReference* reference = nullptr;
     auto engine = reinterpret_cast<NativeEngine*>(env);
     if (result != nullptr) {
@@ -3297,8 +3332,8 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
     CHECK_ARG(env, word_count);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(), napi_object_expected);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(vm), napi_object_expected);
     auto BigintObj = nativeValue->ToBigInt(vm);
     if (word_count == nullptr) {
         return napi_set_last_error(env, napi_invalid_arg);
@@ -3351,7 +3386,8 @@ NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, 
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsBigInt64Array();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsBigInt64Array(vm);
     return napi_clear_last_error(env);
 }
 
@@ -3362,7 +3398,8 @@ NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value,
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsBigUint64Array();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsBigUint64Array(vm);
     return napi_clear_last_error(env);
 }
 
@@ -3373,7 +3410,8 @@ NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value val
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsSharedArrayBuffer();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsSharedArrayBuffer(vm);
     return napi_clear_last_error(env);
 }
 
@@ -3415,7 +3453,7 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
     auto nativeValue = LocalValueFromJsValue(data);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm), napi_object_expected);
     auto obj = nativeValue->ToEcmaObject(vm);
     Local<panda::ArrayRef> arrayVal = obj->GetOwnEnumerablePropertyNames(vm);
 
@@ -3477,7 +3515,6 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     CHECK_ARG(env, native_object);
 
     auto jsValue = LocalValueFromJsValue(js_object);
-    RETURN_STATUS_IF_FALSE(env, jsValue->IsObject(), napi_object_expected);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     auto obj = jsValue->ToEcmaObject(vm);
@@ -3515,7 +3552,8 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, st
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    if (nativeValue->IsString()) {
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    if (nativeValue->IsString(vm)) {
         Local<panda::StringRef> stringVal(nativeValue);
         result = stringVal->ToString();
     }
@@ -3579,7 +3617,8 @@ NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value val
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
-    *result = nativeValue->IsConcurrentFunction();
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    *result = nativeValue->IsConcurrentFunction(vm);
     return napi_clear_last_error(env);
 }
 

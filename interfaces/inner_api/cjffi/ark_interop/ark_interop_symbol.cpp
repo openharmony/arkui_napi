@@ -36,26 +36,27 @@ ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t l
     return BIT_CAST(symbol, ARKTS_Value);
 }
 
-bool ARKTS_IsSymbol(ARKTS_Value value)
+bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
 {
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
     }
     tag = *BIT_CAST(value, JSValueRef*);
-    return tag.IsSymbol();
+    auto vm = P_CAST(env, EcmaVM*);
+    return tag.IsSymbol(vm);
 }
 
 const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsSymbol(value), "value is not a symbol");
+    ARKTS_ASSERT_P(ARKTS_IsSymbol(env, value), "value is not a symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto symbol = *P_CAST(value, SymbolRef*);
     auto desc = symbol.GetDescription(vm);
     auto desc1 = BIT_CAST(desc, ARKTS_Value);
-    if (ARKTS_IsString(desc1)) {
+    if (ARKTS_IsString(env, desc1)) {
         return ARKTS_GetValueCString(env, BIT_CAST(desc, ARKTS_Value));
     }
     return nullptr;

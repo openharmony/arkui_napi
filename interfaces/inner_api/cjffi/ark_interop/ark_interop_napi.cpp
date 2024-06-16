@@ -85,17 +85,17 @@ std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError)
 {
     auto vm = P_CAST(env, EcmaVM*);
     auto exception = BIT_CAST(jsError, Local<JSValueRef>);
-    if (exception->IsString()) {
+    if (exception->IsString(vm)) {
         auto errorInsJs = *P_CAST(jsError, StringRef*);
         return errorInsJs.ToString();
-    } else if (exception->IsError()) {
+    } else if (exception->IsError(vm)) {
         auto errorObJ = *P_CAST(jsError, ObjectRef*);
         auto nameValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "name"));
         auto messageValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "message"));
         auto stackValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "stack"));
-        std::string name = nameValue->IsString() ? nameValue->ToString(vm)->ToString() : "";
-        auto message = messageValue->IsString() ? messageValue->ToString(vm)->ToString() : "";
-        auto stack = stackValue->IsString() ? stackValue->ToString(vm)->ToString() : "";
+        std::string name = nameValue->IsString(vm) ? nameValue->ToString(vm)->ToString() : "";
+        auto message = messageValue->IsString(vm) ? messageValue->ToString(vm)->ToString() : "";
+        auto stack = stackValue->IsString(vm) ? stackValue->ToString(vm)->ToString() : "";
         return name + "\n" + message + "\n" + stack;
     } else {
         return "[unknown js Error type]";
@@ -116,7 +116,7 @@ uint64_t ARKTS_GetPosixThreadId()
     return *reinterpret_cast<uint64_t*>(&id);
 }
 
-ARKTS_ValueType ARKTS_GetValueType(ARKTS_Value src)
+ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src)
 {
     auto value = BIT_CAST(src, JSValueRef);
     if (value.IsNull()) {
@@ -130,18 +130,18 @@ ARKTS_ValueType ARKTS_GetValueType(ARKTS_Value src)
     }
 
     value = *P_CAST(src, JSValueRef*);
-
+    auto vm = P_CAST(env, EcmaVM*);
     if (value.IsNull()) {
         return N_NULL;
-    } else if (value.IsString()) {
+    } else if (value.IsString(vm)) {
         return N_STRING;
-    } else if (value.IsSymbol()) {
+    } else if (value.IsSymbol(vm)) {
         return N_SYMBOL;
-    } else if (value.IsFunction()) {
+    } else if (value.IsFunction(vm)) {
         return N_FUNCTION;
-    } else if (value.IsBigInt()) {
+    } else if (value.IsBigInt(vm)) {
         return N_BIGINT;
-    } else if (value.IsNativePointer()) {
+    } else if (value.IsNativePointer(vm)) {
         return N_EXTERNAL;
     } else {
         return N_OBJECT;
@@ -151,8 +151,8 @@ ARKTS_ValueType ARKTS_GetValueType(ARKTS_Value src)
 bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b)
 {
     ARKTS_ASSERT_F(env, "env is NULL");
-    auto aType = ARKTS_GetValueType(a);
-    auto bType = ARKTS_GetValueType(b);
+    auto aType = ARKTS_GetValueType(env, a);
+    auto bType = ARKTS_GetValueType(env, b);
     if (aType != bType) {
         return false;
     }
@@ -274,14 +274,15 @@ ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId)
     return ARKTS_FromHandle(result);
 }
 
-bool ARKTS_IsClass(ARKTS_Value value)
+bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value)
 {
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
     }
+    auto vm = P_CAST(env, EcmaVM*);
     tag = *P_CAST(value, JSValueRef*);
-    return tag.IsConstructor();
+    return tag.IsConstructor(vm);
 }
 
 ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
@@ -293,7 +294,7 @@ ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
     auto result = FunctionRef::NewClassFunction(vm, CJLambdaInvoker, CJLambdaDeleter,
                                                 new LambdaData {env, lambdaId}, true);
 
-    if (ARKTS_IsClass(base)) {
+    if (ARKTS_IsClass(env, base)) {
         auto baseClass = BIT_CAST(base, Local<FunctionRef>);
         result->Inherit(vm, baseClass);
     }
@@ -304,7 +305,7 @@ ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
 ARKTS_Value ARKTS_GetPrototype(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsClass(value), "value is not constructor");
+    ARKTS_ASSERT_P(ARKTS_IsClass(env, value), "value is not constructor");
     auto vm = P_CAST(env, EcmaVM*);
     auto clazz = BIT_CAST(value, Local<FunctionRef>);
     auto result = clazz->GetFunctionPrototype(vm);
@@ -315,7 +316,7 @@ bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz)
 {
     ARKTS_ASSERT_F(env, "env is null");
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(object), "object is not heap object");
-    ARKTS_ASSERT_F(ARKTS_IsClass(clazz), "clazz is not a class");
+    ARKTS_ASSERT_F(ARKTS_IsClass(env, clazz), "clazz is not a class");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto targetObject = BIT_CAST(object, Local<JSValueRef>);
@@ -324,9 +325,9 @@ bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz)
     return targetClass->InstanceOf(vm, targetObject);
 }
 
-bool ARKTS_IsCallable(ARKTS_Value value)
+bool ARKTS_IsCallable(ARKTS_Env env, ARKTS_Value value)
 {
-    return ARKTS_GetValueType(value) == N_FUNCTION;
+    return ARKTS_GetValueType(env, value) == N_FUNCTION;
 }
 
 static constexpr auto MAX_CALL_ARGS = 255;
@@ -341,7 +342,7 @@ ARKTS_INLINE void FormatArguments(int32_t numArgs, ARKTS_Value args[], Local<JSV
 ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int32_t numArgs, ARKTS_Value args[])
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsCallable(func), "func is not callable");
+    ARKTS_ASSERT_P(ARKTS_IsCallable(env, func), "func is not callable");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
@@ -362,7 +363,7 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
 ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value func, int32_t numArgs, ARKTS_Value args[])
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsClass(func), "func is not class");
+    ARKTS_ASSERT_P(ARKTS_IsClass(env, func), "func is not class");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
@@ -470,26 +471,27 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
     return ARKTS_FromHandle(result);
 }
 
-bool ARKTS_IsArrayBuffer(ARKTS_Value value)
+bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
 {
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
     }
+    auto vm = P_CAST(env, EcmaVM*);
     tag = *P_CAST(value, JSValueRef*);
-    return tag.IsArrayBuffer() || tag.IsTypedArray() || tag.IsDataView();
+    return tag.IsArrayBuffer(vm) || tag.IsTypedArray(vm) || tag.IsDataView(vm);
 }
 
 int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(ARKTS_IsArrayBuffer(value), "value is not arrayBuffer");
+    ARKTS_ASSERT_I(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto tag = *P_CAST(value, JSValueRef*);
-    if (tag.IsArrayBuffer()) {
+    if (tag.IsArrayBuffer(vm)) {
         return P_CAST(value, ArrayBufferRef*)->ByteLength(vm);
-    } else if (tag.IsTypedArray()) {
+    } else if (tag.IsTypedArray(vm)) {
         auto arr = P_CAST(value, TypedArrayRef*);
         return arr->ByteLength(vm) - arr->ByteOffset(vm);
     } else {
@@ -501,20 +503,20 @@ int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(value), "value is not arrayBuffer");
+    ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto tag = *BIT_CAST(value, JSValueRef*);
-    if (tag.IsArrayBuffer()) {
-        return P_CAST(value, ArrayBufferRef*)->GetBuffer();
-    } else if (tag.IsTypedArray()) {
+    if (tag.IsArrayBuffer(vm)) {
+        return P_CAST(value, ArrayBufferRef*)->GetBuffer(vm);
+    } else if (tag.IsTypedArray(vm)) {
         auto arr = P_CAST(value, TypedArrayRef*);
-        auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer();
+        auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer(vm);
         auto rawOffset = arr->ByteOffset(vm);
         return P_CAST(rawStart, uint8_t*) + rawOffset;
     } else {
         auto arr = P_CAST(value, DataViewRef*);
-        auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer();
+        auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer(vm);
         auto rawOffset = arr->ByteOffset();
         return P_CAST(rawStart, uint8_t*) + rawOffset;
     }
@@ -540,19 +542,20 @@ ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
     return BIT_CAST(result, ARKTS_Value);
 }
 
-bool ARKTS_IsExternal(ARKTS_Value value)
+bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
 {
     auto prime = BIT_CAST(value, JSValueRef);
     if (!prime.IsHeapObject()) {
         return false;
     }
     auto handle = BIT_CAST(value, JSValueRef*);
-    return handle->IsNativePointer();
+    auto vm = P_CAST(env, EcmaVM*);
+    return handle->IsNativePointer(vm);
 }
 
-void* ARKTS_GetExternalData(ARKTS_Value value)
+void* ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(ARKTS_IsExternal(value), "value is not external data");
+    ARKTS_ASSERT_P(ARKTS_IsExternal(env, value), "value is not external data");
     auto external = *P_CAST(value, NativePointerRef*);
     return external.Value();
 }
@@ -603,28 +606,29 @@ void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Valu
     delete promise;
 }
 
-bool ARKTS_IsPromise(ARKTS_Value value)
+bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
 {
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
     }
+    auto vm = P_CAST(env, EcmaVM*);
     v= *P_CAST(value, JSValueRef*);
-    return v.IsPromise();
+    return v.IsPromise(vm);
 }
 
 ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFulfilled, ARKTS_Value onRejected)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsPromise(prom), "arg is not a JSPromise");
-    ARKTS_ASSERT_P(ARKTS_IsCallable(onFulfilled), "onFulfilled is not callable");
+    ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
+    ARKTS_ASSERT_P(ARKTS_IsCallable(env, onFulfilled), "onFulfilled is not callable");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = *BIT_CAST(prom, PromiseRef*);
     auto onFulfilledFunc = BIT_CAST(onFulfilled, Local<FunctionRef>);
     auto onRejectTag = BIT_CAST(onRejected, JSValueRef);
     Local<PromiseRef> result;
-    if (onRejectTag.IsFunction()) {
+    if (onRejectTag.IsFunction(vm)) {
         auto onRejectedFunc = BIT_CAST(onRejected, Local<FunctionRef>);
         result = promise.Then(vm, onFulfilledFunc, onRejectedFunc);
     } else {
@@ -636,8 +640,8 @@ ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFul
 void ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback)
 {
     ARKTS_ASSERT_V(env, "env is null");
-    ARKTS_ASSERT_V(ARKTS_IsPromise(prom), "arg is not a JSPromise");
-    ARKTS_ASSERT_V(ARKTS_IsCallable(callback), "callback is not callable");
+    ARKTS_ASSERT_V(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
+    ARKTS_ASSERT_V(ARKTS_IsCallable(env, callback), "callback is not callable");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = BIT_CAST(prom, PromiseRef*);
@@ -700,7 +704,7 @@ void ARKTS_Throw(ARKTS_Env env, ARKTS_Value error)
     }
 
     auto exception = ARKTS_ToHandle<JSValueRef>(error);
-    if (exception->IsString()) {
+    if (exception->IsString(vm)) {
         JSNApi::ThrowException(vm, Exception::Error(vm, BIT_CAST(exception, Local<StringRef>)));
     } else {
         JSNApi::ThrowException(vm, exception);

@@ -67,14 +67,14 @@ typedef ARKTS_Value (*ARKTS_ModuleExporter)(ARKTS_Env env, ARKTS_Value);
 EXPORT ARKTS_Value ARKTS_GetGlobalConstant(ARKTS_Env env);
 EXPORT uint64_t ARKTS_GetPosixThreadId();
 
-EXPORT ARKTS_ValueType ARKTS_GetValueType(ARKTS_Value src);
+EXPORT ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src);
 EXPORT bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b);
 
 EXPORT double ARKTS_GetValueNumber(ARKTS_Value value);
 EXPORT bool ARKTS_IsNumber(ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_CreateF64(double value);
 
-EXPORT int32_t ARKTS_GetValueUtf8(ARKTS_Value value, int32_t capacity, char* buffer);
+EXPORT int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, char* buffer);
 EXPORT int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size);
 /**
@@ -82,15 +82,15 @@ EXPORT ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t si
  */
 EXPORT const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value);
 EXPORT void ARKTS_FreeCString(const char* src);
-EXPORT bool ARKTS_IsString(ARKTS_Value value);
+EXPORT bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId);
 /**
  * logically equals to typeof(value) == "function"
  */
-EXPORT bool ARKTS_IsCallable(ARKTS_Value value);
+EXPORT bool ARKTS_IsCallable(ARKTS_Env env, ARKTS_Value value);
 
-EXPORT bool ARKTS_IsClass(ARKTS_Value value);
+EXPORT bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t ctorLambdaId, ARKTS_Value super);
 EXPORT ARKTS_Value ARKTS_GetPrototype(ARKTS_Env env, ARKTS_Value value);
 EXPORT bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz);
@@ -119,7 +119,7 @@ EXPORT ARKTS_Value ARKTS_CreateObject(ARKTS_Env env);
 EXPORT bool ARKTS_IsHeapObject(ARKTS_Value value);
 
 // only available for JSObject, any other heap object(like JSArray, JSProxy...) supposed to call it's type-specific api
-EXPORT bool ARKTS_IsObject(ARKTS_Value value);
+EXPORT bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value);
 EXPORT bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey);
 EXPORT ARKTS_Value ARKTS_EnumOwnProperties(ARKTS_Env env, ARKTS_Value jobj);
 EXPORT void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey,
@@ -147,11 +147,11 @@ EXPORT ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobal(ARKTS_Env env, ARKTS_Global global);
 
 EXPORT ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data);
-EXPORT bool ARKTS_IsExternal(ARKTS_Value value);
-EXPORT void* ARKTS_GetExternalData(ARKTS_Value value);
+EXPORT bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value);
+EXPORT void* ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t length);
-EXPORT bool ARKTS_IsSymbol(ARKTS_Value value);
+EXPORT bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value);
 EXPORT const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Engine ARKTS_CreateEngine();
@@ -175,7 +175,7 @@ EXPORT ARKTS_Promise ARKTS_CreatePromiseCapability(ARKTS_Env env);
 EXPORT ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise promise);
 EXPORT void ARKTS_PromiseCapabilityResolve(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Value result);
 EXPORT void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Value result);
-EXPORT bool ARKTS_IsPromise(ARKTS_Value value);
+EXPORT bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFulfilled,
     ARKTS_Value onRejected);
 EXPORT void ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback);
@@ -200,16 +200,17 @@ EXPORT void ARKTS_Throw(ARKTS_Env env, ARKTS_Value error);
 EXPORT ARKTS_Value ARKTS_CreateArrayBuffer(ARKTS_Env env, int32_t);
 EXPORT ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t length,
     int64_t finalizerId);
-EXPORT bool ARKTS_IsArrayBuffer(ARKTS_Value value);
+EXPORT bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value);
 EXPORT int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value);
 EXPORT void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value);
 EXPORT int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value, void* dest, int32_t count);
 
 EXPORT ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value);
 EXPORT ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t size, const uint8_t bytes[]);
-EXPORT bool ARKTS_IsBigInt(ARKTS_Value value);
-EXPORT int64_t ARKTS_BigIntGetByteSize(ARKTS_Value value);
-EXPORT void ARKTS_BigIntReadBytes(ARKTS_Value value, bool* isNegative, int64_t byteCount, uint8_t bytes[]);
+EXPORT bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value);
+EXPORT int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value);
+EXPORT void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative,
+                                  int64_t byteCount, uint8_t bytes[]);
 
 EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 

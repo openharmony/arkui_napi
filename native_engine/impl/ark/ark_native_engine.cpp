@@ -121,7 +121,7 @@ panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 #ifdef ENABLE_CONTAINER_SCOPE
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &value)
 {
-    if (!value->IsFunction()) {
+    if (!value->IsFunction(vm)) {
         return;
     }
     panda::Local<panda::FunctionRef> funcValue(value);
@@ -487,7 +487,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     std::string strModuleName = moduleName->ToString();
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
-                    if (exportObj->IsObject()) {
+                    if (exportObj->IsObject(ecmaVm)) {
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
                                                  JsValueFromLocalValue(exportObj));
@@ -758,7 +758,7 @@ void GetCString(EcmaVM* vm, Local<StringRef> str, char* buffer, size_t size, siz
     if (buffer == nullptr) {
         *length = str->Utf8Length(vm) - 1;
     } else if (size != 0) {
-        int copied = str->WriteUtf8(buffer, size - 1, true) - 1;
+        int copied = str->WriteUtf8(vm, buffer, size - 1, true) - 1;
         buffer[copied] = '\0';
         *length = copied;
     } else {
@@ -772,7 +772,7 @@ std::string NapiGetModuleName(napi_env env, Local<panda::ObjectRef> &obj)
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     std::string moduleName("");
     auto nativeModuleName = GetProperty(vm, obj, PANDA_MODULE_NAME);
-    if (nativeModuleName->IsString()) {
+    if (nativeModuleName->IsString(vm)) {
         char arrayName[PANDA_MODULE_NAME_LEN] = {0};
         size_t len = 0;
         GetCString(vm, nativeModuleName, arrayName, PANDA_MODULE_NAME_LEN, &len);
@@ -821,7 +821,7 @@ void NapiDefinePropertyInner(napi_env env,
         if (propertyDescriptor.utf8name != nullptr) {
             fullName += propertyDescriptor.utf8name;
         } else {
-            fullName += propertyName->IsString()
+            fullName += propertyName->IsString(vm)
                         ? Local<panda::StringRef>(propertyName)->ToString()
                         : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString();
         }
@@ -848,7 +848,7 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     } else {
         propertyName = LocalValueFromJsValue(propertyDescriptor.name);
     }
-    if (obj->IsJSShared()) {
+    if (obj->IsJSShared(vm)) {
         NativeSendable::NapiDefineSendabledProperty(env, obj, propertyDescriptor, propertyName, result);
     } else {
         NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
@@ -1222,27 +1222,27 @@ bool ArkNativeEngine::NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArr
 NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
-    if (typedArray->IsInt8Array()) {
+    if (typedArray->IsInt8Array(vm_)) {
         thisType = NATIVE_INT8_ARRAY;
-    } else if (typedArray->IsUint8Array()) {
+    } else if (typedArray->IsUint8Array(vm_)) {
         thisType = NATIVE_UINT8_ARRAY;
-    } else if (typedArray->IsUint8ClampedArray()) {
+    } else if (typedArray->IsUint8ClampedArray(vm_)) {
         thisType = NATIVE_UINT8_CLAMPED_ARRAY;
-    } else if (typedArray->IsInt16Array()) {
+    } else if (typedArray->IsInt16Array(vm_)) {
         thisType = NATIVE_INT16_ARRAY;
-    } else if (typedArray->IsUint16Array()) {
+    } else if (typedArray->IsUint16Array(vm_)) {
         thisType = NATIVE_UINT16_ARRAY;
-    } else if (typedArray->IsInt32Array()) {
+    } else if (typedArray->IsInt32Array(vm_)) {
         thisType = NATIVE_INT32_ARRAY;
-    } else if (typedArray->IsUint32Array()) {
+    } else if (typedArray->IsUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
-    } else if (typedArray->IsFloat32Array()) {
+    } else if (typedArray->IsFloat32Array(vm_)) {
         thisType = NATIVE_FLOAT32_ARRAY;
-    } else if (typedArray->IsFloat64Array()) {
+    } else if (typedArray->IsFloat64Array(vm_)) {
         thisType = NATIVE_FLOAT64_ARRAY;
-    } else if (typedArray->IsBigInt64Array()) {
+    } else if (typedArray->IsBigInt64Array(vm_)) {
         thisType = NATIVE_BIGINT64_ARRAY;
-    } else if (typedArray->IsBigUint64Array()) {
+    } else if (typedArray->IsBigUint64Array(vm_)) {
         thisType = NATIVE_BIGUINT64_ARRAY;
     }
 
@@ -1252,17 +1252,17 @@ NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::Type
 NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<panda::SendableTypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
-    if (typedArray->IsJSSharedInt8Array()) {
+    if (typedArray->IsJSSharedInt8Array(vm_)) {
         thisType = NATIVE_INT8_ARRAY;
-    } else if (typedArray->IsJSSharedUint8Array()) {
+    } else if (typedArray->IsJSSharedUint8Array(vm_)) {
         thisType = NATIVE_UINT8_ARRAY;
-    } else if (typedArray->IsJSSharedInt16Array()) {
+    } else if (typedArray->IsJSSharedInt16Array(vm_)) {
         thisType = NATIVE_INT16_ARRAY;
-    } else if (typedArray->IsJSSharedUint16Array()) {
+    } else if (typedArray->IsJSSharedUint16Array(vm_)) {
         thisType = NATIVE_UINT16_ARRAY;
-    } else if (typedArray->IsJSSharedInt32Array()) {
+    } else if (typedArray->IsJSSharedInt32Array(vm_)) {
         thisType = NATIVE_INT32_ARRAY;
-    } else if (typedArray->IsJSSharedUint32Array()) {
+    } else if (typedArray->IsJSSharedUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
     }
 
@@ -1354,7 +1354,7 @@ napi_value ArkNativeEngine::NapiLoadModule(const char* path, const char* module_
             ThrowException(msg.c_str());
         }
     }
-    if (!exportObj->IsObject()) {
+    if (!exportObj->IsObject(vm_)) {
         ThrowException("ArkNativeEngine:NapiLoadModule failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
@@ -1379,7 +1379,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
         exportObj = NapiLoadNativeModule(inputPath);
     }
 
-    if (!exportObj->IsObject()) {
+    if (!exportObj->IsObject(vm_)) {
         ThrowException("ArkNativeEngine:NapiLoadModuleWithInfo failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
