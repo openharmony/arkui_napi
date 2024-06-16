@@ -23,7 +23,6 @@
 #include "utils/log.h"
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       const EcmaVM* vm,
                                        napi_value value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
@@ -32,8 +31,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        void* hint,
                                        bool isAsyncCall)
     : engine_(engine),
-      vm_(vm),
-      value_(vm, LocalValueFromJsValue(value)),
+      value_(engine->GetEcmaVm(), LocalValueFromJsValue(value)),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
       isAsyncCall_(isAsyncCall),
@@ -45,7 +43,6 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 }
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       const EcmaVM* vm,
                                        Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
@@ -54,8 +51,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        void* hint,
                                        bool isAsyncCall)
     : engine_(engine),
-      vm_(vm),
-      value_(vm, value),
+      value_(engine->GetEcmaVm(), value),
       refCount_(initialRefcount),
       deleteSelf_(deleteSelf),
       isAsyncCall_(isAsyncCall),
@@ -105,12 +101,24 @@ uint32_t ArkNativeReference::Unref()
     return refCount_;
 }
 
+napi_value ArkNativeReference::Get(NativeEngine* engine)
+{
+    if (engine != engine_) {
+        HILOG_ERROR("param env is not equal to its owner");
+    }
+    if (value_.IsEmpty()) {
+        return nullptr;
+    }
+    Local<JSValueRef> value = value_.ToLocal(engine->GetEcmaVm());
+    return JsValueFromLocalValue(value);
+}
+
 napi_value ArkNativeReference::Get()
 {
     if (value_.IsEmpty()) {
         return nullptr;
     }
-    Local<JSValueRef> value = value_.ToLocal(vm_);
+    Local<JSValueRef> value = value_.ToLocal(engine_->GetEcmaVm());
     return JsValueFromLocalValue(value);
 }
 
@@ -128,16 +136,12 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
     if (napiCallback_ != nullptr) {
         if (state == FinalizerState::COLLECTION) {
+            std::tuple tuple = std::make_tuple(engine_, data_, hint_);
+            std::pair pair = std::make_pair(napiCallback_, tuple);
             if (isAsyncCall_) {
-                engine_->GetPendingAsyncFinalizers().emplace_back(std::make_pair(napiCallback_,
-                                                                                 std::make_tuple(engine_,
-                                                                                                 data_,
-                                                                                                 hint_)));
+                engine_->GetPendingAsyncFinalizers().emplace_back(pair);
             } else {
-                engine_->GetPendingFinalizers().emplace_back(std::make_pair(napiCallback_,
-                                                                            std::make_tuple(engine_,
-                                                                                            data_,
-                                                                                            hint_)));
+                engine_->GetPendingFinalizers().emplace_back(pair);
             }
         } else {
             napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);

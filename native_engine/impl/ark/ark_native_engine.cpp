@@ -1006,7 +1006,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
             Local<JSValueRef> value(instanceValue);
-            ref = new ArkNativeReference(this, vm_, value, 0, true, nullptr, instance, nullptr);
+            ref = new ArkNativeReference(this, value, 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(vm_, 1);
             object->SetNativePointerField(vm_, 0, ref, nullptr, nullptr, 0);
@@ -1479,13 +1479,13 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint);
+    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint);
 }
 
 NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint, true);
+    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, true);
 }
 
 void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
@@ -1897,14 +1897,14 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 
     Local<JSValueRef> args[] = {type, promise, reason};
 
-    napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get();
+    napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get(env);
     Local<FunctionRef> promiseRejectCallback = LocalValueFromJsValue(promiseNapiRejectCallback);
     if (!promiseRejectCallback.IsEmpty()) {
         promiseRejectCallback->Call(vm, JSValueRef::Undefined(vm), args, 3); // 3 args size
     }
 
     if (operation == panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT::REJECT) {
-        Local<JSValueRef> checkCallback = LocalValueFromJsValue(env->checkCallbackRef_->Get());
+        Local<JSValueRef> checkCallback = LocalValueFromJsValue(env->checkCallbackRef_->Get(env));
         if (!checkCallback.IsEmpty()) {
             JSNApi::SetHostEnqueueJob(vm, checkCallback);
         }

@@ -307,7 +307,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
             condition_.notify_one();
         }
 
-        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
+        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
@@ -385,7 +385,7 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
     // the task will be execute at main thread or worker thread
     auto task = [this, data]() {
         HILOG_DEBUG("The task is executing in main thread or worker thread");
-        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get();
+        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get(engine_);
         if (this->callJsCallback_ != nullptr) {
             this->callJsCallback_(engine_, func_, context_, data);
         } else {
