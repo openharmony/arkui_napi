@@ -713,6 +713,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
 
     auto nativeValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(vm), napi_string_expected);
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
@@ -3516,6 +3517,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     auto jsValue = LocalValueFromJsValue(js_object);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, jsValue->IsObject(vm), napi_object_expected);
     auto obj = jsValue->ToEcmaObject(vm);
 
     panda::JSNApi::NativeBindingInfo* data = panda::JSNApi::NativeBindingInfo::CreateNewInstance();
