@@ -335,6 +335,7 @@ public:
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
     void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
     bool GetIsBundle() override;
+    bool GetIsNormalizedOhmUrlPack() override;
     std::string GetBundleName() override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
     int GetProcessStartRealTime() override;
