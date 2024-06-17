@@ -61,7 +61,7 @@ struct NativeModule {
     GetJSCodeCallback getABCCode = nullptr;
     GetJSCodeCallback getJSCode = nullptr;
     int32_t version = 0;
-    int32_t flags = 0;
+    uint32_t flags = 0;
     uint32_t refCount = 0;
     NativeModule* next = nullptr;
     const char* jsCode = nullptr;
