@@ -24,9 +24,6 @@
 #endif
 
 #include "ecmascript/napi/include/jsnapi.h"
-#ifdef ENABLE_EVENT_HANDLER
-#include "event_handler.h"
-#endif
 #include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
 #include "utils/log.h"
@@ -41,12 +38,6 @@ using panda::Local;
 using panda::LocalScope;
 using panda::ObjectRef;
 using panda::StringRef;
-#ifdef ENABLE_EVENT_HANDLER
-using namespace OHOS::AppExecFwk;
-#endif
-typedef struct CallbackWrapper_ {
-    std::function<void()> cb;
-} CallbackWrapper;
 
 namespace {
 const char* g_errorMessages[] = {
@@ -110,6 +101,29 @@ static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* contex
     }
 }
 
+void NativeEngine::CreateDefaultFunction(void)
+{
+    std::shared_lock<std::shared_mutex> writeLock(eventMutex_);
+    if (defaultFunc_) {
+        return;
+    }
+    napi_env env = reinterpret_cast<napi_env>(this);
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
+        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+}
+
+void NativeEngine::DestoryDefaultFunction(void)
+{
+    std::shared_lock<std::shared_mutex> writeLock(eventMutex_);
+    if (!defaultFunc_) {
+        return;
+    }
+    napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
+    defaultFunc_ = nullptr;
+}
+
 void NativeEngine::Init()
 {
     HILOG_DEBUG("NativeEngine::Init");
@@ -123,19 +137,13 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-
-    napi_env env = reinterpret_cast<napi_env>(this);
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
-        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+    CreateDefaultFunction();
 }
 
 void NativeEngine::Deinit()
 {
     HILOG_DEBUG("NativeEngine::Deinit");
-    napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-    defaultFunc_ = nullptr;
+    DestoryDefaultFunction();
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
     RunCleanup();
@@ -177,8 +185,7 @@ pthread_t NativeEngine::GetTid() const
 bool NativeEngine::ReinitUVLoop()
 {
     if (loop_ != nullptr) {
-        napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-        defaultFunc_ = nullptr;
+        DestoryDefaultFunction();
         uv_sem_destroy(&uvSem_);
         uv_close((uv_handle_t*)&uvAsync_, nullptr);
         uv_run(loop_, UV_RUN_ONCE);
@@ -192,12 +199,7 @@ bool NativeEngine::ReinitUVLoop()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-
-    napi_env env = reinterpret_cast<napi_env>(this);
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
-        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+    CreateDefaultFunction();
     return true;
 }
 
@@ -974,32 +976,12 @@ void NativeEngine::ThrowException(const char* msg)
 
 napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
 {
-#ifdef ENABLE_EVENT_HANDLER
-    if (eventHandler_) {
-        if (eventHandler_->PostTask(cb, static_cast<EventQueue::Priority>(priority)))
-            return napi_status::napi_ok;
-        else
-            return napi_status::napi_generic_failure;
-    } else
-#endif
+    std::shared_lock<std::shared_mutex> readLock(eventMutex_);
     if (defaultFunc_) {
-        CallbackWrapper *cbw = new (std::nothrow) CallbackWrapper();
-        if (!cbw) {
-            HILOG_ERROR("New CallbackWrapper failed!");
-            return napi_status::napi_generic_failure;
-        }
-
-        cbw->cb = cb;
-        napi_status status = napi_call_threadsafe_function(defaultFunc_,
-            reinterpret_cast<void *>(cbw), napi_tsfn_nonblocking);
-        if (status != napi_status::napi_ok) {
-            HILOG_ERROR("napi_call_threadsafe_function failed(%{public}d)!", status);
-            delete cbw;
-            cbw = nullptr;
-        }
-        return status;
+        auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
+        return safeAsyncWork->SendEvent(cb, priority);
     } else {
-        HILOG_ERROR("It is not supported!");
+        HILOG_ERROR("default function is nullptr!");
         return napi_status::napi_generic_failure;
     }
 }
