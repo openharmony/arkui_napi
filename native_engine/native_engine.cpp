@@ -103,7 +103,7 @@ static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* contex
 
 void NativeEngine::CreateDefaultFunction(void)
 {
-    std::shared_lock<std::shared_mutex> writeLock(eventMutex_);
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
     if (defaultFunc_) {
         return;
     }
@@ -116,7 +116,7 @@ void NativeEngine::CreateDefaultFunction(void)
 
 void NativeEngine::DestoryDefaultFunction(void)
 {
-    std::shared_lock<std::shared_mutex> writeLock(eventMutex_);
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
     if (!defaultFunc_) {
         return;
     }
