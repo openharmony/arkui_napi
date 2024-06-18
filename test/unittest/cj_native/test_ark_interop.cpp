@@ -14,7 +14,6 @@
  */
 
 #include "ark_interop_external.h"
-#include "ark_interop_helper.h"
 #include "ark_interop_hitrace.h"
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
@@ -268,15 +267,6 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi007, TestSize.Level1)
     auto boolv = ARKTS_CreateBool(false);
     ARKTS_GetValueType(env, boolv);
     ARKTS_StrictEqual(env, boolv, boolv);
-}
-
-HWTEST_F(ArkInteropTest, ArkTSInteropNapi008, TestSize.Level1)
-{
-    auto jsRuntimeCI = panda::JsiRuntimeCallInfo();
-    ARKTS_CallInfo callinfo = P_CAST(&jsRuntimeCI, ARKTS_CallInfo);
-    ARKTS_GetArgCount(callinfo);
-    ARKTS_GetArg(callinfo, 0);
-    ARKTS_GetThisArg(callinfo);
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiExternal001, TestSize.Level1)

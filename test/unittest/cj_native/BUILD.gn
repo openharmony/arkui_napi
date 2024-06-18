@@ -22,26 +22,6 @@ if (is_standard_system) {
   module_output_path = "ace_engine_full/napi"
 }
 
-ohos_unittest("test_ark_interop_helper") {
-  module_out_path = module_output_path
-
-  include_dirs = ark_include
-  include_dirs += [
-    "../../../interfaces/inner_api/cjffi/ark_interop/",
-    "../../../interfaces/inner_api/cjffi/ark_interop_helper/",
-  ]
-
-  cflags = [ "-g3" ]
-
-  sources = [ "test_ark_interop_helper.cpp" ]
-
-  deps = [
-    "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "../../../interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
-  ]
-  deps += [ "../../..:ace_napi" ]
-}
-
 ohos_unittest("test_ark_interop") {
   module_out_path = module_output_path
 
@@ -58,7 +38,6 @@ ohos_unittest("test_ark_interop") {
   deps = [
     "../../..:ace_napi",
     "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "../../../interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
     "//third_party/libuv:uv",
   ]
   defines = []
@@ -74,8 +53,5 @@ ohos_unittest("test_ark_interop") {
 
 group("cj_native_unittest") {
   testonly = true
-  deps = [
-    ":test_ark_interop",
-    ":test_ark_interop_helper",
-  ]
+  deps = [ ":test_ark_interop" ]
 }

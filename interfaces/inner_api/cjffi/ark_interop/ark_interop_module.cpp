@@ -18,7 +18,7 @@
 #include "ark_interop_internal.h"
 #include "ark_interop_external.h"
 #include "ark_interop_log.h"
-#include "cj_environment.h"
+#include "cj_envsetup.h"
 
 struct ARKTS_ModuleCallbacks {
     ARKTS_Value (*exportModule)(ARKTS_Env env, const char* dllName, ARKTS_Value exports) = nullptr;
@@ -79,13 +79,17 @@ panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName)
     auto scope = ARKTS_OpenScope(env);
 
     auto undefined = ARKTS_CreateUndefined();
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    if (!runtime) {
+        return ARKTSInner_Escape(env, scope, undefined);
+    }
 
-    if (!OHOS::CJEnvironment::GetInstance()->StartRuntime()) {
+    if (!runtime->startRuntime()) {
         LOGE("start cj runtime failed");
         return ARKTSInner_Escape(env, scope, undefined);
     }
     if (!g_cjModuleCallbacks_ || !g_cjModuleCallbacks_->hasModuleHandle(dllName)) {
-        if (!OHOS::CJEnvironment::GetInstance()->LoadCJLibrary(dllName)) {
+        if (!runtime->loadCJModule(dllName)) {
             LOGE("load cj library failed, try load as native");
             return ARKTSInner_Escape(env, scope, undefined);
         }

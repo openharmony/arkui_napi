@@ -31,7 +31,7 @@ bool ARKTS_ScopeManager::CloseScope(ARKTS_Scope target)
     if (targetScope > (int64_t)scopeStack_.size()) {
         return false;
     }
-    while (scopeStack_.size() >= targetScope) {
+    while ((int64_t)scopeStack_.size() >= targetScope) {
         scopeStack_.pop_back();
     }
     return true;
