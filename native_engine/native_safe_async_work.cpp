@@ -105,7 +105,6 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
     if (runner != nullptr) {
         eventHandler_ = std::make_shared<EventHandler>(runner);
-        engine->SetDefaultEventHandler(eventHandler_);
     }
 #endif
 }
@@ -407,4 +406,52 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
     HILOG_WARN("EventHandler feature is not supported");
     return napi_status::napi_generic_failure;
 #endif
+}
+
+napi_status NativeSafeAsyncWork::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
+{
+#ifdef ENABLE_EVENT_HANDLER
+    if (eventHandler_) {
+        if (eventHandler_->PostTask(cb, static_cast<EventQueue::Priority>(priority)))
+            return napi_status::napi_ok;
+        else
+            return napi_status::napi_generic_failure;
+    }
+#endif
+    CallbackWrapper *cbw = new (std::nothrow) CallbackWrapper();
+    if (!cbw) {
+        HILOG_ERROR("malloc failed!");
+        return napi_status::napi_generic_failure;
+    }
+    cbw->cb = cb;
+    auto code = Send(reinterpret_cast<void *>(cbw), NATIVE_TSFUNC_NONBLOCKING);
+
+    napi_status status = napi_status::napi_ok;
+    switch (code) {
+        case SafeAsyncCode::SAFE_ASYNC_OK:
+            status = napi_status::napi_ok;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_QUEUE_FULL:
+            status = napi_status::napi_queue_full;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_INVALID_ARGS:
+            status = napi_status::napi_invalid_arg;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_CLOSED:
+            status = napi_status::napi_closing;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_FAILED:
+            status = napi_status::napi_generic_failure;
+            break;
+        default:
+            HILOG_FATAL("this branch is unreachable, code is %{public}d", code);
+            status = napi_status::napi_generic_failure;
+            break;
+    }
+    if (status != napi_status::napi_ok) {
+        HILOG_ERROR("send event failed(%{public}d)", status);
+        delete cbw;
+        cbw = nullptr;
+    }
+    return status;
 }
