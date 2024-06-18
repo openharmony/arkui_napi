@@ -49,6 +49,10 @@ enum class SafeAsyncStatus {
     SAFE_ASYNC_STATUS_CLOSED,
 };
 
+typedef struct CallbackWrapper_ {
+    std::function<void()> cb;
+} CallbackWrapper;
+
 class NativeSafeAsyncWork {
 public:
     static void AsyncCallback(uv_async_t* asyncHandler);
@@ -74,6 +78,7 @@ public:
     virtual bool Unref();
     virtual void* GetContext();
     virtual napi_status PostTask(void *data, int32_t priority, bool isTail);
+    virtual napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority);
 
 private:
     void ProcessAsyncHandle();
