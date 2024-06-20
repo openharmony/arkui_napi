@@ -271,3 +271,11 @@ if (!build_ohos_ndk && !is_arkui_x) {
     ]
   }
 }
+
+group("napi_host_performance_test") {
+  testonly = true
+  deps = []
+  if (host_os != "mac") {
+    deps += [ "test/performance:ark_napi_performance_test(${host_toolchain})" ]
+  }
+}
