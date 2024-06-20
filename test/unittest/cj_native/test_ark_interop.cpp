@@ -59,7 +59,8 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi001, TestSize.Level1)
     ARKTS_InitEventHandle(env);
 }
 
-void TestComplexType(ARKTS_Env env)
+#ifdef CLANG_COVERAGE
+static void TestComplexType(ARKTS_Env env)
 {
     auto glbConst = ARKTS_GetGlobalConstant(env);
     ARKTS_GetValueType(env, glbConst);
@@ -125,7 +126,7 @@ void TestComplexType(ARKTS_Env env)
     engine_ = ARKTS_CreateEngine();
 }
 
-void TestBasicType(ARKTS_Env env)
+static void TestBasicType(ARKTS_Env env)
 {
     // global value
     char origeStr[] = "ut test ArkInteropNapi005";
@@ -187,7 +188,6 @@ void TestBasicType(ARKTS_Env env)
     EXPECT_NE(ARKTS_GetProperty(env, objv, strValue), v);
 }
 
-#ifdef CLANG_COVERAGE
 HWTEST_F(ArkInteropTest, ArkTSInteropNapi003, TestSize.Level1)
 {
     // Test for no callback is registered.

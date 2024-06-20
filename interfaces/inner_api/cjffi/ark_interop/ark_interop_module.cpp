@@ -35,26 +35,26 @@ struct ARKTS_ModuleCallbacks {
 
 namespace {
 // each native register only be available during module loading
-ARKTS_ModuleCallbacks* g_cjModuleCallbacks_ = nullptr;
+ARKTS_ModuleCallbacks* g_cjModuleCallbacks = nullptr;
 }
 
 bool ARKTSInner_ThrowJSErrorToCJ(ARKTS_Env env, ARKTS_Value error)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("napi module depends on another napi module is forbidden");
         return false;
     }
-    g_cjModuleCallbacks_->throwJSError(env, error);
+    g_cjModuleCallbacks->throwJSError(env, error);
     return true;
 }
 
 bool ARKTSInner_ThrowNativeErrorToCJ(const char* error)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("napi module depends on another napi module is forbidden");
         return false;
     }
-    g_cjModuleCallbacks_->throwNativeError(error);
+    g_cjModuleCallbacks->throwNativeError(error);
     return true;
 }
 
@@ -64,11 +64,11 @@ void ARKTS_SetCJModuleCallback(ARKTS_ModuleCallbacks* callback)
         LOGE("register empty module callback is senseless");
         return;
     }
-    if (g_cjModuleCallbacks_) {
+    if (g_cjModuleCallbacks) {
         LOGE("should never happen");
         return;
     }
-    g_cjModuleCallbacks_ = new ARKTS_ModuleCallbacks(*callback);
+    g_cjModuleCallbacks = new ARKTS_ModuleCallbacks(*callback);
 }
 
 // export but only for internal
@@ -88,42 +88,42 @@ panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName)
         LOGE("start cj runtime failed");
         return ARKTSInner_Escape(env, scope, undefined);
     }
-    if (!g_cjModuleCallbacks_ || !g_cjModuleCallbacks_->hasModuleHandle(dllName)) {
+    if (!g_cjModuleCallbacks || !g_cjModuleCallbacks->hasModuleHandle(dllName)) {
         if (!runtime->loadCJModule(dllName)) {
             LOGE("load cj library failed, try load as native");
             return ARKTSInner_Escape(env, scope, undefined);
         }
     }
 
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("cj module must dependent on ohos_ark_interop");
         return ARKTSInner_Escape(env, scope, undefined);
     }
 
     auto exports = ARKTS_CreateObject(env);
 
-    exports = g_cjModuleCallbacks_->exportModule(env, dllName, exports);
+    exports = g_cjModuleCallbacks->exportModule(env, dllName, exports);
 
     return ARKTSInner_Escape(env, scope, exports);
 }
 
 void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* lambdaId)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
-    g_cjModuleCallbacks_->deleteArrayBufferRawData(buffer,
+    g_cjModuleCallbacks->deleteArrayBufferRawData(buffer,
         reinterpret_cast<int64_t>(lambdaId));
 }
 
 void ARKTSInner_CJExternalDeleter(void*, void* data, void* env)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
-    g_cjModuleCallbacks_->deleteExternal(
+    g_cjModuleCallbacks->deleteExternal(
         reinterpret_cast<int64_t>(data),
         reinterpret_cast<ARKTS_Env>(env)
     );
@@ -134,40 +134,40 @@ ARKTS_Result ARKTSInner_CJLambdaInvoker(ARKTS_CallInfo callInfo, int64_t lambdaI
     auto env = ARKTS_GetCallEnv(callInfo);
     auto scope = ARKTS_OpenScope(env);
 
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return ARKTS_Return(env, scope, ARKTS_CreateUndefined());
     }
 
-    auto result = g_cjModuleCallbacks_->invokerLambda(callInfo, lambdaId);
+    auto result = g_cjModuleCallbacks->invokerLambda(callInfo, lambdaId);
     return ARKTS_Return(env, scope, result);
 }
 
 void ARKTSInner_CJLambdaDeleter(ARKTS_Env env, int64_t lambdaId)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
 
-    g_cjModuleCallbacks_->deleteLambda(env, lambdaId);
+    g_cjModuleCallbacks->deleteLambda(env, lambdaId);
 }
 
 void ARKTSInner_CJAsyncCallback(ARKTS_Env env, void* data)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
 
-    g_cjModuleCallbacks_->invokeAsyncLambda(env, reinterpret_cast<int64_t>(data));
+    g_cjModuleCallbacks->invokeAsyncLambda(env, reinterpret_cast<int64_t>(data));
 }
 
 void ARKTS_DisposeJSContext(ARKTS_Env env)
 {
-    if (!g_cjModuleCallbacks_) {
+    if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
-    g_cjModuleCallbacks_->deleteJSContext(env);
+    g_cjModuleCallbacks->deleteJSContext(env);
 }
