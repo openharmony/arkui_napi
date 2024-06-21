@@ -52,7 +52,7 @@ ohos_shared_library("ark_interop") {
   subsystem_name = "arkui"
   innerapi_tags = [ "platformsdk" ]
 
-  configs = [ ":ark_interop_config" ]
+  public_configs = [ ":ark_interop_config" ]
 
   sources = [
     "ark_interop_async.cpp",
