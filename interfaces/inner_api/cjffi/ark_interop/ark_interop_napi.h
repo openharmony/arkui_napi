@@ -91,18 +91,18 @@ EXPORT ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId);
 EXPORT bool ARKTS_IsCallable(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value);
-EXPORT ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t ctorLambdaId, ARKTS_Value super);
+EXPORT ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value super);
 EXPORT ARKTS_Value ARKTS_GetPrototype(ARKTS_Env env, ARKTS_Value value);
 EXPORT bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz);
 
 EXPORT ARKTS_Env ARKTS_GetCallEnv(ARKTS_CallInfo info);
-EXPORT uint32_t ARKTS_GetArgCount(ARKTS_CallInfo);
-EXPORT ARKTS_Value ARKTS_GetArg(ARKTS_CallInfo, uint32_t index);
+EXPORT uint32_t ARKTS_GetArgCount(ARKTS_CallInfo info);
+EXPORT ARKTS_Value ARKTS_GetArg(ARKTS_CallInfo info, uint32_t index);
 EXPORT ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info);
 
 EXPORT ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg,
     int32_t numArgs, ARKTS_Value args[]);
-EXPORT ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArg, ARKTS_Value args[]);
+EXPORT ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_Value args[]);
 
 EXPORT ARKTS_Value ARKTS_CreateNull();
 EXPORT bool ARKTS_IsNull(ARKTS_Value value);
@@ -137,7 +137,7 @@ EXPORT ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Valu
 
 EXPORT ARKTS_Value ARKTS_CreateArray(ARKTS_Env env, uint32_t size);
 EXPORT ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value data[]);
-EXPORT uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value);
+EXPORT uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array);
 EXPORT void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index);
 EXPORT bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value);
@@ -159,10 +159,11 @@ EXPORT void* ARKTS_GetNAPIEnv(ARKTS_Engine engine);
 EXPORT void ARKTS_DestroyEngine(ARKTS_Engine engine);
 EXPORT ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine);
 
-EXPORT bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const char* entryName, bool forceReload);
-EXPORT ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryName, const char* importName);
+EXPORT bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const char* entryPoint,
+    bool forceReload);
+EXPORT ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryPoint, const char* importName);
 
-EXPORT ARKTS_Value ARKTS_Require(ARKTS_Env, const char* target, bool isNativeModule, bool isAppModule,
+EXPORT ARKTS_Value ARKTS_Require(ARKTS_Env env, const char* target, bool isNativeModule, bool isAppModule,
     const char* relativePath);
 
 /**
@@ -172,7 +173,7 @@ EXPORT ARKTS_Value ARKTS_Require(ARKTS_Env, const char* target, bool isNativeMod
  * ARKTS_Promise won't be collected until ARKTS_PromiseCapabilityResolve or ARKTS_PromiseCapabilityReject
  */
 EXPORT ARKTS_Promise ARKTS_CreatePromiseCapability(ARKTS_Env env);
-EXPORT ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise promise);
+EXPORT ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise prom);
 EXPORT void ARKTS_PromiseCapabilityResolve(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Value result);
 EXPORT void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Value result);
 EXPORT bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value);
@@ -199,11 +200,11 @@ EXPORT void ARKTS_Throw(ARKTS_Env env, ARKTS_Value error);
 
 EXPORT ARKTS_Value ARKTS_CreateArrayBuffer(ARKTS_Env env, int32_t);
 EXPORT ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t length,
-    int64_t finalizerId);
+    int64_t finalizerHint);
 EXPORT bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value);
-EXPORT int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value);
+EXPORT int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value);
 EXPORT void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value);
-EXPORT int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value, void* dest, int32_t count);
+EXPORT int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest, int32_t count);
 
 EXPORT ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value);
 EXPORT ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t size, const uint8_t bytes[]);

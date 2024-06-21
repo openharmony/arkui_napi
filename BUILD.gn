@@ -248,7 +248,6 @@ group("napi_packages") {
   deps = [
     ":ace_napi",
     "interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
   ]
   if (target_cpu == "arm64") {
     deps += [ "jsvm:libjsvm" ]

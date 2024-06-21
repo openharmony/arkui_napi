@@ -35,7 +35,6 @@
                 "node",
                 "bounds_checking_function",
                 "init",
-                "ability_runtime",
                 "ace_engine"
             ],
             "third_party": [
@@ -103,6 +102,15 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:cj_bind_native"
+                  },
+                  {
+                    "header": {
+                      "header_base": "//foundation/arkui/napi/interfaces/inner_api/cjffi/ark_interop",
+                      "header_files": [
+                        "ark_interop_napi.h"
+                      ]
+                    },
+                    "name": "//foundation/arkui/napi/interfaces/inner_api/cjffi/ark_interop:ark_interop"
                   },
                   {
                     "header": {

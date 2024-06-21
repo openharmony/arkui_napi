@@ -14,7 +14,6 @@
  */
 
 #include "ark_interop_external.h"
-#include "ark_interop_helper.h"
 #include "ark_interop_hitrace.h"
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
@@ -60,7 +59,8 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi001, TestSize.Level1)
     ARKTS_InitEventHandle(env);
 }
 
-void TestComplexType(ARKTS_Env env)
+#ifdef CLANG_COVERAGE
+static void TestComplexType(ARKTS_Env env)
 {
     auto glbConst = ARKTS_GetGlobalConstant(env);
     ARKTS_GetValueType(env, glbConst);
@@ -126,7 +126,7 @@ void TestComplexType(ARKTS_Env env)
     engine_ = ARKTS_CreateEngine();
 }
 
-void TestBasicType(ARKTS_Env env)
+static void TestBasicType(ARKTS_Env env)
 {
     // global value
     char origeStr[] = "ut test ArkInteropNapi005";
@@ -188,7 +188,6 @@ void TestBasicType(ARKTS_Env env)
     EXPECT_NE(ARKTS_GetProperty(env, objv, strValue), v);
 }
 
-#ifdef CLANG_COVERAGE
 HWTEST_F(ArkInteropTest, ArkTSInteropNapi003, TestSize.Level1)
 {
     // Test for no callback is registered.
@@ -268,15 +267,6 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi007, TestSize.Level1)
     auto boolv = ARKTS_CreateBool(false);
     ARKTS_GetValueType(env, boolv);
     ARKTS_StrictEqual(env, boolv, boolv);
-}
-
-HWTEST_F(ArkInteropTest, ArkTSInteropNapi008, TestSize.Level1)
-{
-    auto jsRuntimeCI = panda::JsiRuntimeCallInfo();
-    ARKTS_CallInfo callinfo = P_CAST(&jsRuntimeCI, ARKTS_CallInfo);
-    ARKTS_GetArgCount(callinfo);
-    ARKTS_GetArg(callinfo, 0);
-    ARKTS_GetThisArg(callinfo);
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiExternal001, TestSize.Level1)

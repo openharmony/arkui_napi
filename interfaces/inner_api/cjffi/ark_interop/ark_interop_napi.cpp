@@ -118,6 +118,7 @@ uint64_t ARKTS_GetPosixThreadId()
 
 ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src)
 {
+    ARKTS_ASSERT(src, "src is null", N_UNDEFINED);
     auto value = BIT_CAST(src, JSValueRef);
     if (value.IsNull()) {
         return N_NULL;
@@ -342,6 +343,7 @@ ARKTS_INLINE void FormatArguments(int32_t numArgs, ARKTS_Value args[], Local<JSV
 ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int32_t numArgs, ARKTS_Value args[])
 {
     ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(func, "func is null");
     ARKTS_ASSERT_P(ARKTS_IsCallable(env, func), "func is not callable");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
@@ -360,14 +362,14 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
     return ARKTS_FromHandle(result);
 }
 
-ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value func, int32_t numArgs, ARKTS_Value args[])
+ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_Value args[])
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsClass(env, func), "func is not class");
+    ARKTS_ASSERT_P(ARKTS_IsClass(env, clazz), "clazz is not class");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto funcHandle = *P_CAST(func, FunctionRef*);
+    auto funcHandle = *P_CAST(clazz, FunctionRef*);
 
     Local<JSValueRef> formattedArgs[MAX_CALL_ARGS];
     FormatArguments(numArgs, args, formattedArgs);

@@ -29,7 +29,7 @@ typedef void (*ARKTS_AsyncCallback)(ARKTS_Env env, void*);
 
 bool ARKTSInner_ReportJSErrors(ARKTS_Env env, bool abortIfUnhandled);
 void ARKTSInner_ReportNativeError(const char* format, ...) __attribute__((format(printf, 1, 2)));
-COV_EXPORT std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value);
+COV_EXPORT std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError);
 bool ARKTSInner_ThrowJSErrorToCJ(ARKTS_Env env, ARKTS_Value error);
 bool ARKTSInner_ThrowNativeErrorToCJ(const char* error);
 void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, void* data);
