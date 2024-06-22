@@ -105,6 +105,7 @@ using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
+using AppFreezeFilterCallback = std::function<bool(const int32_t pid)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using RefFinalizer = std::pair<NapiNativeFinalize, std::tuple<NativeEngine*, void*, void*>>;
@@ -189,6 +190,7 @@ public:
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void SetJsDumpThresholds(size_t thresholds) = 0;
+    virtual void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
