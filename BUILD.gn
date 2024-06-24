@@ -126,6 +126,19 @@ ohos_source_set("ace_napi_static") {
 
   cflags_cc = [ "-Wno-missing-braces" ]
 
+  if (is_ohos && is_clang && enhanced_opt) {
+    if (ace_engine_feature_enable_pgo) {
+      cflags_cc += [
+        "-fprofile-use=" +
+            rebase_path("${ace_engine_feature_pgo_path}/libace_napi.profdata",
+                        root_build_dir),
+        "-Wno-error=backend-plugin",
+        "-Wno-profile-instr-out-of-date",
+        "-Wno-profile-instr-unprofiled",
+      ]
+    }
+  }
+
   subsystem_name = "arkui"
   part_name = "napi"
 }
@@ -156,6 +169,12 @@ if (is_arkui_x) {
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
     part_name = "napi"
+
+    if (is_ohos && is_clang && enhanced_opt) {
+      if (ace_engine_feature_enable_pgo) {
+        ldflags = [ "-Wl,-mllvm,-align-all-functions=4" ]
+      }
+    }
   }
 }
 
