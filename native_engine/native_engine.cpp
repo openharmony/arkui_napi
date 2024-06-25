@@ -80,7 +80,7 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 
 NativeEngine::~NativeEngine()
 {
-    HILOG_DEBUG("NativeEngine::~NativeEngine");
+    HILOG_INFO("NativeEngine::~NativeEngine");
     if (cleanEnv_ != nullptr) {
         cleanEnv_();
     }
@@ -142,7 +142,7 @@ void NativeEngine::Init()
 
 void NativeEngine::Deinit()
 {
-    HILOG_DEBUG("NativeEngine::Deinit");
+    HILOG_INFO("NativeEngine::Deinit");
     DestoryDefaultFunction();
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);

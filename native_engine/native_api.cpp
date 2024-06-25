@@ -2142,7 +2142,6 @@ NAPI_EXTERN napi_status napi_get_arraybuffer_info(napi_env env,
 {
     CHECK_ENV(env);
     CHECK_ARG(env, arraybuffer);
-    CHECK_ARG(env, data);
     CHECK_ARG(env, byte_length);
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
@@ -2150,11 +2149,15 @@ NAPI_EXTERN napi_status napi_get_arraybuffer_info(napi_env env,
     panda::JsiFastNativeScope fastNativeScope(vm);
     if (LIKELY(nativeValue->IsArrayBuffer(vm))) {
         Local<panda::ArrayBufferRef> res(nativeValue);
-        *data = res->GetBuffer(vm);
+        if (data != nullptr) {
+            *data = res->GetBuffer(vm);
+        }
         *byte_length = res->ByteLength(vm);
     } else if (nativeValue->IsSendableArrayBuffer(vm)) {
         Local<panda::SendableArrayBufferRef> res(nativeValue);
-        *data = res->GetBuffer(vm);
+        if (data != nullptr) {
+            *data = res->GetBuffer(vm);
+        }
         *byte_length = res->ByteLength(vm);
     } else {
         return napi_set_last_error(env, napi_arraybuffer_expected);
