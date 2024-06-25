@@ -18,7 +18,9 @@
 
 #include "interfaces/kits/napi/common.h"
 #include "native_value.h"
-
+#ifdef ENABLE_HITRACE
+#include "hitrace/trace.h"
+#endif
 #include <mutex>
 #include <queue>
 #include <uv.h>
@@ -80,11 +82,11 @@ private:
     std::mutex workAsyncMutex_;
     std::queue<NativeAsyncWorkDataPointer> asyncWorkRecvData_;
     std::string traceDescription_;
-#ifdef ENABLE_HITRACE
-    std::unique_ptr<OHOS::HiviewDFX::HiTraceId> traceId_;
-#endif
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t containerScopeId_;
+#endif
+#ifdef ENABLE_HITRACE
+    OHOS::HiviewDFX::HiTraceId taskTraceId_;
 #endif
 };
 
