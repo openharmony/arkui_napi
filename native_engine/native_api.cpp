@@ -1639,8 +1639,6 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     if (nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper = val;
         auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
-        // Try to remove native pointer from ArrayDataList
-        wrapper->SetNativePointerField(vm, 0, nullptr, nullptr, nullptr, nativeBindingSize);
         nativeObject->Delete(vm, key);
         delete ref;
     } else {
@@ -3129,7 +3127,6 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
     bool isArrayBuffer = false;
     nativeValue->DetachedArraybuffer(vm, isArrayBuffer);
     if (!isArrayBuffer) {
-        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
     return napi_clear_last_error(env);
