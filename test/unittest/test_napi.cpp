@@ -1598,6 +1598,485 @@ HWTEST_F(NapiBasicTest, SendableClassTest005, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: CreateMap001
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    res = napi_create_map(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &result));
+
+    bool isMap = false;
+    ASSERT_CHECK_CALL(napi_is_map(env, result, &isMap));
+    ASSERT_EQ(isMap, true);
+}
+
+/**
+ * @tc.name: CreateMap002
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &result));
+
+    uint32_t length = 0;
+    napi_value value = nullptr;
+    bool hasKey = false;
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "null", NAPI_AUTO_LENGTH, &key));
+    napi_value null = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &null));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, result, key, null));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 1);
+    ASSERT_CHECK_CALL(napi_map_has_property(env, result, key, &hasKey));
+    ASSERT_TRUE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_null);
+
+    ASSERT_CHECK_CALL(napi_map_delete_property(env, result, key));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 0);
+    ASSERT_CHECK_CALL(napi_map_has_property(env, result, key, &hasKey));
+    ASSERT_FALSE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+}
+
+/**
+ * @tc.name: CreateMap003
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &result));
+
+    uint32_t length = 0;
+    napi_value value = nullptr;
+    bool hasKey = false;
+
+    const char* key = "null";
+    napi_value null = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &null));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+
+    ASSERT_CHECK_CALL(napi_map_set_named_property(env, result, key, null));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 1);
+    ASSERT_CHECK_CALL(napi_map_has_named_property(env, result, key, &hasKey));
+    ASSERT_TRUE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_named_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_null);
+
+    ASSERT_CHECK_CALL(napi_map_clear(env, result));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 0);
+    ASSERT_CHECK_CALL(napi_map_has_named_property(env, result, key, &hasKey));
+    ASSERT_FALSE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_named_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    ASSERT_CHECK_CALL(napi_map_set_named_property(env, result, key, object));
+    ASSERT_CHECK_CALL(napi_map_get_named_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_object);
+}
+
+/**
+ * @tc.name: CreateMap004
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value entries;
+    ASSERT_CHECK_CALL(napi_map_get_entries(env, map, &entries));
+
+    napi_value entries0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &entries0));
+    napi_value entries0Value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, entries0, "value", &entries0Value));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 0, &key));
+    int32_t native_key;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
+    ASSERT_EQ(native_key, 0);
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 1, &value));
+    int32_t native_value;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
+    ASSERT_EQ(native_value, 1);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
+ * @tc.name: CreateMap005
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value keys;
+    ASSERT_CHECK_CALL(napi_map_get_keys(env, map, &keys));
+
+    napi_value keys0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &keys0));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, keys0, "value", &key));
+    int32_t native_key;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
+    ASSERT_EQ(native_key, 0);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
+ * @tc.name: CreateMap006
+ * @tc.desc: Test napi_create_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateMap006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value values;
+    ASSERT_CHECK_CALL(napi_map_get_values(env, map, &values));
+
+    napi_value values0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &values0));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, values0, "value", &value));
+    int32_t native_value;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
+    ASSERT_EQ(native_value, 1);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
+ * @tc.name: CreateSendableMap001
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    res = napi_create_sendable_map(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &result));
+
+    bool isShared = false;
+    ASSERT_CHECK_CALL(napi_is_sendable(env, result, &isShared));
+    ASSERT_EQ(isShared, true);
+
+    bool isMap = false;
+    ASSERT_CHECK_CALL(napi_is_map(env, result, &isMap));
+    ASSERT_EQ(isMap, true);
+}
+
+/**
+ * @tc.name: CreateSendableMap002
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &result));
+
+    uint32_t length = 0;
+    napi_value value = nullptr;
+    bool hasKey = false;
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "null", NAPI_AUTO_LENGTH, &key));
+    napi_value null = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &null));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, result, key, null));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 1);
+    ASSERT_CHECK_CALL(napi_map_has_property(env, result, key, &hasKey));
+    ASSERT_TRUE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_null);
+
+    ASSERT_CHECK_CALL(napi_map_delete_property(env, result, key));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 0);
+    ASSERT_CHECK_CALL(napi_map_has_property(env, result, key, &hasKey));
+    ASSERT_FALSE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+}
+
+/**
+ * @tc.name: CreateSendableMap003
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &result));
+
+    uint32_t length = 0;
+    napi_value value = nullptr;
+    bool hasKey = false;
+
+    const char* key = "null";
+    napi_value null = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &null));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+
+    ASSERT_CHECK_CALL(napi_map_set_named_property(env, result, key, null));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 1);
+    ASSERT_CHECK_CALL(napi_map_has_named_property(env, result, key, &hasKey));
+    ASSERT_TRUE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_named_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_null);
+
+    ASSERT_CHECK_CALL(napi_map_clear(env, result));
+    ASSERT_CHECK_CALL(napi_map_get_size(env, result, &length));
+    ASSERT_EQ(length, 0);
+    ASSERT_CHECK_CALL(napi_map_has_named_property(env, result, key, &hasKey));
+    ASSERT_FALSE(hasKey);
+    ASSERT_CHECK_CALL(napi_map_get_named_property(env, result, key, &value));
+    ASSERT_CHECK_VALUE_TYPE(env, value, napi_undefined);
+
+    bool isExceptionPending = false;
+    napi_is_exception_pending(env, &isExceptionPending);
+    ASSERT_FALSE(isExceptionPending);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    napi_status res = napi_map_set_named_property(env, result, key, object);
+    ASSERT_TRUE(res == napi_pending_exception);
+}
+
+/**
+ * @tc.name: CreateSendableMap004
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value entries;
+    ASSERT_CHECK_CALL(napi_map_get_entries(env, map, &entries));
+
+    napi_value entries0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &entries0));
+    napi_value entries0Value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, entries0, "value", &entries0Value));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 0, &key));
+    int32_t native_key;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
+    ASSERT_EQ(native_key, 0);
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 1, &value));
+    int32_t native_value;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
+    ASSERT_EQ(native_value, 1);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
+ * @tc.name: CreateSendableMap005
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value keys;
+    ASSERT_CHECK_CALL(napi_map_get_keys(env, map, &keys));
+
+    napi_value keys0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &keys0));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, keys0, "value", &key));
+    int32_t native_key;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
+    ASSERT_EQ(native_key, 0);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
+ * @tc.name: CreateSendableMap006
+ * @tc.desc: Test napi_create_sendable_map.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableMap006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value map = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_map(env, &map));
+
+    napi_value zero = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 0, &zero));
+    napi_value one = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &one));
+
+    ASSERT_CHECK_CALL(napi_map_set_property(env, map, zero, one));
+
+    napi_value values;
+    ASSERT_CHECK_CALL(napi_map_get_values(env, map, &values));
+
+    napi_value values0;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &values0));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, values0, "value", &value));
+    int32_t native_value;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
+    ASSERT_EQ(native_value, 1);
+
+    napi_value end;
+    ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &end));
+    napi_value done = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, end, "done", &done));
+    bool isDone;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, done, &isDone));
+    ASSERT_TRUE(isDone);
+}
+
+/**
  * @tc.name: AsyncWorkTest001
  * @tc.desc: Test async work.
  * @tc.type: FUNC

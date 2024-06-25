@@ -1450,6 +1450,338 @@ NAPI_EXTERN napi_status napi_create_sendable_object_with_properties(napi_env env
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_create_map(napi_env env, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ArrayRef> object = panda::MapRef::New(vm);
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_sendable_map(napi_env env, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    Local<panda::ArrayRef> object = panda::SendableMapRef::New(vm);
+    *result = JsValueFromLocalValue(object);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_map_set_property(napi_env env, napi_value map, napi_value key, napi_value value)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, key);
+    CHECK_ARG(env, value);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto propKey = LocalValueFromJsValue(key);
+    auto propValue = LocalValueFromJsValue(value);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        mapRef->Set(vm, propKey, propValue);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        mapRef->Set(vm, propKey, propValue);
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_set_named_property(napi_env env,
+                                                    napi_value map,
+                                                    const char* utf8name,
+                                                    napi_value value)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, utf8name);
+    CHECK_ARG(env, value);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto propVal = LocalValueFromJsValue(value);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    Local<panda::MapRef> mapRef(nativeValue);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        mapRef->Set(vm, utf8name, propVal);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        mapRef->Set(vm, utf8name, propVal);
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_property(napi_env env, napi_value map, napi_value key, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, key);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto propKey = LocalValueFromJsValue(key);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    Local<JSValueRef> value;
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        value = mapRef->Get(vm, propKey);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        value = mapRef->Get(vm, propKey);
+    }
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
+    *result = JsValueFromLocalValue(value);
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_named_property(napi_env env,
+                                                    napi_value map,
+                                                    const char* utf8name,
+                                                    napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, utf8name);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    Local<JSValueRef> value;
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        value = mapRef->Get(vm, utf8name);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        value = mapRef->Get(vm, utf8name);
+    }
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
+    *result = JsValueFromLocalValue(value);
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_has_property(napi_env env, napi_value map, napi_value key, bool* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, key);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto propKey = LocalValueFromJsValue(key);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    bool value;
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        value = mapRef->Has(vm, propKey);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        value = mapRef->Has(vm, propKey);
+    }
+    *result = value;
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_has_named_property(napi_env env, napi_value map, const char* utf8name, bool* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, utf8name);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    bool value;
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        value = mapRef->Has(vm, utf8name);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        value = mapRef->Has(vm, utf8name);
+    }
+    *result = value;
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_delete_property(napi_env env, napi_value map, napi_value key)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, key);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto propKey = LocalValueFromJsValue(key);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        mapRef->Delete(vm, propKey);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        mapRef->Delete(vm, propKey);
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_clear(napi_env env, napi_value map)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        mapRef->Clear(vm);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        mapRef->Clear(vm);
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    uint32_t value;
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        value = mapRef->GetSize();
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        value = mapRef->GetSize(vm);
+    }
+    *result = value;
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        Local<panda::ArrayRef> arrayVal = mapRef->GetEntries(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        Local<panda::SendableArrayRef> arrayVal = mapRef->GetEntries(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        Local<panda::ArrayRef> arrayVal = mapRef->GetKeys(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        Local<panda::SendableArrayRef> arrayVal = mapRef->GetKeys(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, map);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(map);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMap(vm) || nativeValue->IsSharedMap(vm), napi_object_expected);
+    if (LIKELY(nativeValue->IsMap(vm))) {
+        Local<panda::MapRef> mapRef(nativeValue);
+        Local<panda::ArrayRef> arrayVal = mapRef->GetValues(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    } else {
+        Local<panda::SendableMapRef> mapRef(nativeValue);
+        Local<panda::SendableArrayRef> arrayVal = mapRef->GetValues(vm);
+        *result = JsValueFromLocalValue(arrayVal);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_map_iterator_get_next(napi_env env, napi_value iterator, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, iterator);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(iterator);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsMapIterator(vm) || nativeValue->IsSharedMapIterator(vm),
+                           napi_object_expected);
+    Local<panda::JSValueRef> value;
+    if (LIKELY(nativeValue->IsMapIterator(vm))) {
+        Local<panda::MapIteratorRef> mapIter(nativeValue);
+        value = mapIter->Next(vm);
+    } else {
+        Local<panda::SendableMapIteratorRef> mapIter(nativeValue);
+        value = mapIter->Next(vm);
+    }
+    *result = JsValueFromLocalValue(value);
+    return GET_RETURN_STATUS(env);
+}
+
 // Methods to work with external data objects
 NAPI_EXTERN napi_status napi_wrap(napi_env env,
                                   napi_value js_object,
