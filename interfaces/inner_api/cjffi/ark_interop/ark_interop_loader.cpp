@@ -59,17 +59,12 @@ static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* resul
     do {
         const char* targetName;
         const char* loaderName = "ARKTS_LoadModule";
-        const char* helperName;
-        const char* setEnvName = "SetGlobalNapiEnv";
 #ifdef __OHOS__
         targetName = "libark_interop.z.so";
-        helperName = "libark_interop_helper_ffi.z.so";
 #elif defined(__WINDOWS__)
         targetName = "libark_interop.dll";
-        helperName = "libark_interop_helper_ffi.dll";
 #elif defined(__LINUX__)
         targetName = "libark_interop.so";
-        helperName = "libark_interop_helper_ffi.so";
 #endif
         auto runtime = OHOS::CJEnv::LoadInstance();
         auto handle = runtime->loadLibrary(0, targetName);
@@ -84,19 +79,6 @@ static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* resul
         }
         auto loader = reinterpret_cast<napi_value(*)(EcmaVM*, const char*)>(symbol);
         *result = loader(vm, libName);
-
-        handle = runtime->loadLibrary(0, helperName);
-        if (!handle) {
-            LOGE("open '%{public}s' failed", helperName);
-            break;
-        }
-        symbol = runtime->getSymbol(handle, setEnvName);
-        if (!symbol) {
-            LOGE("no symbol of '%{public}s'", setEnvName);
-            break;
-        }
-        auto func = reinterpret_cast<void (*)(void*)>(symbol);
-        func(env);
     } while (false);
     return true;
 }
