@@ -1667,6 +1667,11 @@ void ArkNativeEngine::SetJsDumpThresholds(size_t thresholds)
     DFXJSNApi::SetJsDumpThresholds(vm_, thresholds);
 }
 
+void ArkNativeEngine::SetAppFreezeFilterCallback(AppFreezeFilterCallback callback)
+{
+    DFXJSNApi::SetAppFreezeFilterCallback(vm_, callback);
+}
+
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));

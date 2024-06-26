@@ -205,6 +205,9 @@ public:
     // Set jsdump thresholds
     void SetJsDumpThresholds(size_t thresholds) override;
 
+    // Set Appfreeze Filter
+    void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) override;
+
     // Detect performance to obtain cpuprofiler file
     void StartCpuProfiler(const std::string& fileName = "") override;
     void StopCpuProfiler() override;
