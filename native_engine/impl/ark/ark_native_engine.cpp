@@ -1917,10 +1917,11 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat,
+                                       bool isPrivate, bool captureNumericValue)
 {
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode);
+        DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode, isPrivate, captureNumericValue);
     }
     if (dumpFormat == DumpFormat::BINARY) {
         DFXJSNApi::DumpHeapSnapshot(vm_, 1, path, isVmMode);
