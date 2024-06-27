@@ -744,3 +744,10 @@ ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info)
     auto result = runInfo->GetThisRef();
     return ARKTS_FromHandle(result);
 }
+
+void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    return JSNApi::GetEnv(vm);
+}

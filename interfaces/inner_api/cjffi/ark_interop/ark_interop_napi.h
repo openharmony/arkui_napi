@@ -215,6 +215,8 @@ EXPORT void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNega
 
 EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 
+EXPORT void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env);
+
 DECL_END
 
 #endif //NAPI_ARK_INTEROP_NAPI_H
