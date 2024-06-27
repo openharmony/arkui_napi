@@ -515,15 +515,18 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
     // need to call init of base class.
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    JSNApi::SetUnloadNativeModuleCallback(vm, std::bind(&NativeModuleManager::UnloadNativeModule,
-        moduleManager, std::placeholders::_1));
+    std::function<bool(const std::string&)> func = [moduleManager](const std::string& moduleKey) -> bool {
+        return moduleManager->UnloadNativeModule(moduleKey);
+    };
+    JSNApi::SetUnloadNativeModuleCallback(vm, func);
     Init();
     panda::JSNApi::SetLoop(vm, loop_);
     panda::JSNApi::SetWeakFinalizeTaskCallback(vm, [this] () -> void {
         this->PostFinalizeTasks();
     });
-    JSNApi::SetAsyncCleanTaskCallback(vm, std::bind(&ArkNativeEngine::PostAsyncTask, this,
-    std::placeholders::_1));
+    JSNApi::SetAsyncCleanTaskCallback(vm, [this] (std::vector<NativePointerCallbackData>& callbacks) {
+        this->PostAsyncTask(callbacks);
+    });
 }
 
 ArkNativeEngine::~ArkNativeEngine()
