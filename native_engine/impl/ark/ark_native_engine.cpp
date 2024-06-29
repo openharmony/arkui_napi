@@ -1488,15 +1488,16 @@ NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_
     return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, true);
 }
 
-void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
+__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
 {
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
 #endif
     for (auto iter : (*finalizers)) {
+        NapiNativeFinalize callback = iter.first;
         std::tuple<NativeEngine*, void*, void*> &param = iter.second;
-        (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
-                    std::get<1>(param), std::get<2>(param)); // 2 is the param.
+        callback(reinterpret_cast<napi_env>(std::get<0>(param)),
+                 std::get<1>(param), std::get<2>(param)); // 2 is the param.
     }
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
@@ -1549,15 +1550,16 @@ void ArkNativeEngine::PostFinalizeTasks()
     }
 }
 
-void ArkNativeEngine::RunCallbacks(std::vector<NativePointerCallbackData> *callbacks)
+__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(std::vector<NativePointerCallbackData> *callbacks)
 {
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunNativeCallbacks:" + std::to_string(callbacks->size()));
 #endif
     for (auto iter : (*callbacks)) {
+        panda::NativePointerCallback callback = iter.first;
         std::tuple<void*, void*, void*> &param = iter.second;
-        if (iter.first != nullptr) {
-            (iter.first)(std::get<0>(param), std::get<1>(param), std::get<2>(param)); // 2 is the param.
+        if (callback != nullptr) {
+            callback(std::get<0>(param), std::get<1>(param), std::get<2>(param)); // 2 is the param.
         }
     }
 #ifdef ENABLE_HITRACE
