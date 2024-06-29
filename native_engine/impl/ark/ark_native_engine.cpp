@@ -1925,40 +1925,46 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat,
                                        bool isPrivate, bool captureNumericValue)
 {
+    panda::ecmascript::DumpSnapShotOption dumpOption;
+    dumpOption.isVmMode = isVmMode;
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode, isPrivate, captureNumericValue);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
+        dumpOption.isPrivate = isPrivate;
+        dumpOption.captureNumericValue = captureNumericValue;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption);
     }
     if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 1, path, isVmMode);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption);
     }
     if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 2, path, isVmMode); // 2:enum is 2
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::OTHER;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption); // 2:enum is 2
     }
 }
 
-void ArkNativeEngine::DumpCpuProfile(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
+void ArkNativeEngine::DumpCpuProfile()
 {
-    if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpCpuProfile(vm_, 0, isVmMode, isPrivate, false, isFullGC);
-    }
-    if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpCpuProfile(vm_, 1, isVmMode, isPrivate);
-    }
-    if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpCpuProfile(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
-    }
+    DFXJSNApi::DumpCpuProfile(vm_);
 }
 
 void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
 {
+    panda::ecmascript::DumpSnapShotOption dumpOption;
+    dumpOption.isVmMode = isVmMode;
+    dumpOption.isPrivate = isPrivate;
+    dumpOption.isFullGC = isFullGC;
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate, false, isFullGC);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
     if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 1, isVmMode, isPrivate);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
     if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::OTHER;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
 }
 
