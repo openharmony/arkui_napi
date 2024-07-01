@@ -238,6 +238,8 @@ public:
     virtual void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
+    virtual uint64_t GetThreadIdOrTaskId() = 0;
+
     void MarkWorkerThread()
     {
         jsThreadType_ = JSThreadType::WORKER_THREAD;

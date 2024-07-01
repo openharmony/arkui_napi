@@ -20,6 +20,10 @@
 #endif
 
 #include <sstream>
+#include <unistd.h>
+#if defined(ENABLE_FFRT_INTERFACES)
+#include "ffrt.h"
+#endif
 #include "ark_native_deferred.h"
 #if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
 #include "unwinder.h"
@@ -1736,6 +1740,24 @@ void ArkNativeEngine::TriggerFatalException(panda::Local<panda::JSValueRef> exce
 bool ArkNativeEngine::AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue)
 {
     return true;
+}
+
+uint64_t ArkNativeEngine::GetThreadIdOrTaskId()
+{
+    uint64_t threadOrTaskId = 0;
+#if defined(ENABLE_FFRT_INTERFACES)
+    threadOrTaskId = ffrt_this_task_get_id();
+    if (threadOrTaskId == 0) {
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+        threadOrTaskId = getproctid();
+#endif // #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    }
+#else
+#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+    threadOrTaskId = getproctid();
+#endif // #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#endif // #if defined(ENABLE_FFRT_INTERFACES)
+    return threadOrTaskId;
 }
 
 void ArkNativeEngine::SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef)
