@@ -15,6 +15,9 @@
 
 #include "native_engine/native_engine.h"
 
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
+#include <unistd.h>
+#endif
 #include <uv.h>
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <sys/epoll.h>
@@ -137,6 +140,13 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
+    if (getpid() == gettid()) {
+        jsThreadType_ = JSThreadType::MAIN_THREAD;
+    } else {
+        jsThreadType_ = JSThreadType::NATIVE_THREAD;
+    }
+#endif
     CreateDefaultFunction();
 }
 
@@ -199,6 +209,13 @@ bool NativeEngine::ReinitUVLoop()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
+    if (getpid() == gettid()) {
+        jsThreadType_ = JSThreadType::MAIN_THREAD;
+    } else {
+        jsThreadType_ = JSThreadType::NATIVE_THREAD;
+    }
+#endif
     CreateDefaultFunction();
     return true;
 }
