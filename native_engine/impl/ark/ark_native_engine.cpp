@@ -1748,14 +1748,18 @@ uint64_t ArkNativeEngine::GetThreadIdOrTaskId()
 #if defined(ENABLE_FFRT_INTERFACES)
     threadOrTaskId = ffrt_this_task_get_id();
     if (threadOrTaskId == 0) {
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if defined(OHOS_PLATFORM) 
         threadOrTaskId = getproctid();
-#endif // #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#else
+        threadOrTaskId = pthread_self();
+#endif // #if defined(OHOS_PLATFORM) 
     }
 #else
-#if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#if defined(OHOS_PLATFORM) 
     threadOrTaskId = getproctid();
-#endif // #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
+#else
+    threadOrTaskId = pthread_self();
+#endif // #if defined(OHOS_PLATFORM) 
 #endif // #if defined(ENABLE_FFRT_INTERFACES)
     return threadOrTaskId;
 }
