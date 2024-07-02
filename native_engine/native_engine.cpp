@@ -15,7 +15,7 @@
 
 #include "native_engine/native_engine.h"
 
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
+#ifdef ENABLE_EVENT_HANDLER
 #include <unistd.h>
 #endif
 #include <uv.h>
@@ -140,9 +140,9 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
-    if (getpid() == gettid()) {
-        jsThreadType_ = JSThreadType::MAIN_THREAD;
+#ifdef ENABLE_EVENT_HANDLER
+    if ((jsThreadType_ == JSThreadType::MAIN_THREAD) && (getpid() != gettid())) {
+        jsThreadType_ = JSThreadType::DEFAULT_THREAD;
     }
 #endif
     CreateDefaultFunction();
@@ -207,9 +207,9 @@ bool NativeEngine::ReinitUVLoop()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
-    if (getpid() == gettid()) {
-        jsThreadType_ = JSThreadType::MAIN_THREAD;
+#ifdef ENABLE_EVENT_HANDLER
+    if ((jsThreadType_ == JSThreadType::MAIN_THREAD) && (getpid() != gettid())) {
+        jsThreadType_ = JSThreadType::DEFAULT_THREAD;
     }
 #endif
     CreateDefaultFunction();
