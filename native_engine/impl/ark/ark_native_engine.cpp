@@ -1752,10 +1752,10 @@ uint64_t ArkNativeEngine::GetThreadIdOrTaskId()
         threadOrTaskId = getproctid();
 #else
         threadOrTaskId = pthread_self();
-#endif // #if defined(OHOS_PLATFORM) 
+#endif // #if defined(OHOS_PLATFORM)
     }
 #else
-#if defined(OHOS_PLATFORM) 
+#if defined(OHOS_PLATFORM)
     threadOrTaskId = getproctid();
 #else
     threadOrTaskId = pthread_self();
