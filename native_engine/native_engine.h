@@ -530,7 +530,7 @@ private:
     // the old worker api use before api9, the new worker api start with api9
     enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD,
                         RESTRICTEDWORKER_THREAD, NATIVE_THREAD, DEFAULT_THREAD };
-    JSThreadType jsThreadType_ = JSThreadType::DEFAULT_THREAD;
+    JSThreadType jsThreadType_ = JSThreadType::MAIN_THREAD;
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
 
