@@ -1600,8 +1600,15 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
-    auto nativeObject = nativeValue->ToObject(vm);
+    bool isObj = nativeValue->IsObject(vm);
+    bool isFunc = nativeValue->IsFunction(vm);
+    RETURN_STATUS_IF_FALSE(env, isObj || isFunc, napi_object_expected);
+    Local<ObjectRef> nativeObject;
+    if (LIKELY(isObj)) {
+        nativeObject = Local<ObjectRef>(reinterpret_cast<uintptr_t>(js_object));
+    } else {
+        nativeObject = nativeValue->ToObject(vm);
+    }
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
