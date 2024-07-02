@@ -96,13 +96,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 #endif
 
 #if defined(ENABLE_EVENT_HANDLER)
-    std::shared_ptr<EventRunner> runner = nullptr;
-    if (engine_->IsMainThread()) {
-        runner = EventRunner::GetMainEventRunner();
-    } else {
-        runner = EventRunner::Current();
-    }
-
+    std::shared_ptr<EventRunner> runner = EventRunner::Current();
     if (runner != nullptr) {
         eventHandler_ = std::make_shared<EventHandler>(runner);
     }
