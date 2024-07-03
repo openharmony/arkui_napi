@@ -202,6 +202,8 @@ public:
     void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
+    uint64_t GetThreadIdOrTaskId() override;
+
     // Set jsdump thresholds
     void SetJsDumpThresholds(size_t thresholds) override;
 

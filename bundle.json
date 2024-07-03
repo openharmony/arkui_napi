@@ -35,7 +35,8 @@
                 "node",
                 "bounds_checking_function",
                 "init",
-                "ace_engine"
+                "ace_engine",
+                "ffrt"
             ],
             "third_party": [
                 "icu",
