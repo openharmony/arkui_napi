@@ -124,7 +124,8 @@ private:
     bool RemoveModuleBuffer(const std::string moduleKey);
     const uint8_t* GetBufferHandle(const std::string& moduleKey) const;
     void RegisterByBuffer(const std::string& moduleKey, const uint8_t* abcBuffer, size_t len);
-    bool CreateNewNativeModule();
+    bool CreateTailNativeModule();
+    bool CreateHeadNativeModule();
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool RemoveNativeModule(const std::string& moduleKey);
@@ -138,15 +139,16 @@ private:
     std::map<std::string, Dl_namespace> nsMap_;
 #endif
 
-    mutable std::recursive_mutex nativeModuleListMutex_;
-    NativeModule* firstNativeModule_ = nullptr;
-    NativeModule* lastNativeModule_ = nullptr;
+    std::mutex nativeModuleListMutex_;
+    NativeModule* headNativeModule_ = nullptr;
+    NativeModule* tailNativeModule_ = nullptr;
     NativeModule* cacheNativeModule_ = nullptr;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;
     std::string prefix_;
     bool isAppModule_ = false;
+    std::string loadingModuleName_;
 
     std::mutex nativeEngineListMutex_;
     std::map<std::string, NativeEngine*> nativeEngineList_;
