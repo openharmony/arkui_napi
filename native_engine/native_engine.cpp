@@ -74,8 +74,7 @@ std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
-    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
-    g_alivedEngine_.emplace(this);
+    SetAlived();
 }
 
 NativeEngine::~NativeEngine()
@@ -86,8 +85,6 @@ NativeEngine::~NativeEngine()
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
-    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
-    g_alivedEngine_.erase(this);
 }
 
 static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)

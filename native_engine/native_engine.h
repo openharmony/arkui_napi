@@ -347,10 +347,24 @@ public:
     void DecreaseListeningCounter();
     bool HasListeningCounter();
 
-    static bool IsAlive(NativeEngine* env)
+    inline static bool IsAlive(NativeEngine* env)
     {
         std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
         return g_alivedEngine_.find(env) != g_alivedEngine_.end();
+    }
+    
+    inline void SetUnalived()
+    {
+        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+        g_alivedEngine_.erase(this);
+        return;
+    }
+
+    inline void SetAlived()
+    {
+        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+        g_alivedEngine_.emplace(this);
+        return;
     }
 
     virtual void RunCleanup();
