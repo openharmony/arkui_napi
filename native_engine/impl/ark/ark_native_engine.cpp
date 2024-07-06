@@ -299,7 +299,7 @@ bool ArkNativeEngine::CheckArkApiAllowList(
 {
     std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker = module->apiAllowListChecker;
     if (apiAllowListChecker != nullptr) {
-        const std::string apiPath = context.moduleName->ToString();
+        const std::string apiPath = context.moduleName->ToString(context.ecmaVm);
         if ((*apiAllowListChecker)(apiPath)) {
             CopyPropertyApiFilter(apiAllowListChecker, context.ecmaVm, context.exportObj, exportCopy, apiPath);
         }
@@ -316,9 +316,9 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     for (uint32_t i = 0; i < namesArrayRef->Length(ecmaVm); ++i) {
         const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
         const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
-        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
+        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString(ecmaVm);
         if ((*apiAllowListChecker)(curPath)) {
-            const std::string valueType = value->Typeof(ecmaVm)->ToString();
+            const std::string valueType = value->Typeof(ecmaVm)->ToString(ecmaVm);
             if (valueType == "object") {
                 panda::Local<panda::ObjectRef> subObject = ObjectRef::New(ecmaVm);
                 CopyPropertyApiFilter(apiAllowListChecker, ecmaVm, value, subObject, curPath);
@@ -371,7 +371,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 bool isAppModule = false;
                 std::string errInfo = "";
 #ifdef IOS_PLATFORM
-                module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false,
+                module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, false,
                                                          errInfo, false, "", arkNativeEngine->isLimitedWorker_);
 #else
                 const uint32_t lengthMax = 2;
@@ -383,17 +383,18 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
-                            isAppModule, errInfo, false, "", arkNativeEngine->isLimitedWorker_);
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+                            path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "",
+                            arkNativeEngine->isLimitedWorker_);
                 } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
-                            errInfo, false, relativePath->ToString().c_str(), arkNativeEngine->isLimitedWorker_);
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
+                            errInfo, false, relativePath->ToString(ecmaVm).c_str(), arkNativeEngine->isLimitedWorker_);
                 } else {
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
                             errInfo, false, "", arkNativeEngine->isLimitedWorker_);
                 }
 #endif
@@ -403,7 +404,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     if (it != arkNativeEngine->loadedModules_.end()) {
                         return scope.Escape(it->second.ToLocal(ecmaVm));
                     }
-                    std::string strModuleName = moduleName->ToString();
+                    std::string strModuleName = moduleName->ToString(ecmaVm);
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     MoudleNameLocker nameLocker(strModuleName);
 
@@ -474,16 +475,16 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 std::string errInfo = "";
-                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(),
+                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
                     nullptr, false, errInfo, false, "", arkNativeEngine->isLimitedWorker_);
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
-                MoudleNameLocker nameLocker(moduleName->ToString());
+                MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm));
                 if (module != nullptr && arkNativeEngine) {
                     auto it = arkNativeEngine->loadedModules_.find(module);
                     if (it != arkNativeEngine->loadedModules_.end()) {
                         return scope.Escape(it->second.ToLocal(ecmaVm));
                     }
-                    std::string strModuleName = moduleName->ToString();
+                    std::string strModuleName = moduleName->ToString(ecmaVm);
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
                     if (exportObj->IsObject(ecmaVm)) {
@@ -566,7 +567,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         Local<panda::StringRef> nameRef = fn->GetName(vm);
         char threadName[BUF_SIZE];
         prctl(PR_GET_NAME, threadName);
-        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString(vm).c_str(), threadName);
     }
     bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
     if (!hookFlag) {
@@ -586,7 +587,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
             OHOS::HiviewDFX::HiTraceChain::Begin("New ArkCallBackTrace", 0));
         char buffer[256] = {0}; // 256 : buffer size of tag name
         if (sprintf_s(buffer, sizeof(buffer), "napi:0x%x:%s", arkCallBackTraceId->GetChainId(),
-                      nameRef->ToString().c_str()) == -1) {
+                      nameRef->ToString(vm).c_str()) == -1) {
             return 0;
         }
         uint64_t addr = reinterpret_cast<uint64_t>(cb);
@@ -594,7 +595,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true); // 8: the size of addr
         return 0;
     }
-    if (!CheckHookConfig(nameRef->ToString())) {
+    if (!CheckHookConfig(nameRef->ToString(vm))) {
         return 0;
     }
     BlockHookScope blockHook; // block hook
@@ -821,8 +822,8 @@ void NapiDefinePropertyInner(napi_env env,
             fullName += propertyDescriptor.utf8name;
         } else {
             fullName += propertyName->IsString(vm)
-                        ? Local<panda::StringRef>(propertyName)->ToString()
-                        : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString();
+                        ? Local<panda::StringRef>(propertyName)->ToString(vm)
+                        : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString(vm);
         }
         Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
                                                                   propertyDescriptor.method, propertyDescriptor.data);
@@ -997,7 +998,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         Local<StringRef> key = StringRef::GetNapiWrapperString(vm_);
         if (instance == nullptr && instanceValue->Has(vm_, key)) {
             Local<ObjectRef> wrapper = instanceValue->Get(vm_, key);
-            auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+            auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm_, 0));
             wrapper->SetNativePointerField(vm_, 0, nullptr, nullptr, nullptr, 0);
             instanceValue->Delete(vm_, key);
             delete ref;
@@ -1714,7 +1715,7 @@ std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
     uint32_t line = pos.first;
     uint32_t column = pos.second;
     Local<panda::StringRef> sourceCode = func->GetSourceCode(vm_, line);
-    std::string sourceCodeStr = sourceCode->ToString();
+    std::string sourceCodeStr = sourceCode->ToString(vm_);
     if (sourceCodeStr.empty()) {
         return "";
     }
