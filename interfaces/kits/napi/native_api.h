@@ -161,7 +161,7 @@ NAPI_EXTERN napi_status napi_map_has_property(napi_env env, napi_value map, napi
 NAPI_EXTERN napi_status napi_map_has_named_property(napi_env env, napi_value map, const char* utf8name, bool* result);
 NAPI_EXTERN napi_status napi_map_delete_property(napi_env env, napi_value map, napi_value key);
 NAPI_EXTERN napi_status napi_map_clear(napi_env env, napi_value map);
-NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, size_t* result);
+NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t* result);
 NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_value* result);
 NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_value* result);
 NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_value* result);
