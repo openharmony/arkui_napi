@@ -1735,14 +1735,14 @@ HWTEST_F(NapiBasicTest, CreateMap004, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_named_property(env, entries0, "value", &entries0Value));
     napi_value key = nullptr;
     ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 0, &key));
-    int32_t native_key;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
-    ASSERT_EQ(native_key, 0);
+    int32_t nativeKey;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &nativeKey));
+    ASSERT_EQ(nativeKey, 0);
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 1, &value));
-    int32_t native_value;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
-    ASSERT_EQ(native_value, 1);
+    int32_t nativeValue;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &nativeValue));
+    ASSERT_EQ(nativeValue, 1);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &end));
@@ -1780,9 +1780,9 @@ HWTEST_F(NapiBasicTest, CreateMap005, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &keys0));
     napi_value key = nullptr;
     ASSERT_CHECK_CALL(napi_get_named_property(env, keys0, "value", &key));
-    int32_t native_key;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
-    ASSERT_EQ(native_key, 0);
+    int32_t nativeKey;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &nativeKey));
+    ASSERT_EQ(nativeKey, 0);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &end));
@@ -1820,9 +1820,9 @@ HWTEST_F(NapiBasicTest, CreateMap006, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &values0));
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_get_named_property(env, values0, "value", &value));
-    int32_t native_value;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
-    ASSERT_EQ(native_value, 1);
+    int32_t nativeValue;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &nativeValue));
+    ASSERT_EQ(nativeValue, 1);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &end));
@@ -1978,14 +1978,14 @@ HWTEST_F(NapiBasicTest, CreateSendableMap004, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_named_property(env, entries0, "value", &entries0Value));
     napi_value key = nullptr;
     ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 0, &key));
-    int32_t native_key;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
-    ASSERT_EQ(native_key, 0);
+    int32_t nativeKey;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &nativeKey));
+    ASSERT_EQ(nativeKey, 0);
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_get_element(env, entries0Value, 1, &value));
-    int32_t native_value;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
-    ASSERT_EQ(native_value, 1);
+    int32_t nativeValue;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &nativeValue));
+    ASSERT_EQ(nativeValue, 1);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, entries, &end));
@@ -2023,9 +2023,9 @@ HWTEST_F(NapiBasicTest, CreateSendableMap005, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &keys0));
     napi_value key = nullptr;
     ASSERT_CHECK_CALL(napi_get_named_property(env, keys0, "value", &key));
-    int32_t native_key;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &native_key));
-    ASSERT_EQ(native_key, 0);
+    int32_t nativeKey;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, key, &nativeKey));
+    ASSERT_EQ(nativeKey, 0);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, keys, &end));
@@ -2063,9 +2063,9 @@ HWTEST_F(NapiBasicTest, CreateSendableMap006, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &values0));
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_get_named_property(env, values0, "value", &value));
-    int32_t native_value;
-    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &native_value));
-    ASSERT_EQ(native_value, 1);
+    int32_t nativeValue;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, value, &nativeValue));
+    ASSERT_EQ(nativeValue, 1);
 
     napi_value end;
     ASSERT_CHECK_CALL(napi_map_iterator_get_next(env, values, &end));
@@ -5650,6 +5650,32 @@ HWTEST_F(NapiBasicTest, CreateSendableTypedArray003, testing::ext::TestSize.Leve
 
     res = napi_create_sendable_typedarray(env, napi_uint8_clamped_array, LENGTH / 2, arraybuffer, 1, &result);
     ASSERT_EQ(res, napi_arraybuffer_expected);
+}
+
+/**
+ * @tc.name: CreateSendableTypedArray004
+ * @tc.desc: Test napi_create_sendable_arraybuffer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, CreateSendableTypedArray004, testing::ext::TestSize.Level1)
+{
+    static size_t LENGTH = 1024;
+    static size_t OFFSET = 0;
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    void* data;
+    napi_value arraybuffer = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_arraybuffer(env, LENGTH, &data, &arraybuffer));
+
+    for (int type = napi_int8_array; type <= napi_float32_array; ++type) {
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_sendable_typedarray(env, static_cast<napi_typedarray_type>(type), LENGTH / 4,
+                                                          arraybuffer, OFFSET, &result));
+        bool isTypedArray = false;
+        ASSERT_CHECK_CALL(napi_is_typedarray(env, result, &isTypedArray));
+        ASSERT_EQ(isTypedArray, true);
+    }
 }
 
 /**
