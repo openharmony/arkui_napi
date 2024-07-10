@@ -87,15 +87,15 @@ std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError)
     auto exception = BIT_CAST(jsError, Local<JSValueRef>);
     if (exception->IsString(vm)) {
         auto errorInsJs = *P_CAST(jsError, StringRef*);
-        return errorInsJs.ToString();
+        return errorInsJs.ToString(vm);
     } else if (exception->IsError(vm)) {
         auto errorObJ = *P_CAST(jsError, ObjectRef*);
         auto nameValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "name"));
         auto messageValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "message"));
         auto stackValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "stack"));
-        std::string name = nameValue->IsString(vm) ? nameValue->ToString(vm)->ToString() : "";
-        auto message = messageValue->IsString(vm) ? messageValue->ToString(vm)->ToString() : "";
-        auto stack = stackValue->IsString(vm) ? stackValue->ToString(vm)->ToString() : "";
+        std::string name = nameValue->IsString(vm) ? nameValue->ToString(vm)->ToString(vm) : "";
+        auto message = messageValue->IsString(vm) ? messageValue->ToString(vm)->ToString(vm) : "";
+        auto stack = stackValue->IsString(vm) ? stackValue->ToString(vm)->ToString(vm) : "";
         return name + "\n" + message + "\n" + stack;
     } else {
         return "[unknown js Error type]";

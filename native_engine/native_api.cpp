@@ -687,7 +687,7 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
-        *result = stringVal->Length();
+        *result = stringVal->Length(vm);
     } else if (bufsize != 0) {
         int copied = stringVal->WriteLatin1(vm, buf, bufsize);
         buf[copied] = '\0';
@@ -746,7 +746,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
-        *result = stringVal->Length();
+        *result = stringVal->Length(vm);
     } else if (bufsize == 1) {
         buf[0] = '\0';
         if (result != nullptr) {
@@ -885,7 +885,7 @@ NAPI_EXTERN napi_status napi_has_property(napi_env env, napi_value object, napi_
     Local<panda::JSValueRef> hasResult = JSNApi::NapiHasProperty(vm, reinterpret_cast<uintptr_t>(object),
                                                                  reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
-    *result = hasResult->BooleaValue();
+    *result = hasResult->BooleaValue(vm);
 
     return GET_RETURN_STATUS(env);
 }
@@ -924,7 +924,7 @@ NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, na
                                                    reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(deleteResult), napi_object_expected);
     if (result) {
-        *result = deleteResult->BooleaValue();
+        *result = deleteResult->BooleaValue(vm);
     }
 
     return GET_RETURN_STATUS(env);
@@ -943,7 +943,7 @@ NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, n
                                                 reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
     if (result) {
-        *result = hasResult->BooleaValue();
+        *result = hasResult->BooleaValue(vm);
     }
 
     return GET_RETURN_STATUS(env);
@@ -1684,7 +1684,7 @@ NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t
     uint32_t value;
     if (LIKELY(nativeValue->IsMap(vm))) {
         Local<panda::MapRef> mapRef(nativeValue);
-        value = mapRef->GetSize();
+        value = mapRef->GetSize(vm);
     } else {
         Local<panda::SendableMapRef> mapRef(nativeValue);
         value = mapRef->GetSize(vm);
@@ -1808,7 +1808,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (native_object == nullptr && nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper = nativeObject->Get(vm, key);
-        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm, 0));
         // Try to remove native pointer from ArrayDataList
         wrapper->SetNativePointerField(vm, 0, nullptr, nullptr, nullptr, nativeBindingSize);
         nativeObject->Delete(vm, key);
@@ -1854,7 +1854,7 @@ NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (native_object == nullptr && nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper = nativeObject->Get(vm, key);
-        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm, 0));
         // Try to remove native pointer from ArrayDataList
         wrapper->SetNativePointerField(vm, 0, nullptr, nullptr, nullptr, native_binding_size);
         nativeObject->Delete(vm, key);
@@ -1900,7 +1900,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (native_object == nullptr && nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper = nativeObject->Get(vm, key);
-        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm, 0));
         // Try to remove native pointer from ArrayDataList
         wrapper->SetNativePointerField(vm, 0, nullptr, nullptr, nullptr, native_binding_size);
         nativeObject->Delete(vm, key);
@@ -1946,7 +1946,7 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     *result = nullptr;
     if (val->IsObject(vm)) {
         Local<panda::ObjectRef> ext(val);
-        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(vm, 0));
         *result = ref != nullptr ? ref->GetData() : nullptr;
     }
 
@@ -1970,14 +1970,14 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
     *result = nullptr;
     if (val->IsObject(vm)) {
         Local<panda::ObjectRef> ext(val);
-        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(vm, 0));
         *result = ref != nullptr ? ref->GetData() : nullptr;
     }
 
     size_t nativeBindingSize = 0;
     if (nativeObject->Has(vm, key)) {
         Local<panda::ObjectRef> wrapper = val;
-        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+        auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm, 0));
         nativeObject->Delete(vm, key);
         delete ref;
     } else {
@@ -3510,12 +3510,13 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
     return napi_clear_last_error(env);
 }
 
-bool BigIntGetWordsArray(Local<panda::BigIntRef> &value, int* signBit, size_t* wordCount, uint64_t* words)
+bool BigIntGetWordsArray(const EcmaVM* vm, Local<panda::BigIntRef> &value, int* signBit,
+                         size_t* wordCount, uint64_t* words)
 {
     if (wordCount == nullptr) {
         return false;
     }
-    size_t size = static_cast<size_t>(value->GetWordsArraySize());
+    size_t size = static_cast<size_t>(value->GetWordsArraySize(vm));
     if (signBit == nullptr && words == nullptr) {
         *wordCount = size;
         return true;
@@ -3524,7 +3525,7 @@ bool BigIntGetWordsArray(Local<panda::BigIntRef> &value, int* signBit, size_t* w
             size = *wordCount;
         }
         bool sign = false;
-        value->GetWordsArray(&sign, size, words);
+        value->GetWordsArray(vm, &sign, size, words);
         if (sign) {
             *signBit = 1;
         } else {
@@ -3565,7 +3566,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
             size_t size = 2; // 2: Indicates that the number of elements is 2
             NapiTypeTag tag;
             Local<panda::BigIntRef> bigintObj = object->ToBigInt(vm);
-            BigIntGetWordsArray(bigintObj, &sign, &size, reinterpret_cast<uint64_t*>(&tag));
+            BigIntGetWordsArray(vm, bigintObj, &sign, &size, reinterpret_cast<uint64_t*>(&tag));
             if (sign == 0 && ((size == 1) || (size == 2))) { // 2: Indicates that the number of elements is 2
                 *result = (tag.lower == typeTag->lower && tag.upper == typeTag->upper);
             }
@@ -3596,7 +3597,7 @@ NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, doub
     auto IsDate_result = nativeValue->IsDate(vm);
     Local<panda::DateRef> dateObj = nativeValue->ToObject(vm);
     if (IsDate_result) {
-        *result = dateObj->GetTime();
+        *result = dateObj->GetTime(vm);
     } else {
         HILOG_ERROR("%{public}s date expected", __func__);
         return napi_set_last_error(env, napi_date_expected);
@@ -3676,7 +3677,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
     if (word_count == nullptr) {
         return napi_set_last_error(env, napi_invalid_arg);
     }
-    size_t size = static_cast<size_t>(BigintObj->GetWordsArraySize());
+    size_t size = static_cast<size_t>(BigintObj->GetWordsArraySize(vm));
     if (sign_bit == nullptr && words == nullptr) {
         *word_count = size;
         return napi_set_last_error(env, napi_ok);
@@ -3685,7 +3686,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
             size = *word_count;
         }
         bool sign = false;
-        BigintObj->GetWordsArray(&sign, size, words);
+        BigintObj->GetWordsArray(vm, &sign, size, words);
         if (sign) {
             *sign_bit = 1;
         } else {
@@ -3894,7 +3895,7 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, st
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     if (nativeValue->IsString(vm)) {
         Local<panda::StringRef> stringVal(nativeValue);
-        result = stringVal->ToString();
+        result = stringVal->ToString(vm);
     }
     return napi_clear_last_error(env);
 }

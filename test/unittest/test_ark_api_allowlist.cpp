@@ -62,7 +62,7 @@ void CheckPropertyNames(Local<ObjectRef> &obj,
     Local<ArrayRef> propertyNamesArrayVal = obj->GetAllPropertyNames(vm, filter);
     for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
-        std::string keyname = nameValue->ToString(vm)->ToString();
+        std::string keyname = nameValue->ToString(vm)->ToString(vm);
         HILOG_INFO("exportCopy->system->function:%{public}s", keyname.c_str());
         if (keyToCond.find(keyname) != keyToCond.end()) {
             keyToCond[keyname] = true;
@@ -78,7 +78,7 @@ bool Test001(const EcmaVM* vm, Local<ObjectRef> &exportCopy, uint32_t &filter)
     Local<ArrayRef> propertyNamesArrayVal = exportCopy->GetAllPropertyNames(vm, filter);
     for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
-        std::string keyname = nameValue->ToString(vm)->ToString();
+        std::string keyname = nameValue->ToString(vm)->ToString(vm);
         HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
         if (keyname == "System") {
             Local<ObjectRef> obj = exportCopy->Get(vm, nameValue);
@@ -107,7 +107,7 @@ bool Test002(const EcmaVM* vm, Local<ObjectRef> &exportCopy, uint32_t &filter)
     Local<ArrayRef> propertyNamesArrayVal = exportCopy->GetAllPropertyNames(vm, filter);
     for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         Local<JSValueRef> nameValue = ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i);
-        std::string keyname = nameValue->ToString(vm)->ToString();
+        std::string keyname = nameValue->ToString(vm)->ToString(vm);
         HILOG_INFO("exportCopy->function:%{public}s", keyname.c_str());
         if (keyname == "Locale") {
             condition1 = true;
@@ -127,7 +127,7 @@ bool Test002(const EcmaVM* vm, Local<ObjectRef> &exportCopy, uint32_t &filter)
             CheckPropertyNames(obj, vm, filter, keyToCond);
             condition6 = keyToCond["function001"];
             condition7 = keyToCond["systemOtherFunction"];
-        } else if (nameValue->Typeof(vm)->ToString() == "object") {
+        } else if (nameValue->Typeof(vm)->ToString(vm) == "object") {
             condition3 = false;
         }
     }
@@ -180,7 +180,7 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest001, testing::ext::TestSi
     Local<ArrayRef> propertyNamesArrayVal = i18nObj->GetAllPropertyNames(vm, filter);
     for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         HILOG_INFO("exportObj->function:%{public}s",
-            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString().c_str());
+            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString(vm).c_str());
     }
     ASSERT_EQ(Test001(vm, exportCopy, filter), true);
 }
@@ -234,7 +234,7 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest002, testing::ext::TestSi
     Local<ArrayRef> propertyNamesArrayVal = intlObj->GetAllPropertyNames(vm, filter);
     for (uint32_t i = 0; i < propertyNamesArrayVal->Length(vm); ++i) {
         HILOG_INFO("exportObj->function:%{public}s",
-            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString().c_str());
+            ArrayRef::GetValueAt(vm, propertyNamesArrayVal, i)->ToString(vm)->ToString(vm).c_str());
     }
     ASSERT_EQ(Test002(vm, exportCopy, filter), true);
 }

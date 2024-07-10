@@ -289,7 +289,7 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
                             size_t bufferSize,
                             int32_t* nchars)
 {
-    int32_t length = static_cast<int32_t>(nativeString->Length());
+    int32_t length = static_cast<int32_t>(nativeString->Length(vm));
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
     int32_t i = 0;
@@ -339,7 +339,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
                                std::string& buffer,
                                const char* encode)
 {
-    int32_t length = static_cast<int32_t>(nativeString->Length());
+    int32_t length = static_cast<int32_t>(nativeString->Length(vm));
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";
