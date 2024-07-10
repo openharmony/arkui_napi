@@ -92,19 +92,21 @@ bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
 int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(ARKTS_IsBigInt(env, value), "value is not bigint");
-    
+    auto vm = P_CAST(env, panda::EcmaVM*);
+
     auto bigint = P_CAST(value, panda::BigIntRef*);
-    return bigint->GetWordsArraySize() * WORD_BYTES;
+    return bigint->GetWordsArraySize(vm) * WORD_BYTES;
 }
 
 void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative, int64_t byteCount, uint8_t bytes[])
 {
     ARKTS_ASSERT_V(bytes, "bytes is null");
     ARKTS_ASSERT_V(ARKTS_IsBigInt(env, value), "value is not bigint");
+    auto vm = P_CAST(env, panda::EcmaVM*);
 
     auto bigint = P_CAST(value, panda::BigIntRef*);
-    auto u64cnt = bigint->GetWordsArraySize();
+    auto u64cnt = bigint->GetWordsArraySize(vm);
     ARKTS_ASSERT_V(byteCount >= u64cnt * WORD_BYTES, "byteCount not enough");
-    bigint->GetWordsArray(isNegative, u64cnt, reinterpret_cast<uint64_t*>(bytes));
+    bigint->GetWordsArray(vm, isNegative, u64cnt, reinterpret_cast<uint64_t*>(bytes));
     ARKTS_ASSERT_V(ReverseBytes(bytes, byteCount), "ReverseBytes failed");
 }
