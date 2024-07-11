@@ -15,4 +15,4 @@
 export SCRIPT_PATCH=$(dirname $(readlink -f "$0"))
 export TARGET_GEN_DIR=$2
  
-cp ${SCRIPT_PATCH}/../../../../third_party/v8/libv8_shared.so ${TARGET_GEN_DIR}/libv8_shared.so
+cp ${SCRIPT_PATCH}/../../../../third_party/node/deps/v8/libv8_shared.so ${TARGET_GEN_DIR}/libv8_shared.so

@@ -41,7 +41,7 @@
 #endif
 #endif
 
-NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err);
+NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err);
 
 
 NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env,
@@ -146,6 +146,26 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threads
                                                                     void *data,
                                                                     napi_task_priority priority,
                                                                     bool isTail);
+NAPI_EXTERN napi_status napi_create_map(napi_env env, napi_value* result);
+NAPI_EXTERN napi_status napi_map_set_property(napi_env env, napi_value map, napi_value key, napi_value value);
+NAPI_EXTERN napi_status napi_map_set_named_property(napi_env env,
+                                                    napi_value map,
+                                                    const char* utf8name,
+                                                    napi_value value);
+NAPI_EXTERN napi_status napi_map_get_property(napi_env env, napi_value map, napi_value key, napi_value* result);
+NAPI_EXTERN napi_status napi_map_get_named_property(napi_env env,
+                                                    napi_value map,
+                                                    const char* utf8name,
+                                                    napi_value* result);
+NAPI_EXTERN napi_status napi_map_has_property(napi_env env, napi_value map, napi_value key, bool* result);
+NAPI_EXTERN napi_status napi_map_has_named_property(napi_env env, napi_value map, const char* utf8name, bool* result);
+NAPI_EXTERN napi_status napi_map_delete_property(napi_env env, napi_value map, napi_value key);
+NAPI_EXTERN napi_status napi_map_clear(napi_env env, napi_value map);
+NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t* result);
+NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_value* result);
+NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_value* result);
+NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_value* result);
+NAPI_EXTERN napi_status napi_map_iterator_get_next(napi_env env, napi_value iterator, napi_value* result);
 
 // ======================================= sendable api begin ======================================= //
 NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
@@ -171,6 +191,7 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
                                                         napi_value arraybuffer,
                                                         size_t byte_offset,
                                                         napi_value* result);
+NAPI_EXTERN napi_status napi_create_sendable_map(napi_env env, napi_value* result);
 /*
  * Determine whether it can be held by a sendable object, including the sendable object and primitive type.
  */
@@ -179,14 +200,12 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
                                            napi_value js_object,
                                            void* native_object,
                                            napi_finalize finalize_cb,
-                                           void* finalize_hint,
-                                           napi_ref* result);
+                                           void* finalize_hint);
 NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
                                                      napi_value js_object,
                                                      void* native_object,
                                                      napi_finalize finalize_cb,
                                                      void* finalize_hint,
-                                                     napi_ref* result,
                                                      size_t native_binding_size);
 NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result);
 NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result);

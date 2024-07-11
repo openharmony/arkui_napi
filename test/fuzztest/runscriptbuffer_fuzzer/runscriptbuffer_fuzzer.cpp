@@ -80,8 +80,10 @@ namespace OHOS {
 
         std::vector<uint8_t> vec(size, *data);
         g_nativeEngine.RunScriptBuffer(path.c_str(), vec, true);
+        g_nativeEngine.RunScriptBuffer(path.c_str(), vec, false);
         uint8_t* buffer = const_cast<uint8_t*>(data);
         g_nativeEngine.RunScriptBuffer(path, buffer, size, true);
+        g_nativeEngine.RunScriptBuffer(path, buffer, size, false);
     }
 }
 

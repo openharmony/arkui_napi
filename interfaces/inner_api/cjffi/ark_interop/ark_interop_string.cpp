@@ -36,36 +36,38 @@ ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size)
     return ARKTS_FromHandle(result);
 }
 
-bool ARKTS_IsString(ARKTS_Value value)
+bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
 {
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
     }
     v = *P_CAST(value, JSValueRef*);
-    return v.IsString();
+    auto vm = P_CAST(env, EcmaVM*);
+    return v.IsString(vm);
 }
 
 int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(ARKTS_IsString(value), "not a string");
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
     auto v = BIT_CAST(value, Local<StringRef>);
     return v->Utf8Length(vm);
 }
 
-int32_t ARKTS_GetValueUtf8(ARKTS_Value value, int32_t capacity, char* buffer)
+int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, char* buffer)
 {
-    ARKTS_ASSERT_I(ARKTS_IsString(value), "not a string");
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
+    auto vm = P_CAST(env, EcmaVM*);
     auto v = BIT_CAST(value, Local<StringRef>);
-    return v->WriteUtf8(buffer, capacity, true);
+    return v->WriteUtf8(vm, buffer, capacity, true);
 }
 
 const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(ARKTS_IsString(value), "not a string");
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
     auto v = BIT_CAST(value, Local<StringRef>);
     auto size = v->Utf8Length(vm);
@@ -77,7 +79,7 @@ const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
         LOGE("ARKTS_GetValueCString fail, out of memory");
         return nullptr;
     }
-    v->WriteUtf8(result, size, true);
+    v->WriteUtf8(vm, result, size, true);
     return result;
 }
 

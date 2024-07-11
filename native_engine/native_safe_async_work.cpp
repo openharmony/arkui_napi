@@ -96,13 +96,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 #endif
 
 #if defined(ENABLE_EVENT_HANDLER)
-    std::shared_ptr<EventRunner> runner = nullptr;
-    if (engine_->IsMainThread()) {
-        runner = EventRunner::GetMainEventRunner();
-    } else {
-        runner = EventRunner::Current();
-    }
-
+    std::shared_ptr<EventRunner> runner = EventRunner::Current();
     if (runner != nullptr) {
         eventHandler_ = std::make_shared<EventHandler>(runner);
     }
@@ -170,6 +164,10 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
         }
     } else {
         queue_.emplace(data);
+        if (!NativeEngine::IsAlive(engine_)) {
+            HILOG_ERROR("napi_env has been destoryed");
+            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        }
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
             HILOG_ERROR("uv async send failed %d", ret);
@@ -227,6 +225,10 @@ SafeAsyncCode NativeSafeAsyncWork::Release(NativeThreadSafeFunctionReleaseMode m
 
     if (threadCount_ == 0 ||
         mode == NativeThreadSafeFunctionReleaseMode::NATIVE_TSFUNC_ABORT) {
+        if (!NativeEngine::IsAlive(engine_)) {
+            HILOG_ERROR("napi_env has been destoryed");
+            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        }
         // trigger async handle
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
@@ -298,7 +300,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
             condition_.notify_one();
         }
 
-        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get();
+        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
@@ -376,7 +378,7 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
     // the task will be execute at main thread or worker thread
     auto task = [this, data]() {
         HILOG_DEBUG("The task is executing in main thread or worker thread");
-        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get();
+        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get(engine_);
         if (this->callJsCallback_ != nullptr) {
             this->callJsCallback_(engine_, func_, context_, data);
         } else {
@@ -398,4 +400,52 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
     HILOG_WARN("EventHandler feature is not supported");
     return napi_status::napi_generic_failure;
 #endif
+}
+
+napi_status NativeSafeAsyncWork::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
+{
+#ifdef ENABLE_EVENT_HANDLER
+    if (eventHandler_) {
+        if (eventHandler_->PostTask(cb, static_cast<EventQueue::Priority>(priority)))
+            return napi_status::napi_ok;
+        else
+            return napi_status::napi_generic_failure;
+    }
+#endif
+    CallbackWrapper *cbw = new (std::nothrow) CallbackWrapper();
+    if (!cbw) {
+        HILOG_ERROR("malloc failed!");
+        return napi_status::napi_generic_failure;
+    }
+    cbw->cb = cb;
+    auto code = Send(reinterpret_cast<void *>(cbw), NATIVE_TSFUNC_NONBLOCKING);
+
+    napi_status status = napi_status::napi_ok;
+    switch (code) {
+        case SafeAsyncCode::SAFE_ASYNC_OK:
+            status = napi_status::napi_ok;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_QUEUE_FULL:
+            status = napi_status::napi_queue_full;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_INVALID_ARGS:
+            status = napi_status::napi_invalid_arg;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_CLOSED:
+            status = napi_status::napi_closing;
+            break;
+        case SafeAsyncCode::SAFE_ASYNC_FAILED:
+            status = napi_status::napi_generic_failure;
+            break;
+        default:
+            HILOG_FATAL("this branch is unreachable, code is %{public}d", code);
+            status = napi_status::napi_generic_failure;
+            break;
+    }
+    if (status != napi_status::napi_ok) {
+        HILOG_ERROR("send event failed(%{public}d)", status);
+        delete cbw;
+        cbw = nullptr;
+    }
+    return status;
 }

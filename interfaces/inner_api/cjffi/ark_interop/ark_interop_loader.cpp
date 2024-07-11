@@ -16,7 +16,7 @@
 #include "node_api.h"
 #include "ark_native_engine.h"
 #include "ark_interop_log.h"
-#include "cj_environment.h"
+#include "cj_envsetup.h"
 
 static bool ParseLoadParams(napi_env env, napi_callback_info info, char* nameBuf, size_t& size)
 {
@@ -59,44 +59,26 @@ static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* resul
     do {
         const char* targetName;
         const char* loaderName = "ARKTS_LoadModule";
-        const char* helperName;
-        const char* setEnvName = "SetGlobalNapiEnv";
 #ifdef __OHOS__
         targetName = "libark_interop.z.so";
-        helperName = "libark_interop_helper_ffi.z.so";
 #elif defined(__WINDOWS__)
         targetName = "libark_interop.dll";
-        helperName = "libark_interop_helper_ffi.dll";
 #elif defined(__LINUX__)
         targetName = "libark_interop.so";
-        helperName = "libark_interop_helper_ffi.so";
 #endif
-        auto runtime = OHOS::CJEnvironment::GetInstance();
-        auto handle = runtime->LoadCJLibrary(OHOS::CJEnvironment::SYSTEM, targetName);
+        auto runtime = OHOS::CJEnv::LoadInstance();
+        auto handle = runtime->loadLibrary(0, targetName);
         if (!handle) {
             LOGE("open '%{public}s' failed", targetName);
             return false;
         }
-        auto symbol = runtime->GetSymbol(handle, loaderName);
+        auto symbol = runtime->getSymbol(handle, loaderName);
         if (!symbol) {
             LOGE("no symbol of '%{public}s'", loaderName);
             return false;
         }
         auto loader = reinterpret_cast<napi_value(*)(EcmaVM*, const char*)>(symbol);
         *result = loader(vm, libName);
-
-        handle = runtime->LoadCJLibrary(OHOS::CJEnvironment::SYSTEM, helperName);
-        if (!handle) {
-            LOGE("open '%{public}s' failed", helperName);
-            break;
-        }
-        symbol = runtime->GetSymbol(handle, setEnvName);
-        if (!symbol) {
-            LOGE("no symbol of '%{public}s'", setEnvName);
-            break;
-        }
-        auto func = reinterpret_cast<void (*)(void*)>(symbol);
-        func(env);
     } while (false);
     return true;
 }
@@ -113,13 +95,18 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
     if (!ParseLoadParams(env, info, nameBuf, realSize)) {
         return result;
     }
-    auto runtime = OHOS::CJEnvironment::GetInstance();
-    runtime->InitCJAppNS("/data/storage/el1/bundle/libs/arm64");
-    runtime->InitCJSDKNS("/data/storage/el1/bundle/libs/arm64/ohos:"
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    runtime->initCJChipSDKNS("/system/lib64/chipset-pub-sdk");
+    runtime->initCJAppNS("/data/storage/el1/bundle/libs/arm64");
+    runtime->initCJSDKNS("/data/storage/el1/bundle/libs/arm64/ohos:"
                                  "/data/storage/el1/bundle/libs/arm64/runtime");
-    runtime->InitCJSysNS("/system/lib64:/system/lib64/platformsdk:/system/lib64/module:/system/lib64/ndk");
-    if (!runtime->StartRuntime()) {
+    runtime->initCJSysNS("/system/lib64:/system/lib64/platformsdk:/system/lib64/module:/system/lib64/ndk");
+    if (!runtime->startRuntime()) {
         LOGE("start cjruntime failed");
+        return result;
+    }
+    if (!runtime->startUIScheduler()) {
+        LOGE("start cj ui context failed");
         return result;
     }
 

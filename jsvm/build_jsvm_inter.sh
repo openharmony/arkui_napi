@@ -76,6 +76,40 @@ do_compile() {
     popd
 }
 
+do_strip() {
+    stripped_binary_path=${TARGET_GEN_DIR}/libjsvm.so
+    binary=${stripped_binary_path}
+    echo "${binary}"
+    dynsyms_path="${stripped_binary_path}.dynsyms"
+    funcsysms_path="${stripped_binary_path}.funcsyms"
+    keep_path="${stripped_binary_path}.keep"
+    debug_path="${stripped_binary_path}.debug"
+    mini_debug_path="${stripped_binary_path}.minidebug"
+
+    ${NM} -D ${binary} --format=posix --defined-only \
+            | awk '{ print $1 }' | sort > ${dynsyms_path}
+    ${NM} ${binary} --format=posix --defined-only \
+            | awk '{ if ($2 == "T" || $2 == "t" || $2 == "D") print $1 }' \
+            | sort > ${funcsysms_path}
+    comm -13 ${dynsyms_path} ${funcsysms_path} > ${keep_path}
+
+    ${OBJCOPY} --only-keep-debug ${binary} ${debug_path}
+    ${OBJCOPY} -S --remove-section .gdb_index --remove-section .comment \
+            --keep-symbols=${keep_path} ${debug_path} ${mini_debug_path}
+
+    ${STRIP} --strip-all --keep-section=.comment ${binary}
+
+    xz ${mini_debug_path}
+    ${OBJCOPY} --add-section .gnu_debugdata=${mini_debug_path}.xz ${binary}
+
+    rm -f ${dynsyms_path}
+    rm -f ${funcsysms_path}
+    rm -f ${keep_path}
+    rm -f ${debug_path}
+    rm -f ${mini_debug_path}
+    rm -f ${mini_debug_path}.xz
+}
+
 do_install () {
     cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}
 }
@@ -87,7 +121,6 @@ do_env() {
     [ -d "${out_dir}" ] || mkdir -p ${out_dir}
     [ -L "${workdir}/out" ] || ln -s ${out_dir} ${workdir}/out
 
-    argurment+=" -s"
     argurment+=" -fstack-protector-strong"
     argurment+=" -Wl,-z,noexecstack"
     argurment+=" -Wl,-z,relro"
@@ -107,6 +140,7 @@ do_env() {
         cflags="  --target=aarch64-linux-ohos"
         cflags+=" --sysroot=${SYSROOT}"
         cflags+=" -march=armv8-a"
+        cflags+=" -DV8_OS_OH=1"
         cflags+=" -mfpu=neon"
         cflags_host="-m64"
         ARCH="aarch64"

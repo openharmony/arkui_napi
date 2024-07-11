@@ -69,16 +69,59 @@ static GetContainerScopeIdCallback getContainerScopeIdFunc_;
 static ContainerScopeCallback initContainerScopeFunc_;
 static ContainerScopeCallback finishContainerScopeFunc_;
 
-NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine) {}
+std::mutex NativeEngine::g_alivedEngineMutex_;
+std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
+
+NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
+{
+    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+    g_alivedEngine_.emplace(this);
+}
 
 NativeEngine::~NativeEngine()
 {
-    HILOG_DEBUG("NativeEngine::~NativeEngine");
+    HILOG_INFO("NativeEngine::~NativeEngine");
     if (cleanEnv_ != nullptr) {
         cleanEnv_();
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
+    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+    g_alivedEngine_.erase(this);
+}
+
+static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
+{
+    if (data != nullptr) {
+        CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
+        cbw->cb();
+        delete cbw;
+        cbw = nullptr;
+        data = nullptr;
+    }
+}
+
+void NativeEngine::CreateDefaultFunction(void)
+{
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
+    if (defaultFunc_) {
+        return;
+    }
+    napi_env env = reinterpret_cast<napi_env>(this);
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
+        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+}
+
+void NativeEngine::DestoryDefaultFunction(void)
+{
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
+    if (!defaultFunc_) {
+        return;
+    }
+    napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
+    defaultFunc_ = nullptr;
 }
 
 void NativeEngine::Init()
@@ -94,11 +137,13 @@ void NativeEngine::Init()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
+    CreateDefaultFunction();
 }
 
 void NativeEngine::Deinit()
 {
-    HILOG_DEBUG("NativeEngine::Deinit");
+    HILOG_INFO("NativeEngine::Deinit");
+    DestoryDefaultFunction();
     uv_sem_destroy(&uvSem_);
     uv_close((uv_handle_t*)&uvAsync_, nullptr);
     RunCleanup();
@@ -140,6 +185,7 @@ pthread_t NativeEngine::GetTid() const
 bool NativeEngine::ReinitUVLoop()
 {
     if (loop_ != nullptr) {
+        DestoryDefaultFunction();
         uv_sem_destroy(&uvSem_);
         uv_close((uv_handle_t*)&uvAsync_, nullptr);
         uv_run(loop_, UV_RUN_ONCE);
@@ -153,6 +199,7 @@ bool NativeEngine::ReinitUVLoop()
     tid_ = pthread_self();
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
+    CreateDefaultFunction();
     return true;
 }
 
@@ -197,7 +244,7 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         if (buffer == nullptr) {
             strLength = static_cast<size_t>(str->Utf8Length(vm) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
-            int copied = str->WriteUtf8(buffer, NAME_BUFFER_SIZE - 1, true) - 1;
+            int copied = str->WriteUtf8(vm, buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
             strLength = static_cast<size_t>(copied);
         } else {
@@ -242,7 +289,7 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
                             size_t bufferSize,
                             int32_t* nchars)
 {
-    int32_t length = static_cast<int32_t>(nativeString->Length());
+    int32_t length = static_cast<int32_t>(nativeString->Length(vm));
     int32_t pos = 0;
     int32_t writableSize = static_cast<int32_t>(bufferSize);
     int32_t i = 0;
@@ -253,7 +300,7 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
         if (len > writableSize) {
             break;
         }
-        str->WriteUtf8((buffer + pos), writableSize);
+        str->WriteUtf8(vm, (buffer + pos), writableSize);
         writableSize -= len;
         pos += len;
     }
@@ -273,7 +320,7 @@ void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);
-    if (!nativeString->IsString()) {
+    if (!nativeString->IsString(vm)) {
         HILOG_ERROR("nativeValue not is string");
         return;
     }
@@ -292,7 +339,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
                                std::string& buffer,
                                const char* encode)
 {
-    int32_t length = static_cast<int32_t>(nativeString->Length());
+    int32_t length = static_cast<int32_t>(nativeString->Length(vm));
     int32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";
@@ -314,7 +361,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
             tempBuf.clear();
             pos = 0;
         }
-        str->WriteUtf8((tempBuf.data() + pos), pos + len + 1);
+        str->WriteUtf8(vm, (tempBuf.data() + pos), pos + len + 1);
         pos += len;
     }
     if (pos > 0) {
@@ -339,7 +386,7 @@ void NativeEngine::EncodeToChinese(napi_value value, std::string& buffer, const 
     auto vm = GetEcmaVm();
     LocalScope scope(vm);
     auto nativeString = nativeValue->ToString(vm);
-    if (!nativeString->IsString()) {
+    if (!nativeString->IsString(vm)) {
         HILOG_ERROR("nativeValue not is string");
         return;
     }
@@ -714,11 +761,6 @@ napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
         ThrowException("RunScriptForAbc: abc file is empty.");
         return nullptr;
     }
-    panda::JSNApi::SetModuleInfo(vm, ami, std::string(entryPoint));
-    if (panda::JSNApi::HasPendingException(vm)) {
-        HandleUncaughtException();
-        return nullptr;
-    }
     panda::JSNApi::Execute(vm, ami, entryPoint, false, true);
     if (panda::JSNApi::HasPendingException(vm)) {
         HandleUncaughtException();
@@ -925,4 +967,16 @@ void NativeEngine::ThrowException(const char* msg)
     auto vm = GetEcmaVm();
     Local<panda::JSValueRef> error = panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, msg));
     panda::JSNApi::ThrowException(vm, error);
+}
+
+napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
+{
+    std::shared_lock<std::shared_mutex> readLock(eventMutex_);
+    if (defaultFunc_) {
+        auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
+        return safeAsyncWork->SendEvent(cb, priority);
+    } else {
+        HILOG_ERROR("default function is nullptr!");
+        return napi_status::napi_generic_failure;
+    }
 }

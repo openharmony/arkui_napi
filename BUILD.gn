@@ -29,6 +29,13 @@ config("ace_napi_config") {
     defines += [ "PREVIEW" ]
   }
 
+  if (is_arkui_x) {
+    include_dirs += [
+      "//third_party/node/src",
+      "//third_party/libuv/include",
+    ]
+  }
+
   if (current_os == "ohos" && current_cpu == "x86_64") {
     defines += [ "SIMULATOR" ]
   }
@@ -52,15 +59,6 @@ config("ace_napi_config") {
   }
 }
 
-if (is_arkui_x) {
-  config("ace_napi_static_config") {
-    include_dirs = [
-      "//third_party/node/src",
-      "//third_party/libuv/include",
-    ]
-  }
-}
-
 config("module_manager_config") {
   include_dirs = [ "module_manager" ]
 }
@@ -81,9 +79,8 @@ ohos_source_set("ace_napi_static") {
     external_deps += [ "faultloggerd:libunwinder" ]
   }
   if (is_arkui_x) {
-    public_configs += [ ":ace_napi_static_config" ]
     if (napi_enable_container_scope) {
-      deps += [ ":ace_container_scope_static" ]
+      external_deps += [ "ace_engine:ace_container_scope_static" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]
     }
     if (target_os == "android") {
@@ -102,7 +99,7 @@ ohos_source_set("ace_napi_static") {
       "ENABLE_EVENT_HANDLER",
     ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
-      deps += [ ":ace_container_scope" ]
+      deps += [ "ace_engine:ace_container_scope" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]
     }
   }
@@ -128,6 +125,19 @@ ohos_source_set("ace_napi_static") {
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
+
+  if (is_ohos && is_clang && enhanced_opt) {
+    if (ace_engine_feature_enable_pgo) {
+      cflags_cc += [
+        "-fprofile-use=" +
+            rebase_path("${ace_engine_feature_pgo_path}/libace_napi.profdata",
+                        root_build_dir),
+        "-Wno-error=backend-plugin",
+        "-Wno-profile-instr-out-of-date",
+        "-Wno-profile-instr-unprofiled",
+      ]
+    }
+  }
 
   subsystem_name = "arkui"
   part_name = "napi"
@@ -159,24 +169,13 @@ if (is_arkui_x) {
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
     part_name = "napi"
+
+    if (is_ohos && is_clang && enhanced_opt) {
+      if (ace_engine_feature_enable_pgo) {
+        ldflags = [ "-Wl,-mllvm,-align-all-functions=4" ]
+      }
+    }
   }
-}
-
-config("container_scope_config") {
-  visibility = [ ":*" ]
-  include_dirs = [ "$ace_root/frameworks" ]
-}
-
-ohos_shared_library("ace_container_scope") {
-  public_configs = [ ":container_scope_config" ]
-
-  configs = [ "$ace_root:ace_config" ]
-
-  sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
-
-  subsystem_name = "arkui"
-  innerapi_tags = [ "platformsdk_indirect" ]
-  part_name = "napi"
 }
 
 #cj_ffi
@@ -210,7 +209,7 @@ ohos_shared_library("cj_bind_native") {
   part_name = "napi"
 }
 
-ohos_shared_library("cj_bind_ffi_source") {
+ohos_source_set("cj_bind_ffi_source") {
   sources = [
     "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
     "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
@@ -264,19 +263,10 @@ group("cj_ffi_libraries") {
   deps = [ ":cj_bind_ffi" ]
 }
 
-ohos_source_set("ace_container_scope_static") {
-  public_configs = [ ":container_scope_config" ]
-
-  configs = [ "$ace_root:ace_config" ]
-
-  sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
-}
-
 group("napi_packages") {
   deps = [
     ":ace_napi",
     "interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "interfaces/inner_api/cjffi/ark_interop_helper:ark_interop_helper_ffi",
   ]
   if (target_cpu == "arm64") {
     deps += [ "jsvm:libjsvm" ]
@@ -297,5 +287,13 @@ if (!build_ohos_ndk && !is_arkui_x) {
       "test/fuzztest:fuzztest",
       "test/unittest:unittest",
     ]
+  }
+}
+
+group("napi_host_performance_test") {
+  testonly = true
+  deps = []
+  if (host_os != "mac") {
+    deps += [ "test/performance:ark_napi_performance_test(${host_toolchain})" ]
   }
 }

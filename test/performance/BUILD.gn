@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,9 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/ohos.gni")
+import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 
-import("//build/test.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
 if (is_standard_system) {
@@ -22,36 +23,26 @@ if (is_standard_system) {
   module_output_path = "ace_engine_full/napi"
 }
 
-ohos_unittest("test_ark_interop") {
+ohos_unittest("ark_napi_performance_test") {
   module_out_path = module_output_path
+  testonly = true
 
-  include_dirs = ark_include
-  include_dirs += [
-    "../../../interfaces/inner_api/cjffi/ark_interop/",
-    "../../../interfaces/inner_api/cjffi/ark_interop_helper/",
-  ]
+  sources = [ "ark_napi_performance_test.cpp" ]
 
   cflags = [ "-g3" ]
+  defines = [ "NAPI_TEST" ]
 
-  sources = [ "test_ark_interop.cpp" ]
+  include_dirs = ark_include
+  deps = ark_deps
+  deps += [ "../..:ace_napi" ]
 
-  deps = [
-    "../../..:ace_napi",
-    "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "//third_party/libuv:uv",
-  ]
-  defines = []
-  if (use_clang_coverage) {
-    defines += [ "CLANG_COVERAGE" ]
-  }
+  external_deps = [ "bounds_checking_function:libsec_shared" ]
 
-  external_deps = [
-    "ets_runtime:libark_jsruntime",
-    "hilog:libhilog",
-  ]
-}
+  external_deps += [ "hilog:libhilog" ]
+  external_deps += [ "ets_runtime:libark_jsruntime" ]
 
-group("cj_native_unittest") {
-  testonly = true
-  deps = [ ":test_ark_interop" ]
+  install_enable = false
+
+  part_name = "napi"
+  subsystem_name = "arkui"
 }

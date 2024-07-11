@@ -105,6 +105,7 @@ using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column)>;
+using AppFreezeFilterCallback = std::function<bool(const int32_t pid)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using RefFinalizer = std::pair<NapiNativeFinalize, std::tuple<NativeEngine*, void*, void*>>;
@@ -189,6 +190,7 @@ public:
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
     virtual void SetJsDumpThresholds(size_t thresholds) = 0;
+    virtual void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
@@ -201,9 +203,8 @@ public:
     virtual void ResumeVMById(uint32_t tid) = 0;
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON) = 0;
-    virtual void DumpCpuProfile(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false, bool isFullGC = true) = 0;
+        DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false, bool captureNumericValue = false) = 0;
+    virtual void DumpCpuProfile() = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false, bool isFullGC = true) = 0;
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
@@ -233,7 +234,7 @@ public:
     virtual napi_value ValueToNapiValue(JSValueWrapper& value) = 0;
     virtual std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) = 0;
 
-    virtual bool TriggerFatalException(napi_value error) = 0;
+    virtual void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
     void MarkWorkerThread()
@@ -346,6 +347,12 @@ public:
     void DecreaseListeningCounter();
     bool HasListeningCounter();
 
+    static bool IsAlive(NativeEngine* env)
+    {
+        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+        return g_alivedEngine_.find(env) != g_alivedEngine_.end();
+    }
+
     virtual void RunCleanup();
 
     bool IsStopping() const
@@ -399,8 +406,10 @@ public:
     virtual void* GetPromiseRejectCallback() = 0;
     virtual void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) = 0;
     virtual bool GetIsBundle() = 0;
+    virtual bool GetIsNormalizedOhmUrlPack() = 0;
     virtual std::string GetBundleName() = 0;
     virtual bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) = 0;
+    virtual int GetProcessStartRealTime() = 0;
     // run script by path
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
@@ -469,8 +478,13 @@ public:
      */
     napi_status StopEventLoop();
 
+    napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
+
 private:
     void StartCleanupTimer();
+    void CreateDefaultFunction(void);
+    void DestoryDefaultFunction(void);
+
 protected:
     void *jsEngine_;
     void* jsEngineInterface_;
@@ -525,7 +539,8 @@ private:
     bool checkUVLoop_ = false;
     uv_thread_t uvThread_;
 #endif
-
+    mutable std::shared_mutex eventMutex_;
+    napi_threadsafe_function defaultFunc_ = nullptr;
     PostTask postTask_ = nullptr;
     CleanEnv cleanEnv_ = nullptr;
     uv_async_t uvAsync_;
@@ -540,6 +555,9 @@ private:
 
     std::mutex loopRunningMutex_;
     bool isLoopRunning_ = false;
+
+    static std::mutex g_alivedEngineMutex_;
+    static std::unordered_set<NativeEngine*> g_alivedEngine_;
 };
 
 class TryCatch : public panda::TryCatch {

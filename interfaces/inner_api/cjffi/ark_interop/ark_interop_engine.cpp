@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <string>
+#include <unordered_map>
+
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
 #include "ark_interop_napi.h"
@@ -26,6 +29,7 @@
 struct ARKTS_Engine_ {
     panda::EcmaVM* vm;
     ArkNativeEngine* engine;
+    std::unordered_map<std::string, std::string> loadedAbcs;
 #ifdef __OHOS__
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler;
 #endif
@@ -119,7 +123,6 @@ ARKTS_Engine ARKTS_CreateEngine()
     }
 #endif
 
-    panda::JSNApi::PostFork(vm, options);
     if (!engine->ReinitUVLoop()) {
         LOGE("init uv loop failed");
         ARKTS_DestroyEngine(result);
@@ -165,12 +168,53 @@ ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine)
     return P_CAST(engine->vm, ARKTS_Env);
 }
 
-bool ARKTS_ExecuteBin(ARKTS_Env env, const char* libname, const char* entryName)
+bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const char* entryPoint, bool forceReload)
 {
-    ARKTS_ASSERT_F(env, "env is null");
-    auto vm = P_CAST(env, EcmaVM*);
-    ARKTS_ASSERT_F(libname && entryName, "libname or entryName is null");
-    return JSNApi::Execute(vm, libname, entryName);
+    ARKTS_ASSERT_F(engine, "engine is null");
+    ARKTS_ASSERT_F(filePath, "filePath is null");
+    ARKTS_ASSERT_F(entryPoint, "entryPoint is null");
+
+    if (!forceReload) {
+        auto existed = engine->loadedAbcs.find(entryPoint);
+        if (existed != engine->loadedAbcs.end()) {
+            if (existed->second == filePath) {
+                return true;
+            } else {
+                LOGE("can't shadow loaded entryPoint from another .abc, entryPoint: %{public}s", entryPoint);
+                return false;
+            }
+        }
+    }
+    if (access(filePath, R_OK) != 0) {
+        LOGE("no such file: %{public}s", filePath);
+        return false;
+    }
+    auto vm = engine->vm;
+    panda::JSNApi::NotifyLoadModule(vm);
+    auto success = panda::JSNApi::Execute(vm, filePath, entryPoint);
+    if (success) {
+        engine->loadedAbcs[entryPoint] = filePath;
+    }
+    return success;
+}
+
+ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryPoint, const char* importName)
+{
+    ARKTS_ASSERT_P(engine, "engine is null");
+    ARKTS_ASSERT_P(entryPoint, "entryPoint is null");
+    ARKTS_ASSERT_P(importName, "importName is null");
+
+    if (engine->loadedAbcs.find(entryPoint) == engine->loadedAbcs.end()) {
+        return ARKTS_CreateUndefined();
+    }
+
+    auto vm = engine->vm;
+    auto value = panda::JSNApi::GetExportObject(vm, entryPoint, importName);
+    if (value->IsHole()) {
+        return ARKTS_CreateUndefined();
+    }
+
+    return ARKTS_FromHandle(value);
 }
 
 ARKTS_Value ARKTS_Require(
@@ -185,12 +229,12 @@ ARKTS_Value ARKTS_Require(
     if (!isNativeModule) {
         auto funcName = ARKTS_CreateUtf8(env, "requireInternal", -1);
         auto funcValue = ARKTS_GetProperty(env, global, funcName);
-        ARKTS_ASSERT_P(ARKTS_IsCallable(funcName), "global func requireInternal is undefined");
+        ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcName), "global func requireInternal is undefined");
         return ARKTS_Call(env, funcValue, ARKTS_CreateUndefined(), 1, &targetValue);
     }
     auto funcName = ARKTS_CreateUtf8(env, "requireNapi", -1);
     auto funcValue = ARKTS_GetProperty(env, global, funcName);
-    ARKTS_ASSERT_P(ARKTS_IsCallable(funcValue), "global func requireNapi is undefined");
+    ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcValue), "global func requireNapi is undefined");
 
     if (relativePath) {
         ARKTS_Value args[] = { targetValue, ARKTS_CreateBool(isAppModule), ARKTS_CreateUndefined(),

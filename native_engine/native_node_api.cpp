@@ -39,6 +39,7 @@ NAPI_EXTERN void napi_module_register(napi_module* mod)
     module.version = mod->nm_version;
     module.fileName = mod->nm_filename;
     module.name = mod->nm_modname;
+    module.flags = mod->nm_flags;
     module.registerCallback = (RegisterCallback)mod->nm_register_func;
 
     moduleManager->Register(&module);
@@ -87,22 +88,19 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
     return napi_clear_last_error(env);
 }
 
-NAPI_INNER_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
+NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
 {
     NAPI_PREAMBLE(env);
-    HILOG_INFO("%{public}s, start.", __func__);
     CHECK_ENV(env);
     CHECK_ARG(env, err);
 
+    auto exceptionValue = LocalValueFromJsValue(err);
+    auto ecmaVm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    RETURN_STATUS_IF_FALSE(env, exceptionValue->IsError(ecmaVm), napi_invalid_arg);
+
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    if (engine->TriggerFatalException(err)) {
-        HILOG_INFO("%{public}s, end.", __func__);
-        return napi_status::napi_ok;
-    } else {
-        HILOG_INFO("%{public}s, end.", __func__);
-        exit(1);
-        return napi_status::napi_ok;
-    }
+    engine->TriggerFatalException(exceptionValue);
+    return napi_ok;
 }
 
 // Methods to manage simple async operations
@@ -121,6 +119,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto ecmaVm = engine->GetEcmaVm();
     auto asyncResource = LocalValueFromJsValue(async_resource);
     auto asyncResourceName = LocalValueFromJsValue(async_resource_name);
     auto asyncExecute = reinterpret_cast<NativeAsyncExecuteCallback>(execute);
@@ -130,7 +129,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     char name[64] = {0}; // 64:NAME_BUFFER_SIZE
     if (!asyncResourceName->IsNull()) {
         panda::Local<panda::StringRef> nativeString(asyncResourceName);
-        int copied = nativeString->WriteUtf8(name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
+        int copied = nativeString->WriteUtf8(ecmaVm, name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
         name[copied] = '\0';
     }
     auto asyncWork  = new NativeAsyncWork(engine, asyncExecute, asyncComplete, name, data);
@@ -186,6 +185,10 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
     CHECK_ARG(env, loop);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!NativeEngine::IsAlive(engine)) {
+        HILOG_ERROR("napi_env has been destoryed!");
+        return napi_status::napi_generic_failure;
+    }
     *loop = engine->GetUVLoop();
 
     return napi_status::napi_ok;
@@ -605,8 +608,8 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
     }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(), napi_object_expected);
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(), napi_function_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(vm), napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(vm), napi_function_expected);
     panda::JSValueRef* Obj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* funRef = reinterpret_cast<panda::FunctionRef *>(func);
     panda::JSValueRef* callBackRst;

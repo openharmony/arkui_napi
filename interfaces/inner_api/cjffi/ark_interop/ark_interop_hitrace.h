@@ -21,9 +21,9 @@
 #include "ark_interop_macro.h"
 
 DECL_START
-EXPORT void ARKTS_HiTraceStartTrace(const char*, int32_t);
-EXPORT void ARKTS_HiTraceFinishTrace(const char*, int32_t);
-EXPORT void ARKTS_HiTraceCountTrace(const char*, int64_t);
+EXPORT void ARKTS_HiTraceStartTrace(const char* name, int32_t taskId);
+EXPORT void ARKTS_HiTraceFinishTrace(const char* name, int32_t taskId);
+EXPORT void ARKTS_HiTraceCountTrace(const char* name, int64_t count);
 DECL_END
 
 #endif // NAPI_ARK_INTEROP_HITRACE_H

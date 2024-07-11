@@ -61,6 +61,7 @@ struct NativeModule {
     GetJSCodeCallback getABCCode = nullptr;
     GetJSCodeCallback getJSCode = nullptr;
     int32_t version = 0;
+    uint32_t flags = 0;
     uint32_t refCount = 0;
     NativeModule* next = nullptr;
     const char* jsCode = nullptr;
@@ -123,7 +124,8 @@ private:
     bool RemoveModuleBuffer(const std::string moduleKey);
     const uint8_t* GetBufferHandle(const std::string& moduleKey) const;
     void RegisterByBuffer(const std::string& moduleKey, const uint8_t* abcBuffer, size_t len);
-    bool CreateNewNativeModule();
+    bool CreateTailNativeModule();
+    bool CreateHeadNativeModule();
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool RemoveNativeModule(const std::string& moduleKey);
@@ -138,14 +140,15 @@ private:
 #endif
 
     std::mutex nativeModuleListMutex_;
-    NativeModule* firstNativeModule_ = nullptr;
-    NativeModule* lastNativeModule_ = nullptr;
+    NativeModule* headNativeModule_ = nullptr;
+    NativeModule* tailNativeModule_ = nullptr;
     NativeModule* cacheNativeModule_ = nullptr;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;
     std::string prefix_;
     bool isAppModule_ = false;
+    std::string loadingModuleName_;
 
     std::mutex nativeEngineListMutex_;
     std::map<std::string, NativeEngine*> nativeEngineList_;

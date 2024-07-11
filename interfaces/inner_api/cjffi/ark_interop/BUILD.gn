@@ -39,15 +39,24 @@ config("ark_interop_config") {
   }
 }
 
+ohos_source_set("cj_envsetup") {
+  part_name = "napi"
+  subsystem_name = "arkui"
+
+  configs = [ ":ark_interop_config" ]
+  sources = [ "cj_envsetup.cpp" ]
+}
+
 ohos_shared_library("ark_interop") {
   part_name = "napi"
   subsystem_name = "arkui"
   innerapi_tags = [ "platformsdk" ]
 
-  configs = [ ":ark_interop_config" ]
+  public_configs = [ ":ark_interop_config" ]
 
   sources = [
     "ark_interop_async.cpp",
+    "ark_interop_bigint.cpp",
     "ark_interop_engine.cpp",
     "ark_interop_global.cpp",
     "ark_interop_hitrace.cpp",
@@ -59,10 +68,12 @@ ohos_shared_library("ark_interop") {
     "ark_interop_symbol.cpp",
   ]
 
-  deps = [ "../../../..:ace_napi" ]
+  deps = [
+    ":cj_envsetup",
+    "../../../..:ace_napi",
+  ]
 
   external_deps = [
-    "ability_runtime:cj_environment",
     "ets_runtime:libark_jsruntime",
     "hilog:libhilog",
   ]
@@ -106,10 +117,10 @@ ohos_shared_library("ark_interop_loader") {
 
   sources = [ "ark_interop_loader.cpp" ]
 
-  external_deps = [
-    "ability_runtime:cj_environment",
-    "hilog:libhilog",
-  ]
+  external_deps = [ "hilog:libhilog" ]
 
-  deps = [ "../../../..:ace_napi" ]
+  deps = [
+    ":cj_envsetup",
+    "../../../..:ace_napi",
+  ]
 }

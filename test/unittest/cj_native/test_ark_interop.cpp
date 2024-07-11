@@ -14,7 +14,6 @@
  */
 
 #include "ark_interop_external.h"
-#include "ark_interop_helper.h"
 #include "ark_interop_hitrace.h"
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
@@ -60,25 +59,11 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi001, TestSize.Level1)
     ARKTS_InitEventHandle(env);
 }
 
-HWTEST_F(ArkInteropTest, ArkTSInteropNapi002, TestSize.Level1)
-{
-    ARKTS_Env env = ARKTS_GetContext(engine_);
-    char target[] = "123";
-    char appModulePath[] = "";
-    ARKTS_Require(env, target, false, false, appModulePath);
-    ARKTS_Require(env, target, true, false, appModulePath);
-    ARKTS_Require(env, target, true, false, nullptr);
-    EXPECT_FALSE(ARKTS_ExecuteBin(env, nullptr, nullptr));
-
-    // Recreate the engine to clear the exception.
-    ARKTS_DestroyEngine(engine_);
-    engine_ = ARKTS_CreateEngine();
-}
-
-void TestComplexType(ARKTS_Env env)
+#ifdef CLANG_COVERAGE
+static void TestComplexType(ARKTS_Env env)
 {
     auto glbConst = ARKTS_GetGlobalConstant(env);
-    ARKTS_GetValueType(glbConst);
+    ARKTS_GetValueType(env, glbConst);
     auto numv = ARKTS_CreateF64(12.34);
     auto numv1 = ARKTS_CreateF64(12.34);
     EXPECT_FALSE(ARKTS_StrictEqual(env, glbConst, numv));
@@ -88,8 +73,8 @@ void TestComplexType(ARKTS_Env env)
     // string
     char origeStr[] = "ut test ArkInteropNapi004";
     auto strValue = ARKTS_CreateUtf8(env, origeStr, strlen(origeStr));
-    EXPECT_EQ(ARKTS_GetValueUtf8(strValue, strlen(origeStr), origeStr), strlen(origeStr) + 1);
-    EXPECT_TRUE(ARKTS_IsString(strValue));
+    EXPECT_EQ(ARKTS_GetValueUtf8(env, strValue, strlen(origeStr), origeStr), strlen(origeStr) + 1);
+    EXPECT_TRUE(ARKTS_IsString(env, strValue));
     EXPECT_EQ(ARKTS_GetValueUtf8Size(env, strValue), strlen(origeStr) + 1);
     const char* transStr = ARKTS_GetValueCString(env, strValue);
     EXPECT_EQ(strcmp(transStr, origeStr), 0);
@@ -98,17 +83,17 @@ void TestComplexType(ARKTS_Env env)
 
     // func
     ARKTS_Value func = ARKTS_CreateFunc(env, 0);
-    EXPECT_TRUE(ARKTS_IsCallable(func));
+    EXPECT_TRUE(ARKTS_IsCallable(env, func));
     ARKTS_Call(env, func, ARKTS_CreateUndefined(), 0, nullptr);
 
     // object
     ARKTS_Value objv = ARKTS_CreateObject(env);
     EXPECT_TRUE(ARKTS_IsHeapObject(objv));
-    EXPECT_TRUE(ARKTS_IsObject(objv));
+    EXPECT_TRUE(ARKTS_IsObject(env, objv));
 
     // class
     ARKTS_Value cls = ARKTS_CreateClass(env, 0, ARKTS_CreateUndefined());
-    EXPECT_TRUE(ARKTS_IsClass(cls));
+    EXPECT_TRUE(ARKTS_IsClass(env, cls));
     ARKTS_GetPrototype(env, cls);
     auto clsObj = ARKTS_New(env, cls, 0, nullptr);
     EXPECT_FALSE(ARKTS_InstanceOf(env, clsObj, cls));
@@ -141,7 +126,7 @@ void TestComplexType(ARKTS_Env env)
     engine_ = ARKTS_CreateEngine();
 }
 
-void TestBasicType(ARKTS_Env env)
+static void TestBasicType(ARKTS_Env env)
 {
     // global value
     char origeStr[] = "ut test ArkInteropNapi005";
@@ -153,15 +138,15 @@ void TestBasicType(ARKTS_Env env)
 
     // external
     auto extv = ARKTS_CreateExternal(env, nullptr);
-    EXPECT_TRUE(ARKTS_IsExternal(extv));
-    EXPECT_EQ(ARKTS_GetExternalData(extv), nullptr);
+    EXPECT_TRUE(ARKTS_IsExternal(env, extv));
+    EXPECT_EQ(ARKTS_GetExternalData(env, extv), nullptr);
 
     // symbol
     char des[] = "symbol test";
     auto symv = ARKTS_CreateSymbol(env, des, strlen(des));
     ARKTS_CreateSymbol(env, nullptr, 0);
-    EXPECT_TRUE(ARKTS_IsSymbol(symv));
-    EXPECT_FALSE(ARKTS_IsSymbol(ARKTS_CreateBool(true)));
+    EXPECT_TRUE(ARKTS_IsSymbol(env, symv));
+    EXPECT_FALSE(ARKTS_IsSymbol(env, ARKTS_CreateBool(true)));
     EXPECT_EQ(strcmp(des, ARKTS_GetSymbolDesc(env, symv)), 0);
 
     // promise capability
@@ -169,13 +154,13 @@ void TestBasicType(ARKTS_Env env)
     auto promv = ARKTS_GetPromiseFromCapability(env, prom);
     ARKTS_PromiseCapabilityResolve(env, prom, promv);
     ARKTS_PromiseCapabilityReject(env, prom, promv);
-    EXPECT_TRUE(ARKTS_IsPromise(promv));
+    EXPECT_TRUE(ARKTS_IsPromise(env, promv));
     ARKTS_PromiseThen(env, promv, ARKTS_CreateFunc(env, 0), promv);
     ARKTS_PromiseCatch(env, promv, ARKTS_CreateFunc(env, 0));
 
     // array buffer
     auto abv1 = ARKTS_CreateArrayBuffer(env, 1024);
-    EXPECT_TRUE(ARKTS_IsArrayBuffer(abv1));
+    EXPECT_TRUE(ARKTS_IsArrayBuffer(env, abv1));
     auto rawPtr = (int8_t*)ARKTS_GetArrayBufferRawPtr(env, abv1);
     rawPtr[0] = 1;
 
@@ -203,7 +188,6 @@ void TestBasicType(ARKTS_Env env)
     EXPECT_NE(ARKTS_GetProperty(env, objv, strValue), v);
 }
 
-#ifdef CLANG_COVERAGE
 HWTEST_F(ArkInteropTest, ArkTSInteropNapi003, TestSize.Level1)
 {
     // Test for no callback is registered.
@@ -250,7 +234,6 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi005, TestSize.Level1)
 {
     ARKTS_Env env = ARKTS_GetContext(engine_);
     EXPECT_NE(ARKTS_GetNAPIEnv(engine_), nullptr);
-    ARKTS_SetStackLimit(env, ARKTS_GetStackLimit(env));
 
     auto scope = ARKTS_OpenScope(env);
     auto subscope = ARKTS_OpenScope(env);
@@ -273,26 +256,17 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapi006, TestSize.Level1)
 HWTEST_F(ArkInteropTest, ArkTSInteropNapi007, TestSize.Level1)
 {
     ARKTS_Env env = ARKTS_GetContext(engine_);
-    ARKTS_GetValueType(ARKTS_CreateNull());
-    ARKTS_GetValueType(ARKTS_CreateUndefined());
+    ARKTS_GetValueType(env, ARKTS_CreateNull());
+    ARKTS_GetValueType(env, ARKTS_CreateUndefined());
 
     char des[] = "symbol test";
     auto symv = ARKTS_CreateSymbol(env, des, strlen(des));
-    ARKTS_GetValueType(symv);
+    ARKTS_GetValueType(env, symv);
     ARKTS_StrictEqual(env, symv, symv);
 
     auto boolv = ARKTS_CreateBool(false);
-    ARKTS_GetValueType(boolv);
+    ARKTS_GetValueType(env, boolv);
     ARKTS_StrictEqual(env, boolv, boolv);
-}
-
-HWTEST_F(ArkInteropTest, ArkTSInteropNapi008, TestSize.Level1)
-{
-    auto jsRuntimeCI = panda::JsiRuntimeCallInfo();
-    ARKTS_CallInfo callinfo = P_CAST(&jsRuntimeCI, ARKTS_CallInfo);
-    ARKTS_GetArgCount(callinfo);
-    ARKTS_GetArg(callinfo, 0);
-    ARKTS_GetThisArg(callinfo);
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiExternal001, TestSize.Level1)

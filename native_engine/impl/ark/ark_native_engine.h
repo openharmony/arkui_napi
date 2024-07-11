@@ -199,11 +199,14 @@ public:
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 
-    bool TriggerFatalException(napi_value error) override;
+    void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) override;
     bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) override;
 
     // Set jsdump thresholds
     void SetJsDumpThresholds(size_t thresholds) override;
+
+    // Set Appfreeze Filter
+    void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) override;
 
     // Detect performance to obtain cpuprofiler file
     void StartCpuProfiler(const std::string& fileName = "") override;
@@ -219,9 +222,8 @@ public:
     // isVmMode means the internal class in vm is visible.
     // isPrivate means the number and string is not visible.
     void DumpHeapSnapshot(const std::string& path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON) override;
-    void DumpCpuProfile(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false, bool isFullGC = true) override;
+        DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false, bool captureNumericValue = false) override;
+    void DumpCpuProfile() override;
     // Dump the file into faultlog for heap leak.
     void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false, bool isFullGC = true) override;
@@ -335,8 +337,10 @@ public:
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
     void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
     bool GetIsBundle() override;
+    bool GetIsNormalizedOhmUrlPack() override;
     std::string GetBundleName() override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
+    int GetProcessStartRealTime() override;
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;

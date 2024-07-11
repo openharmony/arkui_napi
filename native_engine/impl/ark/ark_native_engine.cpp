@@ -88,7 +88,6 @@ using panda::SymbolRef;
 using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
-static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
 static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router",
@@ -121,7 +120,7 @@ panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 #ifdef ENABLE_CONTAINER_SCOPE
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &value)
 {
-    if (!value->IsFunction()) {
+    if (!value->IsFunction(vm)) {
         return;
     }
     panda::Local<panda::FunctionRef> funcValue(value);
@@ -179,9 +178,14 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
                 }
             },
         reinterpret_cast<void*>(funcInfo), true);
-    Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
+
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
     fn->SetName(vm, fnName);
+
+    if (length == 0) {
+        return fn;
+    }
+    Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
     Local<panda::ObjectRef> fnObj = fn->ToObject(vm);
     for (size_t i = 0; i < length; i++) {
         if (properties[i].attributes & NATIVE_STATIC) {
@@ -295,7 +299,7 @@ bool ArkNativeEngine::CheckArkApiAllowList(
 {
     std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker = module->apiAllowListChecker;
     if (apiAllowListChecker != nullptr) {
-        const std::string apiPath = context.moduleName->ToString();
+        const std::string apiPath = context.moduleName->ToString(context.ecmaVm);
         if ((*apiAllowListChecker)(apiPath)) {
             CopyPropertyApiFilter(apiAllowListChecker, context.ecmaVm, context.exportObj, exportCopy, apiPath);
         }
@@ -312,9 +316,9 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     for (uint32_t i = 0; i < namesArrayRef->Length(ecmaVm); ++i) {
         const panda::Local<panda::JSValueRef> nameValue = panda::ArrayRef::GetValueAt(ecmaVm, namesArrayRef, i);
         const panda::Local<panda::JSValueRef> value = exportObj->Get(ecmaVm, nameValue);
-        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString();
+        const std::string curPath = apiPath + "." + nameValue->ToString(ecmaVm)->ToString(ecmaVm);
         if ((*apiAllowListChecker)(curPath)) {
-            const std::string valueType = value->Typeof(ecmaVm)->ToString();
+            const std::string valueType = value->Typeof(ecmaVm)->ToString(ecmaVm);
             if (valueType == "object") {
                 panda::Local<panda::ObjectRef> subObject = ObjectRef::New(ecmaVm);
                 CopyPropertyApiFilter(apiAllowListChecker, ecmaVm, value, subObject, curPath);
@@ -367,7 +371,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 bool isAppModule = false;
                 std::string errInfo = "";
 #ifdef IOS_PLATFORM
-                module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, false,
+                module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, false,
                                                          errInfo, false, "", arkNativeEngine->isLimitedWorker_);
 #else
                 const uint32_t lengthMax = 2;
@@ -379,17 +383,18 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), path->ToString().c_str(),
-                            isAppModule, errInfo, false, "", arkNativeEngine->isLimitedWorker_);
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+                            path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "",
+                            arkNativeEngine->isLimitedWorker_);
                 } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
-                            errInfo, false, relativePath->ToString().c_str(), arkNativeEngine->isLimitedWorker_);
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
+                            errInfo, false, relativePath->ToString(ecmaVm).c_str(), arkNativeEngine->isLimitedWorker_);
                 } else {
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString().c_str(), nullptr, isAppModule,
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
                             errInfo, false, "", arkNativeEngine->isLimitedWorker_);
                 }
 #endif
@@ -399,7 +404,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     if (it != arkNativeEngine->loadedModules_.end()) {
                         return scope.Escape(it->second.ToLocal(ecmaVm));
                     }
-                    std::string strModuleName = moduleName->ToString();
+                    std::string strModuleName = moduleName->ToString(ecmaVm);
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     MoudleNameLocker nameLocker(strModuleName);
 
@@ -470,19 +475,19 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 std::string errInfo = "";
-                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString().c_str(),
+                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
                     nullptr, false, errInfo, false, "", arkNativeEngine->isLimitedWorker_);
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
-                MoudleNameLocker nameLocker(moduleName->ToString());
+                MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm));
                 if (module != nullptr && arkNativeEngine) {
                     auto it = arkNativeEngine->loadedModules_.find(module);
                     if (it != arkNativeEngine->loadedModules_.end()) {
                         return scope.Escape(it->second.ToLocal(ecmaVm));
                     }
-                    std::string strModuleName = moduleName->ToString();
+                    std::string strModuleName = moduleName->ToString(ecmaVm);
                     moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
                     Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
-                    if (exportObj->IsObject()) {
+                    if (exportObj->IsObject(ecmaVm)) {
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
                                                  JsValueFromLocalValue(exportObj));
@@ -562,7 +567,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         Local<panda::StringRef> nameRef = fn->GetName(vm);
         char threadName[BUF_SIZE];
         prctl(PR_GET_NAME, threadName);
-        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString().c_str(), threadName);
+        StartTraceArgs(HITRACE_TAG_ACE, "Napi called:%s, tname:%s", nameRef->ToString(vm).c_str(), threadName);
     }
     bool hookFlag = __get_hook_flag() && __get_global_hook_flag();
     if (!hookFlag) {
@@ -582,7 +587,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
             OHOS::HiviewDFX::HiTraceChain::Begin("New ArkCallBackTrace", 0));
         char buffer[256] = {0}; // 256 : buffer size of tag name
         if (sprintf_s(buffer, sizeof(buffer), "napi:0x%x:%s", arkCallBackTraceId->GetChainId(),
-                      nameRef->ToString().c_str()) == -1) {
+                      nameRef->ToString(vm).c_str()) == -1) {
             return 0;
         }
         uint64_t addr = reinterpret_cast<uint64_t>(cb);
@@ -590,7 +595,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         (void)memtrace(reinterpret_cast<void*>(addr + g_chainId), 8, buffer, true); // 8: the size of addr
         return 0;
     }
-    if (!CheckHookConfig(nameRef->ToString())) {
+    if (!CheckHookConfig(nameRef->ToString(vm))) {
         return 0;
     }
     BlockHookScope blockHook; // block hook
@@ -636,6 +641,7 @@ static inline void FinishNapiProfilerTrace(uint64_t value)
     if (!hookFlag) {
         return;
     }
+    BlockHookScope blockHook; // block hook
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
     if (hitraceId.IsValid()) {
         OHOS::HiviewDFX::HiTraceChain::End(hitraceId);
@@ -752,7 +758,7 @@ void GetCString(EcmaVM* vm, Local<StringRef> str, char* buffer, size_t size, siz
     if (buffer == nullptr) {
         *length = str->Utf8Length(vm) - 1;
     } else if (size != 0) {
-        int copied = str->WriteUtf8(buffer, size - 1, true) - 1;
+        int copied = str->WriteUtf8(vm, buffer, size - 1, true) - 1;
         buffer[copied] = '\0';
         *length = copied;
     } else {
@@ -766,7 +772,7 @@ std::string NapiGetModuleName(napi_env env, Local<panda::ObjectRef> &obj)
     auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
     std::string moduleName("");
     auto nativeModuleName = GetProperty(vm, obj, PANDA_MODULE_NAME);
-    if (nativeModuleName->IsString()) {
+    if (nativeModuleName->IsString(vm)) {
         char arrayName[PANDA_MODULE_NAME_LEN] = {0};
         size_t len = 0;
         GetCString(vm, nativeModuleName, arrayName, PANDA_MODULE_NAME_LEN, &len);
@@ -815,9 +821,9 @@ void NapiDefinePropertyInner(napi_env env,
         if (propertyDescriptor.utf8name != nullptr) {
             fullName += propertyDescriptor.utf8name;
         } else {
-            fullName += propertyName->IsString()
-                        ? Local<panda::StringRef>(propertyName)->ToString()
-                        : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString();
+            fullName += propertyName->IsString(vm)
+                        ? Local<panda::StringRef>(propertyName)->ToString(vm)
+                        : Local<panda::SymbolRef>(propertyName)->GetDescription(vm)->ToString(vm);
         }
         Local<panda::JSValueRef> cbObj = NapiNativeCreateFunction(env, fullName.c_str(),
                                                                   propertyDescriptor.method, propertyDescriptor.data);
@@ -842,7 +848,7 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     } else {
         propertyName = LocalValueFromJsValue(propertyDescriptor.name);
     }
-    if (obj->IsJSShared()) {
+    if (obj->IsJSShared(vm)) {
         NativeSendable::NapiDefineSendabledProperty(env, obj, propertyDescriptor, propertyName, result);
     } else {
         NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
@@ -992,7 +998,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         Local<StringRef> key = StringRef::GetNapiWrapperString(vm_);
         if (instance == nullptr && instanceValue->Has(vm_, key)) {
             Local<ObjectRef> wrapper = instanceValue->Get(vm_, key);
-            auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(0));
+            auto ref = reinterpret_cast<NativeReference*>(wrapper->GetNativePointerField(vm_, 0));
             wrapper->SetNativePointerField(vm_, 0, nullptr, nullptr, nullptr, 0);
             instanceValue->Delete(vm_, key);
             delete ref;
@@ -1000,7 +1006,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
             Local<ObjectRef> object = ObjectRef::New(vm_);
             NativeReference* ref = nullptr;
             Local<JSValueRef> value(instanceValue);
-            ref = new ArkNativeReference(this, vm_, value, 0, true, nullptr, instance, nullptr);
+            ref = new ArkNativeReference(this, value, 0, true, nullptr, instance, nullptr);
 
             object->SetNativePointerFieldCount(vm_, 1);
             object->SetNativePointerField(vm_, 0, ref, nullptr, nullptr, 0);
@@ -1205,6 +1211,12 @@ bool ArkNativeEngine::NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArr
         case NATIVE_UINT32_ARRAY:
             typedArray = panda::SharedUint32ArrayRef::New(vm, arrayBuf, byte_offset, length);
             break;
+        case NATIVE_FLOAT32_ARRAY:
+            typedArray = panda::SharedFloat32ArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
+        case NATIVE_UINT8_CLAMPED_ARRAY:
+            typedArray = panda::SharedUint8ClampedArrayRef::New(vm, arrayBuf, byte_offset, length);
+            break;
         default:
             *result = nullptr;
             return false;
@@ -1216,27 +1228,27 @@ bool ArkNativeEngine::NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArr
 NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
-    if (typedArray->IsInt8Array()) {
+    if (typedArray->IsInt8Array(vm_)) {
         thisType = NATIVE_INT8_ARRAY;
-    } else if (typedArray->IsUint8Array()) {
+    } else if (typedArray->IsUint8Array(vm_)) {
         thisType = NATIVE_UINT8_ARRAY;
-    } else if (typedArray->IsUint8ClampedArray()) {
+    } else if (typedArray->IsUint8ClampedArray(vm_)) {
         thisType = NATIVE_UINT8_CLAMPED_ARRAY;
-    } else if (typedArray->IsInt16Array()) {
+    } else if (typedArray->IsInt16Array(vm_)) {
         thisType = NATIVE_INT16_ARRAY;
-    } else if (typedArray->IsUint16Array()) {
+    } else if (typedArray->IsUint16Array(vm_)) {
         thisType = NATIVE_UINT16_ARRAY;
-    } else if (typedArray->IsInt32Array()) {
+    } else if (typedArray->IsInt32Array(vm_)) {
         thisType = NATIVE_INT32_ARRAY;
-    } else if (typedArray->IsUint32Array()) {
+    } else if (typedArray->IsUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
-    } else if (typedArray->IsFloat32Array()) {
+    } else if (typedArray->IsFloat32Array(vm_)) {
         thisType = NATIVE_FLOAT32_ARRAY;
-    } else if (typedArray->IsFloat64Array()) {
+    } else if (typedArray->IsFloat64Array(vm_)) {
         thisType = NATIVE_FLOAT64_ARRAY;
-    } else if (typedArray->IsBigInt64Array()) {
+    } else if (typedArray->IsBigInt64Array(vm_)) {
         thisType = NATIVE_BIGINT64_ARRAY;
-    } else if (typedArray->IsBigUint64Array()) {
+    } else if (typedArray->IsBigUint64Array(vm_)) {
         thisType = NATIVE_BIGUINT64_ARRAY;
     }
 
@@ -1246,33 +1258,25 @@ NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::Type
 NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<panda::SendableTypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
-    if (typedArray->IsJSSharedInt8Array()) {
+    if (typedArray->IsJSSharedInt8Array(vm_)) {
         thisType = NATIVE_INT8_ARRAY;
-    } else if (typedArray->IsJSSharedUint8Array()) {
+    } else if (typedArray->IsJSSharedUint8Array(vm_)) {
         thisType = NATIVE_UINT8_ARRAY;
-    } else if (typedArray->IsJSSharedInt16Array()) {
+    } else if (typedArray->IsJSSharedInt16Array(vm_)) {
         thisType = NATIVE_INT16_ARRAY;
-    } else if (typedArray->IsJSSharedUint16Array()) {
+    } else if (typedArray->IsJSSharedUint16Array(vm_)) {
         thisType = NATIVE_UINT16_ARRAY;
-    } else if (typedArray->IsJSSharedInt32Array()) {
+    } else if (typedArray->IsJSSharedInt32Array(vm_)) {
         thisType = NATIVE_INT32_ARRAY;
-    } else if (typedArray->IsJSSharedUint32Array()) {
+    } else if (typedArray->IsJSSharedUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
+    } else if (typedArray->IsJSSharedFloat32Array(vm_)) {
+        thisType = NATIVE_FLOAT32_ARRAY;
+    } else if (typedArray->IsJSSharedUint8ClampedArray(vm_)) {
+        thisType = NATIVE_UINT8_CLAMPED_ARRAY;
     }
 
     return thisType;
-}
-
-bool ArkNativeEngine::RunScriptPath(const char* path)
-{
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
-    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
-    if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException();
-        return false;
-    }
-    return true;
 }
 
 /*
@@ -1348,7 +1352,7 @@ napi_value ArkNativeEngine::NapiLoadModule(const char* path, const char* module_
             ThrowException(msg.c_str());
         }
     }
-    if (!exportObj->IsObject()) {
+    if (!exportObj->IsObject(vm_)) {
         ThrowException("ArkNativeEngine:NapiLoadModule failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
@@ -1373,7 +1377,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
         exportObj = NapiLoadNativeModule(inputPath);
     }
 
-    if (!exportObj->IsObject()) {
+    if (!exportObj->IsObject(vm_)) {
         ThrowException("ArkNativeEngine:NapiLoadModuleWithInfo failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
@@ -1398,43 +1402,6 @@ void ArkNativeEngine::ResumeVMById(uint32_t tid)
     HILOG_WARN("ARK does not support dfx on windows");
     return;
 #endif
-}
-
-// The security interface needs to be modified accordingly.
-napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
-{
-    panda::EscapeLocalScope scope(vm_);
-    [[maybe_unused]] bool ret = false;
-    if (isBundle) {
-        ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, path);
-    } else {
-        ret = panda::JSNApi::ExecuteModuleBuffer(vm_, buffer.data(), buffer.size(), path);
-    }
-
-    if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException();
-        return nullptr;
-    }
-    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(scope.Escape(undefObj));
-}
-
-bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle)
-{
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
-    bool ret = false;
-    if (isBundle) {
-        ret = panda::JSNApi::ExecuteSecure(vm_, buffer, size, PANDA_MAIN_FUNCTION, path);
-    } else {
-        ret = panda::JSNApi::ExecuteModuleBufferSecure(vm_, buffer, size, path);
-    }
-
-    if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException();
-        return false;
-    }
-    return ret;
 }
 
 void ArkNativeEngine::SetPackagePath(const std::string appLibPathKey, const std::vector<std::string>& packagePath)
@@ -1473,22 +1440,28 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint);
+    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint);
 }
 
 NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data, void* hint)
 {
-    return new ArkNativeReference(this, this->GetEcmaVm(), value, initialRefcount, flag, callback, data, hint, true);
+    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, true);
 }
 
 void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
 {
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
+#endif
     for (auto iter : (*finalizers)) {
         std::tuple<NativeEngine*, void*, void*> &param = iter.second;
         (iter.first)(reinterpret_cast<napi_env>(std::get<0>(param)),
                     std::get<1>(param), std::get<2>(param)); // 2 is the param.
     }
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
 }
 
 void ArkNativeEngine::PostFinalizeTasks()
@@ -1539,12 +1512,18 @@ void ArkNativeEngine::PostFinalizeTasks()
 
 void ArkNativeEngine::RunCallbacks(std::vector<NativePointerCallbackData> *callbacks)
 {
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "RunNativeCallbacks:" + std::to_string(callbacks->size()));
+#endif
     for (auto iter : (*callbacks)) {
         std::tuple<void*, void*, void*> &param = iter.second;
         if (iter.first != nullptr) {
             (iter.first)(std::get<0>(param), std::get<1>(param), std::get<2>(param)); // 2 is the param.
         }
     }
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
 }
 
 void ArkNativeEngine::PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks)
@@ -1649,6 +1628,11 @@ void ArkNativeEngine::SetJsDumpThresholds(size_t thresholds)
     DFXJSNApi::SetJsDumpThresholds(vm_, thresholds);
 }
 
+void ArkNativeEngine::SetAppFreezeFilterCallback(AppFreezeFilterCallback callback)
+{
+    DFXJSNApi::SetAppFreezeFilterCallback(vm_, callback);
+}
+
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
@@ -1681,62 +1665,6 @@ bool ArkNativeEngine::CheckSafepoint()
     return DFXJSNApi::CheckSafepoint(vm_);
 }
 
-napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
-{
-    panda::EscapeLocalScope scope(vm_);
-    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
-
-    if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException();
-        return nullptr;
-    }
-    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(scope.Escape(undefObj));
-}
-
-#define EXECUTE_BUFFER(functionName)                                                                 \
-    if (panda::JSNApi::IsBundle(vm_)) {                                                              \
-        /* FA doesn't enable securemem */                                                            \
-        ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);            \
-    } else if (bufferSize != 0) {                                                                    \
-        if (entryPoint == nullptr) {                                                                 \
-            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule"); \
-            /* this path for bundle and abc compiled by single module js */                          \
-            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);   \
-        } else {                                                                                     \
-            /* this path for mergeabc with specific entryPoint */                                    \
-            /* entryPoint: bundleName/moduleName/xxx/xxx */                                          \
-            panda::JSNApi::SetModuleInfo(vm_, desc, std::string(entryPoint));                        \
-            if (panda::JSNApi::HasPendingException(vm_)) {                                           \
-                HandleUncaughtException();                                                           \
-                return nullptr;                                                                      \
-            }                                                                                        \
-            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc);            \
-        }                                                                                            \
-    } else {                                                                                         \
-        /* this path for worker */                                                                   \
-        ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                \
-    }
-
-napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
-{
-    panda::EscapeLocalScope scope(vm_);
-    std::string desc(descriptor);
-    [[maybe_unused]] bool ret = false;
-    // if apiVersion > API11, use secure path.
-    if (IsApplicationApiVersionAPI11Plus()) {
-        EXECUTE_BUFFER(ExecuteSecure);
-    } else {
-        EXECUTE_BUFFER(Execute);
-    }
-    if (panda::JSNApi::HasPendingException(vm_)) {
-        HandleUncaughtException();
-        return nullptr;
-    }
-    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    return JsValueFromLocalValue(scope.Escape(undefObj));
-}
-
 void ArkNativeEngine::GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName)
 {
     LocalScope scope(vm_);
@@ -1751,6 +1679,12 @@ bool ArkNativeEngine::GetIsBundle()
     return panda::JSNApi::IsBundle(vm_);
 }
 
+bool ArkNativeEngine::GetIsNormalizedOhmUrlPack()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsNormalizedOhmUrlPack(vm_);
+}
+
 std::string ArkNativeEngine::GetBundleName()
 {
     LocalScope scope(vm_);
@@ -1763,30 +1697,10 @@ bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::stri
     return panda::JSNApi::IsExecuteModuleInAbcFile(vm_, bundleName, moduleName, ohmurl);
 }
 
-panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
-    int32_t len, const std::string& fileName)
+int ArkNativeEngine::GetProcessStartRealTime()
 {
-    panda::EscapeLocalScope scope(vm_);
-    Local<ObjectRef> undefObj(JSValueRef::Undefined(vm_));
-    if (buffer == nullptr || len <= 0 || fileName.empty()) {
-        HILOG_ERROR("fileName is nullptr or source code is nullptr");
-        return scope.Escape(undefObj);
-    }
-
-    bool res = JSNApi::ExecuteModuleFromBuffer(vm_, buffer, len, fileName);
-    if (!res) {
-        HILOG_ERROR("Execute module failed");
-        return scope.Escape(undefObj);
-    }
-
-    Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
-    if (exportObj->IsNull()) {
-        HILOG_ERROR("Get export object failed");
-        return scope.Escape(undefObj);
-    }
-
-    HILOG_DEBUG("ArkNativeEngineImpl::LoadModule end");
-    return scope.Escape(exportObj);
+    LocalScope scope(vm_);
+    return panda::JSNApi::GetStartRealTime(vm_);
 }
 
 napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
@@ -1811,7 +1725,7 @@ std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
     uint32_t line = pos.first;
     uint32_t column = pos.second;
     Local<panda::StringRef> sourceCode = func->GetSourceCode(vm_, line);
-    std::string sourceCodeStr = sourceCode->ToString();
+    std::string sourceCodeStr = sourceCode->ToString(vm_);
     if (sourceCodeStr.empty()) {
         return "";
     }
@@ -1824,17 +1738,10 @@ std::string ArkNativeEngine::GetSourceCodeInfo(napi_value value, ErrorPos pos)
     return sourceCodeInfo;
 }
 
-bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
+void ArkNativeEngine::TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue)
 {
-    panda::JSExecutionScope executionScope(vm_);
-    LocalScope scope(vm_);
-    bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);
-    return ret;
-}
-
-bool ArkNativeEngine::TriggerFatalException(napi_value error)
-{
-    return true;
+    panda::JSNApi::ThrowException(GetEcmaVm(), exceptionValue);
+    HandleUncaughtException();
 }
 
 bool ArkNativeEngine::AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue)
@@ -1878,56 +1785,63 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 
     Local<JSValueRef> args[] = {type, promise, reason};
 
-    napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get();
+    napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get(env);
     Local<FunctionRef> promiseRejectCallback = LocalValueFromJsValue(promiseNapiRejectCallback);
     if (!promiseRejectCallback.IsEmpty()) {
         promiseRejectCallback->Call(vm, JSValueRef::Undefined(vm), args, 3); // 3 args size
     }
 
     if (operation == panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT::REJECT) {
-        Local<JSValueRef> checkCallback = LocalValueFromJsValue(env->checkCallbackRef_->Get());
+        Local<JSValueRef> checkCallback = LocalValueFromJsValue(env->checkCallbackRef_->Get(env));
         if (!checkCallback.IsEmpty()) {
             JSNApi::SetHostEnqueueJob(vm, checkCallback);
         }
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat)
+void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat,
+                                       bool isPrivate, bool captureNumericValue)
 {
+    panda::ecmascript::DumpSnapShotOption dumpOption;
+    dumpOption.isVmMode = isVmMode;
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, path, isVmMode);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
+        dumpOption.isPrivate = isPrivate;
+        dumpOption.captureNumericValue = captureNumericValue;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption);
     }
     if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 1, path, isVmMode);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption);
     }
     if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 2, path, isVmMode); // 2:enum is 2
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::OTHER;
+        DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption); // 2:enum is 2
     }
 }
 
-void ArkNativeEngine::DumpCpuProfile(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
+void ArkNativeEngine::DumpCpuProfile()
 {
-    if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpCpuProfile(vm_, 0, isVmMode, isPrivate, false, isFullGC);
-    }
-    if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpCpuProfile(vm_, 1, isVmMode, isPrivate);
-    }
-    if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpCpuProfile(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
-    }
+    DFXJSNApi::DumpCpuProfile(vm_);
 }
 
 void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
 {
+    panda::ecmascript::DumpSnapShotOption dumpOption;
+    dumpOption.isVmMode = isVmMode;
+    dumpOption.isPrivate = isPrivate;
+    dumpOption.isFullGC = isFullGC;
     if (dumpFormat == DumpFormat::JSON) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 0, isVmMode, isPrivate, false, isFullGC);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
     if (dumpFormat == DumpFormat::BINARY) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 1, isVmMode, isPrivate);
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
     if (dumpFormat == DumpFormat::OTHER) {
-        DFXJSNApi::DumpHeapSnapshot(vm_, 2, isVmMode, isPrivate); // 2:enum is 2
+        dumpOption.dumpFormat = panda::ecmascript::DumpFormat::OTHER;
+        DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
     }
 }
 

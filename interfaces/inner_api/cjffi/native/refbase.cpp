@@ -395,7 +395,7 @@ bool RefCounter::AttemptIncStrong(const void *objectId)
 RefBase::RefBase() : refs_(new RefCounter())
 {
     refs_->IncRefCount();
-    refs_->SetCallback(std::bind(&RefBase::RefPtrCallback, this));
+    refs_->SetCallback([this] { this->RefPtrCallback(); });
 }
 
 RefBase::RefBase(const RefBase &)
@@ -403,7 +403,7 @@ RefBase::RefBase(const RefBase &)
     refs_ = new (std::nothrow) RefCounter();
     if (refs_ != nullptr) {
         refs_->IncRefCount();
-        refs_->SetCallback(std::bind(&RefBase::RefPtrCallback, this));
+        refs_->SetCallback([this] { this->RefPtrCallback(); });
     }
 }
 
@@ -428,7 +428,7 @@ RefBase &RefBase::operator=(const RefBase &)
     refs_ = new (std::nothrow) RefCounter();
     if (refs_ != nullptr) {
         refs_->IncRefCount();
-        refs_->SetCallback(std::bind(&RefBase::RefPtrCallback, this));
+        refs_->SetCallback([this] { this->RefPtrCallback(); });
     }
 
     return *this;
