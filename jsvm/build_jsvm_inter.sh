@@ -42,6 +42,7 @@ do_configure() {
 do_unstripped_copy() {
     mkdir -p ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
     cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
+    cp -u ${workdir}/deps/v8/lib.unstripped/libv8_shared.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
     pushd ${out_dir}
     rm -rf *
     popd

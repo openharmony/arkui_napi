@@ -55,10 +55,10 @@ do_man_process() {
     do_install   > ${out_dir}/log.do_install
     do_strip
     do_env 1
-    do_fetch     > ${out_dir}/log.do_fetch
-    do_patch     > ${out_dir}/log.do_patch
-    do_configure > ${out_dir}/log.do_configure
-    do_compile   > ${out_dir}/log.do_compile
+    do_fetch     > ${out_dir}/log.do_fetch_unstripped
+    do_patch     > ${out_dir}/log.do_patch_unstripped
+    do_configure > ${out_dir}/log.do_configure_unstripped
+    do_compile   > ${out_dir}/log.do_compile_unstripped
     do_unstripped_copy
 }
 
