@@ -47,12 +47,18 @@ die() {
 
 do_man_process() {
     do_opt_process $@
-    do_env
+    do_env 0
     do_fetch     > ${out_dir}/log.do_fetch
     do_patch     > ${out_dir}/log.do_patch
     do_configure > ${out_dir}/log.do_configure
     do_compile   > ${out_dir}/log.do_compile
     do_install   > ${out_dir}/log.do_install
+    do_env 1
+    do_fetch     > ${out_dir}/log.do_fetch
+    do_patch     > ${out_dir}/log.do_patch
+    do_configure > ${out_dir}/log.do_configure
+    do_compile   > ${out_dir}/log.do_compile
+    do_unstripped_copy
 }
 
 do_opt_process() {
