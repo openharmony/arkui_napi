@@ -1270,6 +1270,10 @@ NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<pan
         thisType = NATIVE_INT32_ARRAY;
     } else if (typedArray->IsJSSharedUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
+    } else if (typedArray->IsJSSharedFloat32Array(vm_)) {
+        thisType = NATIVE_FLOAT32_ARRAY;
+    } else if (typedArray->IsJSSharedUint8ClampedArray(vm_)) {
+        thisType = NATIVE_UINT8_CLAMPED_ARRAY;
     }
 
     return thisType;
