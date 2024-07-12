@@ -458,7 +458,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 }
                 if (module == nullptr) {
                     HILOG_INFO("%{public}s", errInfo.c_str());
-                    exports = panda::ObjectRef::CreateNativeModuleError(ecmaVm, errInfo);
+                    exports = panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo);
                 }
                 return scope.Escape(exports);
             },
