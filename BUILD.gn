@@ -195,15 +195,13 @@ ohos_shared_library("cj_bind_native") {
   sources = [
     "interfaces/inner_api/cjffi/native/cj_fn_invoker.cpp",
     "interfaces/inner_api/cjffi/native/ffi_remote_data.cpp",
-    "interfaces/inner_api/cjffi/native/refbase.cpp",
   ]
 
   include_dirs = [ "interfaces/inner_api/cjffi" ]
 
   external_deps = [ "hilog:libhilog" ]
-  if (is_standard_system) {
-    external_deps += [ "c_utils:utils" ]
-  }
+  public_external_deps = [ "c_utils:utils" ]
+
   innerapi_tags = [ "platformsdk" ]
   subsystem_name = "arkui"
   part_name = "napi"
