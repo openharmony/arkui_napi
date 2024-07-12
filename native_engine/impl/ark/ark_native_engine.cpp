@@ -370,9 +370,17 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 NativeModule* module = nullptr;
                 bool isAppModule = false;
                 std::string errInfo = "";
+                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
 #ifdef IOS_PLATFORM
-                module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, false,
-                                                         errInfo, false, "", arkNativeEngine->isLimitedWorker_);
+                if (arkNativeEngine->isLimitedWorker_) {
+                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
+                        HILOG_ERROR("module %{public}s does not found in whitelist",
+                            moduleName->ToString(ecmaVm).c_str());
+                        return scope.Escape(exports);
+                    }
+                }
+                module = moduleManager->LoadNativeModule(
+                    moduleName->ToString(ecmaVm).c_str(), nullptr, false, errInfo, false, "");
 #else
                 const uint32_t lengthMax = 2;
                 if (info->GetArgsNumber() >= lengthMax) {
@@ -380,25 +388,29 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     isAppModule = ret->Value();
                 }
                 arkNativeEngine->isAppModule_ = isAppModule;
+                if (arkNativeEngine->isLimitedWorker_ && !isAppModule) {
+                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
+                        HILOG_ERROR("module %{public}s does not found in whitelist",
+                            moduleName->ToString(ecmaVm).c_str());
+                        return scope.Escape(exports);
+                    }
+                }
+
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
-                    module =
-                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
-                            path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "",
-                            arkNativeEngine->isLimitedWorker_);
+                    module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+                        path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "");
                 } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
                     Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
-                    module =
-                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
-                            errInfo, false, relativePath->ToString(ecmaVm).c_str(), arkNativeEngine->isLimitedWorker_);
+                    module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
+                        errInfo, false, relativePath->ToString(ecmaVm).c_str());
                 } else {
                     module =
-                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
-                            errInfo, false, "", arkNativeEngine->isLimitedWorker_);
+                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+                        nullptr, isAppModule, errInfo, false, "");
                 }
 #endif
-                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
                 if (module != nullptr) {
                     auto it = arkNativeEngine->loadedModules_.find(module);
                     if (it != arkNativeEngine->loadedModules_.end()) {
@@ -475,9 +487,16 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
                 Local<StringRef> moduleName(info->GetCallArgRef(0));
                 std::string errInfo = "";
-                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
-                    nullptr, false, errInfo, false, "", arkNativeEngine->isLimitedWorker_);
                 Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
+                if (arkNativeEngine->isLimitedWorker_) {
+                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
+                        HILOG_ERROR("module %{public}s does not found in whitelist",
+                            moduleName->ToString(ecmaVm).c_str());
+                        return scope.Escape(exports);
+                    }
+                }
+                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+                    nullptr, false, errInfo, false, "");
                 MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm));
                 if (module != nullptr && arkNativeEngine) {
                     auto it = arkNativeEngine->loadedModules_.find(module);

@@ -80,8 +80,8 @@ public:
     void Register(NativeModule* nativeModule);
     void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                        const bool& isSystemApp = false);
-    NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule, std::string& errInfo,
-        bool internal = false, const char* relativePath = "", bool moduleRestricted = false);
+    NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
+        std::string& errInfo, bool internal = false, const char* relativePath = "");
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
     bool UnloadNativeModule(const std::string& moduleKey);
     std::string GetModuleFileName(const char* moduleName, bool isAppModule);
@@ -100,6 +100,22 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
+    inline bool CheckModuleRestricted(const std::string& moduleName)
+    {
+        const std::string whiteList[] = {
+            "worker",
+        };
+
+        size_t listLen = sizeof(whiteList) / sizeof(whiteList[0]);
+        for (size_t i = 0; i < listLen; ++i) {
+            if (moduleName == whiteList[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 private:
     NativeModuleManager();
     virtual ~NativeModuleManager();
@@ -112,7 +128,6 @@ private:
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
         const bool isAppModule, std::string& errInfo, uint32_t& errReason);
-    bool CheckModuleRestricted(const std::string& moduleName);
     const uint8_t* GetFileBuffer(const std::string& filePath, const std::string& moduleKey, size_t &len);
     bool UnloadModuleLibrary(LIBHANDLE handle);
     bool CloseModuleLibrary(LIBHANDLE handle);
