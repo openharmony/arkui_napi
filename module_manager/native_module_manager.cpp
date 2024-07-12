@@ -844,7 +844,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
 
     LIBHANDLE lib = nullptr;
 
-    HILOG_INFO("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
+    HILOG_DEBUG("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, path);
 #endif
@@ -986,6 +986,12 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         }
     }
 
+    //Maintain compatibility
+    if (lib == nullptr && cacheNativeModule_ != nullptr) {
+        HILOG_DEBUG("Maintain compatibility.");
+        return cacheNativeModule_;
+    }
+
     const uint8_t* abcBuffer = nullptr;
     size_t len = 0;
     if (lib == nullptr) {
@@ -999,10 +1005,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         }
     }
 
-    if (lib == nullptr && cacheNativeModule_ != nullptr) {
-        HILOG_WARN("load moduleName: %{public}s", cacheNativeModule_->name);
-        return cacheNativeModule_;
-    }
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (tailNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
