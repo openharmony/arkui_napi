@@ -32,6 +32,10 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_engine.h"
 
+#if defined(ENABLE_EVENT_HANDLER)
+#include "event_handler.h"
+#endif
+
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
 struct JsFrameInfo {
@@ -337,6 +341,13 @@ public:
         return reinterpret_cast<void*>(PromiseRejectCallback);
     }
 
+#if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> GetMainThreadHandler()
+    {
+        return mainThreadHandler_;
+    }
+#endif
+
     void SetModuleName(panda::Local<panda::ObjectRef> &nativeObj, std::string moduleName);
     void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
     bool GetIsBundle() override;
@@ -345,6 +356,9 @@ public:
     std::string GetPkgName(const std::string &moduleName) override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
     int GetProcessStartRealTime() override;
+#if defined(ENABLE_EVENT_HANDLER)
+    void PostLooperTriggerIdleGCTask();
+#endif
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
@@ -375,5 +389,9 @@ private:
     bool isLimitedWorker_ = false;
     std::vector<RefFinalizer> pendingFinalizers_;
     std::vector<RefFinalizer> pendingAsyncFinalizers_;
+#if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner_ {};
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
+#endif
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
