@@ -1684,10 +1684,10 @@ NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t
     uint32_t value;
     if (LIKELY(nativeValue->IsMap(vm))) {
         Local<panda::MapRef> mapRef(nativeValue);
-        value = mapRef->GetSize(vm);
+        value = static_cast<uint32_t>(mapRef->GetSize(vm));
     } else {
         Local<panda::SendableMapRef> mapRef(nativeValue);
-        value = mapRef->GetSize(vm);
+        value = static_cast<uint32_t>(mapRef->GetSize(vm));
     }
     *result = value;
 
