@@ -108,11 +108,11 @@ static napi_value TestAttachCallback(napi_env env, void* nativeObject, void* hin
     uint32_t data = 0;
     if (hint != nullptr) {
         object = reinterpret_cast<napi_value>(nativeObject);
-        data = 2000;
+        data = 2000; // 2000 : test number
         napi_create_uint32(env, data, &number);
     } else {
         napi_create_object(env, &object);
-        data = 1000;
+        data = 1000; // 1000 : test number
         napi_create_uint32(env, data, &number);
     }
     napi_set_named_property(env, object, "number", number);
@@ -4193,6 +4193,32 @@ HWTEST_F(NapiBasicTest, CreateObjectWithNamedPropertiesTest001, testing::ext::Te
 }
 
 /**
+ * @tc.name: loadModuleWithInfo001
+ * @tc.desc: Test napi_load_module_with_info with nullptr env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, loadModuleWithInfo001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_value result;
+    napi_status res = napi_load_module_with_info(nullptr, nullptr, nullptr, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: loadModuleWithInfo002
+ * @tc.desc: Test napi_load_module_with_info with nullptr result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, loadModuleWithInfo002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    napi_status res = napi_load_module_with_info(env, "@ohos.hilog", nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
  * @tc.name: runEventLoopTest001
  * @tc.desc: Test napi_run_event_loop with nullptr env.
  * @tc.type: FUNC
@@ -4285,7 +4311,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest007, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4301,7 +4327,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest008, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4317,7 +4343,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest009, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4333,7 +4359,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest010, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4389,7 +4415,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest004, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4405,7 +4431,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest005, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4420,7 +4446,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest006, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_ok);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -4469,33 +4495,7 @@ HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSiz
     // 3. run the loop
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_ok);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
-}
-
-/**
- * @tc.name: loadModuleWithInfo001
- * @tc.desc: Test napi_load_module_with_info with nullptr env.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, loadModuleWithInfo001, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    napi_value result;
-    napi_status res = napi_load_module_with_info(nullptr, nullptr, nullptr, &result);
-    ASSERT_EQ(res, napi_invalid_arg);
-}
-
-/**
- * @tc.name: loadModuleWithInfo002
- * @tc.desc: Test napi_load_module_with_info with nullptr result.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, loadModuleWithInfo002, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    napi_env env = (napi_env)engine_;
-    napi_status res = napi_load_module_with_info(env, "@ohos.hilog", nullptr, nullptr);
-    ASSERT_EQ(res, napi_invalid_arg);
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
