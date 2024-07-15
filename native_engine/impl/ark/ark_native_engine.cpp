@@ -1678,6 +1678,12 @@ bool ArkNativeEngine::GetIsNormalizedOhmUrlPack()
     return panda::JSNApi::IsNormalizedOhmUrlPack(vm_);
 }
 
+bool ArkNativeEngine::GetIsDebugModeEnabled()
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsDebugModeEnabled(vm_);
+}
+
 std::string ArkNativeEngine::GetBundleName()
 {
     LocalScope scope(vm_);
