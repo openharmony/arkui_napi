@@ -1731,16 +1731,16 @@ std::string ArkNativeEngine::GetPkgName(const std::string &moduleName)
     return panda::JSNApi::GetPkgName(vm_, moduleName);
 }
 
-bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl)
-{
-    LocalScope scope(vm_);
-    return panda::JSNApi::IsExecuteModuleInAbcFile(vm_, bundleName, moduleName, ohmurl);
-}
-
 int ArkNativeEngine::GetProcessStartRealTime()
 {
     LocalScope scope(vm_);
     return panda::JSNApi::GetStartRealTime(vm_);
+}
+
+bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl)
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::IsExecuteModuleInAbcFile(vm_, bundleName, moduleName, ohmurl);
 }
 
 napi_value ArkNativeEngine::ValueToNapiValue(JSValueWrapper& value)
