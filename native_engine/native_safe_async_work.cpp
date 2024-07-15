@@ -301,11 +301,13 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         }
 
         napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
+        lock.unlock();
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
             CallJs(engine_, func_, context_, data);
         }
+        lock.lock();
 
         if (tryCatch.HasCaught()) {
             engine_->HandleUncaughtException();
