@@ -1807,6 +1807,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = isVmMode;
+    dumpOption.isSync = false;
     if (dumpFormat == DumpFormat::JSON) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
         dumpOption.isPrivate = isPrivate;
@@ -1834,6 +1835,7 @@ void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, boo
     dumpOption.isVmMode = isVmMode;
     dumpOption.isPrivate = isPrivate;
     dumpOption.isFullGC = isFullGC;
+    dumpOption.isSync = false;
     if (dumpFormat == DumpFormat::JSON) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
         DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
