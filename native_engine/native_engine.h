@@ -487,7 +487,6 @@ private:
 
 protected:
     void *jsEngine_;
-    void* jsEngineInterface_;
 
     void Init();
     void Deinit();
