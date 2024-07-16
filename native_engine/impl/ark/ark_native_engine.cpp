@@ -608,9 +608,9 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
     jsFrames.reserve(g_hookJsConfig->maxJsStackDepth);
     auto env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    engine->BuildJsStackInfoListWithCustomDepth(jsFrames, g_hookJsConfig->maxJsStackDepth);
+    engine->BuildJsStackInfoListWithCustomDepth(jsFrames);
     std::stringstream ssRawStack;
-    for (size_t i = 0; i < jsFrames.size(); i++) {
+    for (size_t i = 0; i < jsFrames.size() && i < g_hookJsConfig->maxJsStackDepth; i++) {
         ssRawStack << jsFrames[i].functionName << JS_SYMBOL_FILEPATH_SEP << jsFrames[i].fileName << ":" <<
             jsFrames[i].pos;
         if (i < jsFrames.size() - 1) {
@@ -1868,7 +1868,7 @@ bool ArkNativeEngine::BuildJsStackTrace(std::string& stackTraceStr)
 #endif
 }
 
-bool ArkNativeEngine::BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth)
+bool ArkNativeEngine::BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
 {
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
     bool sign = DFXJSNApi::BuildJsStackInfoList(vm_, gettid(), jsFrames);

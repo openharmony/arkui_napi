@@ -229,7 +229,7 @@ public:
         bool isPrivate = false, bool isFullGC = true) override;
     bool BuildNativeAndJsStackTrace(std::string& stackTraceStr) override;
     bool BuildJsStackTrace(std::string& stackTraceStr) override;
-    bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames, uint8_t maxJsStackDepth = 0)
+    bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
         override;
 
     bool DeleteWorker(NativeEngine* workerEngine) override;
