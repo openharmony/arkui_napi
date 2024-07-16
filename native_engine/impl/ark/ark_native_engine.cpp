@@ -2266,8 +2266,12 @@ int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
 }
 // LCOV_EXCL_STOP
 
-bool ArkNativeEngine::RunScriptPath(const char* path)
+bool ArkNativeEngine::RunScriptPath(const char* path, bool checkPath)
 {
+    if (checkPath && !IsValidPandaFile(path)) {
+        HILOG_ERROR("file is not exist or format is invalid");
+        return false;
+    }
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
@@ -2278,9 +2282,77 @@ bool ArkNativeEngine::RunScriptPath(const char* path)
     return true;
 }
 
+bool ArkNativeEngine::IsValidPandaFile(const char* filePath)
+{
+    if (filePath == nullptr) {
+        HILOG_ERROR("file path is nullptr");
+        return false;
+    }
+    struct stat fileStat;
+    int ret = stat(filePath, &fileStat);
+    if (ret != 0) {
+        HILOG_ERROR("script file \"%{public}s\" is not exist", filePath);
+        return false;
+    }
+
+    if (!(fileStat.st_mode & S_IFREG)) {
+        HILOG_ERROR("script path \"%{public}s\" is a directory", filePath);
+        return false;
+    }
+    std::ifstream abcStream(filePath, std::ios::in | std::ios::binary);
+
+    constexpr size_t fileHeaderLength = sizeof(uint64_t);
+    uint8_t fileHeader[fileHeaderLength] = { 0 };
+    if (abcStream.is_open()) {
+        size_t fileSize = fileStat.st_size;
+        if (fileSize < fileHeaderLength) {
+            HILOG_ERROR("faild to read file header, invalid format \"%{public}s\"", filePath);
+            abcStream.close();
+            return false;
+        }
+        abcStream.read(reinterpret_cast<char*>(fileHeader), fileHeaderLength);
+        abcStream.close();
+        return IsValidScriptBuffer(fileHeader, fileHeaderLength);
+    }
+    return false;
+}
+
+bool ArkNativeEngine::IsValidScriptBuffer(uint8_t* scriptBuffer, size_t bufferSize)
+{
+    if (scriptBuffer == nullptr) {
+        HILOG_ERROR("buffer is nullptr");
+        return false;
+    }
+    constexpr size_t headerLen = sizeof(uint64_t);
+    if (bufferSize < headerLen) {
+        HILOG_ERROR("invalid buffer");
+        return false;
+    }
+    constexpr char pandaFileHeader[headerLen] = "PANDA";
+    const uint64_t bytePandaHeader = *reinterpret_cast<const uint64_t*>(pandaFileHeader);
+    char fileHeader[headerLen] = { 0 };
+    // Ensure destMax paramter is set correctly to avoid buffer overflows
+    if (memcpy_s(fileHeader, sizeof(fileHeader), scriptBuffer, sizeof(fileHeader)) != 0) {
+        HILOG_ERROR("faild to read file header of buffer");
+        return false;
+    }
+
+    uint64_t byteFileHeader = *reinterpret_cast<uint64_t*>(fileHeader);
+    if (byteFileHeader != bytePandaHeader) {
+        HILOG_ERROR("invalid format of file buffer");
+        return false;
+    }
+    return true;
+}
+
 // The security interface needs to be modified accordingly.
 napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
 {
+    if (!IsValidScriptBuffer(buffer.data(), buffer.size())) {
+        HILOG_ERROR("invalid script buffer");
+        return nullptr;
+    }
+
     panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = false;
     if (isBundle) {
@@ -2299,6 +2371,11 @@ napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_
 
 bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle)
 {
+    if (!IsValidScriptBuffer(buffer, size)) {
+        HILOG_ERROR("invalid script buffer");
+        return false;
+    }
+
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     bool ret = false;
@@ -2317,6 +2394,11 @@ bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, 
 
 napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
 {
+    if (!IsValidScriptBuffer(buffer.data(), buffer.size())) {
+        HILOG_ERROR("invalid script buffer");
+        return nullptr;
+    }
+
     panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
 
@@ -2348,6 +2430,10 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
 
 napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
 {
+    if (!IsValidScriptBuffer(buffer, bufferSize)) {
+        HILOG_ERROR("invalid script buffer");
+        return nullptr;
+    }
     panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
@@ -2374,6 +2460,10 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer
         HILOG_ERROR("fileName is nullptr or source code is nullptr");
         return scope.Escape(undefObj);
     }
+    if (!IsValidScriptBuffer(reinterpret_cast<uint8_t*>(const_cast<void*>(buffer)), len)) {
+        HILOG_ERROR("invalid script buffer");
+        return scope.Escape(undefObj);
+    }
 
     bool res = JSNApi::ExecuteModuleFromBuffer(vm_, buffer, len, fileName);
     if (!res) {
@@ -2391,8 +2481,12 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer
     return scope.Escape(exportObj);
 }
 
-bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
+bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName, bool checkPath)
 {
+    if (checkPath && !IsValidPandaFile(fileName.c_str())) {
+        HILOG_ERROR("faild to execute js bin, file is not exist or format is invalid");
+        return false;
+    }
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);

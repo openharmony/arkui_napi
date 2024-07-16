@@ -170,7 +170,7 @@ public:
                             napi_value function,
                             napi_value const* argv,
                             size_t argc) override;
-    bool RunScriptPath(const char* path) override;
+    bool RunScriptPath(const char* path, bool checkPath = false) override;
 
     napi_value RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle) override;
     bool RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle) override;
@@ -195,7 +195,9 @@ public:
 
     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
 
-    NAPI_EXPORT bool ExecuteJsBin(const std::string& fileName);
+    NAPI_EXPORT bool ExecuteJsBin(const std::string& fileName, bool checkPath = false);
+    static bool IsValidPandaFile(const char* filePath);
+    static bool IsValidScriptBuffer(uint8_t* scriptBuffer, size_t bufferSize);
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
 

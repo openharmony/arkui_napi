@@ -36,7 +36,7 @@ public:
 
     void ExecuteJsBin(const std::string& fileName)
     {
-        arkNativeEngine_->ExecuteJsBin(fileName);
+        arkNativeEngine_->ExecuteJsBin(fileName, true);
     }
 
     ~Engine()
