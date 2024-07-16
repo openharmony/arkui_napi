@@ -43,6 +43,8 @@
 #include "parameter.h"
 #include "musl_preinit_common.h"
 #include "memory_trace.h"
+
+// LCOV_EXCL_START
 struct alignas(8) HookJsConfig { // 8 is 8 bit
     int32_t jsStackReport = 0;
     uint8_t maxJsStackDepth = 0;
@@ -88,6 +90,7 @@ using panda::SymbolRef;
 using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
+static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
 static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app", "system.router",
@@ -2235,11 +2238,144 @@ std::string DumpHybridStack(const EcmaVM* vm)
 }
 #endif
 
-
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(src);
     return DFXJSNApi::GetObjectHash(vm, nativeValue);
+}
+// LCOV_EXCL_STOP
+
+bool ArkNativeEngine::RunScriptPath(const char* path)
+{
+    panda::JSExecutionScope executionScope(vm_);
+    LocalScope scope(vm_);
+    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException();
+        return false;
+    }
+    return true;
+}
+
+// The security interface needs to be modified accordingly.
+napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_t>& buffer, bool isBundle)
+{
+    panda::EscapeLocalScope scope(vm_);
+    [[maybe_unused]] bool ret = false;
+    if (isBundle) {
+        ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION, path);
+    } else {
+        ret = panda::JSNApi::ExecuteModuleBuffer(vm_, buffer.data(), buffer.size(), path);
+    }
+
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
+}
+
+bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, size_t size, bool isBundle)
+{
+    panda::JSExecutionScope executionScope(vm_);
+    LocalScope scope(vm_);
+    bool ret = false;
+    if (isBundle) {
+        ret = panda::JSNApi::ExecuteSecure(vm_, buffer, size, PANDA_MAIN_FUNCTION, path);
+    } else {
+        ret = panda::JSNApi::ExecuteModuleBufferSecure(vm_, buffer, size, path);
+    }
+
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException();
+        return false;
+    }
+    return ret;
+}
+
+napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
+{
+    panda::EscapeLocalScope scope(vm_);
+    [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
+
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
+}
+
+#define EXECUTE_BUFFER(functionName)                                                                 \
+    if (panda::JSNApi::IsBundle(vm_)) {                                                              \
+        /* FA doesn't enable securemem */                                                            \
+        ret = panda::JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);            \
+    } else if (bufferSize != 0) {                                                                    \
+        if (entryPoint == nullptr) {                                                                 \
+            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule"); \
+            /* this path for bundle and abc compiled by single module js */                          \
+            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);   \
+        } else {                                                                                     \
+            /* this path for mergeabc with specific entryPoint */                                    \
+            ret = panda::JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc);            \
+        }                                                                                            \
+    } else {                                                                                         \
+        /* this path for worker */                                                                   \
+        ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                \
+    }
+
+napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
+{
+    panda::EscapeLocalScope scope(vm_);
+    std::string desc(descriptor);
+    [[maybe_unused]] bool ret = false;
+    // if apiVersion > API11, use secure path.
+    if (IsApplicationApiVersionAPI11Plus()) {
+        EXECUTE_BUFFER(ExecuteSecure);
+    } else {
+        EXECUTE_BUFFER(Execute);
+    }
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HandleUncaughtException();
+        return nullptr;
+    }
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    return JsValueFromLocalValue(scope.Escape(undefObj));
+}
+
+panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
+    int32_t len, const std::string& fileName)
+{
+    panda::EscapeLocalScope scope(vm_);
+    Local<ObjectRef> undefObj(JSValueRef::Undefined(vm_));
+    if (buffer == nullptr || len <= 0 || fileName.empty()) {
+        HILOG_ERROR("fileName is nullptr or source code is nullptr");
+        return scope.Escape(undefObj);
+    }
+
+    bool res = JSNApi::ExecuteModuleFromBuffer(vm_, buffer, len, fileName);
+    if (!res) {
+        HILOG_ERROR("Execute module failed");
+        return scope.Escape(undefObj);
+    }
+
+    Local<ObjectRef> exportObj = JSNApi::GetExportObjectFromBuffer(vm_, fileName, "default");
+    if (exportObj->IsNull()) {
+        HILOG_ERROR("Get export object failed");
+        return scope.Escape(undefObj);
+    }
+
+    HILOG_DEBUG("ArkNativeEngineImpl::LoadModule end");
+    return scope.Escape(exportObj);
+}
+
+bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName)
+{
+    panda::JSExecutionScope executionScope(vm_);
+    LocalScope scope(vm_);
+    bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);
+    return ret;
 }
