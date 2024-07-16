@@ -425,18 +425,13 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_018, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_018 starts";
 
-    NativeModule *module = nullptr;
-    NativeModule mockModule;
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
 
     std::string errInfo = "";
     /* isModuleRestricted is true and isAppModule is false, we will check the restriction */
-    module = moduleManager->LoadNativeModule("dummy", nullptr, false, errInfo, false, "", true);
-    EXPECT_EQ(module, nullptr);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), true);
 
-    MockFindNativeModuleByDisk(&mockModule);
-    module = moduleManager->LoadNativeModule("worker", nullptr, false, errInfo, false, "", true);
-    EXPECT_EQ(module, &mockModule);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), false);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_018 end";
 }
@@ -451,19 +446,12 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_019, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_019 starts";
 
-    NativeModule *module = nullptr;
-    NativeModule mockModule;
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
 
-    MockFindNativeModuleByDisk(&mockModule);
+    /* isModuleRestricted is true and isAppModule is false, we will check the restriction */
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), true);
 
-    std::string errInfo = "";
-    /* isModuleRestricted is false, we wont check the restriction */
-    module = moduleManager->LoadNativeModule("dummy", nullptr, false, errInfo, false, "", false);
-    EXPECT_EQ(module, &mockModule);
-
-    module = moduleManager->LoadNativeModule("worker", nullptr, false, errInfo, false, "rel_path", false);
-    EXPECT_EQ(module, &mockModule);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), false);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_019 end";
 }

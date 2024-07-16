@@ -516,24 +516,6 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     HILOG_DEBUG("path: %{public}s", appLibPathMap_[moduleName]);
 }
 
-bool NativeModuleManager::CheckModuleRestricted(const std::string& moduleName)
-{
-    const std::string whiteList[] = {
-        "worker",
-    };
-
-    size_t listLen = sizeof(whiteList) / sizeof(whiteList[0]);
-    for (size_t i = 0; i < listLen; ++i) {
-        if (moduleName == whiteList[i]) {
-            HILOG_DEBUG("module %{public}s found in whitelist", moduleName.c_str());
-            return false;
-        }
-    }
-
-    HILOG_DEBUG("module %{public}s does not found in whitelist", moduleName.c_str());
-    return true;
-}
-
 void NativeModuleManager::MoveApiAllowListCheckerPtr(
     std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule)
 {
@@ -543,7 +525,7 @@ void NativeModuleManager::MoveApiAllowListCheckerPtr(
 }
 
 NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
-    std::string& errInfo, bool internal, const char* relativePath, bool isModuleRestricted)
+    std::string& errInfo, bool internal, const char* relativePath)
 {
     if (moduleName == nullptr) {
         errInfo = "load native module failed. moduleName is nullptr";
@@ -559,14 +541,6 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 
     HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
         moduleName, path, relativePath);
-    // we only check system so in restricted runtime.
-    if (isModuleRestricted == true && isAppModule == false) {
-        if (CheckModuleRestricted(moduleName) == true) {
-            errInfo = "module " + std::string(moduleName) + " is not allowed to load in restricted runtime.";
-            HILOG_WARN("%{public}s", errInfo.c_str());
-            return nullptr;
-        }
-    }
 
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
