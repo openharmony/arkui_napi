@@ -1821,7 +1821,7 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
     if (operation == panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT::REJECT) {
         Local<JSValueRef> checkCallback = LocalValueFromJsValue(env->checkCallbackRef_->Get(env));
         if (!checkCallback.IsEmpty()) {
-            JSNApi::SetHostEnqueueJob(vm, checkCallback);
+            JSNApi::SetHostEnqueueJob(vm, checkCallback, panda::QueueType::QUEUE_SCRIPT);
         }
     }
 }
