@@ -273,6 +273,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     if (g_isLoadingModule || !strcmp(loadingModuleName_.c_str(), moduleName)) {
         if (!CreateTailNativeModule()) {
             HILOG_ERROR("create tail nativeModule failed");
+            delete moduleName;
             return;
         }
         tailNativeModule_->version = nativeModule->version;
@@ -1059,6 +1060,11 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
     }
     tailNativeModule_->moduleName = moduleName;
     tailNativeModule_->name = strdup(moduleName);
+    if (tailNativeModule_->name == nullptr) {
+        HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleName);
+        delete moduleName;
+        return;
+    }
     tailNativeModule_->jsABCCode = abcBuffer;
     tailNativeModule_->jsCodeLen = static_cast<int32_t>(len);
     tailNativeModule_->next = nullptr;
