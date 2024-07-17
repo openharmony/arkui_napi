@@ -97,12 +97,12 @@ ARKTS_Engine ARKTS_CreateEngine()
     auto vm = panda::JSNApi::CreateJSVM(options);
     if (!vm) {
         LOGE("create EcmaVM failed");
-        panda::JSNApi::DestroyJSVM(vm);
         return nullptr;
     }
     auto engine = new ArkNativeEngine(vm, nullptr);
     if (!engine) {
         LOGE("alloc ArkEngine failed");
+        panda::JSNApi::DestroyJSVM(vm);
         return nullptr;
     }
 
