@@ -96,7 +96,7 @@ private:
     void* context_ = nullptr;
     NativeThreadSafeFunctionCallJs callJsCallback_ = nullptr;
     NativeAsyncContext asyncContext_;
-    uv_async_t asyncHandler_;
+    uv_async_t asyncHandler_ = { 0 };
     std::mutex mutex_;
     std::queue<void*> queue_;
     std::condition_variable condition_;
