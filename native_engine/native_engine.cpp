@@ -75,6 +75,14 @@ std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
     SetAlived();
+    if (memset_s(&timer_, sizeof(timer_), 0, sizeof(timer_)) != EOK) {
+        HILOG_ERROR("failed to init timer_");
+        return;
+    }
+    if (memset_s(&uvAsync_, sizeof(uvAsync_), 0, sizeof(uvAsync_)) != EOK) {
+        HILOG_ERROR("failed to init uvAsync_");
+        return;
+    }
 }
 
 NativeEngine::~NativeEngine()

@@ -78,14 +78,16 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
     threadCount_(threadCount), finalizeData_(finalizeData), finalizeCallback_(finalizeCallback),
     context_(context), callJsCallback_(callJsCallback)
 {
+    asyncContext_.napiAsyncResource = asyncResource;
+    asyncContext_.napiAsyncResourceName = asyncResourceName;
+
     errno_t err = EOK;
-    err = memset_s(&asyncContext_, sizeof(asyncContext_), 0, sizeof(asyncContext_));
+    err = memset_s(&asyncHandler_, sizeof(asyncHandler_), 0, sizeof(asyncHandler_));
     if (err != EOK) {
+        HILOG_ERROR("faild to init asyncHandler_");
         return;
     }
 
-    asyncContext_.napiAsyncResource = asyncResource;
-    asyncContext_.napiAsyncResourceName = asyncResourceName;
     if (func != nullptr) {
         uint32_t initialRefcount = 1;
         ref_ = engine->CreateReference(func, initialRefcount);
