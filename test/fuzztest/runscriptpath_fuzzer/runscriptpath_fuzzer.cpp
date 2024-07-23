@@ -36,7 +36,7 @@ public:
 
     void RunScriptPath(const char* path)
     {
-        arkNativeEngine_->RunScriptPath(path);
+        arkNativeEngine_->RunScriptPath(path, true);
     }
 
     ~Engine()
