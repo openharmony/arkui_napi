@@ -5056,7 +5056,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest007, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5072,7 +5072,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest008, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5088,7 +5088,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest009, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5104,7 +5104,7 @@ HWTEST_F(NapiBasicTest, runEventLoopTest010, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5160,7 +5160,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest004, testing::ext::TestSize.Level1)
     // worker thread does not support napi_run_event_loop func
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5176,7 +5176,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest005, testing::ext::TestSize.Level1)
     // taskpool thread does not support napi_run_event_loop func
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_generic_failure);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5191,7 +5191,7 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest006, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
     napi_status res = napi_stop_event_loop(env);
     ASSERT_EQ(res, napi_ok);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
@@ -5240,7 +5240,7 @@ HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSiz
     // 3. run the loop
     napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_ok);
-    engine_->jsThreadType_ = NativeEngine::JSThreadType::MAIN_THREAD;
+    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
 
 /**
