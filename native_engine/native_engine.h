@@ -37,7 +37,6 @@
 #include "native_property.h"
 #include "reference_manager/native_reference_manager.h"
 #include "utils/macros.h"
-#include "data_protect.h"
 
 namespace panda::ecmascript {
     class EcmaVM;
@@ -240,39 +239,39 @@ public:
 
     void MarkWorkerThread()
     {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::WORKER_THREAD));
+        jsThreadType_ = JSThreadType::WORKER_THREAD;
     }
     void MarkRestrictedWorkerThread()
     {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::RESTRICTEDWORKER_THREAD));
+        jsThreadType_ = JSThreadType::RESTRICTEDWORKER_THREAD;
     }
     void MarkTaskPoolThread()
     {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::TASKPOOL_THREAD));
+        jsThreadType_ = JSThreadType::TASKPOOL_THREAD;
     }
     void MarkNativeThread()
     {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::NATIVE_THREAD));
+        jsThreadType_ = JSThreadType::NATIVE_THREAD;
     }
     bool IsWorkerThread() const
     {
-        return static_cast<JSThreadType>(jsThreadType_.GetOriginPointer()) == JSThreadType::WORKER_THREAD;
+        return jsThreadType_ == JSThreadType::WORKER_THREAD;
     }
     bool IsRestrictedWorkerThread() const
     {
-        return static_cast<JSThreadType>(jsThreadType_.GetOriginPointer()) == JSThreadType::RESTRICTEDWORKER_THREAD;
+        return jsThreadType_ == JSThreadType::RESTRICTEDWORKER_THREAD;
     }
     bool IsTaskPoolThread() const
     {
-        return static_cast<JSThreadType>(jsThreadType_.GetOriginPointer()) == JSThreadType::TASKPOOL_THREAD;
+        return jsThreadType_ == JSThreadType::TASKPOOL_THREAD;
     }
     bool IsMainThread() const
     {
-        return static_cast<JSThreadType>(jsThreadType_.GetOriginPointer()) == JSThreadType::MAIN_THREAD;
+        return jsThreadType_ == JSThreadType::MAIN_THREAD;
     }
     bool IsNativeThread() const
     {
-        return static_cast<JSThreadType>(jsThreadType_.GetOriginPointer()) == JSThreadType::NATIVE_THREAD;
+        return jsThreadType_ == JSThreadType::NATIVE_THREAD;
     }
 
     bool CheckAndSetWorkerVersion(WorkerVersion expected, WorkerVersion desired)
@@ -542,7 +541,7 @@ private:
 
     // the old worker api use before api9, the new worker api start with api9
     enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD, NATIVE_THREAD };
-    panda::panda_file::DataProtect jsThreadType_ {panda::panda_file::DataProtect(uintptr_t(JSThreadType::MAIN_THREAD))};
+    JSThreadType jsThreadType_ = JSThreadType::MAIN_THREAD;
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
 

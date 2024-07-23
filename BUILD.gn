@@ -57,10 +57,6 @@ config("ace_napi_config") {
   } else if (is_arkui_x && target_os == "android") {
     defines += [ "ANDROID_PLATFORM" ]
   }
-
-  if (current_cpu == "arm64") {
-    cflags_cc += [ "-march=armv8.3a" ]
-  }
 }
 
 config("module_manager_config") {
