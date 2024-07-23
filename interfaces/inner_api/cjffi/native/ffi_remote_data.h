@@ -123,8 +123,10 @@ public:
         if (existed != nullptr) {
             return sptr<T>(existed.GetRefPtr()->template DynamicCast<T>());
         }
-        auto ref = sptr<T>(new T(id));
-        manager->StoreRemoteData(ref);
+        auto ref = sptr<T>(new (std::nothrow) T(id));
+        if (ref) {
+            manager->StoreRemoteData(ref);
+        }
         return ref;
     }
 
@@ -169,8 +171,10 @@ public:
     template<class T, class... Args>
     static sptr<T> Create(Args... args)
     {
-        auto ref = sptr<T>(new T(std::forward<Args>(args)...));
-        FFIDataManager::GetInstance()->StoreFFIData(ref);
+        auto ref = sptr<T>(new (std::nothrow) T(std::forward<Args>(args)...));
+        if (ref) {
+            FFIDataManager::GetInstance()->StoreFFIData(ref);
+        }
         return ref;
     }
 
