@@ -554,7 +554,6 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
-    SetUnalived();
     Deinit();
     // Free cached objects
     for (auto&& [module, exportObj] : loadedModules_) {

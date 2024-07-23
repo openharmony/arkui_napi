@@ -157,6 +157,7 @@ void NativeEngine::Deinit()
         referenceManager_ = nullptr;
     }
 
+    SetUnalived();
     SetStopping(true);
     uv_loop_delete(loop_);
     loop_ = nullptr;
