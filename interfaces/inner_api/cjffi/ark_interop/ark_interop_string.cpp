@@ -53,7 +53,7 @@ int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
     auto v = BIT_CAST(value, Local<StringRef>);
-    return v->Utf8Length(vm);
+    return v->Utf8Length(vm, true);
 }
 
 int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, char* buffer)
@@ -70,7 +70,7 @@ const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
     auto v = BIT_CAST(value, Local<StringRef>);
-    auto size = v->Utf8Length(vm);
+    auto size = v->Utf8Length(vm, true);
     if (size <= 0) {
         return nullptr;
     }

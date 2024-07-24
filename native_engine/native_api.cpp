@@ -717,7 +717,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
     Local<panda::StringRef> stringVal(nativeValue);
     if (buf == nullptr) {
         CHECK_ARG(env, result);
-        *result = stringVal->Utf8Length(vm) - 1;
+        *result = stringVal->Utf8Length(vm, true) - 1;
     } else if (bufsize != 0) {
         int copied = stringVal->WriteUtf8(vm, buf, bufsize - 1, true) - 1;
         buf[copied] = '\0';
