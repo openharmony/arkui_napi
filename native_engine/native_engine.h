@@ -162,7 +162,7 @@ public:
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual napi_value RunActor(uint8_t* buffer, size_t bufferSize,
-        const char* descriptor, char* entryPoint = nullptr) = 0;
+        const char* descriptor, char* entryPoint = nullptr, bool checkPath = false) = 0;
 
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 

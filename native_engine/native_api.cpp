@@ -2964,7 +2964,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env,
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunActor(buffer, bufferSize, descriptor, entryPoint);
+    *result = engine->RunActor(buffer, bufferSize, descriptor, entryPoint, false);
     return GET_RETURN_STATUS(env);
 }
 

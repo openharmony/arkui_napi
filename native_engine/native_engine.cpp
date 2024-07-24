@@ -792,7 +792,7 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
         HILOG_ERROR("RunScript: buffer size is empty, please check abc path");
         return nullptr;
     }
-    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint);
+    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint, false);
 }
 
 napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
