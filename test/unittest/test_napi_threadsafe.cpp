@@ -427,6 +427,15 @@ static void CallJsCallback(napi_env env, napi_value jsCb)
     EXPECT_EQ(res, ADD_SUMMARY_RESULT);
 }
 
+static void StopCurrentRunner()
+{
+    auto runner = OHOS::AppExecFwk::EventRunner::Current();
+    if (runner != nullptr) {
+        HILOG_INFO("Stop the current runner!");
+        runner->Stop();
+    }
+}
+
 static void CallJs(napi_env env, napi_value jsCb, void *context, void *data)
 {
     EXPECT_NE(env, nullptr);
@@ -458,9 +467,7 @@ static void CallJs(napi_env env, napi_value jsCb, void *context, void *data)
 
     CallJsCallback(env, jsCb);
     if (g_receiveCnt == THIRD_RECEIVER) {
-        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        EXPECT_NE(runner, nullptr);
-        runner->Stop();
+        StopCurrentRunner();
     }
 }
 
@@ -490,11 +497,20 @@ static void CallJsWithDiffPriority(napi_env env, napi_value jsCb, void *context,
 
     CallJsCallback(env, jsCb);
     if (g_receiveCnt == FIFTH_RECEIVER) {
-        auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        EXPECT_NE(runner, nullptr);
-        runner->Stop();
+        StopCurrentRunner();
     }
 }
+
+class UnitLoopHandler : public OHOS::AppExecFwk::FileDescriptorListener,
+    public std::enable_shared_from_this<UnitLoopHandler> {
+public:
+    explicit UnitLoopHandler(uv_loop_t* uvLoop) : uvLoop_(uvLoop) {}
+    void OnReadable(int32_t) override { uv_run(uvLoop_, UV_RUN_NOWAIT); }
+    void OnWritable(int32_t) override { uv_run(uvLoop_, UV_RUN_NOWAIT); }
+
+private:
+    uv_loop_t* uvLoop_ = nullptr;
+};
 
 class NapiThreadsafeTest : public NativeEngineTest {
 public:
@@ -508,13 +524,32 @@ public:
         GTEST_LOG_(INFO) << "NapiThreadsafeTest TearDownTestCase";
     }
 
-    void SetUp() override {}
+    void SetUp() override { AttachEventHandler(); }
     void TearDown() override {}
 
     void CallThreadSafeWithSamePriorityTest(napi_task_priority priority);
     void CallThreadSafeWithDiffPriorityTest();
     void CallThreadSafeWithDiffPriorityMultipleThreadTest();
+    void AttachEventHandler();
 };
+
+void NapiThreadsafeTest::AttachEventHandler()
+{
+    if (eventHandler_ != nullptr) {
+        return;
+    }
+    auto uvLoop = engine_->GetUVLoop();
+    auto fd = uvLoop != nullptr ? uv_backend_fd(uvLoop) : -1;
+    EXPECT_GE(fd, 0);
+    uv_run(uvLoop, UV_RUN_NOWAIT);
+    auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
+    EXPECT_NE(runner, nullptr);
+    eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+    EXPECT_NE(eventHandler_, nullptr);
+    uint32_t events = OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT | OHOS::AppExecFwk::FILE_DESCRIPTOR_OUTPUT_EVENT;
+    eventHandler_->AddFileDescriptorListener(fd, events, std::make_shared<UnitLoopHandler>(uvLoop), "uvLoopTask");
+    HILOG_INFO("AttachEventHandler is completed!");
+}
 
 static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_task_priority priority)
 {
@@ -585,10 +620,6 @@ void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_task_priority p
         },
         callbackData, &callbackData->work);
     napi_queue_async_work(env, callbackData->work);
-
-    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-    EXPECT_NE(runner, nullptr);
-    runner->Run();
 }
 
 void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
@@ -629,10 +660,6 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
         },
         callbackData, &callbackData->work);
     napi_queue_async_work(env, callbackData->work);
-
-    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-    EXPECT_NE(runner, nullptr);
-    runner->Run();
 }
 
 void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
@@ -672,10 +699,6 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
         std::thread runThread = std::thread(runFunc, std::ref(env), index);
         runThread.detach();
     }
-
-    auto runner = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-    EXPECT_NE(runner, nullptr);
-    runner->Run();
 }
 
 /**
@@ -1073,7 +1096,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest001, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest001 start");
     g_isTailA = true;
     g_isTailB = true;
-    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest001 end");
 }
 
@@ -1088,7 +1118,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest002, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest002 start");
     g_isTailA = false;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest002 end");
 }
 
@@ -1103,7 +1140,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest003, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest003 start");
     g_isTailA = true;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_immediate);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest003 end");
 }
 
@@ -1118,7 +1162,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest004, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest004 start");
     g_isTailA = true;
     g_isTailB = true;
-    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest004 end");
 }
 
@@ -1133,7 +1184,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest005, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest005 start");
     g_isTailA = false;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest005 end");
 }
 
@@ -1148,7 +1206,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest006, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest006 start");
     g_isTailA = true;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_high);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest006 end");
 }
 
@@ -1163,7 +1228,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest007, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest007 start");
     g_isTailA = true;
     g_isTailB = true;
-    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest007 end");
 }
 
@@ -1178,7 +1250,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest008, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest008 start");
     g_isTailA = false;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest008 end");
 }
 
@@ -1193,7 +1272,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest009, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest009 start");
     g_isTailA = true;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_low);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest009 end");
 }
 
@@ -1209,7 +1295,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest010, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest010 start");
     g_isTailA = true;
     g_isTailB = true;
-    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest010 end");
 }
 
@@ -1224,7 +1317,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest011, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest005 start");
     g_isTailA = false;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest011 end");
 }
 
@@ -1239,7 +1339,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest012, testing::ext::TestSi
     HILOG_INFO("ThreadsafeWithPriorityTest012 start");
     g_isTailA = true;
     g_isTailB = false;
-    CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    auto task = [test = this]() {
+        test->CallThreadSafeWithSamePriorityTest(napi_priority_idle);
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest012 end");
 }
 
@@ -1252,7 +1359,14 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest012, testing::ext::TestSi
 HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest013, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeWithPriorityTest013 start");
-    CallThreadSafeWithDiffPriorityTest();
+    auto task = [test = this]() {
+        test->CallThreadSafeWithDiffPriorityTest();
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest013 end");
 }
 
@@ -1265,6 +1379,13 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest013, testing::ext::TestSi
 HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest014, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeWithPriorityTest014 start");
-    CallThreadSafeWithDiffPriorityMultipleThreadTest();
+    auto task = [test = this]() {
+        test->CallThreadSafeWithDiffPriorityMultipleThreadTest();
+    };
+    EXPECT_NE(eventHandler_, nullptr);
+    eventHandler_->PostTask(task);
+    auto runner = eventHandler_->GetEventRunner();
+    EXPECT_NE(runner, nullptr);
+    runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest014 end");
 }
