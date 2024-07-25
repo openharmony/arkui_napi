@@ -258,7 +258,7 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         auto str = val->ToString(vm);
         char* buffer = name;
         if (buffer == nullptr) {
-            strLength = static_cast<size_t>(str->Utf8Length(vm) - 1);
+            strLength = static_cast<size_t>(str->Utf8Length(vm, true) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
             int copied = str->WriteUtf8(vm, buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
