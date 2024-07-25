@@ -2010,9 +2010,8 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
-    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
-    auto external = NativePointerRef::NewSendable(vm, native_object, callback, finalize_hint, 0);
-    nativeObject->Set(vm, key, external);
+    nativeObject->SetNativePointerFieldCount(vm, 1);
+    nativeObject->SetNativePointerField(vm, 0, native_object, callback, finalize_hint);
     return GET_RETURN_STATUS(env);
 }
 
@@ -2034,9 +2033,8 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
-    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
-    auto external = NativePointerRef::NewSendable(vm, native_object, callback, finalize_hint, native_binding_size);
-    nativeObject->Set(vm, key, external);
+    nativeObject->SetNativePointerFieldCount(vm, 1);
+    nativeObject->SetNativePointerField(vm, 0, native_object, callback, finalize_hint);
     return GET_RETURN_STATUS(env);
 }
 
@@ -2051,11 +2049,8 @@ NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object,
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
-    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
-    Local<panda::ObjectRef> val = nativeObject->Get(vm, key);
-    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(vm), napi_invalid_arg);
-    Local<panda::NativePointerRef> ext(val);
-    *result = ext->Value();
+    void* val = nativeObject->GetNativePointerField(vm, 0);
+    *result = val;
     return GET_RETURN_STATUS(env);
 }
 
@@ -2071,12 +2066,9 @@ NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_ob
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     auto nativeObject = nativeValue->ToObject(vm);
-    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
-    Local<panda::ObjectRef> val = nativeObject->Get(vm, key);
-    RETURN_STATUS_IF_FALSE(env, val->IsNativePointer(vm), napi_invalid_arg);
-    Local<panda::NativePointerRef> ext(val);
-    *result = ext->Value();
-    nativeObject->Set(vm, key, JSValueRef::Null(vm));
+    void* val = nativeObject->GetNativePointerField(vm, 0);
+    *result = val;
+    nativeObject->SetNativePointerField(vm, 0, nullptr, nullptr, nullptr);
 
     return GET_RETURN_STATUS(env);
 }
