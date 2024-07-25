@@ -500,7 +500,7 @@ private:
     void DestoryDefaultFunction(void);
 
 protected:
-    void *jsEngine_;
+    void *jsEngine_ = nullptr;
 
     void Init();
     void Deinit();

@@ -83,6 +83,16 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
         HILOG_ERROR("failed to init uvAsync_");
         return;
     }
+    if (memset_s(&uvSem_, sizeof(uvSem_), 0, sizeof(uvSem_)) != EOK) {
+        HILOG_ERROR("failed to init uvSem_");
+        return;
+    }
+#if !defined(PREVIEW)
+    if (memset_s(&uvThread_, sizeof(uvThread_), 0, sizeof(uvThread_)) != EOK) {
+        HILOG_ERROR("failed to init uvThread_");
+        return;
+    }
+#endif
 }
 
 NativeEngine::~NativeEngine()
