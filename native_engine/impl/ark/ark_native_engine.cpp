@@ -2422,12 +2422,20 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
         ret = panda::JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                \
     }
 
-napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
+napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize,
+    const char* descriptor, char* entryPoint, bool checkPath)
 {
-    if (!IsValidScriptBuffer(buffer, bufferSize)) {
-        HILOG_ERROR("invalid script buffer");
+    if (buffer == nullptr && descriptor == nullptr) {
+        HILOG_ERROR("invalid param, both buffer and descriptor are nullptr");
         return nullptr;
     }
+
+    if ((buffer != nullptr && !IsValidScriptBuffer(buffer, bufferSize)) &&
+        (checkPath && descriptor != nullptr && !IsValidPandaFile(descriptor))) {
+        HILOG_ERROR("invalid param");
+        return nullptr;
+    }
+
     panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;

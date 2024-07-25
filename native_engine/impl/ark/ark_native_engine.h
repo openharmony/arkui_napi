@@ -177,7 +177,8 @@ public:
 
     // Run buffer script
     napi_value RunBufferScript(std::vector<uint8_t>& buffer) override;
-    napi_value RunActor(uint8_t* buffer, size_t size, const char* descriptor, char* entryPoint = nullptr) override;
+    napi_value RunActor(uint8_t* buffer, size_t size, const char* descriptor,
+        char* entryPoint = nullptr, bool checkPath = false) override;
     // Set lib path
     NAPI_EXPORT void SetPackagePath(const std::string appLinPathKey, const std::vector<std::string>& packagePath);
     napi_value CreateInstance(napi_value constructor, napi_value const* argv, size_t argc) override;
