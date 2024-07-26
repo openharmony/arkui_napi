@@ -65,33 +65,7 @@ enum class WorkerVersion {
     NONE, OLD, NEW
 };
 
-class CleanupHookCallback {
-public:
-    using Callback = void (*)(void*);
-
-    CleanupHookCallback(Callback fn, void* arg, uint64_t insertion_order_counter)
-        : fn_(fn), arg_(arg), insertion_order_counter_(insertion_order_counter)
-    {}
-
-    struct Hash {
-        inline size_t operator()(const CleanupHookCallback& cb) const
-        {
-            return std::hash<void*>()(cb.arg_);
-        }
-    };
-    struct Equal {
-        inline bool operator()(const CleanupHookCallback& a, const CleanupHookCallback& b) const
-        {
-            return a.fn_ == b.fn_ && a.arg_ == b.arg_;
-        };
-    };
-
-private:
-    friend class NativeEngine;
-    Callback fn_;
-    void* arg_;
-    uint64_t insertion_order_counter_;
-};
+using CleanupCallback = void (*)(void*);
 
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
@@ -334,9 +308,8 @@ public:
     virtual int32_t GetApiVersion();
     virtual bool IsApplicationApiVersionAPI11Plus();
 
-    using CleanupCallback = CleanupHookCallback::Callback;
-    virtual void AddCleanupHook(CleanupCallback fun, void* arg);
-    virtual void RemoveCleanupHook(CleanupCallback fun, void* arg);
+    virtual napi_status AddCleanupHook(CleanupCallback fun, void* arg);
+    virtual napi_status RemoveCleanupHook(CleanupCallback fun, void* arg);
 
     void CleanupHandles();
     void IncreaseWaitingRequestCounter();
@@ -557,8 +530,8 @@ private:
     PostTask postTask_ = nullptr;
     CleanEnv cleanEnv_ = nullptr;
     uv_async_t uvAsync_;
-    std::unordered_set<CleanupHookCallback, CleanupHookCallback::Hash, CleanupHookCallback::Equal> cleanup_hooks_;
-    uint64_t cleanup_hook_counter_ = 0;
+    std::unordered_map<void*, std::pair<CleanupCallback, uint64_t>> cleanupHooks_;
+    uint64_t cleanupHookCounter_ = 0;
     std::atomic_int requestWaiting_ { 0 };
     std::atomic_int listeningCounter_ { 0 };
     std::atomic_int subEnvCounter_ { 0 };
