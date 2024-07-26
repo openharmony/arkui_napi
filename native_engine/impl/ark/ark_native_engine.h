@@ -342,6 +342,7 @@ public:
     bool GetIsBundle() override;
     bool GetIsNormalizedOhmUrlPack() override;
     std::string GetBundleName() override;
+    std::string GetPkgName(const std::string &moduleName) override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
     int GetProcessStartRealTime() override;
 

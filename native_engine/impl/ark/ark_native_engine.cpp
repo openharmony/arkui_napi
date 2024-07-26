@@ -1712,6 +1712,12 @@ std::string ArkNativeEngine::GetBundleName()
     return panda::JSNApi::GetBundleName(vm_);
 }
 
+std::string ArkNativeEngine::GetPkgName(const std::string &moduleName)
+{
+    LocalScope scope(vm_);
+    return panda::JSNApi::GetPkgName(vm_, moduleName);
+}
+
 bool ArkNativeEngine::IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl)
 {
     LocalScope scope(vm_);
