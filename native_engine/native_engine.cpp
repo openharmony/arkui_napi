@@ -635,22 +635,26 @@ bool NativeEngine::IsApplicationApiVersionAPI11Plus()
     return apiVersion_ > API11;
 }
 
-void NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
+napi_status NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
-    HILOG_DEBUG("%{public}s, start.", __func__);
-    auto insertion_info = cleanup_hooks_.emplace(CleanupHookCallback { fun, arg, cleanup_hook_counter_++ });
+    auto insertion_info = cleanupHooks_.emplace(arg,
+        std::pair<CleanupCallback, uint64_t>(fun, cleanupHookCounter_++));
     if (insertion_info.second != true) {
         HILOG_ERROR("AddCleanupHook Failed.");
+        return napi_generic_failure;
     }
-    HILOG_DEBUG("%{public}s, end.", __func__);
+    return napi_ok;
 }
 
-void NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
+napi_status NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
 {
-    HILOG_DEBUG("%{public}s, start.", __func__);
-    CleanupHookCallback hook { fun, arg, 0 };
-    cleanup_hooks_.erase(hook);
-    HILOG_DEBUG("%{public}s, end.", __func__);
+    auto cleanupHook = cleanupHooks_.find(arg);
+    if (cleanupHook != cleanupHooks_.end() && cleanupHook->second.first == fun) {
+        cleanupHooks_.erase(arg);
+        return napi_ok;
+    }
+    HILOG_ERROR("RemoveCleanupHook Failed.");
+    return napi_generic_failure;
 }
 
 void NativeEngine::StartCleanupTimer()
@@ -670,27 +674,32 @@ void NativeEngine::RunCleanup()
     StartCleanupTimer();
     CleanupHandles();
     // sync clean up
-    while (!cleanup_hooks_.empty()) {
-        HILOG_DEBUG("NativeEngine::RunCleanup cleanup_hooks is not empty");
+    while (!cleanupHooks_.empty()) {
+        HILOG_DEBUG("NativeEngine::RunCleanup cleanupHooks_ is not empty");
+        using CleanupCallbackTuple = std::pair<void*, std::pair<CleanupCallback, uint64_t>>;
         // Copy into a vector, since we can't sort an unordered_set in-place.
-        std::vector<CleanupHookCallback> callbacks(cleanup_hooks_.begin(), cleanup_hooks_.end());
-        // We can't erase the copied elements from `cleanup_hooks_` yet, because we
+        std::vector<CleanupCallbackTuple> callbacks(cleanupHooks_.begin(), cleanupHooks_.end());
+        // We can't erase the copied elements from `cleanupHooks_` yet, because we
         // need to be able to check whether they were un-scheduled by another hook.
 
-        std::sort(callbacks.begin(), callbacks.end(), [](const CleanupHookCallback& a, const CleanupHookCallback& b) {
+        std::sort(callbacks.begin(), callbacks.end(), [](const CleanupCallbackTuple& a, const CleanupCallbackTuple& b) {
             // Sort in descending order so that the most recently inserted callbacks are run first.
-            return a.insertion_order_counter_ > b.insertion_order_counter_;
+            return a.second.second > b.second.second;
         });
         HILOG_DEBUG(
             "NativeEngine::RunCleanup cleanup_hooks callbacks size:%{public}d", (int32_t)callbacks.size());
-        for (const CleanupHookCallback& cb : callbacks) {
-            if (cleanup_hooks_.count(cb) == 0) {
-                // This hook was removed from the `cleanup_hooks_` set during another
+        for (const CleanupCallbackTuple& cb : callbacks) {
+            void* data = cb.first;
+            if (cleanupHooks_.find(data) == cleanupHooks_.end()) {
+                // This hook was removed from the `cleanupHooks_` set during another
                 // hook that was run earlier. Nothing to do here.
                 continue;
             }
-            cb.fn_(cb.arg_);
-            cleanup_hooks_.erase(cb);
+            CleanupCallback fun = cb.second.first;
+            if (fun != nullptr) {
+                fun(data);
+            }
+            cleanupHooks_.erase(data);
         }
         CleanupHandles();
     }
