@@ -469,6 +469,7 @@ public:
     napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
 
 private:
+    void InitUvField();
     void StartCleanupTimer();
     void CreateDefaultFunction(void);
     void DestoryDefaultFunction(void);
