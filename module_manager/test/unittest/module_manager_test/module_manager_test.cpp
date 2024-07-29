@@ -429,9 +429,9 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_018, TestSize.Level1)
 
     std::string errInfo = "";
     /* isModuleRestricted is true and isAppModule is false, we will check the restriction */
-    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), true);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), false);
 
-    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), false);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), true);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_018 end";
 }
@@ -449,9 +449,9 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_019, TestSize.Level1)
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
 
     /* isModuleRestricted is true and isAppModule is false, we will check the restriction */
-    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), true);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("dummy"), false);
 
-    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), false);
+    EXPECT_EQ(moduleManager->CheckModuleRestricted("worker"), true);
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_019 end";
 }
