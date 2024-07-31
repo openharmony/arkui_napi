@@ -21,6 +21,7 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
+#include <unistd.h>
 
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
@@ -893,12 +894,13 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (isAppModule && IsExistedPath(pathKey)) {
         Dl_namespace ns = nsMap_[pathKey];
         lib = dlopen_ns(&ns, path, RTLD_LAZY);
-    } else {
+    } else if (access(path, F_OK) == 0) {
         lib = dlopen(path, RTLD_LAZY);
     }
     if (lib == nullptr) {
         char* dlerr = dlerror();
-        auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
+        auto dlerrMsg = dlerr != nullptr ? dlerr :
+            "Error loading path " + std::string(path) + ":No such file or directory";
         errInfo += "load app module failed. " +  std::string(dlerrMsg);
     }
 #endif
