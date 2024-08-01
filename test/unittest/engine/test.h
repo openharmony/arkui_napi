@@ -15,6 +15,7 @@
 
 #ifndef FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
 #define FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H
+#include "event_handler.h"
 #include "native_engine.h"
 #include "test_common.h"
 
@@ -26,6 +27,7 @@ public:
 protected:
     NativeEngine* engine_;
     NativeEngine* moduleNameEngine_;
+    std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 };
 
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
