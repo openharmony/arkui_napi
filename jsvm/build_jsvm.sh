@@ -82,6 +82,10 @@ do_opt_process() {
             export TARGET_GEN_DIR=$2
             shift
             ;;
+        --target_clang_coverage)
+            export TARGET_CLANG_COVERAGE=$2
+            shift
+            ;;
         *)
             ;;
         esac
