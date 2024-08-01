@@ -153,6 +153,10 @@ do_env() {
         die "not support target cpu"
     fi
 
+    if [[ "${TARGET_CLANG_COVERAGE}" = "true" ]]; then
+        cflags+=" --coverage"
+    fi
+
     cflags+=" ${argurment}"
 
     # linux host env
