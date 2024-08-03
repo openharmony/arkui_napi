@@ -83,6 +83,10 @@ ohos_shared_library("ark_interop") {
     "ENABLE_PROFILE",
   ]
 
+  if (use_clang_coverage) {
+    defines += [ "CLANG_COVERAGE" ]
+  }
+
   if (is_arkui_x) {
     deps += [
       "//third_party/bounds_checking_function:libsec_static",
