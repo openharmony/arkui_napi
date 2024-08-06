@@ -104,6 +104,10 @@ public:
     {
         const std::string whiteList[] = {
             "worker",
+            "arkui.uicontext",
+            "arkui.node",
+            "arkui.modifier",
+            "measure",
         };
 
         size_t listLen = sizeof(whiteList) / sizeof(whiteList[0]);
