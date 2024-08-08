@@ -256,6 +256,9 @@ struct LambdaData {
 static Local<JSValueRef> CJLambdaInvoker(JsiRuntimeCallInfo* callInfo)
 {
     auto data = reinterpret_cast<LambdaData*>(callInfo->GetData());
+    if (!data) {
+        return JSValueRef::Undefined(callInfo->GetVM());
+    }
     auto result = ARKTSInner_CJLambdaInvoker(P_CAST(callInfo, ARKTS_CallInfo), data->lambdaId);
     return BIT_CAST(result, Local<JSValueRef>);
 }
@@ -263,6 +266,9 @@ static Local<JSValueRef> CJLambdaInvoker(JsiRuntimeCallInfo* callInfo)
 static void CJLambdaDeleter(void* /* env: napi_env */, void* /*invoker*/, void* raw)
 {
     auto data = reinterpret_cast<LambdaData*>(raw);
+    if (!data) {
+        return;
+    }
     ARKTSInner_CJLambdaDeleter(data->env, data->lambdaId);
     delete data;
 }
