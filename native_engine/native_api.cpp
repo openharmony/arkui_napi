@@ -2032,7 +2032,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     Local<ObjectRef> nativeObject(nativeValue);
     nativeObject->SetNativePointerFieldCount(vm, 1);
-    nativeObject->SetNativePointerField(vm, 0, native_object, callback, finalize_hint);
+    nativeObject->SetNativePointerField(vm, 0, native_object, callback, finalize_hint, native_binding_size);
     return GET_RETURN_STATUS(env);
 }
 
