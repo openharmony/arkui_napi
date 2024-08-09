@@ -146,6 +146,14 @@ private:
     bool isValid_;
 };
 
+class FFI_EXPORT CJLambdaRemoteData : public RemoteData {
+    DECL_TYPE(CJLambdaRemoteData, RemoteData)
+public:
+    explicit CJLambdaRemoteData(int64_t id): RemoteData(id) {}
+
+    ~CJLambdaRemoteData() override;
+};
+
 /**
  * object to referenced by cj.
  *  standard create procedure:

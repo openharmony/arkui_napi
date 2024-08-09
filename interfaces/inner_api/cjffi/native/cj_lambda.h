@@ -68,7 +68,7 @@ public:
     template<class... I>
     static std::function<void(I...)> Create(void (*callback)(I...))
     {
-        auto handle = OHOS::FFI::RemoteData::Create<OHOS::FFI::RemoteData>(reinterpret_cast<int64_t>(callback));
+        auto handle = OHOS::FFI::RemoteData::Create<OHOS::FFI::CJLambdaRemoteData>(reinterpret_cast<int64_t>(callback));
         return [handle](I...args) -> void {
             constexpr int32_t argc = std::tuple_size_v<std::tuple<I...>>;
             if (argc == 0) {
@@ -87,7 +87,7 @@ public:
     template<class... I, class R>
     static std::function<R(I...)> Create(R (*callback)(I...))
     {
-        auto handle = OHOS::FFI::RemoteData::Create<OHOS::FFI::RemoteData>(reinterpret_cast<int64_t>(callback));
+        auto handle = OHOS::FFI::RemoteData::Create<OHOS::FFI::CJLambdaRemoteData>(reinterpret_cast<int64_t>(callback));
         return [handle](I...args) -> R {
             R res;
             constexpr int32_t argc = std::tuple_size_v<std::tuple<I...>>;
