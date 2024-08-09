@@ -110,6 +110,12 @@ RemoteData::~RemoteData()
     isValid_ = false;
 }
 
+CJLambdaRemoteData::~CJLambdaRemoteData()
+{
+    auto manager = FFIDataManager::GetInstance();
+    manager->RemoveRemoteData(GetID());
+}
+
 int64_t RemoteData::GetID() const
 {
     if (!isValid_) {
