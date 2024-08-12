@@ -1135,6 +1135,16 @@ void ArkNativeEngine::TerminateExecution() const
     DFXJSNApi::TerminateExecution(vm_);
 }
 
+void ArkNativeEngine::NotifyTaskBegin() const
+{
+    JSNApi::NotifyTaskBegin(vm_);
+}
+
+void ArkNativeEngine::NotifyTaskFinished() const
+{
+    JSNApi::NotifyTaskFinished(vm_);
+}
+
 napi_value ArkNativeEngine::CallFunction(
     napi_value thisVar, napi_value function, napi_value const* argv, size_t argc)
 {
