@@ -118,4 +118,8 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
 NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority);
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope);
 NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope);
+NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
+                                                          napi_value arraybuffer,
+                                                          void** data,
+                                                          size_t* byte_length);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
