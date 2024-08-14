@@ -110,6 +110,9 @@ group("unittest") {
     ":test_ark_unittest_threadsafe",
     "cj_native:cj_native_unittest",
   ]
+  if (target_cpu == "arm64") {
+    deps += [ "jsvm:jsvm_unittest" ]
+  }
 }
 
 #jerry tdd test for phone running
