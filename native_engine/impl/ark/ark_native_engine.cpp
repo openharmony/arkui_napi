@@ -37,6 +37,9 @@
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
+#if defined(ENABLE_EVENT_HANDLER)
+#include "event_handler.h"
+#endif
 #ifdef ENABLE_HITRACE
 #include "hitrace/trace.h"
 #include "hitrace_meter.h"
@@ -2276,30 +2279,27 @@ std::string DumpHybridStack(const EcmaVM* vm)
 }
 #endif
 
-#if defined(ENABLE_EVENT_HANDLER)
 void ArkNativeEngine::PostLooperTriggerIdleGCTask()
 {
+#if defined(ENABLE_EVENT_HANDLER)
     if (!JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
         return;
     }
-    if (mainThreadRunner_ == nullptr) {
-        mainThreadRunner_ = OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-        if (mainThreadRunner_.get() == nullptr) {
-            HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
-            return;
-        }
-        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(mainThreadRunner_);
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
+        OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    if (mainThreadRunner.get() == nullptr) {
+        HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
+        return;
     }
-
     auto callback = [this]([[maybe_unused]]OHOS::AppExecFwk::EventRunnerStage stage,
         const OHOS::AppExecFwk::StageInfo* info) -> int {
         JSNApi::NotifyLooperIdle(vm_, info->sleepTime);
         return 0;
     };
-    mainThreadRunner_->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC,
+    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC,
         static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING), callback);
-}
 #endif
+}
 
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
 {
