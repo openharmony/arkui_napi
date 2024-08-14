@@ -4069,3 +4069,28 @@ NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_nat
     delete reinterpret_cast<panda::JsiFastNativeScope*>(scope);
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
+                                                          napi_value arraybuffer,
+                                                          void** data,
+                                                          size_t* byte_length)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, arraybuffer);
+    CHECK_ARG(env, byte_length);
+
+    auto nativeValue = LocalValueFromJsValue(arraybuffer);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    if (LIKELY(nativeValue->IsSharedArrayBuffer(vm))) {
+        Local<panda::ArrayBufferRef> res(nativeValue);
+        if (data != nullptr) {
+            *data = res->GetBuffer(vm);
+        }
+        *byte_length = res->ByteLength(vm);
+    } else {
+        return napi_set_last_error(env, napi_arraybuffer_expected);
+    }
+
+    return napi_clear_last_error(env);
+}
