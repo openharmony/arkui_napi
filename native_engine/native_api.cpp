@@ -2500,6 +2500,7 @@ NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool*
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(value);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
