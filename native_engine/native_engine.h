@@ -327,7 +327,7 @@ public:
         std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
         return g_alivedEngine_.find(env) != g_alivedEngine_.end();
     }
-    
+
     inline void SetUnalived()
     {
         std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
@@ -396,6 +396,7 @@ public:
     virtual void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) = 0;
     virtual bool GetIsBundle() = 0;
     virtual bool GetIsNormalizedOhmUrlPack() = 0;
+    virtual bool GetIsDebugModeEnabled() = 0;
     virtual std::string GetBundleName() = 0;
     virtual bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) = 0;
     virtual int GetProcessStartRealTime() = 0;
