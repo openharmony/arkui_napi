@@ -472,9 +472,8 @@ public:
 
 private:
     void InitUvField();
-    void StartCleanupTimer();
     void CreateDefaultFunction(void);
-    void DestoryDefaultFunction(void);
+    void DestoryDefaultFunction(bool release);
 
     virtual NapiOptions *GetNapiOptions() const = 0;
 
@@ -554,8 +553,6 @@ private:
     std::atomic_int listeningCounter_ { 0 };
     std::atomic_int subEnvCounter_ { 0 };
     std::atomic_bool isStopping_ { false };
-    bool cleanupTimeout_ = false;
-    uv_timer_t timer_;
 
     std::mutex loopRunningMutex_;
     bool isLoopRunning_ = false;
