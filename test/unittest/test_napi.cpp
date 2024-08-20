@@ -9002,3 +9002,958 @@ HWTEST_F(NapiBasicTest, NapiGetUndefinedTest001, testing::ext::TestSize.Level1)
     auto res = napi_get_undefined(env, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
+
+/**
+ * @tc.name: NapiObjectFreezeTest
+ * @tc.desc: Test interface of napi_object_freeze
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiObjectFreezeTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_object_freeze(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiObjectFreezeTest
+ * @tc.desc: Test interface of napi_object_freeze
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiObjectFreezeTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_object_freeze(env, boolean);
+    ASSERT_EQ(res, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiObjectSealTest
+ * @tc.desc: Test interface of napi_object_seal
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiObjectSealTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_object_seal(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiObjectSealTest
+ * @tc.desc: Test interface of napi_object_seal
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiObjectSealTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_object_seal(env, boolean);
+    ASSERT_EQ(res, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest
+ * @tc.desc: Test interface of napi_get_all_property_names
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetAllPropertyNamesTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_get_all_property_names(env, nullptr, napi_key_include_prototypes, napi_key_all_properties,
+        napi_key_keep_numbers, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest
+ * @tc.desc: Test interface of napi_get_all_property_names
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetAllPropertyNamesTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_get_all_property_names(env, object, napi_key_include_prototypes, napi_key_all_properties,
+        napi_key_keep_numbers, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest
+ * @tc.desc: Test interface of napi_get_all_property_names
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetAllPropertyNamesTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_get_all_property_names(env, boolean, napi_key_include_prototypes, napi_key_all_properties,
+        napi_key_keep_numbers, &result);
+    ASSERT_EQ(res, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest
+ * @tc.desc: Test interface of napi_get_all_property_names
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetAllPropertyNamesTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_get_all_property_names(env, object, (napi_key_collection_mode)(napi_key_include_prototypes - 1),
+        napi_key_all_properties, napi_key_keep_numbers, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest
+ * @tc.desc: Test interface of napi_get_all_property_names
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetAllPropertyNamesTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_get_all_property_names(env, object, napi_key_include_prototypes, napi_key_all_properties,
+        (napi_key_conversion)(napi_key_keep_numbers - 1), &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDetachArraybufferTest
+ * @tc.desc: Test interface of napi_detach_arraybuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDetachArraybufferTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_detach_arraybuffer(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDetachArraybufferTest
+ * @tc.desc: Test interface of napi_detach_arraybuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDetachArraybufferTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_detach_arraybuffer(env, boolean);
+    ASSERT_EQ(res, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiDetachArraybufferTest
+ * @tc.desc: Test interface of napi_detach_arraybuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDetachArraybufferTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_detach_arraybuffer(env, object);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsDetachedArraybufferTest
+ * @tc.desc: Test interface of napi_is_detached_arraybuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiIsDetachedArraybufferTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_is_detached_arraybuffer(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsDetachedArraybufferTest
+ * @tc.desc: Test interface of napi_is_detached_arraybuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiIsDetachedArraybufferTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    static constexpr size_t arrayBufferSize = 1024;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    ASSERT_CHECK_CALL(napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer));
+
+    auto res = napi_is_detached_arraybuffer(env, arrayBuffer, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSetInstanceDataTest
+ * @tc.desc: Test interface of napi_set_instance_data
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_set_instance_data(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetInstanceDataTest
+ * @tc.desc: Test interface of napi_get_instance_data
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetInstanceDataTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_get_instance_data(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddEnvCleanupHookTest
+ * @tc.desc: Test interface of napi_add_env_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddEnvCleanupHookTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_add_env_cleanup_hook(nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddEnvCleanupHookTest
+ * @tc.desc: Test interface of napi_add_env_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddEnvCleanupHookTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_add_env_cleanup_hook(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRemoveEnvCleanupHookTest
+ * @tc.desc: Test interface of napi_remove_env_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRemoveEnvCleanupHookTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_remove_env_cleanup_hook(nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRemoveEnvCleanupHookTest
+ * @tc.desc: Test interface of napi_remove_env_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRemoveEnvCleanupHookTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_remove_env_cleanup_hook(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddAsyncCleanupHookTest
+ * @tc.desc: Test interface of napi_add_async_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddAsyncCleanupHookTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_add_async_cleanup_hook(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddAsyncCleanupHookTest
+ * @tc.desc: Test interface of napi_add_async_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddAsyncCleanupHookTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_add_async_cleanup_hook(env, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRemoveAsyncCleanupHookTest
+ * @tc.desc: Test interface of napi_remove_async_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRemoveAsyncCleanupHookTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_remove_async_cleanup_hook(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NodeApiGetModuleFileNameTest
+ * @tc.desc: Test interface of node_api_get_module_file_name
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NodeApiGetModuleFileNameTest001, testing::ext::TestSize.Level1)
+{
+    auto res = node_api_get_module_file_name(nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NodeApiGetModuleFileNameTest
+ * @tc.desc: Test interface of node_api_get_module_file_name
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NodeApiGetModuleFileNameTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = node_api_get_module_file_name(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddFinalizerTest
+ * @tc.desc: Test interface of napi_add_finalizer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddFinalizerTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_add_finalizer(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddFinalizerTest
+ * @tc.desc: Test interface of napi_add_finalizer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddFinalizerTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_add_finalizer(env, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddFinalizerTest
+ * @tc.desc: Test interface of napi_add_finalizer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddFinalizerTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_add_finalizer(env, boolean, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiAddFinalizerTest
+ * @tc.desc: Test interface of napi_add_finalizer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAddFinalizerTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    auto res = napi_add_finalizer(env, boolean, nullptr, TestFinalizer, nullptr, nullptr);
+    ASSERT_EQ(res, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQosTest
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQosTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_queue_async_work_with_qos(nullptr, nullptr, napi_qos_default);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQosTest
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQosTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_queue_async_work_with_qos(env, nullptr, napi_qos_default);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQosTest
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQosTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_STRING, NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
+            delete asyncWorkContext;
+        },
+        asyncWorkContext, &asyncWorkContext->work));
+
+    auto res = napi_queue_async_work_with_qos(env, asyncWorkContext->work, napi_qos_default);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiRunScriptPathTest
+ * @tc.desc: Test interface of napi_run_script_path
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRunScriptPathTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_run_script_path(nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRunScriptPathTest
+ * @tc.desc: Test interface of napi_run_script_path
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRunScriptPathTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_run_script_path(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRunScriptPathTest
+ * @tc.desc: Test interface of napi_run_script_path
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRunScriptPathTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_run_script_path(env, TEST_CHAR_STRING, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiLoadModuleTest
+ * @tc.desc: Test interface of napi_load_module
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_load_module(nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleTest
+ * @tc.desc: Test interface of napi_load_module
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_load_module(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleTest
+ * @tc.desc: Test interface of napi_load_module
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module(env, nullptr, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiCreateObjectWithPropertiesTest
+ * @tc.desc: Test interface of napi_create_object_with_properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateObjectWithPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_create_object_with_properties(nullptr, nullptr, 0, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateObjectWithPropertiesTest
+ * @tc.desc: Test interface of napi_create_object_with_properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateObjectWithPropertiesTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_create_object_with_properties(env, nullptr, 0, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateObjectWithNamedPropertiesTest
+ * @tc.desc: Test interface of napi_create_object_with_named_properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateObjectWithNamedPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_create_object_with_named_properties(nullptr, nullptr, 0, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateObjectWithNamedPropertiesTest
+ * @tc.desc: Test interface of napi_create_object_with_named_properties
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateObjectWithNamedPropertiesTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_create_object_with_named_properties(env, nullptr, 0, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_coerce_to_native_binding_object(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_coerce_to_native_binding_object(env, nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_coerce_to_native_binding_object(env, object, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_coerce_to_native_binding_object(env, object, TestDetachCallback, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_coerce_to_native_binding_object(env, object, TestDetachCallback, TestAttachCallback,
+        nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCoerceToNativeBindingObjectTest
+ * @tc.desc: Test interface of napi_coerce_to_native_binding_object
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto res = napi_coerce_to_native_binding_object(env, object, TestDetachCallback, TestAttachCallback,
+        reinterpret_cast<void*>(object), nullptr);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiCreateArkRuntimeTest
+ * @tc.desc: Test interface of napi_create_ark_runtime
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateArkRuntimeTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_create_ark_runtime(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateArkRuntimeTest
+ * @tc.desc: Test interface of napi_create_ark_runtime
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateArkRuntimeTest002, testing::ext::TestSize.Level1)
+{
+    auto temp = NativeCreateEnv::g_createNapiEnvCallback;
+    NativeCreateEnv::g_createNapiEnvCallback = nullptr;
+    auto res = napi_create_ark_runtime(nullptr);
+    NativeCreateEnv::g_createNapiEnvCallback = temp;
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDestroyArkRuntimeTest
+ * @tc.desc: Test interface of napi_destroy_ark_runtime
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDestroyArkRuntimeTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_destroy_ark_runtime(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDestroyArkRuntimeTest
+ * @tc.desc: Test interface of napi_destroy_ark_runtime
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDestroyArkRuntimeTest002, testing::ext::TestSize.Level1)
+{
+    auto temp = NativeCreateEnv::g_destroyNapiEnvCallback;
+    NativeCreateEnv::g_destroyNapiEnvCallback = nullptr;
+    auto res = napi_destroy_ark_runtime(nullptr);
+    NativeCreateEnv::g_destroyNapiEnvCallback = temp;
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRunEventLoopTest
+ * @tc.desc: Test interface of napi_run_event_loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRunEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_run_event_loop(nullptr, napi_event_mode_default);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiRunEventLoopTest
+ * @tc.desc: Test interface of napi_run_event_loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiRunEventLoopTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_run_event_loop(env, (napi_event_mode)(napi_event_mode_default - 1));
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiStopEventLoopTest
+ * @tc.desc: Test interface of napi_stop_event_loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiStopEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_stop_event_loop(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoTest
+ * @tc.desc: Test interface of napi_load_module_with_info
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_load_module_with_info(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoTest
+ * @tc.desc: Test interface of napi_load_module_with_info
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_load_module_with_info(env, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoTest
+ * @tc.desc: Test interface of napi_load_module_with_info
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module_with_info(env, nullptr, nullptr, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_serialize(nullptr, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_serialize(env, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    auto res = napi_serialize(env, num, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+    auto res = napi_serialize(env, num, undefined, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+    auto res = napi_serialize(env, num, undefined, undefined, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    void* data = nullptr;
+    auto res = napi_serialize(env, num, boolean, boolean, &data);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+    napi_value boolean = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolean));
+    void* data = nullptr;
+    auto res = napi_serialize(env, num, undefined, boolean, &data);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSerializeTest
+ * @tc.desc: Test interface of napi_serialize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSerializeTest008, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value num = nullptr;
+    ASSERT_CHECK_CALL(napi_create_uint32(env, TEST_UINT32_1000, &num));
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+    void* data = nullptr;
+    auto res = napi_serialize(env, num, undefined, undefined, &data);
+    ASSERT_EQ(res, napi_ok);
+}
