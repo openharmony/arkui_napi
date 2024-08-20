@@ -4095,3 +4095,20 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, src);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScoper(vm);
+
+    auto nativeValue = LocalValueFromJsValue(src);
+    Local<panda::StringRef> stringVal(nativeValue);
+    Local<TypedArrayRef> typedArray = stringVal->EncodeIntoUint8Array(vm);
+    *result = JsValueFromLocalValue(typedArray);
+
+    return napi_clear_last_error(env);
+}
