@@ -129,8 +129,10 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest001, testing::ext::TestSize.Lev
     napi_env env = (napi_env)engine_;
     napi_value object = nullptr;
     napi_create_object(env, &object);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     napi_status status = napi_coerce_to_native_binding_object(
-        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), nullptr);
+        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object1), nullptr);
     ASSERT_EQ(status, napi_status::napi_ok);
 }
 
@@ -144,8 +146,10 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest002, testing::ext::TestSize.Lev
     napi_env env = (napi_env)engine_;
     napi_value object = nullptr;
     napi_create_object(env, &object);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     napi_coerce_to_native_binding_object(
-        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), nullptr);
+        env, object, TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object1), nullptr);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
     void* data = nullptr;
@@ -176,8 +180,10 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest003, testing::ext::TestSize.Lev
     napi_status status = napi_coerce_to_native_binding_object(
         env, object, TestDetachCallback, TestAttachCallback, nullptr, nullptr);
     ASSERT_EQ(status, napi_status::napi_invalid_arg);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     status = napi_coerce_to_native_binding_object(
-        env, object, nullptr, nullptr, reinterpret_cast<void*>(object), nullptr);
+        env, object, nullptr, nullptr, reinterpret_cast<void*>(object1), nullptr);
     ASSERT_EQ(status, napi_status::napi_invalid_arg);
 }
 
@@ -193,8 +199,10 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Lev
     napi_create_object(env, &object);
     napi_value hint = nullptr;
     napi_create_object(env, &hint);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     napi_status status = napi_coerce_to_native_binding_object(env, object,
-        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), reinterpret_cast<void*>(hint));
+        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object1), reinterpret_cast<void*>(hint));
     ASSERT_EQ(status, napi_status::napi_ok);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
@@ -1788,8 +1796,10 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest003, testing::ext::TestSize.Leve
     napi_create_object(env, &object);
     napi_value hint = nullptr;
     napi_create_object(env, &hint);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     napi_status status = napi_coerce_to_native_binding_object(env, object,
-        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), reinterpret_cast<void*>(hint));
+        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object1), reinterpret_cast<void*>(hint));
     ASSERT_EQ(status, napi_status::napi_ok);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
@@ -1940,8 +1950,10 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest007, testing::ext::TestSize.Leve
     napi_create_object(env, &object);
     napi_value hint = nullptr;
     napi_create_object(env, &hint);
+    napi_value object1 = nullptr;
+    napi_create_object(env, &object1);
     napi_status status = napi_coerce_to_native_binding_object(env, object,
-        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object), reinterpret_cast<void*>(hint));
+        TestDetachCallback, TestAttachCallback, reinterpret_cast<void*>(object1), reinterpret_cast<void*>(hint));
     ASSERT_EQ(status, napi_status::napi_ok);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
