@@ -372,6 +372,7 @@ void NativeModuleManager::CreateSharedLibsSonames()
         "libclang_rt.tsan.so",
         "libclang_rt.ubsan_standalone.so",
         "libclang_rt.ubsan_minimal.so",
+        "libclang_rt.hwasan.so",
         // z library
         "libace_napi.z.so",
         "libace_ndk.z.so",
