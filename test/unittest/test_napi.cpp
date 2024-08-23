@@ -5565,7 +5565,7 @@ HWTEST_F(NapiBasicTest, CreateSendableTypedArray001, testing::ext::TestSize.Leve
     ASSERT_EQ(isShared, true);
 
     res = napi_create_sendable_typedarray(env, napi_uint8_clamped_array, LENGTH / 2, arraybuffer, 1, &result);
-    ASSERT_EQ(res, napi_invalid_arg);
+    ASSERT_EQ(res, napi_ok);
 
     res = napi_create_sendable_typedarray(env, napi_uint8_array, LENGTH / 2, arraybuffer, 1, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
