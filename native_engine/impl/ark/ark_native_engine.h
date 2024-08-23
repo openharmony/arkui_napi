@@ -341,6 +341,7 @@ public:
     void GetCurrentModuleInfo(std::string& moduleName, std::string& fileName, bool needRecordName) override;
     bool GetIsBundle() override;
     bool GetIsNormalizedOhmUrlPack() override;
+    bool GetIsDebugModeEnabled() override;
     std::string GetBundleName() override;
     std::string GetPkgName(const std::string &moduleName) override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
