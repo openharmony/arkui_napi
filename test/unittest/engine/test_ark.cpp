@@ -107,3 +107,9 @@ HWTEST_F(NativeEngineTest, CreateRuntimeFunc001, testing::ext::TestSize.Level0)
     auto result = engine_->CreateRuntime(true);
     ASSERT_TRUE(result);
 }
+
+HWTEST_F(NativeEngineTest, ExecuteTranslateBySourceMapFunc001, testing::ext::TestSize.Level0)
+{
+    std::string stack = engine_->ExecuteTranslateBySourceMap("test1/test2/test3/test.ts");
+    ASSERT_EQ(stack, "test1/test2/test3/test.ts");
+}
