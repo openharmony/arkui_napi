@@ -29,6 +29,7 @@
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
 #include "securec.h"
+#include "utils/file.h"
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
@@ -2302,11 +2303,12 @@ bool ArkNativeEngine::IsValidPandaFile(const char* path)
         HILOG_ERROR("file path is nullptr");
         return false;
     }
-#if defined(OHOS_PLATFORM) && !defined(build_ohos_sdk)
-    char* filePath = realpath(path, nullptr);
-#else
-    const char* filePath = path;
-#endif
+
+    char filePath[PATH_MAX + 1] = { 0 };
+    if (!RealPath(path, filePath, PATH_MAX + 1)) {
+        HILOG_ERROR("failed to format path");
+        return false;
+    }
     struct stat fileStat;
     int ret = stat(filePath, &fileStat);
     if (ret != 0) {
