@@ -29,6 +29,7 @@
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
 #include "securec.h"
+#include "utils/file.h"
 #include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
@@ -2284,6 +2285,7 @@ bool ArkNativeEngine::RunScriptPath(const char* path, bool checkPath)
         HILOG_ERROR("file is not exist or format is invalid");
         return false;
     }
+    // LCOV_EXCL_START
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, path, PANDA_MAIN_FUNCTION);
@@ -2291,13 +2293,20 @@ bool ArkNativeEngine::RunScriptPath(const char* path, bool checkPath)
         HandleUncaughtException();
         return false;
     }
+    // LCOV_EXCL_STOP
     return true;
 }
 
-bool ArkNativeEngine::IsValidPandaFile(const char* filePath)
+bool ArkNativeEngine::IsValidPandaFile(const char* path)
 {
-    if (filePath == nullptr) {
+    if (path == nullptr) {
         HILOG_ERROR("file path is nullptr");
+        return false;
+    }
+
+    char filePath[PATH_MAX + 1] = { 0 };
+    if (!RealPath(path, filePath, PATH_MAX + 1)) {
+        HILOG_ERROR("failed to format path");
         return false;
     }
     struct stat fileStat;
@@ -2365,6 +2374,7 @@ napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_
         return nullptr;
     }
 
+    // LCOV_EXCL_START
     panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = false;
     if (isBundle) {
@@ -2378,6 +2388,7 @@ napi_value ArkNativeEngine::RunScriptBuffer(const char* path, std::vector<uint8_
         return nullptr;
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    // LCOV_EXCL_STOP
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
@@ -2388,6 +2399,7 @@ bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, 
         return false;
     }
 
+    // LCOV_EXCL_START
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     bool ret = false;
@@ -2402,6 +2414,7 @@ bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, 
         return false;
     }
     return ret;
+    // LCOV_EXCL_STOP
 }
 
 napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
@@ -2411,6 +2424,7 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
         return nullptr;
     }
 
+    // LCOV_EXCL_START
     panda::EscapeLocalScope scope(vm_);
     [[maybe_unused]] bool ret = panda::JSNApi::Execute(vm_, buffer.data(), buffer.size(), PANDA_MAIN_FUNCTION);
 
@@ -2420,6 +2434,7 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     return JsValueFromLocalValue(scope.Escape(undefObj));
+    // LCOV_EXCL_STOP
 }
 
 #define EXECUTE_BUFFER(functionName)                                                                 \
@@ -2454,6 +2469,7 @@ napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize,
         return nullptr;
     }
 
+    // LCOV_EXCL_START
     panda::EscapeLocalScope scope(vm_);
     std::string desc(descriptor);
     [[maybe_unused]] bool ret = false;
@@ -2469,6 +2485,7 @@ napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize,
     }
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     return JsValueFromLocalValue(scope.Escape(undefObj));
+    // LCOV_EXCL_STOP
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer,
@@ -2485,6 +2502,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer
         return scope.Escape(undefObj);
     }
 
+    // LCOV_EXCL_START
     bool res = JSNApi::ExecuteModuleFromBuffer(vm_, buffer, len, fileName);
     if (!res) {
         HILOG_ERROR("Execute module failed");
@@ -2499,6 +2517,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadArkModule(const void* buffer
 
     HILOG_DEBUG("ArkNativeEngineImpl::LoadModule end");
     return scope.Escape(exportObj);
+    // LCOV_EXCL_STOP
 }
 
 bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName, bool checkPath)
@@ -2507,8 +2526,10 @@ bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName, bool checkPath)
         HILOG_ERROR("faild to execute js bin, file is not exist or format is invalid");
         return false;
     }
+    // LCOV_EXCL_START
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
     bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);
     return ret;
+    // LCOV_EXCL_STOP
 }

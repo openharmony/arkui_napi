@@ -197,7 +197,7 @@ public:
     std::string GetSourceCodeInfo(napi_value value, ErrorPos pos) override;
 
     NAPI_EXPORT bool ExecuteJsBin(const std::string& fileName, bool checkPath = false);
-    static bool IsValidPandaFile(const char* filePath);
+    static bool IsValidPandaFile(const char* path);
     static bool IsValidScriptBuffer(uint8_t* scriptBuffer, size_t bufferSize);
     NAPI_EXPORT panda::Local<panda::ObjectRef> LoadModuleByName(const std::string& moduleName, bool isAppModule,
         const std::string& param, const std::string& instanceName, void* instance, const std::string& path = "");
