@@ -13,10 +13,13 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
+
 #include "native_safe_async_work.h"
 
 #include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_api.h"
+#include "native_api_internal.h"
 #include "native_async_work.h"
 #include "native_engine.h"
 #include "native_value.h"
@@ -77,7 +80,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
                                          NativeFinalize finalizeCallback,
                                          void* context,
                                          NativeThreadSafeFunctionCallJs callJsCallback)
-    :engine_(engine), maxQueueSize_(maxQueueSize),
+    :engine_(engine), engineId_(engine->GetId()), maxQueueSize_(maxQueueSize),
     threadCount_(threadCount), finalizeData_(finalizeData), finalizeCallback_(finalizeCallback),
     context_(context), callJsCallback_(callJsCallback)
 {
@@ -145,6 +148,21 @@ bool NativeSafeAsyncWork::IsMaxQueueSize()
            status_ != SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED);
 }
 
+SafeAsyncCode NativeSafeAsyncWork::ValidEngineCheck()
+{
+    if (!NativeEngine::IsAlive(engine_)) {
+        HILOG_ERROR("napi_env has been destoryed");
+        return SafeAsyncCode::SAFE_ASYNC_FAILED;
+    } else if (engineId_ != engine_->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+                       "current tsfn was created by dead env, "
+                       "owner id: %{public}" PRIu64 ", current id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
+        return SafeAsyncCode::SAFE_ASYNC_CLOSED;
+    }
+    return SafeAsyncCode::SAFE_ASYNC_OK;
+}
+
 SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCallMode mode)
 {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -168,11 +186,11 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
             return SafeAsyncCode::SAFE_ASYNC_CLOSED;
         }
     } else {
-        queue_.emplace(data);
-        if (!NativeEngine::IsAlive(engine_)) {
-            HILOG_ERROR("napi_env has been destoryed");
-            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        SafeAsyncCode checkRet = ValidEngineCheck();
+        if (checkRet != SafeAsyncCode::SAFE_ASYNC_OK) {
+            return checkRet;
         }
+        queue_.emplace(data);
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
             HILOG_ERROR("uv async send failed %d", ret);
@@ -230,9 +248,9 @@ SafeAsyncCode NativeSafeAsyncWork::Release(NativeThreadSafeFunctionReleaseMode m
 
     if (threadCount_ == 0 ||
         mode == NativeThreadSafeFunctionReleaseMode::NATIVE_TSFUNC_ABORT) {
-        if (!NativeEngine::IsAlive(engine_)) {
-            HILOG_ERROR("napi_env has been destoryed");
-            return SafeAsyncCode::SAFE_ASYNC_FAILED;
+        SafeAsyncCode checkRet = ValidEngineCheck();
+        if (checkRet != SafeAsyncCode::SAFE_ASYNC_OK) {
+            return checkRet;
         }
         // trigger async handle
         auto ret = uv_async_send(&asyncHandler_);

@@ -18,6 +18,7 @@
 
 #include "napi/native_api.h"
 #include "native_engine.h"
+#include "utils/log.h"
 
 static inline napi_status napi_clear_last_error(napi_env env)
 {
@@ -75,4 +76,39 @@ static inline napi_status napi_set_last_error(napi_env env,
     } else {                                                                   \
         (obj) = (nativeValue)->ToObject((vm));                                 \
     }
+
+#define CROSS_THREAD_CHECK(env)                                                     \
+    do {                                                                            \
+        NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));              \
+        if (UNLIKELY(engine->IsCrossThreadCheckEnabled())) {                        \
+            ThreadId tid = NativeEngine::GetCurSysTid();                            \
+            if (tid != engine->GetSysTid()) {                                       \
+                HILOG_FATAL("current napi interface cannot run in multi-thread, "   \
+                            "thread id: %{public}d, current thread id: %{public}d", \
+                            engine->GetSysTid(), tid);                              \
+            };                                                                      \
+        };                                                                          \
+    } while (0)
+
+#define WEAK_CROSS_THREAD_CHECK(env)                                                \
+    do {                                                                            \
+        NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));              \
+        if (UNLIKELY(engine->IsCrossThreadCheckEnabled())) {                        \
+            ThreadId tid = NativeEngine::GetCurSysTid();                            \
+            if (tid != engine->GetSysTid()) {                                       \
+                HILOG_ERROR("current napi interface cannot run in multi-thread, "   \
+                            "thread id: %{public}d, current thread id: %{public}d", \
+                            engine->GetSysTid(), tid);                              \
+            };                                                                      \
+        };                                                                          \
+    } while (0)
+
+#ifndef LIKELY
+#define LIKELY(exp) (__builtin_expect((exp) != 0, true))  // NOLINT(cppcoreguidelines-macro-usage)
+#endif
+
+#ifndef UNLIKELY
+#define UNLIKELY(exp) (__builtin_expect((exp) != 0, false))  // NOLINT(cppcoreguidelines-macro-usage)
+#endif
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */

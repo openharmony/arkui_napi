@@ -16,6 +16,7 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
+#include "native_engine/impl/ark/ark_native_options.h"
 #include "native_engine/native_async_hook_context.h"
 #include "native_engine/native_engine.h"
 #include "native_engine/native_utils.h"
@@ -198,6 +199,7 @@ NAPI_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun)(void
 {
     CHECK_ENV(env);
     CHECK_ARG(env, fun);
+    WEAK_CROSS_THREAD_CHECK(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->AddCleanupHook(fun, arg);
@@ -209,6 +211,7 @@ NAPI_EXTERN napi_status napi_remove_env_cleanup_hook(napi_env env, void (*fun)(v
 {
     CHECK_ENV(env);
     CHECK_ARG(env, fun);
+    WEAK_CROSS_THREAD_CHECK(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->RemoveCleanupHook(fun, arg);
@@ -283,43 +286,35 @@ static AsyncCleanupHookHandle AddEnvironmentCleanupHook(napi_env env, AsyncClean
 
 static void RemoveEnvironmentCleanupHook(AsyncCleanupHookHandle handle)
 {
-    HILOG_INFO("%{public}s, start.", __func__);
     if (handle->info_->started_) {
         return;
     }
     handle->info_->self_.reset();
     auto engine = reinterpret_cast<NativeEngine*>(handle->info_->env_);
     engine->RemoveCleanupHook(RunAsyncCleanupHook, handle->info_.get());
-    HILOG_INFO("%{public}s, end.", __func__);
 }
 
 struct napi_async_cleanup_hook_handle__ {
     napi_async_cleanup_hook_handle__(napi_env env, napi_async_cleanup_hook user_hook, void* user_data)
         : env_(env), user_hook_(user_hook), user_data_(user_data)
     {
-        HILOG_INFO("%{public}s, start.", __func__);
         handle_ = AddEnvironmentCleanupHook(env, Hook, this);
-        HILOG_INFO("%{public}s, end.", __func__);
     }
 
     ~napi_async_cleanup_hook_handle__()
     {
-        HILOG_INFO("%{public}s, start.", __func__);
         RemoveEnvironmentCleanupHook(std::move(handle_));
         if (done_cb_ != nullptr) {
             done_cb_(done_data_);
         }
-        HILOG_INFO("%{public}s, end.", __func__);
     }
 
     static void Hook(void* data, void (*done_cb)(void*), void* done_data)
     {
-        HILOG_INFO("%{public}s, start.", __func__);
         auto handle = static_cast<napi_async_cleanup_hook_handle__*>(data);
         handle->done_cb_ = done_cb;
         handle->done_data_ = done_data;
         handle->user_hook_(handle, handle->user_data_);
-        HILOG_INFO("%{public}s, end.", __func__);
     }
 
     AsyncCleanupHookHandle handle_;
@@ -335,6 +330,7 @@ NAPI_EXTERN napi_status napi_add_async_cleanup_hook(
 {
     CHECK_ENV(env);
     CHECK_ARG(env, hook);
+    CROSS_THREAD_CHECK(env);
 
     napi_async_cleanup_hook_handle__* handle = new napi_async_cleanup_hook_handle__(env, hook, arg);
 
@@ -567,6 +563,7 @@ NAPI_EXTERN napi_status napi_set_instance_data(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint)
 {
     CHECK_ENV(env);
+    CROSS_THREAD_CHECK(env);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
     engine->SetInstanceData(data, callback, finalize_hint);
@@ -577,6 +574,7 @@ NAPI_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, data);
+    CROSS_THREAD_CHECK(env);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->GetInstanceData(data);
     return napi_clear_last_error(env);

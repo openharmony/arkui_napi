@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
+
 #include "ark_native_reference.h"
 
 #ifdef ENABLE_HITRACE
@@ -103,11 +105,17 @@ uint32_t ArkNativeReference::Unref()
 
 napi_value ArkNativeReference::Get(NativeEngine* engine)
 {
-    if (engine != engine_) {
-        HILOG_ERROR("param env is not equal to its owner");
-    }
     if (value_.IsEmpty()) {
         return nullptr;
+    }
+    if (engine != engine_) {
+        LOG_IF_SPECIAL(UNLIKELY(engine->IsCrossThreadCheckEnabled()),
+                       "param env is not equal to its owner");
+    } else if (engineId_ != engine->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine->IsCrossThreadCheckEnabled()),
+                       "param env is not equal to its owner, "
+                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
     }
     Local<JSValueRef> value = value_.ToLocal(engine->GetEcmaVm());
     return JsValueFromLocalValue(value);
@@ -117,6 +125,12 @@ napi_value ArkNativeReference::Get()
 {
     if (value_.IsEmpty()) {
         return nullptr;
+    }
+    if (engineId_ != engine_->GetId()) {
+        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+                       "owner env has been destroyed, "
+                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       engineId_, engine_->GetId());
     }
     Local<JSValueRef> value = value_.ToLocal(engine_->GetEcmaVm());
     return JsValueFromLocalValue(value);

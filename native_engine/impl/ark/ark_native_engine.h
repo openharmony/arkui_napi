@@ -31,6 +31,7 @@
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_engine.h"
+#include "ark_native_options.h"
 
 
 namespace panda::ecmascript {
@@ -360,13 +361,24 @@ public:
         const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
+    inline bool IsCrossThreadCheckEnabled() const override
+    {
+        return crossThreadCheck_;
+    }
+
 private:
+    inline NapiOptions *GetNapiOptions() const override
+    {
+        return options_;
+    }
+
     static void RunCallbacks(std::vector<RefFinalizer> *finalizers);
     static void RunCallbacks(std::vector<NativePointerCallbackData> *callbacks);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
         NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
+
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
@@ -381,5 +393,8 @@ private:
     bool isLimitedWorker_ = false;
     std::vector<RefFinalizer> pendingFinalizers_;
     std::vector<RefFinalizer> pendingAsyncFinalizers_;
+    // napi options and its cache
+    NapiOptions* options_ { nullptr };
+    bool crossThreadCheck_ { false };
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

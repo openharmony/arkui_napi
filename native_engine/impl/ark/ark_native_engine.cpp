@@ -365,6 +365,12 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     Local<StringRef> requireInternalName = StringRef::NewFromUtf8(vm, "requireInternal");
     void* requireData = static_cast<void*>(this);
 
+    options_ = new NapiOptions();
+    crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    int napiProperties = OHOS::system::GetIntParameter<int>("persist.ark.napi.properties", -1);
+    options_->SetProperties(napiProperties);
+#endif
     Local<FunctionRef> requireNapi =
         FunctionRef::New(
             vm,
