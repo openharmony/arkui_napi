@@ -88,11 +88,13 @@ ohos_source_set("ace_napi_static") {
     }
   } else if (!is_mingw && !is_mac && !is_linux && is_ohos_standard_system) {
     external_deps += [
+      "c_utils:utils",
       "eventhandler:libeventhandler",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
+      "runtime_core:libarkbase",
     ]
     defines += [
       "ENABLE_HITRACE",
@@ -274,7 +276,7 @@ group("napi_packages") {
   }
 }
 
-if (!build_ohos_ndk && !is_arkui_x) {
+if (!build_ohos_ndk && !is_arkui_x && !ohos_indep_compiler_enable) {
   group("napi_packages_test") {
     testonly = true
 

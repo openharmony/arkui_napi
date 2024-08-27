@@ -35,14 +35,11 @@
                 "node",
                 "bounds_checking_function",
                 "init",
+                "runtime_core",
                 "ace_engine"
             ],
             "third_party": [
-                "icu",
-                "jerryscript",
-                "libuv",
-                "node",
-                "bounds_checking_function"
+                "jerryscript"
             ]
         },
         "build": {
