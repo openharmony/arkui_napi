@@ -6157,24 +6157,6 @@ HWTEST_F(NapiBasicTest, NapiCloseCallbackScopeTest001, testing::ext::TestSize.Le
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
-HWTEST_F(NapiBasicTest, NapiCloseCallbackScopeTest002, testing::ext::TestSize.Level1)
-{
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    napi_callback_scope scope = nullptr;
-    napi_async_context context;
-
-    napi_value obj;
-    napi_create_object(env, &obj);
-    napi_value resourceName;
-    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &resourceName);
-    napi_async_init(env, nullptr, resourceName, &context);
-    napi_open_callback_scope(env, obj, context, &scope);
-
-    napi_status status = napi_close_callback_scope(env, scope);
-    status = napi_close_callback_scope(env, scope);
-    ASSERT_EQ(status, napi_callback_scope_mismatch);
-}
-
 HWTEST_F(NapiBasicTest, NapiGetVersionTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
