@@ -56,7 +56,7 @@ void MockResetModuleManagerState()
 
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
-    char nativeModulePath[][NAPI_PATH_MAX])
+    char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
 {
     GTEST_LOG_(INFO) << g_mockFindNativeModuleByDisk;
     return g_mockFindNativeModuleByDisk;
@@ -78,7 +78,7 @@ bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName,
 }
 
 NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName,
-    char nativeModulePath[][NAPI_PATH_MAX])
+    char nativeModulePath[][NAPI_PATH_MAX], NativeModule*& cacheNativeModule)
 {
     GTEST_LOG_(INFO) << g_mockFindNativeModuleByCache;
     return g_mockFindNativeModuleByCache;

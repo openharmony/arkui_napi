@@ -123,8 +123,10 @@ private:
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
-        bool internal, const bool isAppModule, std::string& errInfo, char nativeModulePath[][NAPI_PATH_MAX]);
-    NativeModule* FindNativeModuleByCache(const char* moduleName, char nativeModulePath[][NAPI_PATH_MAX]);
+        bool internal, const bool isAppModule, std::string& errInfo, char nativeModulePath[][NAPI_PATH_MAX],
+        NativeModule* cacheNativeModule);
+    NativeModule* FindNativeModuleByCache(
+        const char* moduleName, char nativeModulePath[][NAPI_PATH_MAX], NativeModule*& cacheNativeModule);
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
         const bool isAppModule, std::string& errInfo, uint32_t& errReason);
@@ -157,7 +159,6 @@ private:
     std::mutex nativeModuleListMutex_;
     NativeModule* headNativeModule_ = nullptr;
     NativeModule* tailNativeModule_ = nullptr;
-    NativeModule* cacheNativeModule_ = nullptr;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;
