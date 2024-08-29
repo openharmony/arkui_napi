@@ -3270,9 +3270,12 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto result = engine->CreateRuntime();
+    if (result == nullptr) {
+        return napi_generic_failure;
+    }
     *result_env = reinterpret_cast<napi_env>(result);
 
-    return napi_clear_last_error(env);
+    return napi_ok;
 }
 
 NAPI_EXTERN napi_status napi_serialize(napi_env env,
