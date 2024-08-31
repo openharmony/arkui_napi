@@ -289,7 +289,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
 
     std::string errInfo = "";
     EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false, errInfo,
-        nativeModulePath), nullptr);
+        nativeModulePath, nullptr), nullptr);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 end";
 }
 
