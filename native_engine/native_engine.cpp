@@ -64,9 +64,9 @@ const char* g_errorMessages[] = {
 };
 } // namespace
 
-static GetContainerScopeIdCallback getContainerScopeIdFunc_;
-static ContainerScopeCallback initContainerScopeFunc_;
-static ContainerScopeCallback finishContainerScopeFunc_;
+thread_local static GetContainerScopeIdCallback g_getContainerScopeIdFunc;
+thread_local static ContainerScopeCallback g_initContainerScopeFunc;
+thread_local static ContainerScopeCallback g_finishContainerScopeFunc;
 
 std::mutex NativeEngine::g_alivedEngineMutex_;
 std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
@@ -619,36 +619,36 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 // adapt worker to ace container
 void NativeEngine::SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func)
 {
-    getContainerScopeIdFunc_ = func;
+    g_getContainerScopeIdFunc = func;
 }
 void NativeEngine::SetInitContainerScopeFunc(ContainerScopeCallback func)
 {
-    initContainerScopeFunc_ = func;
+    g_initContainerScopeFunc = func;
 }
 void NativeEngine::SetFinishContainerScopeFunc(ContainerScopeCallback func)
 {
-    finishContainerScopeFunc_ = func;
+    g_finishContainerScopeFunc = func;
 }
 int32_t NativeEngine::GetContainerScopeIdFunc()
 {
     int32_t scopeId = -1;
-    if (getContainerScopeIdFunc_ != nullptr) {
-        scopeId = getContainerScopeIdFunc_();
+    if (g_getContainerScopeIdFunc != nullptr) {
+        scopeId = g_getContainerScopeIdFunc();
     }
     return scopeId;
 }
 bool NativeEngine::InitContainerScopeFunc(int32_t id)
 {
-    if (initContainerScopeFunc_ != nullptr) {
-        initContainerScopeFunc_(id);
+    if (g_initContainerScopeFunc != nullptr) {
+        g_initContainerScopeFunc(id);
         return true;
     }
     return false;
 }
 bool NativeEngine::FinishContainerScopeFunc(int32_t id)
 {
-    if (finishContainerScopeFunc_ != nullptr) {
-        finishContainerScopeFunc_(id);
+    if (g_finishContainerScopeFunc != nullptr) {
+        g_finishContainerScopeFunc(id);
         return true;
     }
     return false;
