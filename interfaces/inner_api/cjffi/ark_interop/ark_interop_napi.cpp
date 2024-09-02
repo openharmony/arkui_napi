@@ -331,7 +331,7 @@ bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz)
     auto targetObject = BIT_CAST(object, Local<JSValueRef>);
     auto targetClass = BIT_CAST(clazz, Local<FunctionRef>);
 
-    return targetClass->InstanceOf(vm, targetObject);
+    return targetObject->InstanceOf(vm, targetClass);
 }
 
 bool ARKTS_IsCallable(ARKTS_Env env, ARKTS_Value value)
