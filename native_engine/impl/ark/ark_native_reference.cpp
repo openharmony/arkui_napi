@@ -31,7 +31,8 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
                                        void* hint,
-                                       bool isAsyncCall)
+                                       bool isAsyncCall,
+                                       size_t nativeBindingSize)
     : engine_(engine),
       value_(engine->GetEcmaVm(), LocalValueFromJsValue(value)),
       refCount_(initialRefcount),
@@ -39,7 +40,8 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       isAsyncCall_(isAsyncCall),
       napiCallback_(napiCallback),
       data_(data),
-      hint_(hint)
+      hint_(hint),
+      nativeBindingSize_(nativeBindingSize)
 {
     ArkNativeReferenceConstructor(initialRefcount, deleteSelf);
 }
@@ -51,7 +53,8 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        NapiNativeFinalize napiCallback,
                                        void* data,
                                        void* hint,
-                                       bool isAsyncCall)
+                                       bool isAsyncCall,
+                                       size_t nativeBindingSize)
     : engine_(engine),
       value_(engine->GetEcmaVm(), value),
       refCount_(initialRefcount),
@@ -59,7 +62,8 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       isAsyncCall_(isAsyncCall),
       napiCallback_(napiCallback),
       data_(data),
-      hint_(hint)
+      hint_(hint),
+      nativeBindingSize_(nativeBindingSize)
 {
     ArkNativeReferenceConstructor(initialRefcount, deleteSelf);
 }
@@ -150,12 +154,12 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
     if (napiCallback_ != nullptr) {
         if (state == FinalizerState::COLLECTION) {
-            std::tuple tuple = std::make_tuple(engine_, data_, hint_);
-            std::pair pair = std::make_pair(napiCallback_, tuple);
+            std::tuple<NativeEngine*, void*, void*> tuple = std::make_tuple(engine_, data_, hint_);
+            RefFinalizer finalizer = std::make_pair(napiCallback_, tuple);
             if (isAsyncCall_) {
-                engine_->GetPendingAsyncFinalizers().emplace_back(pair);
+                engine_->GetPendingAsyncFinalizers().emplace_back(finalizer);
             } else {
-                engine_->GetPendingFinalizers().emplace_back(pair);
+                engine_->GetArkFinalizersPack().AddFinalizer(finalizer, nativeBindingSize_);
             }
         } else {
             napiCallback_(reinterpret_cast<napi_env>(engine_), data_, hint_);
