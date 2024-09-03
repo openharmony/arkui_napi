@@ -369,7 +369,9 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int napiProperties = OHOS::system::GetIntParameter<int>("persist.ark.napi.properties", -1);
-    options_->SetProperties(napiProperties);
+    if (options_ != nullptr) {
+        options_->SetProperties(napiProperties);
+    }
 #endif
     Local<FunctionRef> requireNapi =
         FunctionRef::New(
@@ -578,6 +580,10 @@ ArkNativeEngine::~ArkNativeEngine()
     }
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
+    }
+    if (options_ != nullptr) {
+        delete options_;
+        options_ = nullptr;
     }
 }
 
