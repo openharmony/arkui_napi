@@ -113,3 +113,31 @@ HWTEST_F(NativeEngineTest, ExecuteTranslateBySourceMapFunc001, testing::ext::Tes
     std::string stack = engine_->ExecuteTranslateBySourceMap("test1/test2/test3/test.ts");
     ASSERT_EQ(stack, "test1/test2/test3/test.ts");
 }
+
+HWTEST_F(NativeEngineTest, FinalizersCallbackTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const EcmaVM *vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+
+    const char *str = "FinalizersCallbackTest001";
+    size_t size = 2 * ArkNativeEngine::FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD;
+    static bool finalizersCallbackDone[2] = {false, false};
+
+    for (int i = 0; i < 2; ++i) {
+        {
+            panda::LocalScope scope(vm);
+            napi_value object = nullptr;
+            napi_create_object(env, &object);
+            napi_wrap_with_size(env, object, (void*)str, [](napi_env env, void *data, void *hint) {
+                bool *result = reinterpret_cast<bool*>(hint);
+                ASSERT_FALSE(*result);
+                *result = true;
+            }, reinterpret_cast<void*>(&finalizersCallbackDone[i]), nullptr, size);
+        }
+        panda::JSNApi::TriggerGC(vm, panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    }
+
+    ASSERT_FALSE(finalizersCallbackDone[0]);
+    ASSERT_TRUE(finalizersCallbackDone[1]);
+}
