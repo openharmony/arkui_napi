@@ -30,6 +30,7 @@
 
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "native_engine/impl/ark/ark_finalizers_pack.h"
 #include "native_engine/native_engine.h"
 
 namespace panda::ecmascript {
@@ -185,7 +186,8 @@ public:
 
     // Create native reference
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
-        NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
+        NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr,
+        size_t nativeBindingSize = 0) override;
     NativeReference* CreateAsyncReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
@@ -276,9 +278,9 @@ public:
     void PostFinalizeTasks();
     void PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks);
 
-    std::vector<RefFinalizer> &GetPendingFinalizers()
+    ArkFinalizersPack &GetArkFinalizersPack()
     {
-        return pendingFinalizers_;
+        return arkFinalizersPack_;
     }
 
     std::vector<RefFinalizer> &GetPendingAsyncFinalizers()
@@ -355,26 +357,37 @@ public:
         const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
+    static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 private:
-    static void RunCallbacks(std::vector<RefFinalizer> *finalizers);
+    static void RunCallbacks(ArkFinalizersPack *finalizersPack);
+    static void RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers);
     static void RunCallbacks(std::vector<NativePointerCallbackData> *callbacks);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
         NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
+    void IncreasePendingFinalizersPackNativeBindingSize(size_t nativeBindingSize)
+    {
+        pendingFinalizersPackNativeBindingSize_ += nativeBindingSize;
+    }
+    void DecreasePendingFinalizersPackNativeBindingSize(size_t nativeBindingSize)
+    {
+        pendingFinalizersPackNativeBindingSize_ -= nativeBindingSize;
+    }
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
     NativeReference* checkCallbackRef_ { nullptr };
-    std::map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_;
+    std::map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_ {};
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     SourceMapCallback SourceMapCallback_ { nullptr };
     static bool napiProfilerParamReaded;
     bool isLimitedWorker_ = false;
-    std::vector<RefFinalizer> pendingFinalizers_;
-    std::vector<RefFinalizer> pendingAsyncFinalizers_;
+    size_t pendingFinalizersPackNativeBindingSize_ {0};
+    ArkFinalizersPack arkFinalizersPack_ {};
+    std::vector<RefFinalizer> pendingAsyncFinalizers_ {};
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

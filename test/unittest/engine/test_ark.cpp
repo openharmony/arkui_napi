@@ -107,3 +107,31 @@ HWTEST_F(NativeEngineTest, CreateRuntimeFunc001, testing::ext::TestSize.Level0)
     auto result = engine_->CreateRuntime(true);
     ASSERT_TRUE(result);
 }
+
+HWTEST_F(NativeEngineTest, FinalizersCallbackTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const EcmaVM *vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+
+    const char *str = "FinalizersCallbackTest001";
+    size_t size = 2 * ArkNativeEngine::FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD;
+    static bool finalizersCallbackDone[2] = {false, false};
+
+    for (int i = 0; i < 2; ++i) {
+        {
+            panda::LocalScope scope(vm);
+            napi_value object = nullptr;
+            napi_create_object(env, &object);
+            napi_wrap_with_size(env, object, (void*)str, [](napi_env env, void *data, void *hint) {
+                bool *result = reinterpret_cast<bool*>(hint);
+                ASSERT_FALSE(*result);
+                *result = true;
+            }, reinterpret_cast<void*>(&finalizersCallbackDone[i]), nullptr, size);
+        }
+        panda::JSNApi::TriggerGC(vm, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    }
+
+    ASSERT_FALSE(finalizersCallbackDone[0]);
+    ASSERT_TRUE(finalizersCallbackDone[1]);
+}
