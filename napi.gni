@@ -46,6 +46,7 @@ declare_args() {
 
   # Enable pgo for building
   napi_feature_enable_pgo = false
+
   # Set pgo profdata path
   napi_feature_pgo_path = ""
 }
