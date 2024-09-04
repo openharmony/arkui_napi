@@ -2877,7 +2877,12 @@ NAPI_EXTERN napi_status napi_create_promise(napi_env env, napi_deferred* deferre
     CHECK_ARG(env, promise);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto resultValue = engine->CreatePromise(reinterpret_cast<NativeDeferred**>(deferred));
+    NativeDeferred* nativeDeferred = nullptr;
+    auto resultValue = engine->CreatePromise(&nativeDeferred);
+    if (LocalValueFromJsValue(resultValue)->IsUndefined()) {
+        return napi_set_last_error(env, napi_generic_failure);
+    }
+    *deferred = reinterpret_cast<napi_deferred>(nativeDeferred);
     *promise = resultValue;
 
     return GET_RETURN_STATUS(env);

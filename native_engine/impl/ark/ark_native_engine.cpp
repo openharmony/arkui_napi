@@ -1017,6 +1017,9 @@ napi_value ArkNativeEngine::CreatePromise(NativeDeferred** deferred)
 {
     panda::EscapeLocalScope scope(vm_);
     Local<PromiseCapabilityRef> capability = PromiseCapabilityRef::New(vm_);
+    if (capability->IsUndefined()) {
+        return JsValueFromLocalValue(scope.Escape(JSValueRef::Undefined(vm_)));
+    }
     *deferred = new ArkNativeDeferred(this, capability);
     Local<JSValueRef> promiseValue = capability->GetPromise(vm_);
     return JsValueFromLocalValue(scope.Escape(promiseValue));
