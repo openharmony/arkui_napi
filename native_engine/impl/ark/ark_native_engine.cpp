@@ -1844,7 +1844,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = isVmMode;
-    dumpOption.isSync = false;
+    dumpOption.isSync = true;
     if (dumpFormat == DumpFormat::JSON) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
         dumpOption.isPrivate = isPrivate;
