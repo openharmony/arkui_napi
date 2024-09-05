@@ -21,6 +21,8 @@
 #include "gtest/gtest.h"
 #include "uv_loop_handler.h"
 
+#include <thread>
+
 using namespace testing;
 using namespace testing::ext;
 
@@ -133,6 +135,18 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiLog001, TestSize.Level1)
     LOGE("test LOGE");
 }
 
+HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
+{
+    auto engine = ARKTS_CreateEngineWithNewThread();
+
+    auto curTid = ARKTS_GetPosixThreadId();
+    auto engineTid = ARKTS_GetThreadIdOfEngine(engine);
+
+    EXPECT_NE(curTid, engineTid);
+
+    ARKTS_DestroyEngine(engine);
+}
+
 int main(int argc, char** argv)
 {
     engine_ = ARKTS_CreateEngine();
@@ -140,8 +154,10 @@ int main(int argc, char** argv)
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
     int ret = testing::UnitTest::GetInstance()->Run();
-    ARKTS_DestroyEngine(engine_);
-    engine_ = nullptr;
+    std::thread t([] {
+        ARKTS_DestroyEngine(engine_);
+        engine_ = nullptr;
+    });
     if (!ret) {
         LOGE("run test failed. return %d", ret);
         return ret;
