@@ -562,7 +562,14 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
         this->PostAsyncTask(callbacks);
     });
 #if defined(ENABLE_EVENT_HANDLER)
-    PostLooperTriggerIdleGCTask();
+    if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
+        arkIdleMonitor_ = new ArkIdleMonitor(vm);
+        JSNApi::SetTriggerGCTaskCallback(vm, [this](TriggerGCData& data) {
+            this->PostTriggerGCTask(data);
+        });
+        arkIdleMonitor_->SetStartTimerCallback();
+        PostLooperTriggerIdleGCTask();
+    }
 #endif
 }
 
@@ -584,6 +591,11 @@ ArkNativeEngine::~ArkNativeEngine()
     if (options_ != nullptr) {
         delete options_;
         options_ = nullptr;
+    }
+
+    if (arkIdleMonitor_ != nullptr) {
+        delete arkIdleMonitor_;
+        arkIdleMonitor_ = nullptr;
     }
 }
 
@@ -1503,6 +1515,19 @@ NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_
     return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, true);
 }
 
+__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(TriggerGCData *triggerGCData)
+{
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "RunTriggerGCTaskCallback");
+#endif
+    std::pair<void *, uint8_t> &param = *triggerGCData;
+    JSNApi::TriggerIdleGC(reinterpret_cast<panda::ecmascript::EcmaVM *>(param.first),
+        static_cast<panda::JSNApi::TRIGGER_IDLE_GC_TYPE>(param.second));
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
+}
+
 __attribute__((optnone)) void ArkNativeEngine::RunCallbacks(ArkFinalizersPack *finalizersPack)
 {
 #ifdef ENABLE_HITRACE
@@ -1629,6 +1654,25 @@ void ArkNativeEngine::PostAsyncTask(std::vector<NativePointerCallbackData>& call
         RunCallbacks(asyncCallbacks);
         delete asyncCallbacks;
         delete syncWork;
+    }
+}
+
+void ArkNativeEngine::PostTriggerGCTask(TriggerGCData& data)
+{
+    TriggerGCData *triggerGCData = new TriggerGCData(data);
+    uv_work_t *syncWork = new uv_work_t;
+    syncWork->data = reinterpret_cast<void *>(triggerGCData);
+    int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
+            auto triggerGCData = reinterpret_cast<TriggerGCData *>(syncWork->data);
+            RunCallbacks(triggerGCData);
+            delete syncWork;
+            delete triggerGCData;
+        }, uv_qos_t(napi_qos_user_initiated));
+    if (ret != 0) {
+        HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
+        RunCallbacks(triggerGCData);
+        delete syncWork;
+        delete triggerGCData;
     }
 }
 
@@ -2070,6 +2114,7 @@ size_t ArkNativeEngine::GetFullGCLongTimeCount()
 void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
+    arkIdleMonitor_->NotifyChangeBackgroundState(inBackground);
 }
 
 void ArkNativeEngine::NotifyIdleStatusControl(std::function<void(bool)> callback)
@@ -2325,22 +2370,29 @@ std::string DumpHybridStack(const EcmaVM* vm)
 void ArkNativeEngine::PostLooperTriggerIdleGCTask()
 {
 #if defined(ENABLE_EVENT_HANDLER)
-    if (!JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
-        return;
-    }
     std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
         OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
     if (mainThreadRunner.get() == nullptr) {
         HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
         return;
     }
-    auto callback = [this]([[maybe_unused]]OHOS::AppExecFwk::EventRunnerStage stage,
+    auto callback = [this](OHOS::AppExecFwk::EventRunnerStage stage,
         const OHOS::AppExecFwk::StageInfo* info) -> int {
-        JSNApi::NotifyLooperIdle(vm_, info->sleepTime);
+        switch (stage) {
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
+                arkIdleMonitor_->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
+                break;
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
+                arkIdleMonitor_->NotifyLooperIdleEnd(info->timestamp);
+                break;
+            default:
+                HILOG_ERROR("this branch is unreachable");
+        }
         return 0;
     };
-    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC,
-        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING), callback);
+    uint32_t stage = (static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING) |
+        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
+    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
 #endif
 }
 
