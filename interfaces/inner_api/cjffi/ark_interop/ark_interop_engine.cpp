@@ -122,15 +122,13 @@ ARKTS_Engine ARKTS_CreateEngine()
         return nullptr;
     }
 #endif
-    auto loop = engine->GetUVLoop();
-    if (loop == nullptr) {
-        if (!engine->ReinitUVLoop()) {
-            LOGE("init uv loop failed");
-            ARKTS_DestroyEngine(result);
-            return nullptr;
-        }
-        loop = engine->GetUVLoop();
+
+    if (!engine->ReinitUVLoop()) {
+        LOGE("init uv loop failed");
+        ARKTS_DestroyEngine(result);
+        return nullptr;
     }
+    auto loop = engine->GetUVLoop();
     panda::JSNApi::SetLoop(vm, loop);
 
 #ifdef __OHOS__

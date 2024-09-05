@@ -132,6 +132,7 @@ bool NativeSafeAsyncWork::Init()
     int ret = uv_async_init(loop, &asyncHandler_, AsyncCallback);
     if (ret != 0) {
         HILOG_ERROR("uv async init failed %d", ret);
+        uv_close(reinterpret_cast<uv_handle_t*>(&asyncHandler_), nullptr);
         return false;
     }
 

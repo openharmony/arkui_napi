@@ -29,6 +29,7 @@
 #include "utils/log.h"
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
+static constexpr size_t DESTRUCTION_TIMEOUT = 3000;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr int32_t API11 = 11;
 
@@ -80,6 +81,10 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 
 void NativeEngine::InitUvField()
 {
+    if (memset_s(&timer_, sizeof(timer_), 0, sizeof(timer_)) != EOK) {
+        HILOG_ERROR("failed to init timer_");
+        return;
+    }
     if (memset_s(&uvAsync_, sizeof(uvAsync_), 0, sizeof(uvAsync_)) != EOK) {
         HILOG_ERROR("failed to init uvAsync_");
         return;
@@ -130,18 +135,13 @@ void NativeEngine::CreateDefaultFunction(void)
         nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
 }
 
-void NativeEngine::DestoryDefaultFunction(bool release)
+void NativeEngine::DestoryDefaultFunction(void)
 {
     std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
     if (!defaultFunc_) {
         return;
     }
-    if (release) {
-        napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-    } else {
-        NativeSafeAsyncWork* work = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
-        delete work; // only free mem due to uv_loop is invalid
-    }
+    napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
     defaultFunc_ = nullptr;
 }
 
@@ -151,20 +151,12 @@ void NativeEngine::Init()
     moduleManager_ = NativeModuleManager::GetInstance();
     referenceManager_ = new NativeReferenceManager();
     callbackScopeManager_ = new NativeCallbackScopeManager();
+    loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        return;
+    }
     tid_ = pthread_self();
     sysTid_ = GetCurSysTid();
-
-    loop_ = new uv_loop_t;
-    if (loop_ == nullptr) {
-        HILOG_ERROR("failed to create uv_loop, async task interface would not work");
-        return;
-    }
-    if (uv_loop_init(loop_) != EOK) {
-        HILOG_ERROR("failed to init uv_loop, async task interface would not work");
-        delete loop_;
-        loop_ = nullptr;
-        return;
-    }
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
     CreateDefaultFunction();
@@ -173,12 +165,9 @@ void NativeEngine::Init()
 void NativeEngine::Deinit()
 {
     HILOG_INFO("NativeEngine::Deinit");
-    if (loop_ != nullptr) {
-        DestoryDefaultFunction(true);
-        uv_sem_destroy(&uvSem_);
-        uv_close((uv_handle_t*)&uvAsync_, nullptr);
-    }
-
+    DestoryDefaultFunction();
+    uv_sem_destroy(&uvSem_);
+    uv_close((uv_handle_t*)&uvAsync_, nullptr);
     RunCleanup();
     if (referenceManager_ != nullptr) {
         delete referenceManager_;
@@ -187,13 +176,8 @@ void NativeEngine::Deinit()
 
     SetUnalived();
     SetStopping(true);
-    if (loop_ != nullptr) {
-        if (uv_loop_close(loop_) != EOK) {
-            HILOG_FATAL("faild to close uv_loop, still have active tasks in loop.");
-        };
-        delete loop_;
-        loop_ = nullptr;
-    }
+    uv_loop_delete(loop_);
+    loop_ = nullptr;
 }
 
 NativeReferenceManager* NativeEngine::GetReferenceManager()
@@ -226,46 +210,30 @@ ThreadId NativeEngine::GetCurSysTid()
     return reinterpret_cast<ThreadId>(panda::JSNApi::GetCurrentThreadId());
 }
 
-// should only be called if process is forked, other case would cause fd_leak
 bool NativeEngine::ReinitUVLoop()
 {
-    if (defaultFunc_ != nullptr) {
-        DestoryDefaultFunction(false);
-    }
-
     if (loop_ != nullptr) {
-        delete loop_;  // only free mem due to uv_loop is invalid
-        loop_ = nullptr;
+        DestoryDefaultFunction();
+        uv_sem_destroy(&uvSem_);
+        uv_close((uv_handle_t*)&uvAsync_, nullptr);
+        uv_run(loop_, UV_RUN_ONCE);
+        uv_loop_delete(loop_);
     }
 
+    loop_ = uv_loop_new();
+    if (loop_ == nullptr) {
+        return false;
+    }
     tid_ = pthread_self();
     sysTid_ = GetCurSysTid();
-
-    loop_ = new uv_loop_t;
-    if (loop_ == nullptr) {
-        HILOG_ERROR("failed to create uv_loop, async task interface would not work");
-        return false;
-    }
-    if (uv_loop_init(loop_) != EOK) {
-        HILOG_ERROR("failed to init uv_loop, async task interface would not work");
-        delete loop_;
-        loop_ = nullptr;
-        return false;
-    }
-
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
     CreateDefaultFunction();
-
     return true;
 }
 
 void NativeEngine::Loop(LoopMode mode, bool needSync)
 {
-    if (loop_ == nullptr) {
-        HILOG_ERROR("uv loop is nullptr");
-        return;
-    }
     bool more = true;
     switch (mode) {
         case LoopMode::LOOP_DEFAULT:
@@ -715,9 +683,21 @@ napi_status NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
     return napi_generic_failure;
 }
 
+void NativeEngine::StartCleanupTimer()
+{
+    uv_timer_init(loop_, &timer_);
+    timer_.data = this;
+    uv_timer_start(&timer_, [](uv_timer_t* handle) {
+        HILOG_DEBUG("NativeEngine:: timer is end with timeout.");
+        reinterpret_cast<NativeEngine*>(handle->data)->cleanupTimeout_ = true;
+    }, DESTRUCTION_TIMEOUT, 0);
+    uv_unref(reinterpret_cast<uv_handle_t*>(&timer_));
+}
+
 void NativeEngine::RunCleanup()
 {
     HILOG_DEBUG("%{public}s, start.", __func__);
+    StartCleanupTimer();
     CleanupHandles();
     // sync clean up
     while (!cleanupHooks_.empty()) {
@@ -750,22 +730,20 @@ void NativeEngine::RunCleanup()
         CleanupHandles();
     }
 
-    // Close all unclosed uv handles
-    auto const ensureClosing = [](uv_handle_t *handle, void *arg) {
-        if (!uv_is_closing(handle)) {
-            uv_close(handle, nullptr);
-        }
-    };
-    uv_walk(loop_, ensureClosing, nullptr);
+    while (uv_run(loop_, UV_RUN_NOWAIT) != 0 && !cleanupTimeout_) {}
+    uv_timer_stop(&timer_);
+    uv_close(reinterpret_cast<uv_handle_t*>(&timer_), nullptr);
+    uv_run(loop_, UV_RUN_ONCE);
 
-    while (uv_run(loop_, UV_RUN_DEFAULT) != 0) {};
-
+    if (cleanupTimeout_) {
+        HILOG_DEBUG("RunCleanup timeout");
+    }
     HILOG_DEBUG("%{public}s, end.", __func__);
 }
 
 void NativeEngine::CleanupHandles()
 {
-    while (requestWaiting_.load() > 0) {
+    while (requestWaiting_.load() > 0 && !cleanupTimeout_) {
         HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
             requestWaiting_.load(std::memory_order_relaxed));
         uv_run(loop_, UV_RUN_ONCE);
