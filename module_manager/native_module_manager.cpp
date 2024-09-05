@@ -1133,7 +1133,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     char nativeModulePath[][NAPI_PATH_MAX])
 {
     NativeModule* result = nullptr;
-    NativeModule* preNativeModule = nullptr;
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     cacheNativeModule_ = nullptr;
@@ -1158,25 +1157,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
                 cacheNativeModule_ = temp;
             }
         }
-        preNativeModule = temp;
     }
 
-    if (result && !result->moduleLoaded) {
-        if (result == tailNativeModule_) {
-            HILOG_WARN("module '%{public}s' found in cache but does not load", result->moduleName);
-            return nullptr;
-        }
-        if (preNativeModule) {
-            preNativeModule->next = result->next;
-        } else {
-            headNativeModule_ = headNativeModule_->next;
-        }
-        result->next = nullptr;
-        tailNativeModule_->next = result;
-        tailNativeModule_ = result;
-        HILOG_WARN("module '%{public}s' found in cache but does not load", result->moduleName);
-        return nullptr;
-    }
     return result;
 }
 
