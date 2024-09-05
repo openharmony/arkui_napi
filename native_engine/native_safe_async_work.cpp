@@ -42,7 +42,7 @@ void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
     HILOG_DEBUG("NativeSafeAsyncWork::AsyncCallback called");
     NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::asyncHandler_, asyncHandler);
     if (that == nullptr) {
-        HILOG_ERROR("DereferenceOf failed!");
+        HILOG_ERROR("NativeSafeAsyncWork:: DereferenceOf failed!");
         return;
     }
     that->ProcessAsyncHandle();
@@ -304,7 +304,6 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         if (size == maxQueueSize_ && maxQueueSize_ > 0) {
             condition_.notify_one();
         }
-
         napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
         lock.unlock();
         if (callJsCallback_ != nullptr) {
