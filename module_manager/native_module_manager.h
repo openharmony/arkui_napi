@@ -72,6 +72,10 @@ struct NativeModule {
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
 };
 
+struct NativeModuleHeadTailStruct {
+    NativeModule* headNativeModule = nullptr;
+    NativeModule* tailNativeModule = nullptr;
+};
 class NAPI_EXPORT NativeModuleManager {
 public:
     static NativeModuleManager* GetInstance();
@@ -129,8 +133,10 @@ private:
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
         bool internal, const bool isAppModule, std::string& errInfo, char nativeModulePath[][NAPI_PATH_MAX],
         NativeModule* cacheNativeModule);
-    NativeModule* FindNativeModuleByCache(
-        const char* moduleName, char nativeModulePath[][NAPI_PATH_MAX], NativeModule*& cacheNativeModule);
+    NativeModule* FindNativeModuleByCache(const char* moduleName,
+                                          char nativeModulePath[][NAPI_PATH_MAX],
+                                          NativeModule*& cacheNativeModule,
+                                          NativeModuleHeadTailStruct& cacheHeadTailStruct);
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
         const bool isAppModule, std::string& errInfo, uint32_t& errReason);
@@ -150,6 +156,7 @@ private:
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool RemoveNativeModule(const std::string& moduleKey);
+    bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule);
     void MoveApiAllowListCheckerPtr(
         std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
