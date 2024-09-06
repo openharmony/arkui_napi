@@ -80,7 +80,7 @@ ohos_source_set("ace_napi_static") {
   }
   if (is_arkui_x) {
     if (napi_enable_container_scope) {
-      external_deps += [ "ace_engine:ace_container_scope_static" ]
+      deps += [ ":ace_container_scope_static" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]
     }
     if (target_os == "android") {
@@ -99,7 +99,7 @@ ohos_source_set("ace_napi_static") {
       "ENABLE_EVENT_HANDLER",
     ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
-      deps += [ "ace_engine:ace_container_scope" ]
+      deps += [ ":ace_container_scope" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]
     }
   }
@@ -178,6 +178,23 @@ if (is_arkui_x) {
   }
 }
 
+config("container_scope_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "$ace_root/frameworks" ]
+}
+
+ohos_shared_library("ace_container_scope") {
+  public_configs = [ ":container_scope_config" ]
+
+  configs = [ "$ace_root:ace_config" ]
+
+  sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
+
+  subsystem_name = "arkui"
+  innerapi_tags = [ "platformsdk_indirect" ]
+  part_name = "napi"
+}
+
 #cj_ffi
 config("ffi_bind_native_config") {
   include_dirs = [ "interfaces/inner_api/cjffi/native" ]
@@ -253,6 +270,16 @@ ohos_shared_library("cj_bind_ffi") {
     external_deps += [ "c_utils:utils" ]
   }
   innerapi_tags = [ "platformsdk" ]
+  subsystem_name = "arkui"
+  part_name = "napi"
+}
+
+ohos_source_set("ace_container_scope_static") {
+  public_configs = [ ":container_scope_config" ]
+
+  configs = [ "$ace_root:ace_config" ]
+
+  sources = [ "$ace_root/frameworks/core/common/container_scope.cpp" ]
   subsystem_name = "arkui"
   part_name = "napi"
 }
