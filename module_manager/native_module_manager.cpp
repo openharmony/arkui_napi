@@ -854,13 +854,12 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (isAppModule && IsExistedPath(pathKey)) {
         Dl_namespace ns = nsMap_[pathKey];
         lib = dlopen_ns(&ns, path, RTLD_LAZY);
-    } else if (access(path, F_OK) == 0) {
+    } else {
         lib = dlopen(path, RTLD_LAZY);
     }
     if (lib == nullptr) {
         char* dlerr = dlerror();
-        auto dlerrMsg = dlerr != nullptr ? dlerr :
-            "Error loading path " + std::string(path) + ":No such file or directory";
+        auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
         errInfo += "load app module failed. " +  std::string(dlerrMsg);
     }
 #endif
