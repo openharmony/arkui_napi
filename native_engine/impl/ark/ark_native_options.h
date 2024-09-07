@@ -41,7 +41,7 @@ private:
         return;
     }
 
-    int GetDefaultProperties() const
+    uint32_t GetDefaultProperties() const
     {
         return 0;
     }
@@ -51,7 +51,7 @@ private:
         return napiProperties_;
     }
 
-    int napiProperties_ = GetDefaultProperties();
+    uint32_t napiProperties_ = GetDefaultProperties();
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_OPTIONS_H */
