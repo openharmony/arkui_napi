@@ -39,15 +39,6 @@ do_configure() {
     popd
 }
 
-do_unstripped_copy() {
-    mkdir -p ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
-    cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
-    cp -u ${workdir}/deps/v8/lib.unstripped/libv8_shared.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
-    pushd ${out_dir}
-    rm -rf *
-    popd
-}
-
 get_thread_num() {
     quota_us_file="/sys/fs/cgroup/cpu/cpu.cfs_quota_us"
     period_us_file="/sys/fs/cgroup/cpu/cpu.cfs_period_us"
@@ -127,9 +118,7 @@ do_env() {
     argurment+=" -Wl,-z,relro"
     argurment+=" -Wl,-z,now"
     argurment+=" -pie"
-    if [ $1 -eq 1 ]; then
-        argurment+=" -ggdb3"
-    fi
+
     if [[ "${TARGET_CPU}" = "arm" ]]; then
         cflags="  --target=arm-linux-ohos"
         cflags+=" --sysroot=${SYSROOT}"
