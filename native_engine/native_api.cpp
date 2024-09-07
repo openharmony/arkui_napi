@@ -1928,10 +1928,12 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
         Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
         NativeReference* ref = nullptr;
         if (reference != nullptr) {
-            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint,
+                                          native_binding_size);
             *reference = ref;
         } else {
-            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint);
+            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint,
+                                          native_binding_size);
         }
         object->SetNativePointerFieldCount(vm, 1);
         object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, native_binding_size);

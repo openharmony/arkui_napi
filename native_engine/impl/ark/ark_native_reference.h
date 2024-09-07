@@ -43,7 +43,8 @@ public:
                        NapiNativeFinalize napiCallback = nullptr,
                        void* data = nullptr,
                        void* hint = nullptr,
-                       bool isAsyncCall = false);
+                       bool isAsyncCall = false,
+                       size_t nativeBindingSize = 0);
     ArkNativeReference(ArkNativeEngine* engine,
                        Local<JSValueRef> value,
                        uint32_t initialRefcount,
@@ -51,7 +52,8 @@ public:
                        NapiNativeFinalize napiCallback,
                        void* data,
                        void* hint,
-                       bool isAsyncCall = false);
+                       bool isAsyncCall = false,
+                       size_t nativeBindingSize = 0);
     ~ArkNativeReference() override;
 
     uint32_t Ref() override;
@@ -87,12 +89,13 @@ private:
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};
     bool isAsyncCall_ {false};
-    NapiNativeFinalize napiCallback_ {nullptr};
-    void* data_ = nullptr;
-    void* hint_ = nullptr;
 
     bool hasDelete_ {false};
     bool finalRun_ {false};
+    NapiNativeFinalize napiCallback_ {nullptr};
+    void* data_ {nullptr};
+    void* hint_ {nullptr};
+    size_t nativeBindingSize_ {0};
 
     NativeReference* prev_ {nullptr};
     NativeReference* next_ {nullptr};

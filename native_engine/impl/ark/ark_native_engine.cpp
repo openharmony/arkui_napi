@@ -1464,9 +1464,9 @@ napi_value ArkNativeEngine::CreateInstance(napi_value constructor, napi_value co
 }
 
 NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t initialRefcount,
-    bool flag, NapiNativeFinalize callback, void* data, void* hint)
+    bool flag, NapiNativeFinalize callback, void* data, void* hint, size_t nativeBindingSize)
 {
-    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint);
+    return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, false, nativeBindingSize);
 }
 
 NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_t initialRefcount,
@@ -1475,7 +1475,18 @@ NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_
     return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, true);
 }
 
-__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(std::vector<RefFinalizer> *finalizers)
+__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(ArkFinalizersPack *finalizersPack)
+{
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizersPack->GetNumFinalizers()));
+#endif
+    finalizersPack->ProcessAll();
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
+}
+
+__attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers)
 {
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
@@ -1501,7 +1512,7 @@ void ArkNativeEngine::PostFinalizeTasks()
 
         int ret = uv_queue_work_with_qos(GetUVLoop(), asynWork, [](uv_work_t *asynWork) {
             std::vector<RefFinalizer> *finalizers = reinterpret_cast<std::vector<RefFinalizer> *>(asynWork->data);
-            RunCallbacks(finalizers);
+            RunAsyncCallbacks(finalizers);
             HILOG_DEBUG("uv_queue_work async running ");
             delete finalizers;
         }, [](uv_work_t *asynWork, int32_t) {
@@ -1509,31 +1520,44 @@ void ArkNativeEngine::PostFinalizeTasks()
         }, uv_qos_t(napi_qos_background));
         if (ret != 0) {
             HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-            RunCallbacks(asyncFinalizers);
+            RunAsyncCallbacks(asyncFinalizers);
             delete asynWork;
             delete asyncFinalizers;
         }
     }
-    if (pendingFinalizers_.empty()) {
+    if (arkFinalizersPack_.Empty()) {
+        return;
+    }
+    size_t bindingSize = arkFinalizersPack_.GetTotalNativeBindingSize();
+    if (pendingFinalizersPackNativeBindingSize_ > FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD &&
+        bindingSize > 0) {
+        HILOG_DEBUG("Pending Finalizers NativeBindingSize '%{public}zu' large than '%{public}zu', process sync.",
+            pendingFinalizersPackNativeBindingSize_, FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD);
+        RunCallbacks(&arkFinalizersPack_);
+        arkFinalizersPack_.Clear();
         return;
     }
     uv_work_t *syncWork = new uv_work_t;
-    std::vector<RefFinalizer> *syncFinalizers = new std::vector<RefFinalizer>();
-    syncFinalizers->swap(pendingFinalizers_);
-    syncWork->data = reinterpret_cast<void *>(syncFinalizers);
-
+    ArkFinalizersPack *finalizersPack = new ArkFinalizersPack();
+    std::swap(arkFinalizersPack_, *finalizersPack);
+    finalizersPack->RegisterFinishNotify([this] (size_t totalNativeBindingSize) {
+        this->DecreasePendingFinalizersPackNativeBindingSize(totalNativeBindingSize);
+    });
+    IncreasePendingFinalizersPackNativeBindingSize(bindingSize);
+    
+    syncWork->data = reinterpret_cast<void *>(finalizersPack);
     int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
-        std::vector<RefFinalizer> *finalizers = reinterpret_cast<std::vector<RefFinalizer> *>(syncWork->data);
-        RunCallbacks(finalizers);
+        ArkFinalizersPack *finalizersPack = reinterpret_cast<ArkFinalizersPack*>(syncWork->data);
+        RunCallbacks(finalizersPack);
         HILOG_DEBUG("uv_queue_work running");
         delete syncWork;
-        delete finalizers;
+        delete finalizersPack;
     }, uv_qos_t(napi_qos_background));
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-        RunCallbacks(syncFinalizers);
+        RunCallbacks(finalizersPack);
         delete syncWork;
-        delete syncFinalizers;
+        delete finalizersPack;
     }
 }
 
