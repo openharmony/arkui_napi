@@ -157,6 +157,9 @@ public:
     bool IsExecutingPendingJob() const override;
     void* GetCurrentTaskInfo() const override;
     void TerminateExecution() const override;
+    void NotifyTaskBegin() const override;
+    void NotifyTaskFinished() const override;
+
     // judge_typedarray
     bool NapiNewTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
                            Local<panda::ArrayBufferRef> arrayBuf,
