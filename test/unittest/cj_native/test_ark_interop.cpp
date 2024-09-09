@@ -112,12 +112,13 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiInstanceOf, TestSize.Level1)
     ARKTS_Env env = ARKTS_GetContext(engine_);
     auto global = ARKTS_GetGlobalConstant(env);
     char clError[] = "Error";
-    auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError));
+    auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError) - 1);
     auto errorCls = ARKTS_GetProperty(env, global, jError);
     auto errorObJ = ARKTS_New(env, errorCls, 0, nullptr);
     auto isError = ARKTS_InstanceOf(env, errorObJ, errorCls);
     EXPECT_TRUE(isError);
-    EXPECT_FALSE(ARKTS_InstanceOf(env, jError, errorCls));
+    auto jObj = ARKTS_CreateObject(env);
+    EXPECT_FALSE(ARKTS_InstanceOf(env, jObj, errorCls));
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiHitrace001, TestSize.Level1)
@@ -149,19 +150,37 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
 
 int main(int argc, char** argv)
 {
-    engine_ = ARKTS_CreateEngine();
     LOGI("main in");
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
-    int ret = testing::UnitTest::GetInstance()->Run();
-    std::thread t([] {
-        ARKTS_DestroyEngine(engine_);
-        engine_ = nullptr;
+
+    auto runner = OHOS::AppExecFwk::EventRunner::Create(true);
+    EXPECT_TRUE(runner);
+    auto handler = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+    EXPECT_TRUE(handler);
+
+    int ret = -1;
+    std::condition_variable cv;
+
+    auto success = handler->PostTask([&ret, &cv] {
+        engine_ = ARKTS_CreateEngine();
+
+        ret = testing::UnitTest::GetInstance()->Run();
+        cv.notify_all();
     });
-    if (!ret) {
-        LOGE("run test failed. return %d", ret);
-        return ret;
-    }
+
+    EXPECT_TRUE(success);
+
+    std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    auto status = cv.wait_for(lock, std::chrono::seconds(10));
+
+    EXPECT_EQ(status, std::cv_status::no_timeout);
+
+    ARKTS_DestroyEngine(engine_);
+    engine_ = nullptr;
+    runner->Stop();
+
     LOGI("main out");
     return ret;
 }
