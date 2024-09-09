@@ -612,11 +612,19 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #endif
     if (nativeModule == nullptr) {
         (void)pthread_mutex_lock(&mutex_);
+#ifndef IOS_PLATFORM
         if (CheckNativeListChanged(cacheHeadTailNativeModule.headNativeModule,
                                    cacheHeadTailNativeModule.tailNativeModule)) {
+#ifdef ANDROID_PLATFORM
+            nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule,
+                                                   cacheHeadTailNativeModule);
+#else
             nativeModule =
                 FindNativeModuleByCache(key.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+#endif
         }
+#else
+#endif
         if (nativeModule == nullptr) {
             prefix_ = prefixTmp;
             isAppModule_ = isAppModule;
