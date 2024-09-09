@@ -43,4 +43,10 @@ declare_args() {
   napi_enable_container_scope = false
   napi_enable_memleak_debug = true
   force_scope = false
+
+  # Enable pgo for building
+  napi_feature_enable_pgo = false
+
+  # Set pgo profdata path
+  napi_feature_pgo_path = ""
 }

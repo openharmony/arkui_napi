@@ -16,7 +16,11 @@
             "SystemCapability.ArkUI.ArkUI.Napi",
             "SystemCapability.ArkCompiler.JSVM"
         ],
-        "features": ["napi_enable_container_scope"],
+        "features": [
+          "napi_enable_container_scope",
+          "napi_feature_enable_pgo",
+          "napi_feature_pgo_path"
+        ],
         "adapted_system_type": [
             "standard"
         ],
