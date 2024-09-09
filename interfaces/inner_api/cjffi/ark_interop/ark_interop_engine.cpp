@@ -175,13 +175,17 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
         "can not destroy engine at it's running thread");
 #ifdef __OHOS__
     std::condition_variable cv;
-    engine->eventHandler->PostTask([engine, &cv] {
+    std::atomic<bool> isComplete = false;
+    engine->eventHandler->PostTask([engine, &cv, &isComplete] {
         ARKTSInnerDisposeEngine(engine);
+        isComplete = true;
         cv.notify_one();
     });
     std::mutex mutex;
     std::unique_lock lock(mutex);
-    cv.wait(lock);
+    while (!isComplete) {
+        cv.wait_for(lock, std::chrono::seconds(1));
+    }
     engine->eventHandler->RemoveAllFileDescriptorListeners();
     if (engine->newRunner) {
         engine->newRunner->Stop();
@@ -291,23 +295,18 @@ ARKTS_Engine ARKTS_CreateEngineWithNewThread()
     std::mutex mutex;
     std::unique_lock lock(mutex);
     std::condition_variable cv;
-    auto postSuccess = handler->PostTask([&result, &cv] {
+    std::atomic<bool> createComplete = false;
+    auto postSuccess = handler->PostTask([&result, &cv, &createComplete] {
         result = ARKTS_CreateEngine();
+        createComplete = true;
         cv.notify_one();
     });
     if (!postSuccess) {
         newRunner->Stop();
         return nullptr;
     }
-    auto status = cv.wait_for(lock, std::chrono::seconds(1));
-    if (status == std::cv_status::timeout) {
-        handler->PostTask([&result] {
-            if (result) {
-                ARKTS_DestroyEngine(result);
-            }
-        });
-        newRunner->Stop();
-        return nullptr;
+    while (!createComplete) {
+        cv.wait_for(lock, std::chrono::milliseconds(1));
     }
     if (!result) {
         newRunner->Stop();
