@@ -21,7 +21,6 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
-#include <unistd.h>
 
 #ifdef ENABLE_HITRACE
 #include "hitrace_meter.h"
@@ -1056,7 +1055,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 
     char *moduleName = strdup(moduleKey.c_str());
     if (moduleName == nullptr) {
-        HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
+        HILOG_ERROR("strdup failed. tmpName is %{public}s", moduleKey.c_str());
         return;
     }
     tailNativeModule_->moduleName = moduleName;
