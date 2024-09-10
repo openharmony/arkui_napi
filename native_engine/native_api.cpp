@@ -3658,7 +3658,11 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
         return napi_status::napi_invalid_arg;
     }
     NativeEngine *eng = reinterpret_cast<NativeEngine *>(env);
-    return eng->SendEvent(cb, priority);
+    if (NativeEngine::IsAlive(eng)) {
+        return eng->SendEvent(cb, priority);
+    } else {
+        return napi_status::napi_closing;
+    }
 }
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope)
 {
