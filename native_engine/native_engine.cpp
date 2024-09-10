@@ -987,12 +987,7 @@ napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_
     std::shared_lock<std::shared_mutex> readLock(eventMutex_);
     if (defaultFunc_) {
         auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
-        auto task = [this, cb]() {
-            auto vm = this->GetEcmaVm();
-            panda::LocalScope scope(vm);
-            cb();
-        };
-        return safeAsyncWork->SendEvent(task, priority);
+        return safeAsyncWork->SendEvent(cb, priority);
     } else {
         HILOG_ERROR("default function is nullptr!");
         return napi_status::napi_generic_failure;
