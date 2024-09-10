@@ -431,7 +431,12 @@ napi_status NativeSafeAsyncWork::SendEvent(const std::function<void()> &cb, napi
 {
 #ifdef ENABLE_EVENT_HANDLER
     if (eventHandler_) {
-        if (eventHandler_->PostTask(cb, static_cast<EventQueue::Priority>(priority)))
+        auto task = [eng = engine_, cb]() {
+            auto vm = eng->GetEcmaVm();
+            panda::LocalScope scope(vm);
+            cb();
+        };
+        if (eventHandler_->PostTask(task, static_cast<EventQueue::Priority>(priority)))
             return napi_status::napi_ok;
         else
             return napi_status::napi_generic_failure;
