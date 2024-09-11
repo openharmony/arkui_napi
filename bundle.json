@@ -37,6 +37,7 @@
                 "icu",
                 "libuv",
                 "node",
+                "ffrt",
                 "bounds_checking_function",
                 "init",
                 "ace_engine"
