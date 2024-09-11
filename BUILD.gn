@@ -236,6 +236,10 @@ config("ffi_bind_ffi_public_config") {
   cflags_cc = [ "-std=c++17" ]
 }
 
+group("cj_ffi_libraries") {
+  deps = [ ":cj_bind_ffi" ]
+}
+
 ohos_shared_library("cj_bind_ffi") {
   public_configs = [ ":ffi_bind_ffi_public_config" ]
   branch_protector_ret = "pac_ret"
@@ -258,10 +262,6 @@ ohos_shared_library("cj_bind_ffi") {
   innerapi_tags = [ "platformsdk" ]
   subsystem_name = "arkui"
   part_name = "napi"
-}
-
-group("cj_ffi_libraries") {
-  deps = [ ":cj_bind_ffi" ]
 }
 
 group("napi_packages") {
