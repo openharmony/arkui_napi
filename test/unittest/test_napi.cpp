@@ -1031,6 +1031,16 @@ HWTEST_F(NapiBasicTest, PromiseTest001, testing::ext::TestSize.Level1)
         napi_get_undefined(env, &undefined);
         ASSERT_CHECK_CALL(napi_reject_deferred(env, deferred, undefined));
     }
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_throw_error(env, "500", "common error"));
+        ASSERT_NE(napi_create_promise(env, &deferred, &promise), napi_ok);
+        ASSERT_EQ(deferred, nullptr);
+        ASSERT_EQ(promise, nullptr);
+        napi_value error = nullptr;
+        napi_get_and_clear_last_exception(env, &error);
+    }
 }
 
 /**
