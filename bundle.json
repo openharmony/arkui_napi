@@ -37,11 +37,7 @@
                 "init"
             ],
             "third_party": [
-                "icu",
-                "jerryscript",
-                "libuv",
-                "node",
-                "bounds_checking_function"
+                "jerryscript"
             ]
         },
         "build": {
