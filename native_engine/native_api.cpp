@@ -4120,6 +4120,7 @@ NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* re
     panda::JsiFastNativeScope fastNativeScoper(vm);
 
     auto nativeValue = LocalValueFromJsValue(src);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsString(vm), napi_string_expected);
     Local<panda::StringRef> stringVal(nativeValue);
     Local<TypedArrayRef> typedArray = stringVal->EncodeIntoUint8Array(vm);
     *result = JsValueFromLocalValue(typedArray);
