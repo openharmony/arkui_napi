@@ -78,6 +78,13 @@ ohos_shared_library("ark_interop") {
     "hilog:libhilog",
   ]
 
+  if (!is_mingw && !is_mac && !is_linux && !is_arkui_x && is_standard_system) {
+    external_deps += [
+      "c_utils:utils",
+      "runtime_core:libarkbase",
+    ]
+  }
+
   defines = [
     "DEBUG_JS",
     "ENABLE_PROFILE",

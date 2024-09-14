@@ -50,7 +50,6 @@ jerryscript_include += [
 common_deps = [
   "//third_party/googletest:gtest",
   "//third_party/googletest:gtest_main",
-  "//third_party/libuv:uv",
 ]
 
 ark_deps = common_deps
