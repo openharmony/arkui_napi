@@ -4004,7 +4004,12 @@ NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env* env)
         HILOG_ERROR("invalid create callback");
         return napi_status::napi_invalid_arg;
     }
-    return NativeCreateEnv::g_createNapiEnvCallback(env);
+    napi_status result = NativeCreateEnv::g_createNapiEnvCallback(env);
+    if (result == napi_ok) {
+        auto vm = reinterpret_cast<NativeEngine*>(*env)->GetEcmaVm();
+        panda::JSNApi::SetExecuteBufferMode(vm);
+    }
+    return result;
 }
 
 NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env* env)
