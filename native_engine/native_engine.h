@@ -472,6 +472,11 @@ public:
 
     napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
 
+    bool IsInDestructor() const
+    {
+        return isInDestructor_;
+    }
+
 private:
     void InitUvField();
     void StartCleanupTimer();
@@ -547,6 +552,7 @@ private:
 
     std::mutex loopRunningMutex_;
     bool isLoopRunning_ = false;
+    bool isInDestructor_ {false};
 
     static std::mutex g_alivedEngineMutex_;
     static std::unordered_set<NativeEngine*> g_alivedEngine_;
