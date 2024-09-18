@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 import("napi.gni")
 
 config("ace_napi_config") {
@@ -95,8 +94,13 @@ ohos_source_set("ace_napi_static") {
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
-      "runtime_core:libarkbase",
     ]
+
+    # macro in runtime_core in full repo will effect build napi
+    if (ohos_indep_compiler_enable) {
+      external_deps += [ "runtime_core:libarkbase_static" ]
+    }
+
     defines += [
       "ENABLE_HITRACE",
       "ENABLE_EVENT_HANDLER",
