@@ -152,8 +152,8 @@ void* ArkNativeReference::GetData()
 
 void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
-    if (napiCallback_ != nullptr) {
-        if (state == FinalizerState::COLLECTION && engine_->IsMainThread()) {
+    if (napiCallback_ != nullptr && !engine_->IsInDestructor()) {
+        if (state == FinalizerState::COLLECTION) {
             std::tuple<NativeEngine*, void*, void*> tuple = std::make_tuple(engine_, data_, hint_);
             RefFinalizer finalizer = std::make_pair(napiCallback_, tuple);
             if (isAsyncCall_) {

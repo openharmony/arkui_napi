@@ -471,6 +471,11 @@ public:
 
     virtual bool IsCrossThreadCheckEnabled() const = 0;
 
+    bool IsInDestructor() const
+    {
+        return isInDestructor_;
+    }
+
 private:
     void InitUvField();
     void CreateDefaultFunction(void);
@@ -557,6 +562,7 @@ private:
 
     std::mutex loopRunningMutex_;
     bool isLoopRunning_ = false;
+    bool isInDestructor_ {false};
 
     // protect alived engine set and last engine id
     static std::mutex g_alivedEngineMutex_;

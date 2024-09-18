@@ -60,6 +60,7 @@ using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 using PropertyAttribute = panda::PropertyAttribute;
 using NativePointerCallbackData = panda::NativePointerCallbackData;
+using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
 using TriggerGCTaskCallback = panda::TriggerGCTaskCallback;
 using TriggerGCData = panda::TriggerGCData;
 using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
@@ -285,7 +286,7 @@ public:
     void NotifyNativeCalling(const void *nativeAddress);
 
     void PostFinalizeTasks();
-    void PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks);
+    void PostAsyncTask(AsyncNativeCallbacksPack *callbacksPack);
     void PostTriggerGCTask(TriggerGCData& data);
 
     ArkFinalizersPack &GetArkFinalizersPack()
@@ -382,7 +383,7 @@ private:
 
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
     static void RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers);
-    static void RunCallbacks(std::vector<NativePointerCallbackData> *callbacks);
+    static void RunCallbacks(AsyncNativeCallbacksPack *callbacks);
     static void RunCallbacks(TriggerGCData *triggerGCData);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
