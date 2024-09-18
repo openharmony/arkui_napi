@@ -9932,3 +9932,54 @@ HWTEST_F(NapiBasicTest, NapiSerializeTest008, testing::ext::TestSize.Level1)
     auto res = napi_serialize(env, num, undefined, undefined, &data);
     ASSERT_EQ(res, napi_ok);
 }
+
+/**
+ * @tc.name: NapiEncodeTest
+ * @tc.desc: Test interface of napi_encode
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiEncodeTEst001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char testStr[] = "中测_Eng_123";
+    size_t testStrLength = strlen(testStr);
+    napi_value src = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, testStrLength, &src));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_encode(env, src, &result));
+    char expected[15] = {0xe4, 0xb8, 0xad, 0xe6, 0xb5, 0x8b, 0x5f, 0x45, 0x6e, 0x67, 0x5f, 0x31, 0x32, 0x33, 0};
+
+    napi_typedarray_type type;
+    size_t srcLength = 0;
+    void* srcData = nullptr;
+    napi_value srcBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    napi_get_typedarray_info(env, result, &type, &srcLength, &srcData, &srcBuffer, &byteOffset);
+
+    ASSERT_EQ(srcLength, 14); // 14:string length
+    char* res = reinterpret_cast<char*>(srcData);
+
+    res[srcLength] = 0;
+    ASSERT_STREQ(res, expected);
+}
+
+/**
+ * @tc.name: NapiEncodeTest
+ * @tc.desc: Test interface of napi_encode
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiEncodeTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value undefined = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+
+    napi_value result = nullptr;
+    auto ret = napi_encode(env, undefined, &result);
+    ASSERT_EQ(ret, napi_string_expected);
+}
