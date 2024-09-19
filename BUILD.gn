@@ -206,6 +206,8 @@ config("ffi_bind_native_config") {
 ohos_shared_library("cj_bind_native") {
   public_configs = [ ":ffi_bind_native_config" ]
 
+  branch_protector_ret = "pac_ret"
+
   cflags_cc = [
     "-fdata-sections",
     "-ffunction-sections",
@@ -227,6 +229,7 @@ ohos_shared_library("cj_bind_native") {
 }
 
 ohos_source_set("cj_bind_ffi_source") {
+  branch_protector_ret = "pac_ret"
   sources = [
     "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
     "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
@@ -259,6 +262,7 @@ group("cj_ffi_libraries") {
 
 ohos_shared_library("cj_bind_ffi") {
   public_configs = [ ":ffi_bind_ffi_public_config" ]
+  branch_protector_ret = "pac_ret"
 
   cflags_cc = [
     "-fvisibility=hidden",
