@@ -1297,7 +1297,9 @@ bool ArkNativeEngine::NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArr
 NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray)
 {
     NativeTypedArrayType thisType = NATIVE_INT8_ARRAY;
-    if (typedArray->IsInt8Array(vm_)) {
+    if (typedArray->IsInt32Array(vm_)) {
+        thisType = NATIVE_INT32_ARRAY;
+    } else if (typedArray->IsInt8Array(vm_)) {
         thisType = NATIVE_INT8_ARRAY;
     } else if (typedArray->IsUint8Array(vm_)) {
         thisType = NATIVE_UINT8_ARRAY;
@@ -1307,8 +1309,6 @@ NativeTypedArrayType ArkNativeEngine::GetTypedArrayType(panda::Local<panda::Type
         thisType = NATIVE_INT16_ARRAY;
     } else if (typedArray->IsUint16Array(vm_)) {
         thisType = NATIVE_UINT16_ARRAY;
-    } else if (typedArray->IsInt32Array(vm_)) {
-        thisType = NATIVE_INT32_ARRAY;
     } else if (typedArray->IsUint32Array(vm_)) {
         thisType = NATIVE_UINT32_ARRAY;
     } else if (typedArray->IsFloat32Array(vm_)) {
