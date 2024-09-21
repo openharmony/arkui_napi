@@ -285,7 +285,7 @@ public:
     void NotifyNativeCalling(const void *nativeAddress);
 
     void PostFinalizeTasks();
-    void PostAsyncTask(AsyncNativeCallbacksPack *callbacks);
+    void PostAsyncTask(AsyncNativeCallbacksPack *callbacksPack);
     void PostTriggerGCTask(TriggerGCData& data);
 
     ArkFinalizersPack &GetArkFinalizersPack()

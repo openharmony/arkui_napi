@@ -1605,7 +1605,7 @@ void ArkNativeEngine::PostFinalizeTasks()
     }, uv_qos_t(napi_qos_background));
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-        panda::JsiNativeScope scope(vm_);
+        panda::JsiNativeScope nativeScope(vm_);
         RunCallbacks(finalizersPack);
         delete syncWork;
         delete finalizersPack;
