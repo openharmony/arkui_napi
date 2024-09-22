@@ -67,6 +67,7 @@ enum class WorkerVersion {
 };
 
 using CleanupCallback = void (*)(void*);
+using ThreadId = uint32_t;
 
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
@@ -94,6 +95,7 @@ public:
     virtual NativeCallbackScopeManager* GetCallbackScopeManager();
     virtual uv_loop_t* GetUVLoop() const;
     virtual pthread_t GetTid() const;
+    static ThreadId GetCurSysTid();
 
     virtual bool ReinitUVLoop();
 
