@@ -203,6 +203,11 @@ pthread_t NativeEngine::GetTid() const
     return tid_;
 }
 
+ThreadId NativeEngine::GetCurSysTid()
+{
+    return reinterpret_cast<ThreadId>(panda::JSNApi::GetCurrentThreadId());
+}
+
 bool NativeEngine::ReinitUVLoop()
 {
     if (loop_ != nullptr) {
