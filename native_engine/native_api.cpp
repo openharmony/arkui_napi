@@ -1141,25 +1141,20 @@ NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* resu
 
 NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, uint32_t* result)
 {
-    NAPI_PREAMBLE(env);
+    CHECK_ENV((env));
+    RETURN_STATUS_IF_FALSE(env, (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
+        napi_pending_exception);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    panda::JsiFastNativeScope fastNativeScope(vm);
-
-    auto nativeValue = LocalValueFromJsValue(value);
-    if (LIKELY(nativeValue->IsJSArray(vm))) {
-        Local<panda::ArrayRef> arr(nativeValue);
-        *result = arr->Length(vm);
-    } else if (nativeValue->IsSharedArray(vm)) {
-        Local<panda::SendableArrayRef> arr(nativeValue);
-        *result = arr->Length(vm);
-    } else {
+    bool isArrayOrSharedArray = false;
+    panda::Local<panda::JSValueRef> nativeValue = LocalValueFromJsValue(value);
+    nativeValue->TryGetArrayLength(vm, &isArrayOrSharedArray, result);
+    if (!isArrayOrSharedArray) {
         return napi_set_last_error(env, napi_array_expected);
     }
-
-    return GET_RETURN_STATUS(env);
+    return napi_clear_last_error(env);
 }
 
 NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result)
