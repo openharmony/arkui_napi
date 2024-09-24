@@ -51,3 +51,5 @@ declare_args() {
   # Set pgo profdata path
   napi_feature_pgo_path = ""
 }
+
+is_ohos_standard_system = is_standard_system && !is_arkui_x
