@@ -19,7 +19,7 @@
 
 #include "utils/log.h"
 #if defined(ENABLE_FFRT)
-#include "ffrt_inner.h"
+#include "ffrt.h"
 #include "c/executor_task.h"
 #endif
 
@@ -109,20 +109,25 @@ void ArkIdleMonitor::IntervalMonitor()
     }
 }
 
-void ArkIdleMonitor::PostMonitorTask(uint64_t delay_us)
+void ArkIdleMonitor::PostMonitorTask(uint64_t delayMs)
 {
 #if defined(ENABLE_FFRT)
-    constexpr uint32_t FFRT_TASK_STACK_SIZE = 8 * 1024 * 1024; // 8MB
-    ffrt::task_attr taskAttr;
-    ffrt_task_attr_init(&taskAttr);
-    ffrt_task_attr_set_name(&taskAttr, "Ark_FFRTTaskpool_Task");
-    ffrt_task_attr_set_qos(&taskAttr, ffrt_qos_user_initiated);
-    ffrt_task_attr_set_delay(&taskAttr, delay_us);
-    ffrt_task_attr_set_stack_size(&taskAttr, FFRT_TASK_STACK_SIZE);
-    auto task = [this]() {
-        IntervalMonitor();
+    auto task = [](void* idleMonitorPtr) {
+        if (idleMonitorPtr != nullptr) {
+            ArkIdleMonitor* arkIdleMonitor = reinterpret_cast<ArkIdleMonitor *>(idleMonitorPtr);
+            arkIdleMonitor->IntervalMonitor();
+        }
     };
-    ffrt::submit(task, {}, {}, taskAttr);
+    timerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, delayMs, this, task, false);
+#endif
+}
+
+ArkIdleMonitor::~ArkIdleMonitor()
+{
+#if defined(ENABLE_FFRT)
+    if (timerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, timerHandler_);
+    }
 #endif
 }
 
