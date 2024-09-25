@@ -47,6 +47,7 @@ ohos_unittest("test_ark_interop") {
 
   external_deps = [
     "ets_runtime:libark_jsruntime",
+    "eventhandler:libeventhandler",
     "hilog:libhilog",
   ]
 }
