@@ -42,7 +42,7 @@ using Clock = std::chrono::high_resolution_clock;
 using TRIGGER_IDLE_GC_TYPE = panda::JSNApi::TRIGGER_IDLE_GC_TYPE;
 public:
     explicit ArkIdleMonitor(EcmaVM* vm) : vm_(vm) {};
-    virtual ~ArkIdleMonitor() = default;
+    ~ArkIdleMonitor();
 
     bool IsIdleState() const
     {
@@ -153,7 +153,7 @@ public:
     bool CheckLowRunningDurationState() const;
     void IntervalMonitor();
     void ClearIdleStats();
-    void PostMonitorTask(uint64_t delay_us = IDLE_MONITORING_INTERVAL);
+    void PostMonitorTask(uint64_t delayMs = IDLE_MONITORING_INTERVAL);
     void TryTriggerGC(TriggerGCType gcType);
     void NotifyTryCompressGC();
     void SetStartTimerCallback();
@@ -166,8 +166,8 @@ private:
     static constexpr int IDLE_CHECK_INTERVAL_LENGTH = 5;
     static constexpr int MIN_TRIGGER_FULLGC_INTERVAL = 90;
     static constexpr int LOW_IDLE_NOTIFY_THRESHOLD = 10;
-    static constexpr uint64_t IDLE_MONITORING_INTERVAL = 1 * 1000 * 1000; // us
-    static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000 * 1000; // us
+    static constexpr uint64_t IDLE_MONITORING_INTERVAL = 1 * 1000; // ms
+    static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000; // ms
     static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 30; // ms
     static constexpr double IDLE_RATIO = 0.985f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
@@ -177,6 +177,7 @@ private:
     std::atomic<int64_t> idleNotifyCount_ {0};
     std::atomic<int64_t> notifyTimestamp_ {0};
     std::atomic<int64_t> totalIdleDuration_ {0};
+    int timerHandler_ {-1};
     int64_t startRecordTimestamp_ {0};
     int64_t needCheckFullGCTimestamp_ {0};
     int64_t numberOfLowIdleNotifyCycles_ {0};
