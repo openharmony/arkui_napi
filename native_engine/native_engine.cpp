@@ -436,7 +436,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
     UErrorCode errorCode = U_ZERO_ERROR;
     const char* encFrom = "utf8";
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
-    for (int32_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
         // return value of Utf8Length >= 1
         uint32_t len = str->Utf8Length(vm) - 1;
@@ -713,11 +713,25 @@ napi_status NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
 {
     auto insertion_info = cleanupHooks_.emplace(arg,
         std::pair<CleanupCallback, uint64_t>(fun, cleanupHookCounter_++));
-    if (insertion_info.second != true) {
-        HILOG_ERROR("AddCleanupHook Failed.");
-        return napi_generic_failure;
+    if (insertion_info.second) {
+        return napi_ok;
     }
-    return napi_ok;
+
+    std::string stack;
+    if (IsCrossThreadCheckEnabled()) {
+        if (DumpHybridStack(GetEcmaVm(), stack, 1, 8)) { // 1: skipd frames, 8: backtrace deepth
+            HILOG_ERROR("AddCleanupHook Failed, data cannot register multiple times."
+                "\n%{public}s", stack.c_str());
+        } else {
+            HILOG_ERROR("AddCleanupHook Failed, data cannot register multiple times, "
+                "backtrace failed or unsupported platform.");
+        }
+    } else {
+        HILOG_ERROR("AddCleanupHook Failed, data cannot register multiple times, "
+            "enable cross-thread check for more information.");
+    }
+
+    return napi_generic_failure;
 }
 
 napi_status NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
@@ -727,7 +741,23 @@ napi_status NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
         cleanupHooks_.erase(arg);
         return napi_ok;
     }
-    HILOG_ERROR("RemoveCleanupHook Failed.");
+
+    const char *failedReason = cleanupHook == cleanupHooks_.end() ? "data is not registered or already unregistered"
+                                                             : "callback not equals to last registered";
+    std::string stack;
+    if (IsCrossThreadCheckEnabled()) {
+        if (DumpHybridStack(GetEcmaVm(), stack, 1, 8)) { // 1: skiped frames, 8: backtrace deepth
+            HILOG_ERROR("RemoveCleanupHook Failed, %{public}s"
+                ".\n%{public}s", failedReason, stack.c_str());
+        } else {
+            HILOG_ERROR("RemoveCleanupHook Failed %{public}s, "
+                "backtrace failed or unsupported platform.", failedReason);
+        }
+    } else {
+        HILOG_ERROR("RemoveCleanupHook Failed, %{public}s, "
+            "enable cross thread check for more information.", failedReason);
+    }
+
     return napi_generic_failure;
 }
 

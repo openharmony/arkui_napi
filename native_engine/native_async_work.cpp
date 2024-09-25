@@ -96,9 +96,9 @@ NativeAsyncWork::~NativeAsyncWork() = default;
 bool NativeAsyncWork::Queue()
 {
     if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+        LOG_IF_SPECIAL(engine_, UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
                        "owner env has been destroyed, "
-                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       "owner id: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
     }
 
@@ -130,9 +130,9 @@ bool NativeAsyncWork::Queue()
 bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 {
     if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+        LOG_IF_SPECIAL(engine_, UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
                        "param env is not equal to its owner, "
-                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       "owner id: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
     }
 
@@ -164,9 +164,9 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
 bool NativeAsyncWork::Cancel()
 {
     if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+        LOG_IF_SPECIAL(engine_, UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
                        "param env is not equal to its owner, "
-                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       "owner id: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
     }
 

@@ -90,17 +90,31 @@ static inline napi_status napi_set_last_error(napi_env env,
         };                                                                          \
     } while (0)
 
-#define WEAK_CROSS_THREAD_CHECK(env)                                                \
-    do {                                                                            \
-        NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));              \
-        if (UNLIKELY(engine->IsCrossThreadCheckEnabled())) {                        \
-            ThreadId tid = NativeEngine::GetCurSysTid();                            \
-            if (tid != engine->GetSysTid()) {                                       \
-                HILOG_ERROR("current napi interface cannot run in multi-thread, "   \
-                            "thread id: %{public}d, current thread id: %{public}d", \
-                            engine->GetSysTid(), tid);                              \
-            };                                                                      \
-        };                                                                          \
+#define WEAK_CROSS_THREAD_CHECK(env)                                                                      \
+    do {                                                                                                  \
+        NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));                                    \
+        if (UNLIKELY(engine->IsCrossThreadCheckEnabled())) {                                              \
+            ThreadId tid = NativeEngine::GetCurSysTid();                                                  \
+            if (tid != engine->GetSysTid()) {                                                             \
+                std::string stack;                                                                        \
+                bool backtrace = DumpHybridStack(engine->GetEcmaVm(), stack, 0, 8);                      \
+                HILOG_ERROR("current napi interface cannot run in multi-thread, "                         \
+                            "thread id: %{public}d, current thread id: %{public}d"                        \
+                            "\n%{public}s",                                                               \
+                            engine->GetSysTid(), tid, backtrace ? stack.c_str() : "Faild to backtrace."); \
+            };                                                                                            \
+        };                                                                                                \
+    } while (0)
+
+#define LOG_IF_SPECIAL(engine, condition, fmt, ...)                                                            \
+    do {                                                                                                       \
+        if ((condition)) {                                                                                     \
+            HILOG_FATAL(fmt, ##__VA_ARGS__);                                                                   \
+        } else {                                                                                               \
+            std::string stack;                                                                                 \
+            bool backtrace = DumpHybridStack((engine)->GetEcmaVm(), stack, 0, 8);                             \
+            HILOG_ERROR(fmt "\n%{public}s", ##__VA_ARGS__, backtrace ? stack.c_str() : "Faild to backtrace."); \
+        }                                                                                                      \
     } while (0)
 
 #ifndef LIKELY
