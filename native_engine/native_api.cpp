@@ -692,7 +692,7 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
         CHECK_ARG(env, result);
         *result = stringVal->Length(vm);
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteLatin1(vm, buf, bufsize);
+        uint32_t copied = stringVal->WriteLatin1(vm, buf, bufsize);
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;
@@ -724,7 +724,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
         CHECK_ARG(env, result);
         *result = stringVal->Utf8Length(vm, true) - 1;
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteUtf8(vm, buf, bufsize - 1, true) - 1;
+        uint32_t copied = stringVal->WriteUtf8(vm, buf, bufsize - 1, true) - 1;
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;
@@ -760,7 +760,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
             *result = 0;
         }
     } else if (bufsize != 0) {
-        int copied = stringVal->WriteUtf16(vm, buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
+        uint32_t copied = stringVal->WriteUtf16(vm, buf, bufsize - 1); // bufsize - 1 : reserve the position of buf "\0"
         buf[copied] = '\0';
         if (result != nullptr) {
             *result = copied;

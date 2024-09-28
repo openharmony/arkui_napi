@@ -814,7 +814,7 @@ void GetCString(EcmaVM* vm, Local<StringRef> str, char* buffer, size_t size, siz
     if (buffer == nullptr) {
         *length = str->Utf8Length(vm, true) - 1;
     } else if (size != 0) {
-        int copied = str->WriteUtf8(vm, buffer, size - 1, true) - 1;
+        uint32_t copied = str->WriteUtf8(vm, buffer, size - 1, true) - 1;
         buffer[copied] = '\0';
         *length = copied;
     } else {

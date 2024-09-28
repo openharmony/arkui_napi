@@ -325,9 +325,9 @@ NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_va
         if (buffer == nullptr) {
             strLength = static_cast<size_t>(str->Utf8Length(vm, true) - 1);
         } else if (NAME_BUFFER_SIZE != 0) {
-            int copied = str->WriteUtf8(vm, buffer, NAME_BUFFER_SIZE - 1, true) - 1;
+            uint32_t copied = str->WriteUtf8(vm, buffer, NAME_BUFFER_SIZE - 1, true) - 1;
             buffer[copied] = '\0';
-            strLength = static_cast<size_t>(copied);
+            strLength = copied;
         } else {
             strLength = 0;
         }
@@ -372,12 +372,13 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
 {
     int32_t length = static_cast<int32_t>(nativeString->Length(vm));
     int32_t pos = 0;
-    int32_t writableSize = static_cast<int32_t>(bufferSize);
+    uint32_t writableSize = bufferSize;
     int32_t i = 0;
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
     for (; i < length; i++) {
         panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
-        int32_t len = str->Utf8Length(vm) - 1;
+        // return value of Uft8Length >= 1
+        uint32_t len = str->Utf8Length(vm) - 1;
         if (len > writableSize) {
             break;
         }
@@ -420,8 +421,8 @@ static void SubEncodeToChinese(const EcmaVM* vm,
                                std::string& buffer,
                                const char* encode)
 {
-    int32_t length = static_cast<int32_t>(nativeString->Length(vm));
-    int32_t pos = 0;
+    uint32_t length = nativeString->Length(vm);
+    uint32_t pos = 0;
     const int32_t writableSize = 22; // 22 : encode max bytes of the ucnv_convent function;
     std::string tempBuf = "";
     tempBuf.resize(writableSize + 1);
@@ -430,7 +431,8 @@ static void SubEncodeToChinese(const EcmaVM* vm,
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
     for (int32_t i = 0; i < length; i++) {
         panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
-        int32_t len = str->Utf8Length(vm) - 1;
+        // return value of Utf8Length >= 1
+        uint32_t len = str->Utf8Length(vm) - 1;
         if ((pos + len) >= writableSize) {
             char outBuf[writableSize] = {0};
             ucnv_convert(encode, encFrom, outBuf, writableSize, tempBuf.c_str(), pos, &errorCode);
