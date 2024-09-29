@@ -3545,6 +3545,7 @@ static void CleanupCopy(void* arg)
  */
 HWTEST_F(NapiBasicTest, AddEnvCleanupHook001, testing::ext::TestSize.Level1)
 {
+    std::this_thread::sleep_for(std::chrono::seconds(2));
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
     ExpectCheckCall(napi_add_env_cleanup_hook(testEnv, Cleanup, &g_hookArgOne));

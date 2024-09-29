@@ -78,6 +78,12 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
     InitUvField();
 }
 
+NativeEngine::NativeEngine(void* jsEngine, EcmaVM* vm) : jsEngine_(jsEngine), vm_(vm)
+{
+    SetAlived();
+    InitUvField();
+}
+
 void NativeEngine::InitUvField()
 {
     if (memset_s(&uvAsync_, sizeof(uvAsync_), 0, sizeof(uvAsync_)) != EOK) {
@@ -104,6 +110,7 @@ NativeEngine::~NativeEngine()
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
+    vm_ = nullptr;
 }
 
 static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
