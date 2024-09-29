@@ -1071,51 +1071,6 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest011, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: ThreadsafeTest012
- * @tc.desc: Test LoadModule Func, call napi_call_threadsafe_function in callback.
- * @tc.type: FUNC
- * @tc.require: I5K6KF
- */
-HWTEST_F(NapiThreadsafeTest, ThreadsafeTest012, testing::ext::TestSize.Level1)
-{
-    HILOG_INFO("Threadsafe_Test_1200 start");
-    napi_env env = (napi_env)engine_;
-    napi_threadsafe_function tsFunc = nullptr;
-    napi_value resourceName = 0;
-
-    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
-    g_mainTid = gettid();
-    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
-    g_finalData.id = FINAL_CB_DATA_TEST_ID;
-
-    auto status = napi_create_threadsafe_function(env,
-                                                  nullptr,
-                                                  nullptr,
-                                                  resourceName,
-                                                  0,
-                                                  1,
-                                                  &g_finalData,
-                                                  TsFuncFinal,
-                                                  &g_jsData,
-                                                  TsFuncCallJsWithNewCall,
-                                                  &tsFunc);
-    EXPECT_EQ(status, napi_ok);
-
-    if (uv_thread_create(
-            &g_uvThread,
-            [](void *data) {
-                napi_threadsafe_function func = (napi_threadsafe_function)data;
-                auto status = napi_call_threadsafe_function(func, data, napi_tsfn_nonblocking);
-                EXPECT_EQ(status, napi_ok);
-            },
-            tsFunc) != 0) {
-        HILOG_ERROR("Failed to create uv thread!");
-    }
-
-    HILOG_INFO("Threadsafe_Test_1200 end");
-}
-
-/**
  * @tc.name: ThreadsafeWithPriorityArgsCheckTest001
  * @tc.desc: Test napi_call_threadsafe_function_with_priority.
  * @tc.type: FUNC
@@ -1456,4 +1411,49 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityTest014, testing::ext::TestSi
     EXPECT_NE(runner, nullptr);
     runner->Run();
     HILOG_INFO("ThreadsafeWithPriorityTest014 end");
+}
+
+/**
+ * @tc.name: ThreadsafeTest012
+ * @tc.desc: Test LoadModule Func, call napi_call_threadsafe_function in callback.
+ * @tc.type: FUNC
+ * @tc.require: I5K6KF
+ */
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest012, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("Threadsafe_Test_1200 start");
+    napi_env env = (napi_env)engine_;
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = 0;
+
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    g_mainTid = gettid();
+    g_jsData.id = CALL_JS_CB_DATA_TEST_ID;
+    g_finalData.id = FINAL_CB_DATA_TEST_ID;
+
+    auto status = napi_create_threadsafe_function(env,
+                                                  nullptr,
+                                                  nullptr,
+                                                  resourceName,
+                                                  0,
+                                                  1,
+                                                  &g_finalData,
+                                                  TsFuncFinal,
+                                                  &g_jsData,
+                                                  TsFuncCallJsWithNewCall,
+                                                  &tsFunc);
+    EXPECT_EQ(status, napi_ok);
+
+    if (uv_thread_create(
+            &g_uvThread,
+            [](void *data) {
+                napi_threadsafe_function func = (napi_threadsafe_function)data;
+                auto status = napi_call_threadsafe_function(func, data, napi_tsfn_nonblocking);
+                EXPECT_EQ(status, napi_ok);
+            },
+            tsFunc) != 0) {
+        HILOG_ERROR("Failed to create uv thread!");
+    }
+
+    HILOG_INFO("Threadsafe_Test_1200 end");
 }
