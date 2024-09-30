@@ -181,6 +181,10 @@ if (is_arkui_x) {
     if (is_ohos && is_clang && enhanced_opt) {
       if (napi_feature_enable_pgo) {
         ldflags = [ "-Wl,-mllvm,-align-all-functions=4" ]
+
+        if (target_cpu == "arm64") {
+          ldflags += [ "-Wl,--aarch64-inline-plt" ]
+        }
       }
     }
   }
