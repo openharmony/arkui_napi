@@ -118,15 +118,26 @@ void ArkIdleMonitor::PostMonitorTask(uint64_t delayMs)
             arkIdleMonitor->IntervalMonitor();
         }
     };
-    timerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, delayMs, this, task, false);
+    if (waitForStopTimerHandler_ != -1) {
+        int ret = ffrt_timer_stop(ffrt_qos_user_initiated, waitForStopTimerHandler_);
+        if (ret != 0) {
+            HILOG_ERROR("ArkIdleMonitor: ffrt_timer_stop error handler: timerHandler='%{public}d', ret='%{public}d'",
+                waitForStopTimerHandler_, ret);
+        }
+    }
+    waitForStopTimerHandler_ = currentTimerHandler_;
+    currentTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, delayMs, this, task, false);
 #endif
 }
 
 ArkIdleMonitor::~ArkIdleMonitor()
 {
 #if defined(ENABLE_FFRT)
-    if (timerHandler_ != -1) {
-        ffrt_timer_stop(ffrt_qos_user_initiated, timerHandler_);
+    if (waitForStopTimerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, waitForStopTimerHandler_);
+    }
+    if (currentTimerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, currentTimerHandler_);
     }
 #endif
 }

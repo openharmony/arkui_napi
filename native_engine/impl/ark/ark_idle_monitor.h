@@ -177,7 +177,8 @@ private:
     std::atomic<int64_t> idleNotifyCount_ {0};
     std::atomic<int64_t> notifyTimestamp_ {0};
     std::atomic<int64_t> totalIdleDuration_ {0};
-    int timerHandler_ {-1};
+    int currentTimerHandler_ {-1};
+    int waitForStopTimerHandler_ {-1};
     int64_t startRecordTimestamp_ {0};
     int64_t needCheckFullGCTimestamp_ {0};
     int64_t numberOfLowIdleNotifyCycles_ {0};
