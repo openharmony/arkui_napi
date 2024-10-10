@@ -27,6 +27,9 @@ class ArkFinalizersPack {
 public:
     ArkFinalizersPack() = default;
     ~ArkFinalizersPack() = default;
+    DEFAULT_MOVE_SEMANTIC(ArkFinalizersPack);
+    DEFAULT_COPY_SEMANTIC(ArkFinalizersPack);
+
     void Clear()
     {
         finalizers_.clear();
