@@ -32,4 +32,22 @@
         } while (0);                                                \
     }
 
+#define RUN_EVENT_LOOP_WITH_MODE(env, mode)                      \
+    do {                                                         \
+        uv_loop_t* loop = nullptr;                               \
+        ASSERT_CHECK_CALL(napi_get_uv_event_loop((env), &loop)); \
+        ASSERT_NE(loop, nullptr);                                \
+        uv_run(loop, (mode));                                    \
+    } while (0)
+
+#define RUN_EVENT_LOOP(env) RUN_EVENT_LOOP_WITH_MODE((env), UV_RUN_DEFAULT)
+
+#define STOP_EVENT_LOOP(env)                                     \
+    do {                                                         \
+        uv_loop_t* loop = nullptr;                               \
+        ASSERT_CHECK_CALL(napi_get_uv_event_loop((env), &loop)); \
+        ASSERT_NE(loop, nullptr);                                \
+        uv_stop(loop);                                           \
+    } while (0)
+
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_COMMON_H */

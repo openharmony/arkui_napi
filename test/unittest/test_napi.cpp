@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cstddef>
 #define private public
 #define protected public
 
@@ -27,9 +28,11 @@
 #include "napi/native_common.h"
 #include "securec.h"
 #include "utils/log.h"
+#include "native_engine/impl/ark/ark_native_engine.h"
+#include "napi/native_engine/native_create_env.h"
 
-static constexpr int THREAD_PAUSE_ONE = 100 * 1000; // 100 ms
-static constexpr int THREAD_PAUSE_ONE_SECOND = 1000 * 1000; // 1s
+using panda::RuntimeOption;
+
 static constexpr int MAX_BUFFER_SIZE = 2;
 static constexpr int BUFFER_SIZE_FIVE = 5;
 static constexpr size_t TEST_STR_LENGTH = 30;
@@ -43,8 +46,6 @@ static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
 static constexpr int INT_THREE = 3;
 static constexpr int THREAD_SIZE = 5;
-static constexpr int RUN_LOOP_THREAD_SLEEP = 3; // 3s
-static constexpr int STOP_LOOP_THREAD_SLEEP = 5; // 5s
 
 class NapiBasicTest : public NativeEngineTest {
 public:
@@ -73,6 +74,46 @@ public:
     }
 private:
     napi_handle_scope scope_ = nullptr;
+};
+
+class NativeEngineProxy {
+public:
+    NativeEngineProxy()
+    {
+        // Setup
+        RuntimeOption option;
+        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+        const int64_t poolSize = 0x1000000;  // 16M
+        option.SetGcPoolSize(poolSize);
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        option.SetDebuggerLibraryPath("");
+        vm_ = panda::JSNApi::CreateJSVM(option);
+        if (vm_ == nullptr) {
+            return;
+        }
+
+        engine_ = new ArkNativeEngine(vm_, nullptr);
+    }
+
+    ~NativeEngineProxy()
+    {
+        delete engine_;
+        panda::JSNApi::DestroyJSVM(vm_);
+    }
+
+    inline ArkNativeEngine* operator->() const
+    {
+        return engine_;
+    }
+
+    inline operator napi_env() const
+    {
+        return reinterpret_cast<napi_env>(engine_);
+    }
+
+private:
+    EcmaVM* vm_ {nullptr};
+    ArkNativeEngine* engine_ {nullptr};
 };
 
 static const napi_type_tag typeTags[5] = { // 5:array element size is 5.
@@ -355,7 +396,7 @@ HWTEST_F(NapiBasicTest, StringTest003, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
     const char16_t testStr[] = u"abc56";
-    size_t testStrLength = sizeof(testStr) / sizeof(char16_t);
+    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
     napi_value res = nullptr;
     ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &res));
     ASSERT_CHECK_VALUE_TYPE(env, res, napi_string);
@@ -364,13 +405,13 @@ HWTEST_F(NapiBasicTest, StringTest003, testing::ext::TestSize.Level1)
     size_t bufSize = 0;
     size_t copied = 0;
     ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, res, nullptr, 0, &bufSize));
-    ASSERT_EQ(bufSize, 6);
-    buffer = new char16_t[bufSize]{ 0 };
-    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, res, buffer, bufSize, &copied));
+    ASSERT_EQ(bufSize, testStrLength);
+    buffer = new char16_t[bufSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, res, buffer, bufSize + 1, &copied));
     for (size_t i = 0; i < copied; i++) {
         ASSERT_TRUE(testStr[i] == buffer[i]);
     }
-    ASSERT_EQ(testStrLength - 1, copied);
+    ASSERT_EQ(testStrLength, copied);
     delete []buffer;
     buffer = nullptr;
 }
@@ -384,7 +425,7 @@ HWTEST_F(NapiBasicTest, StringTest004, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
     const char16_t testStr[] = u"abc56";
-    size_t testStrLength = sizeof(testStr) / sizeof(char16_t);
+    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
     napi_value result = nullptr;
     ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
@@ -2097,9 +2138,11 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
                 AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
                 ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
                 delete asyncWorkContext;
+                STOP_EVENT_LOOP(env);
             },
             asyncWorkContext, &asyncWorkContext->work));
         ASSERT_CHECK_CALL(napi_queue_async_work(env, asyncWorkContext->work));
+        RUN_EVENT_LOOP(env);
     }
     {
         auto asyncWorkContext = new AsyncWorkContext();
@@ -2112,10 +2155,12 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
                 ASSERT_EQ(status, napi_status::napi_cancelled);
                 napi_delete_async_work(env, asyncWorkContext->work);
                 delete asyncWorkContext;
+                STOP_EVENT_LOOP(env);
             },
             asyncWorkContext, &asyncWorkContext->work);
         napi_queue_async_work(env, asyncWorkContext->work);
         ASSERT_CHECK_CALL(napi_cancel_async_work(env, asyncWorkContext->work));
+        RUN_EVENT_LOOP(env);
     }
 }
 
@@ -2209,12 +2254,14 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest005, testing::ext::TestSize.Level1)
             AsyncWorkContext* asyncWorkContext = reinterpret_cast<AsyncWorkContext*>(data);
             ASSERT_NE(asyncWorkContext, nullptr);
             delete asyncWorkContext;
+            STOP_EVENT_LOOP(env);
         },
         asyncWorkContext, &asyncWorkContext->work);
     napi_status status = napi_queue_async_work(env, asyncWorkContext->work);
     ASSERT_EQ(status, napi_ok);
     status = napi_queue_async_work(env, nullptr);
     ASSERT_EQ(status, napi_invalid_arg);
+    RUN_EVENT_LOOP(env);
 }
 
 /**
@@ -4147,7 +4194,7 @@ HWTEST_F(NapiBasicTest, AddEnvCleanupHook001, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: AddEnvCleanupHook001
+ * @tc.name: AddEnvCleanupHook002
  * @tc.desc: Test napi_add_env_cleanup_hook
  * @tc.type: FUNC
  */
@@ -4223,22 +4270,7 @@ HWTEST_F(NapiBasicTest, AddEnvCleanupHook006, testing::ext::TestSize.Level1)
  * @tc.desc: Test napi_add_env_cleanup_hook
  * @tc.type: FUNC
  */
-HWTEST_F(NapiBasicTest, AddEnvCleanupHook007, testing::ext::TestSize.Level2)
-{
-    napi_env testEnv = reinterpret_cast<napi_env>(engine_);
-    g_hookTag = INT_ZERO;
-    ExpectCheckCall(napi_add_env_cleanup_hook(testEnv, Cleanup, &g_hookArgOne));
-    ExpectCheckCall(napi_add_env_cleanup_hook(testEnv, Cleanup, &g_hookArgOne));
-    engine_->RunCleanup();
-    EXPECT_EQ(g_hookTag, INT_ONE);
-}
-
-/**
- * @tc.name: AddEnvCleanupHook008
- * @tc.desc: Test napi_add_env_cleanup_hook
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, AddEnvCleanupHook008, testing::ext::TestSize.Level1)
+HWTEST_F(NapiBasicTest, AddEnvCleanupHook007, testing::ext::TestSize.Level1)
 {
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
@@ -4250,11 +4282,11 @@ HWTEST_F(NapiBasicTest, AddEnvCleanupHook008, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: EnvCleanupHook009
+ * @tc.name: EnvCleanupHook008
  * @tc.desc: Test napi_add_env_cleanup_hook napi_remove_env_cleanup_hook
  * @tc.type: FUNC
  */
-HWTEST_F(NapiBasicTest, EnvCleanupHook009, testing::ext::TestSize.Level1)
+HWTEST_F(NapiBasicTest, EnvCleanupHook008, testing::ext::TestSize.Level1)
 {
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
@@ -4266,11 +4298,11 @@ HWTEST_F(NapiBasicTest, EnvCleanupHook009, testing::ext::TestSize.Level1)
 }
 
 /**
- * @tc.name: EnvCleanupHook0010
+ * @tc.name: EnvCleanupHook0009
  * @tc.desc: Test napi_add_env_cleanup_hook napi_remove_env_cleanup_hook
  * @tc.type: FUNC
  */
-HWTEST_F(NapiBasicTest, EnvCleanupHook0010, testing::ext::TestSize.Level2)
+HWTEST_F(NapiBasicTest, EnvCleanupHook0009, testing::ext::TestSize.Level2)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
@@ -4281,6 +4313,24 @@ HWTEST_F(NapiBasicTest, EnvCleanupHook0010, testing::ext::TestSize.Level2)
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_TWO);
     EXPECT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: EnvCleanupHook0010
+ * @tc.desc: Test napi_add_env_cleanup_hook napi_remove_env_cleanup_hook
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, EnvCleanupHook0010, testing::ext::TestSize.Level2)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    g_hookTag = INT_ZERO;
+    napi_status res = napi_ok;
+    ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgOne));
+    ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgTwo));
+    res = napi_remove_env_cleanup_hook(env, nullptr, &g_hookArgTwo);
+    engine_->RunCleanup();
+    EXPECT_EQ(g_hookTag, INT_TWO);
+    EXPECT_EQ(res, napi_invalid_arg);
 }
 
 /**
@@ -4295,7 +4345,7 @@ HWTEST_F(NapiBasicTest, EnvCleanupHook0011, testing::ext::TestSize.Level2)
     napi_status res = napi_ok;
     ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgOne));
     ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgTwo));
-    res = napi_remove_env_cleanup_hook(env, nullptr, &g_hookArgTwo);
+    res = napi_remove_env_cleanup_hook(nullptr, Cleanup, &g_hookArgTwo);
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_TWO);
     EXPECT_EQ(res, napi_invalid_arg);
@@ -4307,24 +4357,6 @@ HWTEST_F(NapiBasicTest, EnvCleanupHook0011, testing::ext::TestSize.Level2)
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, EnvCleanupHook0012, testing::ext::TestSize.Level2)
-{
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    g_hookTag = INT_ZERO;
-    napi_status res = napi_ok;
-    ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgOne));
-    ExpectCheckCall(napi_add_env_cleanup_hook(env, Cleanup, &g_hookArgTwo));
-    res = napi_remove_env_cleanup_hook(nullptr, Cleanup, &g_hookArgTwo);
-    engine_->RunCleanup();
-    EXPECT_EQ(g_hookTag, INT_TWO);
-    EXPECT_EQ(res, napi_invalid_arg);
-}
-
-/**
- * @tc.name: EnvCleanupHook0013
- * @tc.desc: Test napi_add_env_cleanup_hook napi_remove_env_cleanup_hook
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, EnvCleanupHook0013, testing::ext::TestSize.Level2)
 {
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
@@ -4339,11 +4371,11 @@ HWTEST_F(NapiBasicTest, EnvCleanupHook0013, testing::ext::TestSize.Level2)
 }
 
 /**
- * @tc.name: EnvCleanupHook0014
+ * @tc.name: EnvCleanupHook0013
  * @tc.desc: Test napi_add_env_cleanup_hook napi_remove_env_cleanup_hook
  * @tc.type: FUNC
  */
-HWTEST_F(NapiBasicTest, EnvCleanupHook0014, testing::ext::TestSize.Level1)
+HWTEST_F(NapiBasicTest, EnvCleanupHook0013, testing::ext::TestSize.Level1)
 {
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
@@ -4402,7 +4434,6 @@ static void AsyncCleanupHook(napi_async_cleanup_hook_handle handle, void* arg)
     data->async.data = data;
     data->handle = handle;
     uv_async_send(&data->async);
-    sleep(1);
 }
 
 /**
@@ -4423,7 +4454,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook001, testing::ext::TestSize.Level1)
     engine_->RunCleanup();
     EXPECT_EQ(res, napi_ok);
     EXPECT_EQ(g_hookTag, INT_ONE);
-    sleep(1);
 }
 
 /**
@@ -4444,7 +4474,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook002, testing::ext::TestSize.Level1)
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_ONE);
     EXPECT_EQ(res, napi_ok);
-    sleep(1);
 }
 
 /**
@@ -4461,7 +4490,6 @@ HWTEST_F(NapiBasicTest, ACE_Napi_Add_Async_Cleanup_Hook_0300, testing::ext::Test
     ExpectCheckCall(napi_remove_async_cleanup_hook(mustNotCallHandle));
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_ZERO);
-    sleep(1);
 }
 
 /**
@@ -4477,7 +4505,6 @@ HWTEST_F(NapiBasicTest, ACE_Napi_Add_Async_Cleanup_Hook_0400, testing::ext::Test
     res = napi_add_async_cleanup_hook(nullptr, MustNotCall, nullptr, &mustNotCallHandle);
     engine_->RunCleanup();
     EXPECT_EQ(res, napi_invalid_arg);
-    sleep(1);
 }
 
 /**
@@ -4493,7 +4520,6 @@ HWTEST_F(NapiBasicTest, ACE_Napi_Add_Async_Cleanup_Hook_0500, testing::ext::Test
     res = napi_add_async_cleanup_hook(env, nullptr, nullptr, &mustNotCallHandle);
     engine_->RunCleanup();
     EXPECT_EQ(res, napi_invalid_arg);
-    sleep(1);
 }
 
 /**
@@ -4520,7 +4546,6 @@ HWTEST_F(NapiBasicTest, ACE_Napi_Add_Async_Cleanup_Hook_0600, testing::ext::Test
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_ONE);
     EXPECT_EQ(res, napi_ok);
-    sleep(1);
 }
 
 /**
@@ -4550,7 +4575,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook007, testing::ext::TestSize.Level1)
     EXPECT_EQ(res, napi_ok);
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_TWO);
-    sleep(1);
 }
 
 /**
@@ -4590,7 +4614,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook008, testing::ext::TestSize.Level1)
     EXPECT_EQ(res, napi_ok);
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_THREE);
-    sleep(2);
 }
 
 /**
@@ -4614,7 +4637,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook009, testing::ext::TestSize.Level1)
     EXPECT_EQ(res, napi_ok);
     engine_->RunCleanup();
     EXPECT_EQ(g_hookTag, INT_ZERO);
-    sleep(1);
 }
 
 /**
@@ -4656,7 +4678,6 @@ HWTEST_F(NapiBasicTest, AsyncCleanupHook0011, testing::ext::TestSize.Level2)
     res = napi_remove_async_cleanup_hook(dataTwo->handle);
     EXPECT_EQ(res, napi_ok);
     engine_->RunCleanup();
-    sleep(1);
 }
 
 /**
@@ -4696,21 +4717,16 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
         },
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            if (asyncWorkContext->executed) {
-                ASSERT_EQ(status, napi_status::napi_ok);
-            } else {
-                ASSERT_NE(status, napi_status::napi_cancelled);
-            }
+            ASSERT_EQ(status, napi_status::napi_cancelled);
+            std::cout << "status of task is: " << status << std::endl;
             napi_delete_async_work(env, asyncWorkContext->work);
             delete asyncWorkContext;
+            STOP_EVENT_LOOP(env);
         },
         asyncWorkContext, &asyncWorkContext->work);
     napi_queue_async_work(env, asyncWorkContext->work);
-
-    // Sleep for a short duration to allow the async work to start executing.
-    usleep(THREAD_PAUSE_ONE);
     napi_cancel_async_work(env, asyncWorkContext->work);
-    usleep(THREAD_PAUSE_ONE_SECOND);
+    RUN_EVENT_LOOP(env);
 }
 
 static napi_value CreateWithPropertiesTestGetter(napi_env env, napi_callback_info info)
@@ -5018,11 +5034,11 @@ HWTEST_F(NapiBasicTest, runEventLoopTest002, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, runEventLoopTest003, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    engine_->Deinit();
-    napi_env env = (napi_env)engine_;
-    napi_status res = napi_run_event_loop(env, napi_event_mode_nowait);
-    engine_->Init();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_nowait);
     ASSERT_EQ(res, napi_invalid_arg);
+    engine->Init();
 }
 
 /**
@@ -5033,10 +5049,10 @@ HWTEST_F(NapiBasicTest, runEventLoopTest003, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, runEventLoopTest004, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    engine_->Deinit();
-    napi_env env = (napi_env)engine_;
-    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
-    engine_->Init();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_default);
+    engine->Init();
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -5151,10 +5167,10 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest001, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, stopEventLoopTest002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    engine_->Deinit();
-    napi_env env = (napi_env)engine_;
-    napi_status res = napi_stop_event_loop(env);
-    engine_->Init();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_stop_event_loop(napi_env(engine));
+    engine->Init();
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -5232,7 +5248,6 @@ HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSiz
 
     // 1. create five child threads to call napi_run_event_loop
     auto runFunc = [](const napi_env &env, napi_event_mode mode) {
-        std::this_thread::sleep_for(std::chrono::seconds(RUN_LOOP_THREAD_SLEEP));
         napi_status res = napi_run_event_loop(env, mode);
         ASSERT_EQ(res, napi_ok);
     };
@@ -5249,9 +5264,7 @@ HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSiz
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(
-        env, nullptr, resourceName, [](napi_env env, void* data) {
-            std::this_thread::sleep_for(std::chrono::seconds(STOP_LOOP_THREAD_SLEEP));
-        },
+        env, nullptr, resourceName, [](napi_env env, void* data) { },
         [](napi_env env, napi_status status, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
             napi_delete_async_work(env, asyncWorkContext->work);
