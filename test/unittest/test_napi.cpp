@@ -14,6 +14,7 @@
  */
 
 #include <cstddef>
+#include <cstddef>
 #define private public
 #define protected public
 
