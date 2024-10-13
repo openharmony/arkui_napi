@@ -105,6 +105,7 @@ void NativeEngine::InitUvField()
 NativeEngine::~NativeEngine()
 {
     HILOG_INFO("NativeEngine::~NativeEngine");
+    isInDestructor_ = true;
     if (cleanEnv_ != nullptr) {
         cleanEnv_();
     }

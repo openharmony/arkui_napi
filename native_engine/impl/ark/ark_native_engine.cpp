@@ -557,8 +557,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     panda::JSNApi::SetWeakFinalizeTaskCallback(vm, [this] () -> void {
         this->PostFinalizeTasks();
     });
-    JSNApi::SetAsyncCleanTaskCallback(vm, [this] (std::vector<NativePointerCallbackData>& callbacks) {
-        this->PostAsyncTask(callbacks);
+    JSNApi::SetAsyncCleanTaskCallback(vm, [this] (AsyncNativeCallbacksPack *callbacksPack) {
+        this->PostAsyncTask(callbacksPack);
     });
 #if defined(ENABLE_EVENT_HANDLER)
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
@@ -1559,6 +1559,9 @@ __attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<Ref
 
 void ArkNativeEngine::PostFinalizeTasks()
 {
+    if (IsInDestructor()) {
+        return;
+    }
     if (!pendingAsyncFinalizers_.empty()) {
         uv_work_t *asynWork = new uv_work_t;
         std::vector<RefFinalizer> *asyncFinalizers = new std::vector<RefFinalizer>();
@@ -1583,18 +1586,25 @@ void ArkNativeEngine::PostFinalizeTasks()
     if (arkFinalizersPack_.Empty()) {
         return;
     }
-    size_t bindingSize = arkFinalizersPack_.GetTotalNativeBindingSize();
+    ArkFinalizersPack *finalizersPack = new ArkFinalizersPack();
+    std::swap(arkFinalizersPack_, *finalizersPack);
+    if (!IsMainThread()) {
+        panda::JsiNativeScope nativeScope(vm_);
+        RunCallbacks(finalizersPack);
+        delete finalizersPack;
+        return;
+    }
+    size_t bindingSize = finalizersPack->GetTotalNativeBindingSize();
     if (pendingFinalizersPackNativeBindingSize_ > FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD &&
         bindingSize > 0) {
         HILOG_DEBUG("Pending Finalizers NativeBindingSize '%{public}zu' large than '%{public}zu', process sync.",
             pendingFinalizersPackNativeBindingSize_, FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD);
-        RunCallbacks(&arkFinalizersPack_);
-        arkFinalizersPack_.Clear();
+        panda::JsiNativeScope nativeScope(vm_);
+        RunCallbacks(finalizersPack);
+        delete finalizersPack;
         return;
     }
     uv_work_t *syncWork = new uv_work_t;
-    ArkFinalizersPack *finalizersPack = new ArkFinalizersPack();
-    std::swap(arkFinalizersPack_, *finalizersPack);
     finalizersPack->RegisterFinishNotify([this] (size_t totalNativeBindingSize) {
         this->DecreasePendingFinalizersPackNativeBindingSize(totalNativeBindingSize);
     });
@@ -1610,42 +1620,35 @@ void ArkNativeEngine::PostFinalizeTasks()
     }, uv_qos_t(napi_qos_background));
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
+        panda::JsiNativeScope nativeScope(vm_);
         RunCallbacks(finalizersPack);
         delete syncWork;
         delete finalizersPack;
     }
 }
 
-__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(std::vector<NativePointerCallbackData> *callbacks)
+__attribute__((optnone)) void ArkNativeEngine::RunCallbacks(AsyncNativeCallbacksPack *callbacksPack)
 {
 #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "RunNativeCallbacks:" + std::to_string(callbacks->size()));
+    StartTrace(HITRACE_TAG_ACE, "RunNativeCallbacks:" + std::to_string(callbacksPack->GetNumCallBacks()));
 #endif
-    for (auto iter : (*callbacks)) {
-        panda::NativePointerCallback callback = iter.first;
-        std::tuple<void*, void*, void*> &param = iter.second;
-        if (callback != nullptr) {
-            callback(std::get<0>(param), std::get<1>(param), std::get<2>(param)); // 2 is the param.
-        }
-    }
+    callbacksPack->ProcessAll();
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
 }
 
-void ArkNativeEngine::PostAsyncTask(std::vector<NativePointerCallbackData>& callbacks)
+void ArkNativeEngine::PostAsyncTask(AsyncNativeCallbacksPack *callBacksPack)
 {
-    if (callbacks.empty()) {
+    if (IsInDestructor()) {
+        delete callBacksPack;
         return;
     }
     uv_work_t *syncWork = new uv_work_t;
-    std::vector<NativePointerCallbackData> *asyncCallbacks = new std::vector<NativePointerCallbackData>();
-    asyncCallbacks->swap(callbacks);
-    syncWork->data = reinterpret_cast<void *>(asyncCallbacks);
+    syncWork->data = reinterpret_cast<void *>(callBacksPack);
 
     int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
-        std::vector<NativePointerCallbackData> *finalizers =
-            reinterpret_cast<std::vector<NativePointerCallbackData> *>(syncWork->data);
+        AsyncNativeCallbacksPack *finalizers = reinterpret_cast<AsyncNativeCallbacksPack*>(syncWork->data);
         RunCallbacks(finalizers);
         HILOG_DEBUG("uv_queue_work running");
         delete syncWork;
@@ -1653,8 +1656,9 @@ void ArkNativeEngine::PostAsyncTask(std::vector<NativePointerCallbackData>& call
     }, uv_qos_t(napi_qos_background));
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
-        RunCallbacks(asyncCallbacks);
-        delete asyncCallbacks;
+        panda::JsiNativeScope nativeScope(vm_);
+        RunCallbacks(callBacksPack);
+        delete callBacksPack;
         delete syncWork;
     }
 }
