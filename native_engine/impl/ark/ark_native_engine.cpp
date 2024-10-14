@@ -441,7 +441,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                         } else {
                             buffer = static_cast<const void *>(module->jsCode);
                         }
-                        auto exportObject = arkNativeEngine->LoadArkModule(buffer, module->jsCodeLen, fileName);
+                        auto exportObject = arkNativeEngine->LoadArkModule(buffer,
+                            module->jsCodeLen, fileName);
                         if (exportObject->IsUndefined()) {
                             HILOG_ERROR("load module failed");
                             return scope.Escape(exports);
@@ -697,9 +698,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         HILOG_ERROR("native engine is null");
         return **JSValueRef::Undefined(vm);
     }
-
     uint64_t nestChainId = StartNapiProfilerTrace(runtimeInfo, reinterpret_cast<void *>(cb));
-
     if (JSNApi::IsMixedDebugEnabled(vm)) {
         JSNApi::NotifyNativeCalling(vm, reinterpret_cast<void *>(cb));
     }
