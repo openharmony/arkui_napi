@@ -71,15 +71,19 @@ thread_local static ContainerScopeCallback g_finishContainerScopeFunc;
 std::mutex NativeEngine::g_alivedEngineMutex_;
 std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
 uint64_t NativeEngine::g_lastEngineId_ = 1;
+std::mutex NativeEngine::g_mainThreadEngineMutex_;
+NativeEngine* NativeEngine::g_mainThreadEngine_;
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
+    SetMainThreadEngine(this);
     SetAlived();
     InitUvField();
 }
 
 NativeEngine::NativeEngine(void* jsEngine, EcmaVM* vm) : jsEngine_(jsEngine), vm_(vm)
 {
+    SetMainThreadEngine(this);
     SetAlived();
     InitUvField();
 }
