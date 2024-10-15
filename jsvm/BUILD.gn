@@ -47,4 +47,10 @@ action("build_libjsvm") {
     "--node_path",
     rebase_path("//third_party/node"),
   ]
+  if (use_clang_coverage) {
+    args += [
+      "--target_clang_coverage",
+      "$use_clang_coverage",
+    ]
+  }
 }
