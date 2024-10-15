@@ -2752,7 +2752,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     panda::JsiFastNativeScope fastNativeScope(vm);
     if (LIKELY(value->IsTypedArray(vm))) {
         Local<panda::TypedArrayRef> typedArray = Local<panda::TypedArrayRef>(value);
-        Local<ArrayBufferRef> local_arraybuffer = typedArray->GetArrayBuffer(vm);
+        Local<ArrayBufferRef> localArrayBuffer = typedArray->GetArrayBuffer(vm);
         size_t byteoffset = typedArray->ByteOffset(vm);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetTypedArrayType(typedArray));
@@ -2761,17 +2761,17 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(local_arraybuffer->GetBuffer(vm)) + byteoffset;
+            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteoffset;
         }
         if (arraybuffer != nullptr) {
-            *arraybuffer = JsValueFromLocalValue(local_arraybuffer);
+            *arraybuffer = JsValueFromLocalValue(localArrayBuffer);
         }
         if (byte_offset != nullptr) {
             *byte_offset = byteoffset;
         }
     } else if (value->IsSharedTypedArray(vm)) {
         Local<panda::SendableTypedArrayRef> typedArray = Local<panda::SendableTypedArrayRef>(value);
-        Local<panda::SendableArrayBufferRef> local_arraybuffer = typedArray->GetArrayBuffer(vm);
+        Local<panda::SendableArrayBufferRef> localArrayBuffer = typedArray->GetArrayBuffer(vm);
         size_t byteoffset = typedArray->ByteOffset(vm);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetSendableTypedArrayType(typedArray));
@@ -2780,10 +2780,10 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(local_arraybuffer->GetBuffer(vm)) + byteoffset;
+            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteoffset;
         }
         if (arraybuffer != nullptr) {
-            *arraybuffer = JsValueFromLocalValue(local_arraybuffer);
+            *arraybuffer = JsValueFromLocalValue(localArrayBuffer);
         }
         if (byte_offset != nullptr) {
             *byte_offset = byteoffset;
