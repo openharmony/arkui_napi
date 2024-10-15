@@ -82,9 +82,13 @@ private:
                 referenceManager->CreateHandler(this);
             }
         }
+
+        engineId_ = engine_->GetId();
     }
 
     ArkNativeEngine* engine_;
+    uint64_t engineId_ {0};
+
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
     bool deleteSelf_ {false};

@@ -76,6 +76,7 @@ private:
 
     uv_work_t work_;
     NativeEngine* engine_;
+    uint64_t engineId_;
     NativeAsyncExecuteCallback execute_;
     NativeAsyncCompleteCallback complete_;
     void* data_;

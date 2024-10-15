@@ -69,6 +69,7 @@ enum class WorkerVersion {
 using CleanupCallback = void (*)(void*);
 using ThreadId = uint32_t;
 
+class NapiOptions;
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
@@ -95,7 +96,15 @@ public:
     virtual NativeCallbackScopeManager* GetCallbackScopeManager();
     virtual uv_loop_t* GetUVLoop() const;
     virtual pthread_t GetTid() const;
+    inline ThreadId GetSysTid() const
+    {
+        return sysTid_;
+    };
     static ThreadId GetCurSysTid();
+    inline uint64_t GetId() const
+    {
+        return id_;
+    };
 
     virtual bool ReinitUVLoop();
 
@@ -331,20 +340,6 @@ public:
         return g_alivedEngine_.find(env) != g_alivedEngine_.end();
     }
 
-    inline void SetUnalived()
-    {
-        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
-        g_alivedEngine_.erase(this);
-        return;
-    }
-
-    inline void SetAlived()
-    {
-        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
-        g_alivedEngine_.emplace(this);
-        return;
-    }
-
     virtual void RunCleanup();
 
     bool IsStopping() const
@@ -474,6 +469,8 @@ public:
 
     napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
 
+    virtual bool IsCrossThreadCheckEnabled() const = 0;
+
     bool IsInDestructor() const
     {
         return isInDestructor_;
@@ -483,6 +480,18 @@ private:
     void InitUvField();
     void CreateDefaultFunction(void);
     void DestoryDefaultFunction(bool release);
+
+    virtual NapiOptions *GetNapiOptions() const = 0;
+
+    inline void SetUnalived()
+    {
+        std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+        g_alivedEngine_.erase(this);
+        return;
+    }
+
+    // should only call once in life cycle of ArkNativeEngine(NativeEngine)
+    inline void SetAlived();
 
 protected:
     void *jsEngine_ = nullptr;
@@ -518,7 +527,9 @@ private:
     std::mutex instanceDataLock_;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
-    pthread_t tid_ = 0;
+    pthread_t tid_ { 0 };
+    ThreadId sysTid_ { 0 };
+    uint64_t id_ { 0 };
     std::unordered_map<std::string, int32_t> extensionInfos_;
     uv_sem_t uvSem_;
     // Application's sdk version
@@ -553,8 +564,10 @@ private:
     bool isLoopRunning_ = false;
     bool isInDestructor_ {false};
 
+    // protect alived engine set and last engine id
     static std::mutex g_alivedEngineMutex_;
     static std::unordered_set<NativeEngine*> g_alivedEngine_;
+    static uint64_t g_lastEngineId_;
 };
 
 class TryCatch : public panda::TryCatch {

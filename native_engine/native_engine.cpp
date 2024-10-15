@@ -70,6 +70,7 @@ static ContainerScopeCallback finishContainerScopeFunc_;
 
 std::mutex NativeEngine::g_alivedEngineMutex_;
 std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
+uint64_t NativeEngine::g_lastEngineId_ = 1;
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
@@ -152,6 +153,7 @@ void NativeEngine::Init()
     referenceManager_ = new NativeReferenceManager();
     callbackScopeManager_ = new NativeCallbackScopeManager();
     tid_ = pthread_self();
+    sysTid_ = GetCurSysTid();
 
     loop_ = new (std::nothrow)uv_loop_t;
     if (loop_ == nullptr) {
@@ -245,6 +247,7 @@ bool NativeEngine::ReinitUVLoop()
     }
 
     tid_ = pthread_self();
+    sysTid_ = GetCurSysTid();
 
     loop_ = new (std::nothrow)uv_loop_t;
     if (loop_ == nullptr) {
@@ -292,6 +295,19 @@ void NativeEngine::Loop(LoopMode mode, bool needSync)
     if (needSync) {
         uv_sem_post(&uvSem_);
     }
+}
+
+// should only call once in life cycle of ArkNativeEngine(NativeEngine)
+void NativeEngine::SetAlived()
+{
+    if (id_ != 0) {
+        HILOG_FATAL("id of native engine cannot set twice");
+    }
+    std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
+    g_alivedEngine_.emplace(this);
+    // must be protected by g_alivedEngineMutex_
+    id_ = g_lastEngineId_++;
+    return;
 }
 
 NativeAsyncWork* NativeEngine::CreateAsyncWork(napi_value asyncResource, napi_value asyncResourceName,
