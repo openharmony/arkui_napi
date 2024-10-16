@@ -14,8 +14,6 @@
 import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 
-module_output_path = "ace_engine/napi"
-
 ohos_unittest("module_manager_test") {
   module_out_path = module_output_path
 
