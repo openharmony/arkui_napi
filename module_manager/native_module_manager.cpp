@@ -632,11 +632,11 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #ifndef IOS_PLATFORM
 
 #ifdef ANDROID_PLATFORM
-            HILOG_WARN("module '%{public}s' does not in cache", strCutName.c_str());
+            HILOG_DEBUG("module '%{public}s' does not in cache", strCutName.c_str());
             nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule,
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #else
-            HILOG_WARN("module '%{public}s' does not in cache", moduleName);
+            HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
             nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule,
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #endif
