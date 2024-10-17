@@ -66,6 +66,17 @@ static inline napi_status napi_set_last_error(napi_env env,
         return status;                         \
     }
 
+#define CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, obj)                 \
+    bool isObj = (nativeValue)->IsObject((vm));                                \
+    bool isFunc = (nativeValue)->IsFunction((vm));                             \
+    RETURN_STATUS_IF_FALSE((env), isObj || isFunc, napi_object_expected);      \
+    Local<ObjectRef> (obj);                                                    \
+    if (LIKELY(isObj)) {                                                       \
+        (obj) = Local<ObjectRef>((nativeValue));                               \
+    } else {                                                                   \
+        (obj) = (nativeValue)->ToObject((vm));                                 \
+    }
+
 #define CROSS_THREAD_CHECK(env)                                                     \
     do {                                                                            \
         NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));              \
