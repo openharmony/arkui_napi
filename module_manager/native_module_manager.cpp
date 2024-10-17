@@ -90,7 +90,7 @@ NativeModuleManager::~NativeModuleManager()
     }
     std::map<std::string, char*>().swap(appLibPathMap_);
     appLibPathMapMutex_.unlock();
-    
+
     while (nativeEngineList_.size() > 0) {
         NativeEngine* wraper = nativeEngineList_.begin()->second;
         if (wraper != nullptr) {
@@ -1091,8 +1091,10 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     }
     if (tailNativeModule_) {
         tailNativeModule_->moduleLoaded = true;
-        HILOG_DEBUG("last native info: name is %{public}s, moduleName is %{public}s",
-            tailNativeModule_->name, tailNativeModule_->moduleName);
+        if (tailNativeModule_->name && tailNativeModule_->moduleName) {
+            HILOG_DEBUG("last native info: name is %{public}s, moduleName is %{public}s",
+                tailNativeModule_->name, tailNativeModule_->moduleName);
+        }
         MoveApiAllowListCheckerPtr(apiAllowListChecker, tailNativeModule_);
     }
     return tailNativeModule_;
@@ -1116,6 +1118,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
     if (tailNativeModule_->name == nullptr) {
         HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleName);
         free(moduleName);
+        tailNativeModule_->moduleName = nullptr;
         return;
     }
     tailNativeModule_->jsABCCode = abcBuffer;
