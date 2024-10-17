@@ -50,6 +50,7 @@ static constexpr int THREAD_SIZE = 5;
 
 static constexpr double TEST_DOUBLE = 1.1;
 static constexpr char TEST_STRING[5] = "test";
+static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 
 class NapiBasicTest : public NativeEngineTest {
 public:
@@ -6015,4 +6016,1047 @@ HWTEST_F(NapiBasicTest, NapiRemoveWrapTest003, testing::ext::TestSize.Level1)
     napi_create_double(env, TEST_DOUBLE, &obj);
     napi_status status = napi_remove_wrap(env, obj, (void **)&testStr);
     ASSERT_EQ(status, napi_object_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+
+    napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
+                           [](napi_env env, napi_status status, void* data) {}, nullptr, &work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(env, nullptr, resourceName, nullptr,
+                           [](napi_env env, napi_status status, void* data) {}, nullptr, &work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
+                           nullptr, nullptr, &work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work* work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
+                           nullptr, nullptr, work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDeleteAsyncWorkTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+
+    napi_status status = napi_delete_async_work(env, work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+
+    napi_status status = napi_queue_async_work(env, work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCancelAsyncWorkTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+
+    napi_status status = napi_cancel_async_work(env, work);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiAsyncInitTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value resourceName = nullptr;
+    napi_async_context context;
+
+    napi_status status = napi_async_init(env, nullptr, resourceName, &context);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiAsyncInitTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value resourceName;
+    napi_async_context* context = nullptr;
+
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_async_init(env, nullptr, resourceName, context);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiMakeCallbackTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_context context = nullptr;
+    napi_value recv = nullptr;
+    napi_value func;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_value result = nullptr;
+
+    napi_create_double(env, TEST_DOUBLE, &func);
+    napi_status status = napi_make_callback(env, context, recv, func, argc, args, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiMakeCallbackTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_context context = nullptr;
+    napi_value recv;
+    napi_value func = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_value result = nullptr;
+
+    napi_create_double(env, TEST_DOUBLE, &recv);
+    napi_status status = napi_make_callback(env, context, recv, func, argc, args, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiAsyncDestroyTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_context context = nullptr;
+
+    napi_status status = napi_async_destroy(env, context);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiOpenCallbackScopeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    napi_async_context context = nullptr;
+    napi_callback_scope* result = nullptr;
+
+    napi_status status = napi_open_callback_scope(env, obj, context, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCloseCallbackScopeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_callback_scope result = nullptr;
+
+    napi_status status = napi_close_callback_scope(env, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCloseCallbackScopeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_callback_scope scope = nullptr;
+    napi_async_context context;
+
+    napi_value obj;
+    napi_create_object(env, &obj);
+    napi_value resourceName;
+    napi_create_string_utf8(env, "test", NAPI_AUTO_LENGTH, &resourceName);
+    napi_async_init(env, nullptr, resourceName, &context);
+    napi_open_callback_scope(env, obj, context, &scope);
+
+    napi_status status = napi_close_callback_scope(env, scope);
+    status = napi_close_callback_scope(env, scope);
+    ASSERT_EQ(status, napi_callback_scope_mismatch);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetVersionTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint32_t* result = nullptr;
+
+    napi_status status = napi_get_version(env, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreatePromiseTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value* promise = nullptr;
+    napi_deferred deferred = nullptr;
+
+    napi_status status = napi_create_promise(env, &deferred, promise);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreatePromiseTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value promise = nullptr;
+    napi_deferred* deferred = nullptr;
+
+    napi_status status = napi_create_promise(env, deferred, &promise);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiResolveDeferredTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_deferred deferred = nullptr;
+
+    napi_value resolution = nullptr;
+    napi_create_double(env, TEST_DOUBLE, &resolution);
+    napi_status status = napi_resolve_deferred(env, deferred, resolution);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiResolveDeferredTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_create_promise(env, &deferred, &promise);
+
+    napi_value resolution = nullptr;
+    napi_status status = napi_resolve_deferred(env, deferred, resolution);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiRejectDeferredTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_deferred deferred = nullptr;
+
+    napi_value resolution = nullptr;
+    napi_create_double(env, TEST_DOUBLE, &resolution);
+    napi_status status = napi_reject_deferred(env, deferred, resolution);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiRejectDeferredTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_create_promise(env, &deferred, &promise);
+
+    napi_value resolution = nullptr;
+    napi_status status = napi_reject_deferred(env, deferred, resolution);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsPromiseTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value promise = nullptr;
+    bool result;
+
+    napi_status status = napi_is_promise(env, promise, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsPromiseTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_deferred deferred = nullptr;
+    napi_value promise = nullptr;
+    napi_create_promise(env, &deferred, &promise);
+    bool* result = nullptr;
+
+    napi_status status = napi_is_promise(env, promise, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetUvEventLoopTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    struct uv_loop_s** loop = nullptr;
+
+    napi_status status = napi_get_uv_event_loop(env, loop);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value jsCb = 0;
+    napi_create_object(env, &jsCb);
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = nullptr;
+    int32_t callJsCbDataTestId = 101;
+    int32_t finalCbDataTestId = 1001;
+    napi_status status = napi_create_threadsafe_function(env, jsCb, nullptr, resourceName,
+                                                         0, 1, &callJsCbDataTestId,
+                                                         nullptr, &finalCbDataTestId, nullptr, &tsFunc);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateThreadsafeFunctionTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value jsCb = 0;
+    napi_create_object(env, &jsCb);
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+    int32_t callJsCbDataTestId = 101;
+    int32_t finalCbDataTestId = 1001;
+    napi_status status = napi_create_threadsafe_function(env, jsCb, nullptr, resourceName,
+                                                         0, 129, &callJsCbDataTestId,
+                                                         nullptr, &finalCbDataTestId, nullptr, &tsFunc);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetThreadsafeFunctionContextTest001, testing::ext::TestSize.Level1)
+{
+    napi_threadsafe_function tsFunc = nullptr;
+    void** result = nullptr;
+    napi_status status = napi_get_threadsafe_function_context(tsFunc, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCallThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_threadsafe_function tsFunc = nullptr;
+    void* result = nullptr;
+    napi_status status = napi_call_threadsafe_function(tsFunc, result, napi_tsfn_blocking);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiAcquireThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_status status = napi_acquire_threadsafe_function(tsFunc);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiReleaseThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_status status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiRefThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_status status = napi_ref_threadsafe_function(env, tsFunc);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiUnrefThreadsafeFunctionTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_status status = napi_unref_threadsafe_function(env, tsFunc);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateDateTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_date(env, TEST_DOUBLE, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetDateValueTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value date = nullptr;
+    double result;
+
+    napi_status status = napi_get_date_value(env, date, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetDateValueTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    double time = 202110181203150;
+    napi_value date;
+    double* result = nullptr;
+
+    napi_status status = napi_create_date(env, time, &date);
+    status = napi_get_date_value(env, date, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetDateValueTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value date;
+    double result;
+
+    napi_status status = napi_create_object(env, &date);
+    status = napi_get_date_value(env, date, &result);
+    ASSERT_EQ(status, napi_date_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBigintInt64Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int64_t value = INT_ONE;
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_bigint_int64(env, value, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBigintUint64Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int64_t value = INT_ONE;
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_bigint_uint64(env, value, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBigintWordsTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int signBit = 0;
+    size_t wordCount = 4;
+    uint64_t* words = nullptr;
+    napi_value result = nullptr;
+
+    napi_status status = napi_create_bigint_words(env, signBit, wordCount, words, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBigintWordsTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int signBit = 0;
+    size_t wordCount = 4;
+    uint64_t words[] = {0ULL, 34ULL, 56ULL, 2ULL};
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_bigint_words(env, signBit, wordCount, words, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    int64_t result = 0;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_int64(env, value, &result, &lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int64_t testValue = INT64_MAX;
+    napi_value value = nullptr;
+    napi_create_bigint_int64(env, testValue, &value);
+    int64_t* result = nullptr;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_int64(env, value, result, &lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int64_t testValue = INT64_MAX;
+    napi_value value = nullptr;
+    napi_create_bigint_int64(env, testValue, &value);
+    int64_t result = 0;
+    bool* lossless = nullptr;
+
+    napi_status status = napi_get_value_bigint_int64(env, value, &result, lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_create_object(env, &value);
+    int64_t result = 0;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_int64(env, value, &result, &lossless);
+    ASSERT_EQ(status, napi_bigint_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t testValue = UINT64_MAX;
+    napi_value value = nullptr;
+    napi_create_bigint_uint64(env, testValue, &value);
+    int64_t result = 0;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_int64(env, value, &result, &lossless);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(lossless, false);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintUint64Test001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    uint64_t result = 0;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_uint64(env, value, &result, &lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintUint64Test002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t testValue = UINT64_MAX;
+    napi_value value = nullptr;
+    napi_create_bigint_uint64(env, testValue, &value);
+    uint64_t* result = nullptr;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_uint64(env, value, result, &lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintUint64Test003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t testValue = UINT64_MAX;
+    napi_value value = nullptr;
+    napi_create_bigint_uint64(env, testValue, &value);
+    uint64_t result = 0;
+    bool* lossless = nullptr;
+
+    napi_status status = napi_get_value_bigint_uint64(env, value, &result, lossless);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintUint64Test004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_create_object(env, &value);
+    uint64_t result = 0;
+    bool lossless = false;
+
+    napi_status status = napi_get_value_bigint_uint64(env, value, &result, &lossless);
+    ASSERT_EQ(status, napi_bigint_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintWordsTest001, testing::ext::TestSize.Level1)
+{
+    uint64_t wordsOut[] = {0ULL, 0ULL, 0ULL, 0ULL};
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+
+    int retSignBit = -1;
+    size_t retWordCount = 4;
+    napi_status status = napi_get_value_bigint_words(env, value, &retSignBit, &retWordCount, wordsOut);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetValueBigintWordsTest002, testing::ext::TestSize.Level1)
+{
+    int signBit = 0;
+    size_t wordCount = 4;
+    uint64_t words[] = {0ULL, 34ULL, 56ULL, 2ULL};
+    uint64_t wordsOut[] = {0ULL, 0ULL, 0ULL, 0ULL};
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_status status = napi_create_bigint_words(env, signBit, wordCount, words, &value);
+    ASSERT_EQ(status, napi_ok);
+
+    int retSignBit = -1;
+    size_t* retWordCount = nullptr;
+    status = napi_get_value_bigint_words(env, value, &retSignBit, retWordCount, wordsOut);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char** data = nullptr;
+    napi_value result;
+    napi_status status = napi_create_buffer(env, bufferSize, (void**)(data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char* data;
+    napi_value* result = nullptr;
+    napi_status status = napi_create_buffer(env, bufferSize, (void**)(&data), result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = 0;
+    char* data;
+    napi_value result;
+    napi_status status = napi_create_buffer(env, bufferSize, (void**)(&data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = MAX_BYTE_LENGTH + 1;
+    char* data;
+    napi_value result;
+    napi_status status = napi_create_buffer(env, bufferSize, (void**)(&data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferCopyTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = 0;
+    char* data;
+    napi_value result;
+    napi_status status = napi_create_buffer_copy(env, bufferSize, TEST_STRING, (void**)(&data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferCopyTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = MAX_BYTE_LENGTH + 1;
+    char* data;
+    napi_value result;
+    napi_status status = napi_create_buffer_copy(env, bufferSize, TEST_STRING, (void**)(&data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferCopyTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char* data;
+    napi_value result;
+    napi_status status = napi_create_buffer_copy(env, bufferSize, nullptr, (void**)(&data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferCopyTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char** data = nullptr;
+    napi_value result;
+    napi_status status = napi_create_buffer_copy(env, bufferSize, TEST_STRING, (void**)(data), &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateBufferCopyTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char* data;
+    napi_value* result = nullptr;
+    napi_status status = napi_create_buffer_copy(env, bufferSize, TEST_STRING, (void**)(&data), result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateExternalBufferTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = 0;
+    char* copyPtr = strdup(TEST_STRING);
+    napi_value result;
+    napi_status status = napi_create_external_buffer(env, bufferSize, copyPtr,
+        [](napi_env env, void* data, void* hint) { return; },
+        nullptr, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateExternalBufferTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = MAX_BYTE_LENGTH + 1;
+    char* copyPtr = strdup(TEST_STRING);
+    napi_value result;
+    napi_status status = napi_create_external_buffer(env, bufferSize, copyPtr,
+        [](napi_env env, void* data, void* hint) { return; },
+        nullptr, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateExternalBufferTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char* copyPtr = nullptr;
+    napi_value result;
+    napi_status status = napi_create_external_buffer(env, bufferSize, copyPtr,
+        [](napi_env env, void* data, void* hint) { return; },
+        nullptr, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateExternalBufferTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const unsigned int bufferSize = sizeof(TEST_STRING);
+    char* copyPtr = strdup(TEST_STRING);
+    napi_value* result = nullptr;
+    napi_status status = napi_create_external_buffer(env, bufferSize, copyPtr,
+        [](napi_env env, void* data, void* hint) { return; },
+        nullptr, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetBufferInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    char *data;
+    size_t length;
+
+    napi_status status = napi_get_buffer_info(env, value, (void**)&data, &length);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetBufferInfoTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    char *data;
+    size_t length;
+
+    napi_create_double(env, TEST_DOUBLE, &value);
+    napi_status status = napi_get_buffer_info(env, value, (void**)&data, &length);
+    ASSERT_EQ(status, napi_arraybuffer_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsBufferTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    bool result;
+
+    napi_status status = napi_is_buffer(env, value, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsBufferTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value;
+    bool* result = nullptr;
+
+    napi_create_object(env, &value);
+    napi_status status = napi_is_buffer(env, value, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDeserializeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    void* buffer = nullptr;
+    napi_value result = nullptr;
+
+    napi_status status = napi_deserialize(env, buffer, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDeserializeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    int buffer = 0;
+    napi_value* result = nullptr;
+
+    napi_status status = napi_deserialize(env, (void*)&buffer, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDeleteSerializationDataTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    void* buffer = nullptr;
+
+    napi_status status = napi_delete_serialization_data(env, buffer);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCallThreadsafeFunctionWithPriorityTest001, testing::ext::TestSize.Level1)
+{
+    napi_threadsafe_function func = nullptr;
+
+    napi_status status = napi_call_threadsafe_function_with_priority(func, nullptr, napi_priority_idle, true);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsSendableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    bool result;
+
+    napi_status status = napi_is_sendable(env, value, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsSendableTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value;
+    bool* result = nullptr;
+
+    napi_create_object(env, &value);
+    napi_status status = napi_is_sendable(env, value, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineSendableClassTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value testClass = nullptr;
+    napi_status status = napi_define_sendable_class(
+        env, nullptr, NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, nullptr, &testClass);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineSendableClassTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value testClass = nullptr;
+    napi_status status = napi_define_sendable_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        nullptr, nullptr, 0, nullptr, nullptr, &testClass);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineSendableClassTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value testClass = nullptr;
+    napi_status status = napi_define_sendable_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 1, nullptr, nullptr, &testClass);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineSendableClassTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value* testClass = nullptr;
+    napi_status status = napi_define_sendable_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, nullptr, testClass);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableObjectWithPropertiesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value val_true;
+    napi_get_boolean(env, true, &val_true);
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", val_true),
+    };
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_sendable_object_with_properties(env, 1, desc, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableArrayTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_sendable_array(env, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableArrayWithLengthTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    size_t length = INT_ONE;
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_sendable_array_with_length(env, length, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableArraybufferTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    size_t length = INT_ONE;
+    void** data = nullptr;
+    napi_value result;
+
+    napi_status status = napi_create_sendable_arraybuffer(env, length, data, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableArraybufferTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    size_t length = INT_ONE;
+    void* data;
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_sendable_arraybuffer(env, length, &data, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableTypedarrayTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value arraybuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    size_t arrayBufferSize = 16;
+    size_t typedArrayLength = 4;
+    napi_status status = napi_create_sendable_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arraybuffer);
+    ASSERT_EQ(status, napi_ok);
+
+    napi_value* result = nullptr;
+    status = napi_create_sendable_typedarray(env, napi_int32_array, typedArrayLength, arraybuffer, 0, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateSendableTypedarrayTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value arraybuffer = nullptr;
+    size_t typedArrayLength = 4;
+
+    napi_value result;
+    napi_status status = napi_create_sendable_typedarray(env, napi_int32_array, typedArrayLength,
+        arraybuffer, 0, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiWrapSendableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+
+    napi_status status = napi_wrap_sendable(
+        env, js_obj, (void*)TEST_STRING, [](napi_env env, void* data, void* hint) {}, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiWrapSendableTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+
+    napi_status status = napi_create_object(env, &js_obj);
+    status = napi_wrap_sendable(
+        env, js_obj, nullptr, [](napi_env env, void* data, void* hint) {}, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiWrapSendableWithSizeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+
+    napi_status status = napi_wrap_sendable_with_size(
+        env, js_obj, (void*)TEST_STRING, [](napi_env env, void* data, void* hint) {}, nullptr, INT_ONE);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiWrapSendableWithSizeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+
+    napi_status status = napi_create_object(env, &js_obj);
+    status = napi_wrap_sendable_with_size(
+        env, js_obj, nullptr, [](napi_env env, void* data, void* hint) {}, nullptr, INT_ONE);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiUnwrapSendableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+    void* result;
+
+    napi_status status = napi_unwrap_sendable(env, js_obj, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiUnwrapSendableTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj;
+    void** result = nullptr;
+
+    napi_status status = napi_create_object(env, &js_obj);
+    status = napi_unwrap_sendable(env, js_obj, result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiRemoveWrapSendableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj = nullptr;
+    void* result;
+
+    napi_status status = napi_remove_wrap_sendable(env, js_obj, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiRemoveWrapSendableTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value js_obj;
+    void** result = nullptr;
+
+    napi_status status = napi_create_object(env, &js_obj);
+    status = napi_remove_wrap_sendable(env, js_obj, result);
+    ASSERT_EQ(status, napi_invalid_arg);
 }
