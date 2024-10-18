@@ -98,6 +98,7 @@ ohos_source_set("ace_napi_static") {
     defines += [
       "ENABLE_HITRACE",
       "ENABLE_EVENT_HANDLER",
+      "ENABLE_FFRT",
     ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
       deps += [ ":ace_container_scope" ]
@@ -229,6 +230,7 @@ ohos_shared_library("cj_bind_native") {
 
 ohos_source_set("cj_bind_ffi_source") {
   branch_protector_ret = "pac_ret"
+
   sources = [
     "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
     "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",

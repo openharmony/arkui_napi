@@ -32,8 +32,9 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/impl/ark/ark_finalizers_pack.h"
 #include "native_engine/native_engine.h"
-#include "ark_native_options.h"
 #include "ark_idle_monitor.h"
+#include "ark_native_options.h"
+
 
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
@@ -59,10 +60,10 @@ using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 using PropertyAttribute = panda::PropertyAttribute;
 using NativePointerCallbackData = panda::NativePointerCallbackData;
+using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
 using TriggerGCTaskCallback = panda::TriggerGCTaskCallback;
 using TriggerGCData = panda::TriggerGCData;
 using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
-using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
 
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
@@ -396,6 +397,7 @@ private:
     {
         pendingFinalizersPackNativeBindingSize_ -= nativeBindingSize;
     }
+
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;

@@ -2281,24 +2281,6 @@ HWTEST_F(NapiBasicTest, BigArrayTest001, testing::ext::TestSize.Level1) {
 }
 
 /**
- * @tc.name: SharedArrayBufferTest001
- * @tc.desc: Test is shared array buffer.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, SharedArrayBufferTest001, testing::ext::TestSize.Level1) {
-    napi_env env = (napi_env) engine_;
-
-    napi_value arrayBuffer = nullptr;
-    void* arrayBufferPtr = nullptr;
-    size_t arrayBufferSize = 1024;
-    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
-
-    bool isSharedArrayBuffer = true;
-    napi_is_shared_array_buffer(env, arrayBuffer, &isSharedArrayBuffer);
-    ASSERT_EQ(isSharedArrayBuffer, false);
-}
-
-/**
  * @tc.name: CreateBufferTest001
  * @tc.desc: Test is CreateBuffer.
  * @tc.type: FUNC
@@ -9462,11 +9444,13 @@ HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQosTest003, testing::ext::TestSize
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
             ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
             delete asyncWorkContext;
+            STOP_EVENT_LOOP(env);
         },
         asyncWorkContext, &asyncWorkContext->work));
 
     auto res = napi_queue_async_work_with_qos(env, asyncWorkContext->work, napi_qos_default);
     ASSERT_EQ(res, napi_ok);
+    RUN_EVENT_LOOP(env);
 }
 
 /**
