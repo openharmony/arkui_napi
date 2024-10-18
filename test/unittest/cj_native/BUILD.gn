@@ -16,12 +16,6 @@ import("//foundation/arkui/napi/napi.gni")
 import("//build/test.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
-if (is_standard_system) {
-  module_output_path = "ace_engine/napi"
-} else {
-  module_output_path = "ace_engine_full/napi"
-}
-
 ohos_unittest("test_ark_interop") {
   module_out_path = module_output_path
 

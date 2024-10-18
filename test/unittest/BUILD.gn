@@ -18,12 +18,6 @@ import("//foundation/ability/form_fwk/form_fwk.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
-if (is_standard_system) {
-  module_output_path = "ace_engine/napi"
-} else {
-  module_output_path = "ace_engine_full/napi"
-}
-
 ohos_unittest("test_ark_unittest") {
   module_out_path = module_output_path
 
