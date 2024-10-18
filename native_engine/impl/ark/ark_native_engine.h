@@ -33,6 +33,7 @@
 #include "native_engine/impl/ark/ark_finalizers_pack.h"
 #include "native_engine/native_engine.h"
 #include "ark_native_options.h"
+#include "ark_idle_monitor.h"
 
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
@@ -58,6 +59,9 @@ using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 using PropertyAttribute = panda::PropertyAttribute;
 using NativePointerCallbackData = panda::NativePointerCallbackData;
+using TriggerGCTaskCallback = panda::TriggerGCTaskCallback;
+using TriggerGCData = panda::TriggerGCData;
+using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
 using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
 
 // indirect used by ace_engine and(or) ability_runtime
@@ -282,6 +286,7 @@ public:
 
     void PostFinalizeTasks();
     void PostAsyncTask(AsyncNativeCallbacksPack *callbacksPack);
+    void PostTriggerGCTask(TriggerGCData& data);
 
     ArkFinalizersPack &GetArkFinalizersPack()
     {
@@ -353,6 +358,7 @@ public:
     std::string GetPkgName(const std::string &moduleName) override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
     int GetProcessStartRealTime() override;
+    void PostLooperTriggerIdleGCTask();
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
@@ -377,6 +383,7 @@ private:
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
     static void RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers);
     static void RunCallbacks(AsyncNativeCallbacksPack *callbacks);
+    static void RunCallbacks(TriggerGCData *triggerGCData);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
@@ -407,5 +414,6 @@ private:
     // napi options and its cache
     NapiOptions* options_ { nullptr };
     bool crossThreadCheck_ { false };
+    ArkIdleMonitor *arkIdleMonitor_ {nullptr};
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

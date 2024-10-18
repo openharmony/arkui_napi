@@ -33,6 +33,7 @@
                 "icu",
                 "libuv",
                 "node",
+                "ffrt",
                 "bounds_checking_function",
                 "init"
             ],
