@@ -2144,7 +2144,7 @@ HWTEST_F(NapiBasicTest, EncodeToUtf8Test001, testing::ext::TestSize.Level1)
     napi_create_string_utf8(env, str.c_str(), str.length(), &testStr);
     char* buffer = new char[str.length()];
     size_t bufferSize = str.length();
-    int32_t written = 0;
+    uint32_t written = 0;
     int32_t nchars = 0;
     ASSERT_EQ(memset_s(buffer, str.length(), 0, str.length()), EOK);
     engine_->EncodeToUtf8(testStr, buffer, &written, bufferSize, &nchars);

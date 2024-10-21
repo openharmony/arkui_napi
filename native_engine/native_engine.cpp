@@ -378,12 +378,12 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
                             Local<JSValueRef>& nativeValue,
                             Local<StringRef>& nativeString,
                             char* buffer,
-                            int32_t* written,
+                            uint32_t* written,
                             size_t bufferSize,
                             int32_t* nchars)
 {
     int32_t length = static_cast<int32_t>(nativeString->Length(vm));
-    int32_t pos = 0;
+    uint32_t pos = 0;
     uint32_t writableSize = bufferSize;
     int32_t i = 0;
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
@@ -403,7 +403,7 @@ static void SubEncodeToUtf8(const EcmaVM* vm,
     *written = pos;
 }
 
-void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, int32_t* written, size_t bufferSize, int32_t* nchars)
+void NativeEngine::EncodeToUtf8(napi_value value, char* buffer, uint32_t* written, size_t bufferSize, int32_t* nchars)
 {
     auto nativeValue = LocalValueFromJsValue(value);
     if (nativeValue->IsNull() || nchars == nullptr || written == nullptr) {
@@ -441,7 +441,7 @@ static void SubEncodeToChinese(const EcmaVM* vm,
     UErrorCode errorCode = U_ZERO_ERROR;
     const char* encFrom = "utf8";
     panda::Local<ObjectRef> strObj = nativeValue->ToObject(vm);
-    for (int32_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) {
         panda::Local<StringRef> str = strObj->Get(vm, i)->ToString(vm);
         // return value of Utf8Length >= 1
         uint32_t len = str->Utf8Length(vm) - 1;
