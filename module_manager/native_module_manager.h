@@ -186,6 +186,7 @@ private:
     mutable std::mutex moduleBufMutex_;
     std::map<std::string, const uint8_t*> moduleBufMap_;
 
+    mutable std::mutex appLibPathMapMutex_;
     std::map<std::string, char*> appLibPathMap_;
     std::string previewSearchPath_;
     std::unique_ptr<ModuleLoadChecker> moduleLoadChecker_ = nullptr;
