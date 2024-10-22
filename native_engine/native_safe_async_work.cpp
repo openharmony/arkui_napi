@@ -45,7 +45,7 @@ void NativeSafeAsyncWork::AsyncCallback(uv_async_t* asyncHandler)
     HILOG_DEBUG("NativeSafeAsyncWork::AsyncCallback called");
     NativeSafeAsyncWork* that = NativeAsyncWork::DereferenceOf(&NativeSafeAsyncWork::asyncHandler_, asyncHandler);
     if (that == nullptr) {
-        HILOG_ERROR("DereferenceOf failed!");
+        HILOG_ERROR("NativeSafeAsyncWork:: DereferenceOf failed!");
         return;
     }
     that->ProcessAsyncHandle();
