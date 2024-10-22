@@ -84,11 +84,12 @@ NativeModuleManager::~NativeModuleManager()
         delete[] sharedLibsSonames_;
     }
 #endif
-
+    appLibPathMapMutex_.lock();
     for (const auto& item : appLibPathMap_) {
         delete[] item.second;
     }
     std::map<std::string, char*>().swap(appLibPathMap_);
+    appLibPathMapMutex_.unlock();
 
     while (nativeEngineList_.size() > 0) {
         NativeEngine* wraper = nativeEngineList_.begin()->second;
@@ -245,6 +246,7 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
     }
     loadPath = nativeModulePath[0];
     if (isAppModule && IsExistedPath(pathKey)) {
+        std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
         loadPath = std::string(appLibPathMap_[pathKey]) + "/" + nativeModulePath[0];
     }
     HILOG_ERROR("get module file name failed, moduleName is %{public}s", moduleName);
@@ -515,6 +517,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
         return;
     }
 
+    std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     if (appLibPathMap_[moduleName] != nullptr) {
         delete[] appLibPathMap_[moduleName];
     }
@@ -717,7 +720,9 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 
     const char* prefix = nullptr;
     if (isAppModule && IsExistedPath(path)) {
+        appLibPathMapMutex_.lock();
         prefix = appLibPathMap_[path];
+        appLibPathMapMutex_.unlock();
 #ifdef ANDROID_PLATFORM
         for (int32_t i = 0; i < lengthOfModuleName; i++) {
             dupModuleName[i] = tolower(dupModuleName[i]);
@@ -1210,6 +1215,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 bool NativeModuleManager::IsExistedPath(const char* pathKey) const
 {
     HILOG_DEBUG("pathKey is '%{public}s'", pathKey);
+    std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
 }
 
