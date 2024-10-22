@@ -48,8 +48,11 @@ public:
     sptr<RemoteData> GetRemoteData(int64_t id)
     {
         std::lock_guard<std::mutex> lock(mtx);
-        auto existP = remoteDataStore_[id];
-        return existP.promote();
+        auto itor = remoteDataStore_.find(id);
+        if (itor == remoteDataStore_.end()) {
+            return nullptr;
+        }
+        return itor->second.promote();
     }
     void StoreFFIData(const sptr<FFIData>& data);
     void StoreRemoteData(const sptr<RemoteData>& data);
