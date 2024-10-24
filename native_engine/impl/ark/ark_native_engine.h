@@ -147,7 +147,7 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
-    inline NAPI_EXPORT const EcmaVM* GetEcmaVm() const
+    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override
     {
         return vm_;
     }
@@ -398,6 +398,7 @@ private:
         pendingFinalizersPackNativeBindingSize_ -= nativeBindingSize;
     }
 
+    EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };

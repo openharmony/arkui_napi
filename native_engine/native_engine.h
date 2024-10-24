@@ -89,7 +89,6 @@ using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
-    NativeEngine(void* jsEngine, EcmaVM* vm);
     virtual ~NativeEngine();
 
     virtual NativeModuleManager* GetModuleManager();
@@ -118,10 +117,7 @@ public:
 #endif
     virtual void* GetJsEngine();
 
-    inline NAPI_EXPORT const EcmaVM* GetEcmaVm() const
-    {
-        return vm_;
-    }
+    virtual const EcmaVM* GetEcmaVm() const = 0;
     virtual bool NapiNewTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
                                    panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
                                    size_t length, napi_value* result) = 0;
@@ -211,7 +207,7 @@ public:
 
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
-    inline void ClearLastError()
+    void ClearLastError()
     {
         lastError_.errorCode = 0;
         lastError_.engineErrorCode = 0;
@@ -536,7 +532,6 @@ protected:
 #endif
     NativeEngine* hostEngine_ {nullptr};
     bool isAppModule_ = false;
-    EcmaVM* vm_ {nullptr};
 
 public:
     uint64_t openHandleScopes_ = 0;

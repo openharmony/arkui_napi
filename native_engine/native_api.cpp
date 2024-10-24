@@ -1149,10 +1149,9 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     bool isArrayOrSharedArray = false;
-    auto nativeValue = reinterpret_cast<panda::JSValueRef *>(value);
+    panda::Local<panda::JSValueRef> nativeValue = LocalValueFromJsValue(value);
     nativeValue->TryGetArrayLength(vm, &isArrayOrSharedArray, result);
     if (!isArrayOrSharedArray) {
-        HILOG_ERROR("argument is not type of array or sharedarray");
         return napi_set_last_error(env, napi_array_expected);
     }
     return napi_clear_last_error(env);
