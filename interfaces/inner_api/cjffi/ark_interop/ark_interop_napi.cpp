@@ -635,9 +635,9 @@ ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFul
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = *BIT_CAST(prom, PromiseRef*);
     auto onFulfilledFunc = BIT_CAST(onFulfilled, Local<FunctionRef>);
-    auto onRejectTag = BIT_CAST(onRejected, Local<JSValueRef>);
     Local<PromiseRef> result;
-    if (onRejectTag->IsFunction(vm)) {
+    if (!ARKTS_IsUndefined(onRejected)) {
+        ARKTS_ASSERT_P(ARKTS_IsCallable(env, onRejected), "optional arg 'onRejected' is set but not callable");
         auto onRejectedFunc = BIT_CAST(onRejected, Local<FunctionRef>);
         result = promise.Then(vm, onFulfilledFunc, onRejectedFunc);
     } else {
