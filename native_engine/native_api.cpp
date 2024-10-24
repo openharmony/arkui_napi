@@ -2418,6 +2418,9 @@ NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length
     Local<panda::ArrayBufferRef> res = panda::ArrayBufferRef::New(vm, byte_length);
     if (values != nullptr) {
         *values = reinterpret_cast<uint8_t*>(res->GetBuffer(vm));
+        if (UNLIKELY(*values == nullptr && byte_length > 0)) {
+            HILOG_WARN("Allocate ArrayBuffer failed, maybe size is too large, request size: %{public}zu", byte_length);
+        }
     }
     *result = JsValueFromLocalValue(res);
 
