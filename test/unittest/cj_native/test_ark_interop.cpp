@@ -41,13 +41,312 @@ struct ARKTS_ModuleCallbacks {
 };
 
 namespace {
-ARKTS_Engine engine_ = nullptr;
+class ArkInteropTest : public testing::Test {
+public:
+    static void RunLocalTest()
+    {
+        TestPrime();
+        TestNumber();
+        TestString();
+        TestObject();
+        TestDefineProperty();
+        TestArray();
+        TestBigint();
+        TestPromise();
+        TestSymbol();
+        TestFunction();
+        TestClass();
+        TestInstanceOf();
+        TestArrayBuffer();
+    }
+private:
+    static void TestPrime();
+    static void TestNumber();
+    static void TestString();
+    static void TestObject();
+    static void TestDefineProperty();
+    static void TestArray();
+    static void TestBigint();
+    static void TestPromise();
+    static void TestSymbol();
+    static void TestFunction();
+    static void TestClass();
+    static void TestArrayBuffer();
+    static void TestInstanceOf();
+};
 
-class ArkInteropTest : public testing::Test {};
+template <typename T>
+struct Slab {
+public:
+    int64_t Add(T item)
+    {
+        int64_t result;
+        if (last_ >= 0) {
+            result = last_;
+            auto& last = items_[result];
+            last_ = last.prev;
+            last.data = std::move(item);
+        } else {
+            result = items_.size();
+            items_.push_back({std::move(item), -1});
+        }
+        return result;
+    }
 
-TEST_F(ArkInteropTest, Prime)
+    void Del(int64_t id)
+    {
+        auto& removing = items_[id];
+        removing.data = std::nullopt;
+        removing.prev = last_;
+        last_ = id;
+    }
+
+    T& Get(int64_t id)
+    {
+        return items_[id].data.value();
+    }
+
+    const T& Get(int64_t id) const
+    {
+        return items_[id].data.value();
+    }
+private:
+    struct Item {
+        std::optional<T> data;
+        int64_t prev;
+    };
+    std::vector<Item> items_ {};
+    int64_t last_ = -1;
+};
+
+class MockContext {
+    static MockContext* instance_;
+    static uint32_t NewId()
+    {
+        static uint32_t id = 0;
+        return id++;
+    }
+
+public:
+    static MockContext* GetInstance()
+    {
+        return instance_;
+    }
+
+    ARKTS_Engine GetEngine() const
+    {
+        return engine_;
+    }
+
+    ARKTS_Env GetEnv() const
+    {
+        return ARKTS_GetContext(engine_);
+    }
+
+    static void Init();
+
+    explicit MockContext(ARKTS_Engine engine, bool needDestroyEngine = true): idPrefix_(NewId()),
+        lastContext_(instance_), engine_(engine), needDestroyEngine_(needDestroyEngine)
+    {
+        instance_ = this;
+    }
+
+    MockContext(): idPrefix_(NewId()), lastContext_(instance_), engine_(instance_->GetEngine()),
+        needDestroyEngine_(false)
+    {
+        instance_ = this;
+    }
+
+    ~MockContext()
+    {
+        if (needDestroyEngine_) {
+            ARKTS_DestroyEngine(engine_);
+        }
+        engine_ = nullptr;
+        instance_ = lastContext_;
+    }
+
+    int64_t StoreFunc(std::function<ARKTS_Value(ARKTS_CallInfo)> call)
+    {
+        return ToId(callbacks_.Add(std::move(call)));
+    }
+
+    int64_t StoreAsyncFunc(std::function<void ()> call)
+    {
+        return ToId(asyncCallbacks_.Add(std::move(call)));
+    }
+
+    int64_t StoreArrayBufferDeleter(std::function<void (void*)> call)
+    {
+        return ToId(nativeDeleters_.Add(std::move(call)));
+    }
+
+    int64_t StoreNativeData(void* data, std::function<void (void*)>deleter)
+    {
+        return ToId(data_.Add({data, std::move(deleter)}));
+    }
+
+    void* GetNativeData(int64_t id)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return nullptr;
+        }
+        return data_.Get(index).data;
+    }
+
+protected:
+    virtual ARKTS_Value ExportModule(ARKTS_Env env, const char* dllName, ARKTS_Value exports)
+    {
+        return exports;
+    }
+
+    virtual bool HasModuleHandle(const char* dllName)
+    {
+        return false;
+    }
+
+    virtual void ThrowJSError(ARKTS_Env env, ARKTS_Value)
+    {
+        EXPECT_TRUE(false);
+    }
+
+    virtual void ThrowNativeError(const char* msg)
+    {
+        printf("[Native Error]: %s\n", msg);
+        EXPECT_TRUE(false);
+    }
+
+    virtual void DeleteArrayBufferRawData(void* buffer, int64_t id)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return;
+        }
+        nativeDeleters_.Get(index)(buffer);
+        nativeDeleters_.Del(index);
+    }
+
+    virtual void DeleteExternal(int64_t id, ARKTS_Env env)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return;
+        }
+        auto& data = data_.Get(index);
+        data.deleter(data.data);
+        data_.Del(index);
+    }
+
+    virtual ARKTS_Value InvokeLambda(ARKTS_CallInfo info, int64_t id)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return ARKTS_CreateUndefined();
+        }
+        return callbacks_.Get(index)(info);
+    }
+
+    virtual void DeleteLambda(ARKTS_Env env, int64_t id)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return;
+        }
+        callbacks_.Del(index);
+    }
+
+    virtual void InvokeAsyncLambda(ARKTS_Env env, int64_t id)
+    {
+        auto index = ToIndex(id);
+        if (index < 0) {
+            return;
+        }
+        asyncCallbacks_.Get(index)();
+        asyncCallbacks_.Del(index);
+    }
+
+    virtual void DeleteJSContext(ARKTS_Env env)
+    {
+    }
+
+    int64_t ToId(int64_t index) const
+    {
+        return GetPrefixMask() | index;
+    }
+
+    int64_t ToIndex(int64_t id) const
+    {
+        auto myMask = GetPrefixMask();
+        if ((id & myMask) == myMask) {
+            return id & 0xFFFF'FFFF;
+        }
+        return -1;
+    }
+
+private:
+    int64_t GetPrefixMask() const
+    {
+        constexpr auto idBits = 32;
+        return static_cast<int64_t>(idPrefix_) << idBits;
+    }
+
+    uint32_t idPrefix_;
+    MockContext* lastContext_;
+    ARKTS_Engine engine_;
+    bool needDestroyEngine_;
+    Slab<std::function<ARKTS_Value (ARKTS_CallInfo)>> callbacks_;
+    Slab<std::function<void ()>> asyncCallbacks_;
+    Slab<std::function<void (void*)>> nativeDeleters_;
+    struct AnyData {
+        void* data;
+        std::function<void (void*)> deleter;
+    };
+    Slab<AnyData> data_;
+};
+
+void MockContext::Init()
 {
-    auto env = ARKTS_GetContext(engine_);
+    static ARKTS_ModuleCallbacks callbacks {
+        .exportModule = [](ARKTS_Env env, const char* dllName, ARKTS_Value exports)->ARKTS_Value {
+            return instance_ ? instance_->ExportModule(env, dllName, exports) : exports;
+        },
+        .hasModuleHandle = [](const char* dllName)->bool {
+            return instance_ ? instance_->HasModuleHandle(dllName) : false;
+        },
+        .throwJSError = [](ARKTS_Env env, ARKTS_Value error)->void {
+            if (instance_) instance_->ThrowJSError(env, error);
+        },
+        .throwNativeError = [](const char* error)->void {
+            if (instance_) instance_->ThrowNativeError(error);
+        },
+        .deleteArrayBufferRawData = [](void* buffer, int64_t lambdaId)->void {
+            if (instance_) instance_->DeleteArrayBufferRawData(buffer, lambdaId);
+        },
+        .deleteExternal = [](int64_t id, ARKTS_Env env)->void {
+            if (instance_) instance_->DeleteExternal(id, env);
+        },
+        .invokerLambda = [](ARKTS_CallInfo callInfo, int64_t lambdaId)->ARKTS_Value {
+            return instance_ ? instance_->InvokeLambda(callInfo, lambdaId) : ARKTS_CreateUndefined();
+        },
+        .deleteLambda = [](ARKTS_Env env, int64_t id)->void {
+            if (instance_) instance_->DeleteLambda(env, id);
+        },
+        .invokeAsyncLambda = [](ARKTS_Env env, int64_t id)->void {
+            if (instance_) instance_->InvokeAsyncLambda(env, id);
+        },
+        .deleteJSContext = [](ARKTS_Env env)->void {
+            if (instance_) instance_->DeleteJSContext(env);
+        }
+    };
+    ARKTS_SetCJModuleCallback(&callbacks);
+}
+
+MockContext* MockContext::instance_ = nullptr;
+
+void ArkInteropTest::TestPrime()
+{
+    auto env = MockContext::GetInstance()->GetEnv();
     auto scope = ARKTS_OpenScope(env);
 
     auto jsUDef = ARKTS_CreateUndefined();
@@ -70,9 +369,9 @@ TEST_F(ArkInteropTest, Prime)
     ARKTS_CloseScope(env, scope);
 }
 
-TEST_F(ArkInteropTest, Number)
+void ArkInteropTest::TestNumber()
 {
-    auto env = ARKTS_GetContext(engine_);
+    auto env = MockContext::GetInstance()->GetEnv();
     auto scope = ARKTS_OpenScope(env);
     double origins[] {
         0.1,
@@ -97,9 +396,9 @@ TEST_F(ArkInteropTest, Number)
     ARKTS_CloseScope(env, scope);
 }
 
-TEST_F(ArkInteropTest, String)
+void ArkInteropTest::TestString()
 {
-    auto env = ARKTS_GetContext(engine_);
+    auto env = MockContext::GetInstance()->GetEnv();
     auto scope = ARKTS_OpenScope(env);
     const char* origins[] {
         "a plain text",
@@ -131,9 +430,9 @@ TEST_F(ArkInteropTest, String)
     ARKTS_CloseScope(env, scope);
 }
 
-TEST_F(ArkInteropTest, Object)
+void ArkInteropTest::TestObject()
 {
-    auto env = ARKTS_GetContext(engine_);
+    auto env = MockContext::GetInstance()->GetEnv();
     auto scope = ARKTS_OpenScope(env);
     auto obj = ARKTS_CreateObject(env);
     EXPECT_TRUE(ARKTS_IsHeapObject(obj));
@@ -165,9 +464,9 @@ struct PropCase {
     bool configurable;
 };
 
-TEST_F(ArkInteropTest, DefineProperty)
+void ArkInteropTest::TestDefineProperty()
 {
-    auto env = ARKTS_GetContext(engine_);
+    auto env = MockContext::GetInstance()->GetEnv();
     auto scope = ARKTS_OpenScope(env);
     auto obj = ARKTS_CreateObject(env);
     PropCase cases[] {
@@ -216,9 +515,9 @@ TEST_F(ArkInteropTest, DefineProperty)
     ARKTS_CloseScope(env, scope);
 }
 
-HWTEST_F(ArkInteropTest, ArkTSInteropNapiInstanceOf, TestSize.Level1)
+void ArkInteropTest::TestInstanceOf()
 {
-    ARKTS_Env env = ARKTS_GetContext(engine_);
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
     auto global = ARKTS_GetGlobalConstant(env);
     char clError[] = "Error";
     auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError) - 1);
@@ -230,16 +529,277 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiInstanceOf, TestSize.Level1)
     EXPECT_FALSE(ARKTS_InstanceOf(env, jObj, errorCls));
 }
 
+void ArkInteropTest::TestArray()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+
+    char c = 'c';
+    ARKTS_Value origin[] {
+        ARKTS_CreateBool(true),
+        ARKTS_CreateF64(12.02),
+        ARKTS_CreateUtf8(env, &c, 1),
+        ARKTS_CreateObject(env),
+    };
+    constexpr auto arrSize = std::size(origin);
+    auto arr = ARKTS_CreateArray(env, arrSize);
+    EXPECT_TRUE(ARKTS_IsArray(env, arr));
+    EXPECT_EQ(ARKTS_GetValueType(env, arr), N_OBJECT);
+    EXPECT_EQ(ARKTS_GetArrayLength(env, arr), arrSize);
+    for (auto i = 0; i < arrSize; i++) {
+        auto initialValue = ARKTS_GetElement(env, arr, i);
+        EXPECT_TRUE(ARKTS_IsUndefined(initialValue));
+        ARKTS_SetElement(env, arr, i, origin[i]);
+        auto receivedValue = ARKTS_GetElement(env, arr, i);
+        EXPECT_TRUE(ARKTS_StrictEqual(env, origin[i], receivedValue));
+    }
+}
+
+void ArkInteropTest::TestBigint()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    {
+        int64_t origins[] {
+            0x123'4567'8945,
+            -0x123'4567'8945,
+            0x7FFF'FFFF'FFFF'FFFF,
+            -0x7FFF'FFFF'FFFF'FFFF,
+        };
+        constexpr auto arrSize = std::size(origins);
+        ARKTS_Value values[arrSize];
+        for (auto i = 0; i < arrSize; i++) {
+            values[i] = ARKTS_CreateBigInt(env, origins[i]);
+            EXPECT_TRUE(ARKTS_IsBigInt(env, values[i]));
+            EXPECT_EQ(ARKTS_GetValueType(env, values[i]), N_BIGINT);
+            ARKTS_BigIntGetByteSize(env, values[i]);
+        }
+    }
+    uint8_t origin[] { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 70, 50, 20, 30, 40, 50};
+    bool isNegtive = false;
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegtive, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    ARKTS_BigIntGetByteSize(env, value);
+}
+
+void ArkInteropTest::TestSymbol()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+
+    const char originDesc[] = "TestSymbol";
+
+    auto symbol = ARKTS_CreateSymbol(env, originDesc, sizeof(originDesc) - 1);
+    EXPECT_TRUE(ARKTS_IsSymbol(env, symbol));
+    EXPECT_EQ(ARKTS_GetValueType(env, symbol), N_SYMBOL);
+
+    auto retDesc = ARKTS_GetSymbolDesc(env, symbol);
+    EXPECT_EQ(std::string(retDesc), originDesc);
+    ARKTS_FreeCString(retDesc);
+
+    auto obj = ARKTS_CreateObject(env);
+    ARKTS_SetProperty(env, obj, symbol, ARKTS_CreateBool(true));
+    auto value = ARKTS_GetProperty(env, obj, symbol);
+    EXPECT_TRUE(ARKTS_IsBool(value));
+    EXPECT_TRUE(ARKTS_GetValueBool(value));
+
+    auto symbol1 = ARKTS_CreateSymbol(env, originDesc, sizeof(originDesc) - 1);
+    ARKTS_SetProperty(env, obj, symbol1, ARKTS_CreateBool(false));
+    auto value1 = ARKTS_GetProperty(env, obj, symbol1);
+    EXPECT_TRUE(ARKTS_IsBool(value1));
+    EXPECT_FALSE(ARKTS_GetValueBool(value1));
+
+    value = ARKTS_GetProperty(env, obj, symbol);
+    EXPECT_TRUE(ARKTS_IsBool(value));
+    EXPECT_TRUE(ARKTS_GetValueBool(value));
+}
+
+void ArkInteropTest::TestFunction()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+
+    bool called = false;
+    auto id = MockContext::GetInstance()->StoreFunc([&called](ARKTS_CallInfo info)->ARKTS_Value {
+        called = true;
+        EXPECT_EQ(ARKTS_GetArgCount(info), 0);
+        EXPECT_TRUE(ARKTS_IsUndefined(ARKTS_GetThisArg(info)));
+        return ARKTS_CreateUndefined();
+    });
+    auto func = ARKTS_CreateFunc(env, id);
+    EXPECT_TRUE(ARKTS_IsCallable(env, func));
+    EXPECT_EQ(ARKTS_GetValueType(env, func), N_FUNCTION);
+    ARKTS_Call(env, func, ARKTS_CreateUndefined(), 0, nullptr);
+    EXPECT_TRUE(called);
+    called = false;
+    ARKTS_Value args[] {
+        ARKTS_CreateNull(),
+        ARKTS_CreateBool(true),
+        ARKTS_CreateF64(45.1),
+        ARKTS_CreateObject(env)
+    };
+    static constexpr auto totalArgs = std::size(args);
+    id = MockContext::GetInstance()->StoreFunc([env, &called, origin = args](ARKTS_CallInfo info)->ARKTS_Value {
+        called = true;
+        auto self = ARKTS_GetThisArg(info);
+        EXPECT_TRUE(ARKTS_IsObject(env, self));
+        EXPECT_EQ(totalArgs, ARKTS_GetArgCount(info));
+        for (auto i = 0; i < totalArgs; i++) {
+            EXPECT_TRUE(ARKTS_StrictEqual(env, ARKTS_GetArg(info, i), origin[i]));
+        }
+        return ARKTS_CreateBool(true);
+    });
+    func = ARKTS_CreateFunc(env, id);
+    ARKTS_Call(env, func, ARKTS_CreateObject(env), std::size(args), args);
+    EXPECT_TRUE(called);
+}
+
+void ArkInteropTest::TestClass()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    auto id = MockContext::GetInstance()->StoreFunc([](ARKTS_CallInfo info)->ARKTS_Value {
+        return ARKTS_GetThisArg(info);
+    });
+    auto clazz = ARKTS_CreateClass(env, id, ARKTS_CreateUndefined());
+    EXPECT_TRUE(ARKTS_IsClass(env, clazz));
+    EXPECT_EQ(ARKTS_GetValueType(env, clazz), N_FUNCTION);
+    auto obj = ARKTS_New(env, clazz, 0, nullptr);
+    EXPECT_TRUE(ARKTS_IsObject(env, obj));
+    EXPECT_TRUE(ARKTS_InstanceOf(env, obj, clazz));
+}
+
+void ArkInteropTest::TestPromise()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    auto scope = ARKTS_OpenScope(env);
+
+    auto promiseCap = ARKTS_CreatePromiseCapability(env);
+    auto promise = ARKTS_GetPromiseFromCapability(env, promiseCap);
+    EXPECT_TRUE(ARKTS_IsPromise(env, promise));
+    EXPECT_EQ(ARKTS_GetValueType(env, promise), N_OBJECT);
+
+    bool resolved = false;
+    auto id = MockContext::GetInstance()->StoreFunc([&resolved](ARKTS_CallInfo info)->ARKTS_Value {
+        resolved = true;
+        EXPECT_EQ(ARKTS_GetArgCount(info), 1);
+        auto arg = ARKTS_GetArg(info, 0);
+        EXPECT_TRUE(ARKTS_IsUndefined(arg));
+        return ARKTS_CreateBool(true);
+    });
+    auto onResolved = ARKTS_CreateFunc(env, id);
+    ARKTS_PromiseThen(env, promise, onResolved, ARKTS_CreateUndefined());
+    ARKTS_PromiseCapabilityResolve(env, promiseCap, ARKTS_CreateUndefined());
+
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestArrayBuffer()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    auto scope = ARKTS_OpenScope(env);
+
+    uint8_t origin[] {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        'a', 'b', 'c', 'd', 'e', 'f', 'g'
+    };
+    auto arrSize = std::size(origin);
+    auto buffer = ARKTS_CreateArrayBuffer(env, arrSize);
+    EXPECT_TRUE(ARKTS_IsArrayBuffer(env, buffer));
+    EXPECT_EQ(ARKTS_GetValueType(env, buffer), N_OBJECT);
+    EXPECT_EQ(ARKTS_GetArrayBufferLength(env, buffer), arrSize);
+    auto dst = reinterpret_cast<uint8_t*>(ARKTS_GetArrayBufferRawPtr(env, buffer));
+    for (auto i = 0; i < arrSize; i++) {
+        dst[i] = origin[i];
+    }
+    uint8_t received[std::size(origin)];
+    auto endpoint = ARKTS_ArrayBufferReadBytes(env, buffer, received, arrSize);
+    EXPECT_EQ(endpoint, arrSize);
+
+    for (auto i = 0; i < arrSize; i++) {
+        EXPECT_EQ(origin[i], received[i]);
+    }
+
+    ARKTS_CloseScope(env, scope);
+}
+
+TEST_F(ArkInteropTest, Types)
+{
+    RunLocalTest();
+}
+
+TEST_F(ArkInteropTest, PromiseThen)
+{
+    MockContext local(ARKTS_CreateEngineWithNewThread());
+    auto env = local.GetEnv();
+    EXPECT_TRUE(env);
+
+    std::condition_variable cv;
+    bool isComplete = false;
+    auto funcId = local.StoreAsyncFunc([&local, &cv, &isComplete, env] {
+        auto scope = ARKTS_OpenScope(env);
+        auto promiseCap = ARKTS_CreatePromiseCapability(env);
+        auto promise = ARKTS_GetPromiseFromCapability(env, promiseCap);
+        auto funcId = local.StoreFunc([&cv, &isComplete](ARKTS_CallInfo info) {
+            isComplete = true;
+            cv.notify_one();
+            return ARKTS_CreateUndefined();
+        });
+        auto func = ARKTS_CreateFunc(env, funcId);
+        ARKTS_PromiseThen(env, promise, func, ARKTS_CreateUndefined());
+        ARKTS_PromiseCapabilityResolve(env, promiseCap, ARKTS_CreateUndefined());
+        ARKTS_CloseScope(env, scope);
+    });
+    ARKTS_CreateAsyncTask(env, funcId);
+    std::mutex mutex;
+    std::unique_lock lock(mutex);
+
+    constexpr int checkDuration = 10;
+    int waitTimes = 10; // set 100ms timeout
+    while (!isComplete && waitTimes--) {
+        cv.wait_for(lock, std::chrono::milliseconds(checkDuration));
+    }
+    // EXPECT no core dump, no timeout
+    EXPECT_TRUE(waitTimes > 0);
+}
+
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
 {
-    auto engine = ARKTS_CreateEngineWithNewThread();
+    MockContext local(ARKTS_CreateEngineWithNewThread());
 
     auto curTid = ARKTS_GetPosixThreadId();
-    auto engineTid = ARKTS_GetThreadIdOfEngine(engine);
+    auto engineTid = ARKTS_GetThreadIdOfEngine(local.GetEngine());
 
     EXPECT_NE(curTid, engineTid);
 
-    ARKTS_DestroyEngine(engine);
+    auto env = local.GetEnv();
+    EXPECT_TRUE(env);
+    bool isComplete = false;
+    std::condition_variable cv;
+    auto funcId = local.StoreAsyncFunc([&isComplete, &cv] {
+        ArkInteropTest::RunLocalTest();
+        isComplete = true;
+        cv.notify_one();
+    });
+    ARKTS_CreateAsyncTask(env, funcId);
+    std::mutex mutex;
+    std::unique_lock lock(mutex);
+    constexpr int checkDuration = 10;
+    int waitTimes = 100; // set 1000ms timeout
+    while (!isComplete && waitTimes--) {
+        cv.wait_for(lock, std::chrono::milliseconds(checkDuration));
+    }
+    EXPECT_TRUE(waitTimes > 0);
 }
 } // namespace
 
@@ -254,12 +814,16 @@ int main(int argc, char** argv)
     auto handler = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
     EXPECT_TRUE(handler);
 
+    MockContext::Init();
+
     int ret = -1;
     std::condition_variable cv;
 
-    auto success = handler->PostTask([&ret, &cv] {
-        engine_ = ARKTS_CreateEngine();
+    ARKTS_Engine globalEngine;
 
+    auto success = handler->PostTask([&ret, &cv, &globalEngine] {
+        MockContext global(ARKTS_CreateEngine(), false);
+        globalEngine = global.GetEngine();
         ret = testing::UnitTest::GetInstance()->Run();
         cv.notify_all();
     });
@@ -271,9 +835,8 @@ int main(int argc, char** argv)
     auto status = cv.wait_for(lock, std::chrono::seconds(10));
 
     EXPECT_EQ(status, std::cv_status::no_timeout);
+    ARKTS_DestroyEngine(globalEngine);
 
-    ARKTS_DestroyEngine(engine_);
-    engine_ = nullptr;
     runner->Stop();
 
     LOGI("main out");
