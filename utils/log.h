@@ -94,11 +94,4 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN,
 
 #endif /* MAC_PLATFORM */
 
-#define LOG_IF_SPECIAL(condition, fmt, ...) \
-    if ((condition)) {                      \
-        HILOG_FATAL(fmt, ##__VA_ARGS__);    \
-    } else {                                \
-        HILOG_ERROR(fmt, ##__VA_ARGS__);    \
-    }
-
 #endif /* FOUNDATION_ACE_NAPI_UTILS_LOG_H */

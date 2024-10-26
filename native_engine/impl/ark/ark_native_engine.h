@@ -81,9 +81,6 @@ NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef
 #ifdef ENABLE_CONTAINER_SCOPE
 void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
 #endif
-#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
-std::string DumpHybridStack(const EcmaVM* vm);
-#endif
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
                                                 void* data, const NapiPropertyDescriptor* properties, size_t length);
 Local<JSValueRef> NapiDefineSendableClass(napi_env env,

@@ -2350,14 +2350,16 @@ void ArkNativeEngine::AllowCrossThreadExecution() const
     JSNApi::AllowCrossThreadExecution(vm_);
 }
 
-#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
-std::string DumpHybridStack(const EcmaVM* vm)
+bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int32_t deepth)
 {
-    constexpr size_t skipframes = 5;
+#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
+    constexpr size_t minSkiped = 2; // 2: skiped frames, include current func and unwinder
+    const size_t skipedFrames = minSkiped + ignore;
+    const int backtraceDeepth = (deepth < 0 || deepth > DEFAULT_MAX_FRAME_NUM) ? DEFAULT_MAX_FRAME_NUM : deepth;
     auto unwinder = std::make_shared<OHOS::HiviewDFX::Unwinder>();
     std::vector<OHOS::HiviewDFX::DfxFrame> frames;
     unwinder->EnableMethodIdLocal(true);
-    if (unwinder->UnwindLocal(false, false, DEFAULT_MAX_FRAME_NUM, skipframes)) {
+    if (unwinder->UnwindLocal(false, false, backtraceDeepth, skipedFrames)) {
         frames = unwinder->GetFrames();
     } else {
         HILOG_ERROR("Failed to unwind local");
@@ -2369,9 +2371,12 @@ std::string DumpHybridStack(const EcmaVM* vm)
         }
     }
 
-    return OHOS::HiviewDFX::Unwinder::GetFramesStr(frames);
-}
+    stack = OHOS::HiviewDFX::Unwinder::GetFramesStr(frames);
+    return true;
 #endif
+    return false;
+}
+
 
 void ArkNativeEngine::PostLooperTriggerIdleGCTask()
 {

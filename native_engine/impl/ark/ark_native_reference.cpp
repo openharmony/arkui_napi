@@ -21,6 +21,7 @@
 #include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #endif
+#include "native_engine/native_api_internal.h"
 #include "native_engine/native_utils.h"
 #include "utils/log.h"
 
@@ -113,12 +114,11 @@ napi_value ArkNativeReference::Get(NativeEngine* engine)
         return nullptr;
     }
     if (engine != engine_) {
-        LOG_IF_SPECIAL(UNLIKELY(engine->IsCrossThreadCheckEnabled()),
-                       "param env is not equal to its owner");
+        LOG_IF_SPECIAL(engine, engine->IsCrossThreadCheckEnabled(), "param env is not equal to its owner");
     } else if (engineId_ != engine->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine->IsCrossThreadCheckEnabled()),
-                       "param env is not equal to its owner, "
-                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+        LOG_IF_SPECIAL(engine, engine->IsCrossThreadCheckEnabled(),
+                       "owner env has been destroyed, "
+                       "ownerid: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
     }
     Local<JSValueRef> value = value_.ToLocal(engine->GetEcmaVm());
@@ -131,9 +131,9 @@ napi_value ArkNativeReference::Get()
         return nullptr;
     }
     if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+        LOG_IF_SPECIAL(engine_, engine_->IsCrossThreadCheckEnabled(),
                        "owner env has been destroyed, "
-                       "current env id: %{public}" PRIu64 ", owner id: %{public}" PRIu64,
+                       "ownerid: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
     }
     Local<JSValueRef> value = value_.ToLocal(engine_->GetEcmaVm());

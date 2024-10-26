@@ -593,6 +593,8 @@ private:
     static NativeEngine* g_mainThreadEngine_;
 };
 
+bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignored = 0, int32_t deepth = -1);
+
 class TryCatch : public panda::TryCatch {
 public:
     explicit TryCatch(napi_env env)

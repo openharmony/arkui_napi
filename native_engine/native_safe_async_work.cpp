@@ -153,9 +153,9 @@ SafeAsyncCode NativeSafeAsyncWork::ValidEngineCheck()
         HILOG_ERROR("napi_env has been destoryed");
         return SafeAsyncCode::SAFE_ASYNC_FAILED;
     } else if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
+        LOG_IF_SPECIAL(engine_, UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
                        "current tsfn was created by dead env, "
-                       "owner id: %{public}" PRIu64 ", current id: %{public}" PRIu64,
+                       "owner id: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
                        engineId_, engine_->GetId());
         return SafeAsyncCode::SAFE_ASYNC_CLOSED;
     }
