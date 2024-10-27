@@ -214,7 +214,7 @@ EXPORT bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value);
 EXPORT int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value);
 EXPORT void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative,
                                   int64_t byteCount, uint8_t bytes[]);
-
+// @deprecated
 EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 
 EXPORT void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env);

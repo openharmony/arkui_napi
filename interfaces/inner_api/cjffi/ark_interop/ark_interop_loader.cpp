@@ -13,8 +13,9 @@
 * limitations under the License.
 */
 
+#include <native_engine/native_engine.h>
+
 #include "node_api.h"
-#include "ark_native_engine.h"
 #include "ark_interop_log.h"
 #include "cj_envsetup.h"
 
@@ -54,32 +55,32 @@ static bool ParseLoadParams(napi_env env, napi_callback_info info, char* nameBuf
 
 static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* result)
 {
-    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
-    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
-    do {
-        const char* targetName;
-        const char* loaderName = "ARKTS_LoadModule";
+    const char* targetName;
 #ifdef __OHOS__
-        targetName = "libark_interop.z.so";
+    targetName = "libark_interop.z.so";
 #elif defined(__WINDOWS__)
-        targetName = "libark_interop.dll";
+    targetName = "libark_interop.dll";
 #elif defined(__LINUX__)
-        targetName = "libark_interop.so";
+    targetName = "libark_interop.so";
 #endif
-        auto runtime = OHOS::CJEnv::LoadInstance();
-        auto handle = runtime->loadLibrary(0, targetName);
-        if (!handle) {
-            LOGE("open '%{public}s' failed", targetName);
-            return false;
-        }
-        auto symbol = runtime->getSymbol(handle, loaderName);
-        if (!symbol) {
-            LOGE("no symbol of '%{public}s'", loaderName);
-            return false;
-        }
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    auto handle = runtime->loadLibrary(0, targetName);
+    if (!handle) {
+        LOGE("open '%{public}s' failed", targetName);
+        return false;
+    }
+    if (auto symbol = runtime->getSymbol(handle, "ARKTS_LoadModuleByNapiEnv")) {
+        auto loader = reinterpret_cast<napi_value(*)(napi_env, const char*)>(symbol);
+        *result = loader(env, libName);
+    } else if (auto symbol = runtime->getSymbol(handle, "ARKTS_LoadModule")) {
         auto loader = reinterpret_cast<napi_value(*)(EcmaVM*, const char*)>(symbol);
+        auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
         *result = loader(vm, libName);
-    } while (false);
+    } else {
+        return false;
+    }
+
     return true;
 }
 

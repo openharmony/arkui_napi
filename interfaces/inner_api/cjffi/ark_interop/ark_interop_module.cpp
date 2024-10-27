@@ -107,6 +107,34 @@ panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName)
     return ARKTSInner_Escape(env, scope, exports);
 }
 
+EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllName)
+{
+    if (!env) {
+        LOGE("env is null");
+        return nullptr;
+    }
+    if (!dllName) {
+        LOGE("dllName is null");
+        return nullptr;
+    }
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    if (!vm) {
+        LOGE("vm is null");
+        return nullptr;
+    }
+    auto loop = engine->GetUVLoop();
+    if (!loop) {
+        LOGE("uvloop is null");
+        return nullptr;
+    }
+    if (!ARKTSInner_InitLoop(reinterpret_cast<ARKTS_Env>(vm), loop)) {
+        LOGE("init loop failed");
+        return nullptr;
+    }
+    return ARKTS_LoadModule(reinterpret_cast<ARKTS_Env>(vm), dllName);
+}
+
 void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* lambdaId)
 {
     if (!g_cjModuleCallbacks) {
