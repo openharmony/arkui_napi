@@ -343,7 +343,8 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
     }
 }
 
-ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine, vm),
+ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
+                                                                                     vm_(vm),
                                                                                      topScope_(vm),
                                                                                      isLimitedWorker_(isLimitedWorker)
 {
