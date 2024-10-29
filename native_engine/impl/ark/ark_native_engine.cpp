@@ -563,7 +563,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     });
 #if defined(ENABLE_EVENT_HANDLER)
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
-        arkIdleMonitor_ = new ArkIdleMonitor(vm);
+        arkIdleMonitor_ = std::make_shared<ArkIdleMonitor>(vm);
         JSNApi::SetTriggerGCTaskCallback(vm, [this](TriggerGCData& data) {
             this->PostTriggerGCTask(data);
         });
@@ -591,11 +591,6 @@ ArkNativeEngine::~ArkNativeEngine()
     if (options_ != nullptr) {
         delete options_;
         options_ = nullptr;
-    }
-
-    if (arkIdleMonitor_ != nullptr) {
-        delete arkIdleMonitor_;
-        arkIdleMonitor_ = nullptr;
     }
 }
 
@@ -2388,14 +2383,20 @@ void ArkNativeEngine::PostLooperTriggerIdleGCTask()
         HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
         return;
     }
-    auto callback = [this](OHOS::AppExecFwk::EventRunnerStage stage,
+    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = arkIdleMonitor_;
+    auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
         const OHOS::AppExecFwk::StageInfo* info) -> int {
+        auto arkIdleMonitor = weakArkIdleMonitor.lock();
+        if (nullptr == arkIdleMonitor) {
+            HILOG_ERROR("ArkIdleMonitor has been destructed.");
+            return 0;
+        }
         switch (stage) {
             case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
-                arkIdleMonitor_->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
+                arkIdleMonitor->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
                 break;
             case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
-                arkIdleMonitor_->NotifyLooperIdleEnd(info->timestamp);
+                arkIdleMonitor->NotifyLooperIdleEnd(info->timestamp);
                 break;
             default:
                 HILOG_ERROR("this branch is unreachable");
