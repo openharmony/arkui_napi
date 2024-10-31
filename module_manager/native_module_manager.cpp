@@ -1110,7 +1110,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
     tailNativeModule_->name = strdup(moduleName);
     if (tailNativeModule_->name == nullptr) {
         HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleName);
-        delete moduleName;
+        free(moduleName);
         return;
     }
     tailNativeModule_->jsABCCode = abcBuffer;
