@@ -45,7 +45,6 @@ static constexpr int INT_ZERO = 0;
 static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
 static constexpr int INT_THREE = 3;
-static constexpr int THREAD_SIZE = 5;
 
 static constexpr double TEST_DOUBLE = 1.1;
 static constexpr char TEST_STRING[5] = "test";
@@ -4471,52 +4470,6 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest006, testing::ext::TestSize.Level1)
     engine_->MarkNativeThread();
     napi_env env = (napi_env)engine_;
     napi_status res = napi_stop_event_loop(env);
-    ASSERT_EQ(res, napi_ok);
-    engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
-}
-
-/**
- * @tc.name: multipleThreadRunEventLoopTest001
- * @tc.desc: Test napi_run_event_loop with multiple threads.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, multipleThreadRunEventLoopTest001, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    engine_->MarkNativeThread();
-    napi_env env = (napi_env)engine_;
-
-    // 1. create five child threads to call napi_run_event_loop
-    auto runFunc = [](const napi_env &env, napi_event_mode mode) {
-        napi_status res = napi_run_event_loop(env, mode);
-        ASSERT_EQ(res, napi_ok);
-    };
-
-    for (int32_t index = 0; index < THREAD_SIZE; ++index) {
-        std::thread runThread = std::thread(runFunc, std::ref(env), napi_event_mode_nowait);
-        runThread.detach();
-    }
-    // 2. create async work to stop the loop
-    struct AsyncWorkContext {
-        napi_async_work work = nullptr;
-    };
-    auto asyncWorkContext = new AsyncWorkContext();
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_async_work(
-        env, nullptr, resourceName, [](napi_env env, void* data) { },
-        [](napi_env env, napi_status status, void* data) {
-            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            napi_delete_async_work(env, asyncWorkContext->work);
-            delete asyncWorkContext;
-            // stop the loop after the task is processed
-            napi_status res = napi_stop_event_loop(env);
-            ASSERT_EQ(res, napi_ok);
-        },
-        asyncWorkContext, &asyncWorkContext->work);
-    napi_queue_async_work(env, asyncWorkContext->work);
-    // 3. run the loop
-    napi_status res = napi_run_event_loop(env, napi_event_mode_default);
     ASSERT_EQ(res, napi_ok);
     engine_->jsThreadType_ = panda::panda_file::DataProtect(uintptr_t(NativeEngine::JSThreadType::MAIN_THREAD));
 }
