@@ -19,6 +19,7 @@ napi_sources = [
   "module_manager/module_checker_delegate.cpp",
   "module_manager/module_load_checker.cpp",
   "module_manager/native_module_manager.cpp",
+  "native_engine/impl/ark/ark_crash_holder.cpp",
   "native_engine/impl/ark/ark_idle_monitor.cpp",
   "native_engine/impl/ark/ark_native_deferred.cpp",
   "native_engine/impl/ark/ark_native_engine.cpp",

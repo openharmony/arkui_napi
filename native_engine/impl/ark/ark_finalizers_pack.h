@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_FINALIZERS_PACK_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_ARK_FINALIZERS_PACK_H
 
+#include "ark_crash_holder.h"
 #include "interfaces/inner_api/napi/native_node_api.h"
 
 class NativeEngine;
@@ -50,9 +51,11 @@ public:
     }
     void ProcessAll() const
     {
+        INIT_CRASH_HOLDER(holder);
         for (auto &iter : finalizers_) {
             NapiNativeFinalize callback = iter.first;
             auto &[p0, p1, p2] = iter.second;
+            holder.UpdateCallbackPtr(reinterpret_cast<uintptr_t>(callback));
             callback(reinterpret_cast<napi_env>(p0), p1, p2);
         }
         NotifyFinish();

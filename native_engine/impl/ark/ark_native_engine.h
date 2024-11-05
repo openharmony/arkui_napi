@@ -21,20 +21,19 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #endif
-#include <unistd.h>
+#include <iostream>
 #include <map>
 #include <mutex>
-#include <thread>
-#include <iostream>
 #include <regex>
+#include <thread>
+#include <unistd.h>
 
+#include "ark_idle_monitor.h"
+#include "ark_native_options.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/impl/ark/ark_finalizers_pack.h"
 #include "native_engine/native_engine.h"
-#include "ark_idle_monitor.h"
-#include "ark_native_options.h"
-
 
 namespace panda::ecmascript {
 struct JsHeapDumpWork;
