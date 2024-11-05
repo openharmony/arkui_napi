@@ -278,7 +278,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     if (g_isLoadingModule || !strcmp(loadingModuleName_.c_str(), moduleName)) {
         if (!CreateTailNativeModule()) {
             HILOG_ERROR("create tail nativeModule failed");
-            delete moduleName;
+            free(moduleName);
             return;
         }
         tailNativeModule_->version = nativeModule->version;
