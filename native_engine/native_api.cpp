@@ -24,6 +24,7 @@
 #include "core/common/container_scope.h"
 #endif
 #include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
 #include "native_engine/impl/ark/ark_native_reference.h"
@@ -4155,3 +4156,19 @@ NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result
     result->stack_size = res.stackSize;
     return napi_clear_last_error(env);
 }
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
+    [[maybe_unused]] void* inputIface,
+    [[maybe_unused]] void** outputIface)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, inputIface);
+    CHECK_ARG(env, outputIface);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::HandshakeHelper::DoHandshake(const_cast<EcmaVM*>(vm), inputIface, outputIface);
+
+    return napi_clear_last_error(env);
+}
+#endif  // PANDA_JS_ETS_HYBRID_MODE

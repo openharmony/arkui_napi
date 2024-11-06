@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 
-#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "js_native_api.h"
 #include "node_api.h"
 #include "native_common.h"
@@ -131,4 +130,8 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result);
 NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info *napi_info);
 NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result);
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+// XGC specific internal API
+NAPI_EXTERN napi_status napi_vm_handshake(napi_env env, void* inputIface, void** outputIface);
+#endif  // PANDA_JS_ETS_HYBRID_MODE
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
