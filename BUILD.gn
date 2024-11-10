@@ -35,6 +35,29 @@ config("ace_napi_config") {
     ]
   }
 
+  if (current_cpu == "amd64" || current_cpu == "x64" ||
+      current_cpu == "x86_64") {
+    defines += [
+      "NAPI_TARGET_AMD64",
+      "NAPI_TARGET_64",
+    ]
+  } else if (current_cpu == "x86") {
+    defines += [
+      "NAPI_TARGET_X86",
+      "NAPI_TARGET_32",
+    ]
+  } else if (current_cpu == "arm64") {
+    defines += [
+      "NAPI_TARGET_ARM64",
+      "NAPI_TARGET_64",
+    ]
+  } else if (current_cpu == "arm") {
+    defines += [
+      "NAPI_TARGET_ARM32",
+      "NAPI_TARGET_32",
+    ]
+  }
+
   if (current_os == "ohos" && current_cpu == "x86_64") {
     defines += [ "SIMULATOR" ]
   }
@@ -42,6 +65,9 @@ config("ace_napi_config") {
     defines += [ "OHOS_PLATFORM" ]
     if (use_musl && !is_asan) {
       defines += [ "HOOK_ENABLE" ]
+    }
+    if (!is_arkui_x) {
+      defines += [ "OHOS_STANDARD_PLATFORM" ]
     }
   } else if (is_mingw) {
     defines += [ "WINDOWS_PLATFORM" ]

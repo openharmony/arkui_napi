@@ -20,10 +20,9 @@
 #endif
 
 #include <sstream>
+#include "ark_crash_holder.h"
+#include "ark_finalizers_pack.h"
 #include "ark_native_deferred.h"
-#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
-#include "unwinder.h"
-#endif
 #include "ark_native_reference.h"
 #include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
@@ -34,6 +33,9 @@
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #include <uv.h>
+#endif
+#ifdef OHOS_STANDARD_PLATFORM
+#include "unwinder.h"
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
@@ -1542,9 +1544,11 @@ __attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<Ref
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
 #endif
+    INIT_CRASH_HOLDER(holder);
     for (auto iter : (*finalizers)) {
         NapiNativeFinalize callback = iter.first;
         std::tuple<NativeEngine*, void*, void*> &param = iter.second;
+        holder.UpdateCallbackPtr(reinterpret_cast<uintptr_t>(callback));
         callback(reinterpret_cast<napi_env>(std::get<0>(param)),
                  std::get<1>(param), std::get<2>(param)); // 2 is the param.
     }
@@ -2348,7 +2352,7 @@ void ArkNativeEngine::AllowCrossThreadExecution() const
 
 bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int32_t deepth)
 {
-#if !defined(is_arkui_x) && defined(OHOS_PLATFORM)
+#ifdef OHOS_STANDARD_PLATFORM
     constexpr size_t minSkiped = 2; // 2: skiped frames, include current func and unwinder
     const size_t skipedFrames = minSkiped + ignore;
     const int backtraceDeepth = (deepth < 0 || deepth > DEFAULT_MAX_FRAME_NUM) ? DEFAULT_MAX_FRAME_NUM : deepth;
