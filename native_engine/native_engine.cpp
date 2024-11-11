@@ -761,6 +761,9 @@ void NativeEngine::RunCleanup()
         CleanupHandles();
     }
 
+    // make sure tsfn relese by itself
+    uv_run(loop_, UV_RUN_NOWAIT);
+
     // Close all unclosed uv handles
     auto const ensureClosing = [](uv_handle_t *handle, void *arg) {
         if (!uv_is_closing(handle)) {
