@@ -131,7 +131,7 @@ bool NativeSafeAsyncWork::Init()
 
     int ret = uv_async_init(loop, &asyncHandler_, AsyncCallback);
     if (ret != 0) {
-        HILOG_ERROR("uv async init failed %d", ret);
+        HILOG_ERROR("uv async send failed in Init ret = %{public}d", ret);
         return false;
     }
 
@@ -192,7 +192,7 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
         queue_.emplace(data);
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
-            HILOG_ERROR("uv async send failed %d", ret);
+            HILOG_ERROR("uv async send failed in Send ret = %{public}d", ret);
             return SafeAsyncCode::SAFE_ASYNC_FAILED;
         }
     }
@@ -254,7 +254,7 @@ SafeAsyncCode NativeSafeAsyncWork::Release(NativeThreadSafeFunctionReleaseMode m
         // trigger async handle
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
-            HILOG_ERROR("uv async send failed %d", ret);
+            HILOG_ERROR("uv async send failed in Release ret = %{public}d", ret);
             return SafeAsyncCode::SAFE_ASYNC_FAILED;
         }
     }
@@ -338,7 +338,14 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         size--;
     }
 
-    if (size == 0 && threadCount_ == 0) {
+    if (!queue_.empty()) {
+        auto ret = uv_async_send(&asyncHandler_);
+        if (ret != 0) {
+            HILOG_ERROR("uv async send failed in ProcessAsyncHandle ret = %{public}d", ret);
+        }
+    }
+
+    if (queue_.empty() && threadCount_ == 0) {
         CloseHandles();
     }
 }
