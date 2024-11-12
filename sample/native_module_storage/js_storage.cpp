@@ -408,7 +408,7 @@ static napi_value JSStorageConstructor(napi_env env, napi_callback_info info)
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, &data);
 
     auto objectInfo = new StorageObjectInfo(env);
-    napi_wrap(
+    auto status = napi_wrap(
         env, thisVar, objectInfo,
         [](napi_env env, void* data, void* hint) {
             auto objectInfo = (StorageObjectInfo*)data;
@@ -417,6 +417,9 @@ static napi_value JSStorageConstructor(napi_env env, napi_callback_info info)
             }
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        delete objectInfo;
+    }
 
     return thisVar;
 }
