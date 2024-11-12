@@ -26,13 +26,16 @@ napi_value NetServer::JS_Constructor(napi_env env, napi_callback_info cbinfo)
 
     NetServer* netServer = new NetServer(env, thisVar);
 
-    napi_wrap(
+    auto status = napi_wrap(
         env, thisVar, netServer,
         [](napi_env env, void* data, void* hint) {
             NetServer* netServer = (NetServer*)data;
             delete netServer;
         },
         nullptr, nullptr);
+    if (status != napi_ok) {
+        delete netServer;
+    }
 
     return thisVar;
 }
