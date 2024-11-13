@@ -2873,10 +2873,13 @@ NAPI_EXTERN napi_status napi_get_version(napi_env env, uint32_t* result)
 NAPI_EXTERN napi_status napi_create_promise(napi_env env, napi_deferred* deferred, napi_value* promise)
 {
     NAPI_PREAMBLE(env);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (panda::JSNApi::HasPendingException(engine->GetEcmaVm())) {
+        return napi_pending_exception;
+    }
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, promise);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
     auto resultValue = engine->CreatePromise(reinterpret_cast<NativeDeferred**>(deferred));
     *promise = resultValue;
 
