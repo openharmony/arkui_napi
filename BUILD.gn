@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,8 +11,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
 import("napi.gni")
+
+if (ark_standalone_build) {
+  import("$build_root/ark.gni")
+} else {
+  import("//build/ohos.gni")
+}
 
 config("ace_napi_config") {
   include_dirs = [
@@ -28,7 +33,7 @@ config("ace_napi_config") {
     defines += [ "PREVIEW" ]
   }
 
-  if (is_arkui_x) {
+  if (is_arkui_x || ark_standalone_build) {
     include_dirs += [
       "//third_party/node/src",
       "//third_party/libuv/include",
@@ -189,18 +194,23 @@ if (is_arkui_x) {
 } else {
   ohos_shared_library("ace_napi") {
     deps = [ ":ace_napi_static" ]
-    external_deps = [
-      "bounds_checking_function:libsec_shared",
-      "hilog:libhilog",
-    ]
+    external_deps = [ "bounds_checking_function:libsec_shared" ]
     public_configs = [
       ":ace_napi_config",
       ":module_manager_config",
     ]
-    public_external_deps = [
-      "libuv:uv",
-      "node:node_header_notice",
-    ]
+    if (!ark_standalone_build) {
+      public_external_deps = [
+        "libuv:uv",
+        "node:node_header_notice",
+      ]
+      external_deps += [ "hilog:libhilog" ]
+    } else {
+      external_deps += [
+        "libuv:uv",
+        "node:node_header_notice",
+      ]
+    }
 
     subsystem_name = "arkui"
     innerapi_tags = [ "platformsdk" ]
@@ -219,114 +229,116 @@ if (is_arkui_x) {
 }
 
 #cj_ffi
-config("ffi_bind_native_config") {
-  include_dirs = [ "interfaces/inner_api/cjffi/native" ]
-  cflags_cc = [ "-std=c++17" ]
-}
-
-ohos_shared_library("cj_bind_native") {
-  public_configs = [ ":ffi_bind_native_config" ]
-
-  branch_protector_ret = "pac_ret"
-
-  cflags_cc = [
-    "-fdata-sections",
-    "-ffunction-sections",
-  ]
-
-  sources = [
-    "interfaces/inner_api/cjffi/native/cj_fn_invoker.cpp",
-    "interfaces/inner_api/cjffi/native/ffi_remote_data.cpp",
-  ]
-
-  include_dirs = [ "interfaces/inner_api/cjffi" ]
-
-  external_deps = [ "hilog:libhilog" ]
-  public_external_deps = [ "c_utils:utils" ]
-
-  innerapi_tags = [ "platformsdk" ]
-  subsystem_name = "arkui"
-  part_name = "napi"
-}
-
-ohos_source_set("cj_bind_ffi_source") {
-  sources = [
-    "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
-    "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
-  ]
-
-  public_deps = [ ":cj_bind_native" ]
-
-  include_dirs = [
-    "interfaces/inner_api/cjffi/cj_ffi",
-    "interfaces/inner_api/cjffi/native",
-    "interfaces/inner_api/cjffi",
-  ]
-
-  subsystem_name = "arkui"
-  part_name = "napi"
-}
-
-config("ffi_bind_ffi_public_config") {
-  include_dirs = [
-    "interfaces/inner_api/cjffi/cj_ffi",
-    "interfaces/inner_api/cjffi/native",
-    "interfaces/inner_api/cjffi",
-  ]
-  cflags_cc = [ "-std=c++17" ]
-}
-
-group("cj_ffi_libraries") {
-  deps = [ ":cj_bind_ffi" ]
-}
-
-ohos_shared_library("cj_bind_ffi") {
-  public_configs = [ ":ffi_bind_ffi_public_config" ]
-  branch_protector_ret = "pac_ret"
-
-  cflags_cc = [
-    "-fvisibility=hidden",
-    "-fdata-sections",
-    "-ffunction-sections",
-  ]
-  deps = [
-    ":cj_bind_ffi_source",
-    ":cj_bind_native",
-  ]
-
-  external_deps = []
-
-  if (is_standard_system) {
-    external_deps += [ "c_utils:utils" ]
+if (!ark_standalone_build) {
+  config("ffi_bind_native_config") {
+    include_dirs = [ "interfaces/inner_api/cjffi/native" ]
+    cflags_cc = [ "-std=c++17" ]
   }
-  innerapi_tags = [ "platformsdk" ]
-  subsystem_name = "arkui"
-  part_name = "napi"
-}
 
-group("napi_packages") {
-  deps = [ ":ace_napi" ]
-  if (target_cpu == "arm64") {
-    deps += [ "jsvm:libjsvm" ]
-  }
-  if (target_cpu == "arm64" || target_cpu == "x86_64") {
-    deps += [ "interfaces/inner_api/cjffi/ark_interop:ark_interop" ]
-  }
-}
+  ohos_shared_library("cj_bind_native") {
+    public_configs = [ ":ffi_bind_native_config" ]
 
-if (!build_ohos_ndk && !is_arkui_x && !ohos_indep_compiler_enable) {
-  group("napi_packages_test") {
-    testonly = true
+    branch_protector_ret = "pac_ret"
 
-    deps = [
-      "sample/native_module_calc:calc",
-      "sample/native_module_calc:number",
-      "sample/native_module_callback:callback",
-      "sample/native_module_demo:demo",
-      "sample/native_module_netserver:netserver",
-      "sample/native_module_storage:storage",
-      "test/fuzztest:fuzztest",
-      "test/unittest:unittest",
+    cflags_cc = [
+      "-fdata-sections",
+      "-ffunction-sections",
     ]
+
+    sources = [
+      "interfaces/inner_api/cjffi/native/cj_fn_invoker.cpp",
+      "interfaces/inner_api/cjffi/native/ffi_remote_data.cpp",
+    ]
+
+    include_dirs = [ "interfaces/inner_api/cjffi" ]
+
+    external_deps = [ "hilog:libhilog" ]
+    public_external_deps = [ "c_utils:utils" ]
+
+    innerapi_tags = [ "platformsdk" ]
+    subsystem_name = "arkui"
+    part_name = "napi"
+  }
+
+  ohos_source_set("cj_bind_ffi_source") {
+    sources = [
+      "interfaces/inner_api/cjffi/cj_ffi/cj_common_ffi.cpp",
+      "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
+    ]
+
+    public_deps = [ ":cj_bind_native" ]
+
+    include_dirs = [
+      "interfaces/inner_api/cjffi/cj_ffi",
+      "interfaces/inner_api/cjffi/native",
+      "interfaces/inner_api/cjffi",
+    ]
+
+    subsystem_name = "arkui"
+    part_name = "napi"
+  }
+
+  config("ffi_bind_ffi_public_config") {
+    include_dirs = [
+      "interfaces/inner_api/cjffi/cj_ffi",
+      "interfaces/inner_api/cjffi/native",
+      "interfaces/inner_api/cjffi",
+    ]
+    cflags_cc = [ "-std=c++17" ]
+  }
+
+  group("cj_ffi_libraries") {
+    deps = [ ":cj_bind_ffi" ]
+  }
+
+  ohos_shared_library("cj_bind_ffi") {
+    public_configs = [ ":ffi_bind_ffi_public_config" ]
+    branch_protector_ret = "pac_ret"
+
+    cflags_cc = [
+      "-fvisibility=hidden",
+      "-fdata-sections",
+      "-ffunction-sections",
+    ]
+    deps = [
+      ":cj_bind_ffi_source",
+      ":cj_bind_native",
+    ]
+
+    external_deps = []
+
+    if (is_standard_system) {
+      external_deps += [ "c_utils:utils" ]
+    }
+    innerapi_tags = [ "platformsdk" ]
+    subsystem_name = "arkui"
+    part_name = "napi"
+  }
+
+  group("napi_packages") {
+    deps = [ ":ace_napi" ]
+    if (target_cpu == "arm64") {
+      deps += [ "jsvm:libjsvm" ]
+    }
+    if (target_cpu == "arm64" || target_cpu == "x86_64") {
+      deps += [ "interfaces/inner_api/cjffi/ark_interop:ark_interop" ]
+    }
+  }
+
+  if (!build_ohos_ndk && !is_arkui_x && !ohos_indep_compiler_enable) {
+    group("napi_packages_test") {
+      testonly = true
+
+      deps = [
+        "sample/native_module_calc:calc",
+        "sample/native_module_calc:number",
+        "sample/native_module_callback:callback",
+        "sample/native_module_demo:demo",
+        "sample/native_module_netserver:netserver",
+        "sample/native_module_storage:storage",
+        "test/fuzztest:fuzztest",
+        "test/unittest:unittest",
+      ]
+    }
   }
 }
