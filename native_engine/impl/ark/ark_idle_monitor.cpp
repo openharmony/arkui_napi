@@ -22,6 +22,9 @@
 #include "ffrt.h"
 #include "c/executor_task.h"
 #endif
+#ifdef ENABLE_UCOLLECTION
+#include "cpu_collector_client.h"
+#endif
 
 namespace panda::ecmascript {
 
@@ -154,6 +157,12 @@ void ArkIdleMonitor::ClearIdleStats()
 void ArkIdleMonitor::NotifyTryCompressGC()
 {
 #if defined(ENABLE_EVENT_HANDLER)
+    double cpuUsage = GetCpuUsage();
+    if (cpuUsage >= IDLE_CPU_USAGE) {
+        HILOG_INFO("ArkIdleMonitor: Sending a quiet notification is canceled due to high CPU usage: %{public}.2f",
+            cpuUsage);
+        return;
+    }
     if (mainThreadHandler_ == nullptr) {
         mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
@@ -177,6 +186,20 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
 {
     inBackground_.store(inBackground, std::memory_order_relaxed);
     ClearIdleStats();
+}
+
+double ArkIdleMonitor::GetCpuUsage() const
+{
+#ifdef ENABLE_UCOLLECTION
+    auto collector = OHOS::HiviewDFX::UCollectClient::CpuCollector::Create();
+    auto collectResult = collector->GetSysCpuUsage();
+    if (collectResult.retCode == OHOS::HiviewDFX::UCollect::UcError::SUCCESS) {
+        HILOG_DEBUG("ArkIdleMonitor cpu usage: %{public}.2f", collectResult.data);
+        return collectResult.data;
+    }
+    HILOG_ERROR("ArkIdleMonitor get cpu usage failed, error code:%{public}d", collectResult.retCode);
+#endif
+    return 0.0f;
 }
 }
 
