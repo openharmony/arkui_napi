@@ -119,6 +119,7 @@ ohos_source_set("ace_napi_static") {
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
+      "hiview:libucollection_client",
       "init:libbegetutil",
     ]
 
@@ -130,6 +131,7 @@ ohos_source_set("ace_napi_static") {
     defines += [
       "ENABLE_HITRACE",
       "ENABLE_EVENT_HANDLER",
+      "ENABLE_UCOLLECTION",
       "ENABLE_FFRT",
     ]
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
