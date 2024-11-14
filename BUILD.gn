@@ -324,12 +324,12 @@ ohos_source_set("ace_container_scope_static") {
 }
 
 group("napi_packages") {
-  deps = [
-    ":ace_napi",
-    "interfaces/inner_api/cjffi/ark_interop:ark_interop",
-  ]
+  deps = [ ":ace_napi" ]
   if (target_cpu == "arm64") {
     deps += [ "jsvm:libjsvm" ]
+  }
+  if (target_cpu == "arm64" || target_cpu == "x86_64") {
+    deps += [ "interfaces/inner_api/cjffi/ark_interop:ark_interop" ]
   }
 }
 
