@@ -277,9 +277,7 @@ ohos_shared_library("cj_bind_ffi") {
 }
 
 group("napi_packages") {
-  deps = [
-    ":ace_napi",
-  ]
+  deps = [ ":ace_napi" ]
   if (target_cpu == "arm64") {
     deps += [ "jsvm:libjsvm" ]
   }
