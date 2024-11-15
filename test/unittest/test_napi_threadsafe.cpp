@@ -91,6 +91,9 @@ static int32_t g_receiveCnt = 0;
 static bool g_isTailA = false;
 static bool g_isTailB = false;
 
+static constexpr int INT_ONE = 1;
+static constexpr int INT_TWO = 2;
+
 static void TsFuncCallJs(napi_env env, napi_value tsfn_cb, void* context, void* data)
 {
     HILOG_INFO("TsFuncCallJs called");
@@ -119,6 +122,7 @@ static void TsFuncCallJsWithNewCall(napi_env env, napi_value tsfn_cb, void* cont
         g_callDepth--;
         auto status = napi_call_threadsafe_function(tsFunc, data, napi_tsfn_nonblocking);
         EXPECT_EQ(status, napi_ok);
+        return;
     }
     if (g_callDepth == 0) {
         auto status = napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
@@ -1456,4 +1460,61 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest012, testing::ext::TestSize.Level1)
     }
 
     HILOG_INFO("Threadsafe_Test_1200 end");
+}
+
+
+struct CallbackCountData {
+    napi_threadsafe_function tsfn;
+    napi_async_work work;
+    int callThreadsafeCount;
+    int callbackCount;
+};
+
+static void callJSCallBack(napi_env env, napi_value tsfn_cb, void* context, void* data)
+{
+    CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(data);
+    if (callbackData->callThreadsafeCount == INT_ONE) {
+        callbackData->callThreadsafeCount++;
+        napi_call_threadsafe_function(callbackData->tsfn, (void *)callbackData, napi_tsfn_nonblocking);
+        napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
+    }
+    callbackData->callbackCount++;
+}
+
+static void finalizeCallBack(napi_env env, void* finalizeData, void* hint)
+{
+    CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(finalizeData);
+    EXPECT_EQ(callbackData->callbackCount, INT_TWO);
+    delete callbackData;
+}
+
+static void executeWork(napi_env env, void *data)
+{
+    CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(data);
+    callbackData->callThreadsafeCount++;
+    napi_call_threadsafe_function(callbackData->tsfn, (void *)callbackData, napi_tsfn_nonblocking);
+}
+
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest013, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeTest013 start");
+    napi_env env = (napi_env)engine_;
+    CallbackCountData *callbackData = new CallbackCountData();
+    callbackData->callThreadsafeCount = 0;
+    callbackData->callbackCount = 0;
+    napi_value resourceName = 0;
+    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
+
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, callbackData, finalizeCallBack, callbackData, callJSCallBack, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+
+    napi_create_async_work(env, nullptr, resourceName, executeWork,
+        [](napi_env env, napi_status status, void* data) {
+            CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(data);
+            napi_delete_async_work(env, callbackData->work);
+        },
+        callbackData, &callbackData->work);
+    napi_queue_async_work(env, callbackData->work);
+    HILOG_INFO("ThreadsafeTest013 end");
 }
