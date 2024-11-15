@@ -4137,3 +4137,18 @@ NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* re
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+
+    *result = nativeValue->IsBitVector(vm);
+
+    return napi_clear_last_error(env);
+}
