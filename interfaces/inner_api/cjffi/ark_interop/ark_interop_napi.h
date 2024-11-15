@@ -158,6 +158,8 @@ EXPORT ARKTS_Engine ARKTS_CreateEngine();
 EXPORT void* ARKTS_GetNAPIEnv(ARKTS_Engine engine);
 EXPORT void ARKTS_DestroyEngine(ARKTS_Engine engine);
 EXPORT ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine);
+EXPORT ARKTS_Engine ARKTS_CreateEngineWithNewThread();
+EXPORT uint64_t ARKTS_GetThreadIdOfEngine(ARKTS_Engine engine);
 
 EXPORT bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const char* entryPoint,
     bool forceReload);
