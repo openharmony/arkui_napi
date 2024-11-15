@@ -122,4 +122,5 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
                                                           napi_value arraybuffer,
                                                           void** data,
                                                           size_t* byte_length);
+NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* result);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
