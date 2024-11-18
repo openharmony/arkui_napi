@@ -30,6 +30,7 @@
                 "faultloggerd",
                 "hilog",
                 "hitrace",
+                "hiview",
                 "icu",
                 "libuv",
                 "node",

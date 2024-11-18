@@ -159,6 +159,8 @@ public:
     void SetStartTimerCallback();
 
 private:
+    double GetCpuUsage() const;
+
     EcmaVM* vm_;
 
     static constexpr int IDLE_CHECK_LENGTH = 15;
@@ -170,6 +172,7 @@ private:
     static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000; // ms
     static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 30; // ms
     static constexpr double IDLE_RATIO = 0.985f;
+    static constexpr double IDLE_CPU_USAGE = 0.5f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
 
     std::atomic<bool> idleState_ {false};
