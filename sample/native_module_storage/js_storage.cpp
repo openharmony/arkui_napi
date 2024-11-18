@@ -616,7 +616,9 @@ static napi_value JSStorageGetSync(napi_env env, napi_callback_info info)
     } else if (valueLen > 0) {
         napi_create_string_utf8(env, value, valueLen, &result);
     } else {
-        objectInfo->Emit(nullptr, "error");
+        if (objectInfo != nullptr) {
+            objectInfo->Emit(nullptr, "error");
+        }
         NAPI_ASSERT(env, false, "key does not exist");
     }
     return result;
