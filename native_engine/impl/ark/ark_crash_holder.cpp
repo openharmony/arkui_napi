@@ -64,7 +64,7 @@ void CrashHolder::SetCrashObj(const char* info)
 
 void CrashHolder::UpdateCallbackPtr(uintptr_t addr)
 {
-    if (sprintf_s(data_ + size_, FORMATED_FUNCPTR_LENGTH, "%" PRIuPTR, addr) != EOK) {
+    if (sprintf_s(data_ + size_, FORMATED_FUNCPTR_LENGTH, "%" PRIuPTR, addr) < 0) {
         HILOG_ERROR("Failed to update callback info: %{public}" PRIuPTR, addr);
     }
 }
