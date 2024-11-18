@@ -37,8 +37,8 @@ using OHOS::Ace::ContainerScope;
 #endif
 
 #ifdef ENABLE_HITRACE
-bool g_napiTraceIdEnabled = false;
-bool g_ParamUpdated = false;
+std::atomic<bool> g_napiTraceIdEnabled(false);
+std::atomic<bool> g_ParamUpdated(false);
 constexpr size_t TRACE_BUFFER_SIZE = 120;
 constexpr size_t TRACEID_PARAM_SIZE = 10;
 const std::string TRACE_POINT_QUEUE = "napi::NativeAsyncWork::Queue";
@@ -57,19 +57,19 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     work_.data = this;
     (void)asyncResourceName;
 #ifdef ENABLE_HITRACE
-    if (!g_ParamUpdated) {
+    if (!g_ParamUpdated.load()) {
         char napiTraceIdEnabled[TRACEID_PARAM_SIZE] = {0};
         int ret = GetParameter("persist.hiviewdfx.napitraceid.enabled", "false",
             napiTraceIdEnabled, sizeof(napiTraceIdEnabled));
         if (ret > 0 && strcmp(napiTraceIdEnabled, "true") == 0) {
-            g_napiTraceIdEnabled = true;
+            g_napiTraceIdEnabled.store(true);
         }
-        g_ParamUpdated = true;
+        g_ParamUpdated.store(true);
     }
     bool createdTraceId = false;
 
     HiTraceId thisId = HiTraceChain::GetId();
-    if (g_napiTraceIdEnabled && (!thisId.IsValid())) {
+    if (g_napiTraceIdEnabled.load() && (!thisId.IsValid())) {
         thisId = HiTraceChain::Begin("New NativeAsyncWork", 0);
         createdTraceId = true;
     }
