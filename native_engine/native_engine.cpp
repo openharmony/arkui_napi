@@ -116,8 +116,6 @@ static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* contex
         CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
         cbw->cb();
         delete cbw;
-        cbw = nullptr;
-        data = nullptr;
     }
 }
 
