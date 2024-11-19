@@ -17,6 +17,7 @@
 #define NAPI_ARK_INTEROP_INTERNAL_H
 
 #include <string>
+#include <native_engine/native_engine.h>
 
 #include "ark_interop_macro.h"
 #include "ark_interop_napi.h"
@@ -51,7 +52,9 @@ using ARKTS_Loop = std::shared_ptr<OHOS::AppExecFwk::EventHandler>;
 using ARKTS_Loop = void*;
 #endif
 
+// @deprecated
 ARKTS_Loop ARKTS_GetOrCreateEventHandler(ARKTS_Env env);
+bool ARKTSInner_InitLoop(ARKTS_Env env, uv_loop_t* loop);
 void ARKTS_DisposeEventHandler(ARKTS_Env env);
 void ARKTS_DisposeJSContext(ARKTS_Env env);
 

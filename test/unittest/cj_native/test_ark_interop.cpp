@@ -698,6 +698,7 @@ void ArkInteropTest::TestPromise()
     auto onResolved = ARKTS_CreateFunc(env, id);
     ARKTS_PromiseThen(env, promise, onResolved, ARKTS_CreateUndefined());
     ARKTS_PromiseCapabilityResolve(env, promiseCap, ARKTS_CreateUndefined());
+    EXPECT_TRUE(resolved);
 
     ARKTS_CloseScope(env, scope);
 }

@@ -95,6 +95,56 @@ void UVLoopHandler::OnTriggered()
 }
 #endif
 
+static void ARKTSInner_DisposeEngine(ARKTS_Engine engine)
+{
+#ifdef __OHOS__
+    if (auto loop = engine->engine->GetUVLoop()) {
+        auto fd = uv_backend_fd(loop);
+        engine->eventHandler->RemoveFileDescriptorListener(fd);
+    }
+#endif
+    delete engine->engine;
+    if (engine->vm) {
+        auto env = P_CAST(engine->vm, ARKTS_Env);
+        ARKTS_DisposeJSContext(env);
+        ARKTS_DisposeEventHandler(env);
+        panda::JSNApi::DestroyJSVM(engine->vm);
+    }
+    engine->engine = nullptr;
+    engine->vm = nullptr;
+}
+
+static bool ARKTSInner_InitEngineLoop(ARKTS_Engine result, ArkNativeEngine* engine, EcmaVM* vm)
+{
+#ifdef __OHOS__
+    result->eventHandler = ARKTS_GetOrCreateEventHandler(P_CAST(vm, ARKTS_Env));
+    if (!result->eventHandler) {
+        return false;
+    }
+#endif
+    auto loop = engine->GetUVLoop();
+    if (!loop) {
+        if (!engine->ReinitUVLoop()) {
+            LOGE("init uv loop failed");
+            return false;
+        }
+        loop = engine->GetUVLoop();
+    }
+    panda::JSNApi::SetLoop(vm, loop);
+    if (!ARKTSInner_InitLoop(reinterpret_cast<ARKTS_Env>(vm), loop)) {
+        LOGE("init async loop failed");
+        return false;
+    }
+
+#ifdef __OHOS__
+    uv_run(loop, UV_RUN_NOWAIT);
+    auto fd = uv_backend_fd(loop);
+    uint32_t events = OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT | OHOS::AppExecFwk::FILE_DESCRIPTOR_OUTPUT_EVENT;
+    result->eventHandler->AddFileDescriptorListener(fd, events, std::make_shared<UVLoopHandler>(loop), "uvLoopTask");
+#endif
+    return true;
+}
+
 ARKTS_Engine ARKTS_CreateEngine()
 {
     panda::RuntimeOption options;
@@ -120,32 +170,13 @@ ARKTS_Engine ARKTS_CreateEngine()
     }
     result->vm = vm;
     result->engine = engine;
-#ifdef __OHOS__
-    result->eventHandler = ARKTS_GetOrCreateEventHandler(P_CAST(vm, ARKTS_Env));
-    if (!result->eventHandler) {
-        ARKTS_DestroyEngine(result);
+    result->threadId = ARKTS_GetPosixThreadId();
+
+    if (!ARKTSInner_InitEngineLoop(result, engine, vm)) {
+        ARKTSInner_DisposeEngine(result);
+        delete result;
         return nullptr;
     }
-#endif
-    auto loop = engine->GetUVLoop();
-    if (loop == nullptr) {
-        if (!engine->ReinitUVLoop()) {
-            LOGE("init uv loop failed");
-            ARKTS_DestroyEngine(result);
-            return nullptr;
-        }
-        loop = engine->GetUVLoop();
-    }
-    panda::JSNApi::SetLoop(vm, loop);
-
-#ifdef __OHOS__
-    uv_run(loop, UV_RUN_NOWAIT);
-    auto fd = uv_backend_fd(loop);
-    uint32_t events = OHOS::AppExecFwk::FILE_DESCRIPTOR_INPUT_EVENT | OHOS::AppExecFwk::FILE_DESCRIPTOR_OUTPUT_EVENT;
-    result->eventHandler->AddFileDescriptorListener(fd, events, std::make_shared<UVLoopHandler>(loop), "uvLoopTask");
-#endif
-
-    result->threadId = ARKTS_GetPosixThreadId();
 
     return result;
 }
@@ -156,19 +187,6 @@ void* ARKTS_GetNAPIEnv(ARKTS_Engine engine)
     return engine->engine;
 }
 
-static void ARKTSInnerDisposeEngine(ARKTS_Engine engine)
-{
-    delete engine->engine;
-    if (engine->vm) {
-        auto env = P_CAST(engine->vm, ARKTS_Env);
-        ARKTS_DisposeJSContext(env);
-        ARKTS_DisposeEventHandler(env);
-        panda::JSNApi::DestroyJSVM(engine->vm);
-    }
-    engine->engine = nullptr;
-    engine->vm = nullptr;
-}
-
 void ARKTS_DestroyEngine(ARKTS_Engine engine)
 {
     ARKTS_ASSERT_V(ARKTS_GetPosixThreadId() != ARKTS_GetThreadIdOfEngine(engine),
@@ -177,7 +195,7 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
     std::condition_variable cv;
     std::atomic<bool> isComplete = false;
     engine->eventHandler->PostTask([engine, &cv, &isComplete] {
-        ARKTSInnerDisposeEngine(engine);
+        ARKTSInner_DisposeEngine(engine);
         isComplete = true;
         cv.notify_one();
     });
@@ -191,7 +209,7 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
         engine->newRunner->Stop();
     }
 #else
-    ARKTSInnerDisposeEngine(engine);
+    ARKTSInner_DisposeEngine(engine);
 #endif
     delete engine;
 }

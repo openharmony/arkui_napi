@@ -24,7 +24,11 @@
 DECL_START
 
 EXPORT void ARKTS_SetCJModuleCallback(struct ARKTS_ModuleCallbacks* callback);
+/**
+* @deprecated use ARKTS_LoadModuleByNapiEnv instead
+*/
 EXPORT panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName);
+EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllName);
 
 DECL_END
 
