@@ -19,7 +19,7 @@
 #include "ark_crash_holder.h"
 #include "utils/log.h"
 
-#ifdef OHOS_PLATFORM
+#if defined(OHOS_STANDARD_PLATFORM) && (defined(NAPI_TARGET_ARM64) || defined(NAPI_TARGET_ARM))
 /* dfx interface, type 0 for string */
 extern "C" uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr);
 extern "C" uintptr_t DFX_ResetCrashObj(uintptr_t addr);
