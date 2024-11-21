@@ -293,7 +293,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         tailNativeModule_->next = nullptr;
         tailNativeModule_->moduleLoaded = true;
         tailNativeModule_->systemFilePath = "";
-        HILOG_DEBUG("At tail register module name is '%{public}s', isAppModule is %{public}d",
+        HILOG_INFO("At tail register module name is '%{public}s', isAppModule is %{public}d",
             tailNativeModule_->name, isAppModule_);
     } else {
         if (!CreateHeadNativeModule()) {
@@ -310,7 +310,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         headNativeModule_->getABCCode = nativeModule->getABCCode;
         headNativeModule_->moduleLoaded = true;
         headNativeModule_->systemFilePath = "";
-        HILOG_DEBUG("At head register module name is '%{public}s', isAppModule is %{public}d",
+        HILOG_INFO("At head register module name is '%{public}s', isAppModule is %{public}d",
             headNativeModule_->name, isAppModule_);
     }
 }
@@ -610,6 +610,9 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, moduleName);
+#endif
     NativeModule* nativeModule =
         FindNativeModuleByCache(key.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
 #endif
@@ -654,7 +657,9 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         (void)pthread_mutex_unlock(&mutex_);
     }
     MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
-
+#ifdef ENABLE_HITRACE
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
     HILOG_DEBUG("load native module %{public}s", (nativeModule == nullptr) ? "failed" : "success");
     return nativeModule;
 }
