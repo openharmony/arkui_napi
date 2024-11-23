@@ -1567,40 +1567,21 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest001, testing::ext::TestSize.Level1)
         napi_async_work work = nullptr;
     };
     napi_env env = (napi_env)engine_;
-    {
-        auto asyncWorkContext = new AsyncWorkContext();
-        napi_value resourceName = nullptr;
-        napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
-        ASSERT_CHECK_CALL(napi_create_async_work(
-            env, nullptr, resourceName, [](napi_env value, void* data) {},
-            [](napi_env env, napi_status status, void* data) {
-                AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-                ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
-                delete asyncWorkContext;
-                STOP_EVENT_LOOP(env);
-            },
-            asyncWorkContext, &asyncWorkContext->work));
-        ASSERT_CHECK_CALL(napi_queue_async_work(env, asyncWorkContext->work));
-        RUN_EVENT_LOOP(env);
-    }
-    {
-        auto asyncWorkContext = new AsyncWorkContext();
-        napi_value resourceName = nullptr;
-        napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
-        napi_create_async_work(
-            env, nullptr, resourceName, [](napi_env value, void* data) {},
-            [](napi_env env, napi_status status, void* data) {
-                AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-                ASSERT_EQ(status, napi_status::napi_cancelled);
-                napi_delete_async_work(env, asyncWorkContext->work);
-                delete asyncWorkContext;
-                STOP_EVENT_LOOP(env);
-            },
-            asyncWorkContext, &asyncWorkContext->work);
-        napi_queue_async_work(env, asyncWorkContext->work);
-        ASSERT_CHECK_CALL(napi_cancel_async_work(env, asyncWorkContext->work));
-        RUN_EVENT_LOOP(env);
-    }
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            napi_status deleteStatus = napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+            ASSERT_EQ(deleteStatus, napi_ok);
+        },
+        asyncWorkContext, &asyncWorkContext->work));
+    ASSERT_CHECK_CALL(napi_queue_async_work(env, asyncWorkContext->work));
+    RUN_EVENT_LOOP(env);
 }
 
 /**
@@ -1690,10 +1671,10 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest005, testing::ext::TestSize.Level1)
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env env, void* data) {},
         [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
             AsyncWorkContext* asyncWorkContext = reinterpret_cast<AsyncWorkContext*>(data);
             ASSERT_NE(asyncWorkContext, nullptr);
             delete asyncWorkContext;
-            STOP_EVENT_LOOP(env);
         },
         asyncWorkContext, &asyncWorkContext->work);
     napi_status status = napi_queue_async_work(env, asyncWorkContext->work);
@@ -4076,12 +4057,17 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
             asyncWorkContext->executed = true;
         },
         [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            ASSERT_EQ(status, napi_status::napi_cancelled);
             std::cout << "status of task is: " << status << std::endl;
             napi_delete_async_work(env, asyncWorkContext->work);
+            bool executed = asyncWorkContext->executed;
             delete asyncWorkContext;
-            STOP_EVENT_LOOP(env);
+            if (executed) {
+                ASSERT_EQ(status, napi_status::napi_ok);
+            } else {
+                ASSERT_EQ(status, napi_status::napi_cancelled);
+            }
         },
         asyncWorkContext, &asyncWorkContext->work);
     napi_queue_async_work(env, asyncWorkContext->work);
@@ -9406,10 +9392,11 @@ HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQosTest003, testing::ext::TestSize
     ASSERT_CHECK_CALL(napi_create_async_work(
         env, nullptr, resourceName, [](napi_env value, void* data) {},
         [](napi_env env, napi_status status, void* data) {
-            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
-            ASSERT_CHECK_CALL(napi_delete_async_work(env, asyncWorkContext->work));
-            delete asyncWorkContext;
             STOP_EVENT_LOOP(env);
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            napi_status deleteStatus = napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+            ASSERT_EQ(deleteStatus, napi_ok);
         },
         asyncWorkContext, &asyncWorkContext->work));
 

@@ -92,7 +92,7 @@ HWTEST_F(NativeEngineTest, SuspendVM001, testing::ext::TestSize.Level0)
         return;
     }
     for (int i = 0; i < 3; ++i) { // 3:Loop 3 times
-        sleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         engine_->CheckSafepoint();
     }
     ASSERT_TRUE(!args->initialState);
