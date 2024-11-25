@@ -18,7 +18,7 @@ import("//foundation/ability/form_fwk/form_fwk.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
-ohos_unittest("test_ark_unittest") {
+ohos_unittest("test_ark_unittest_base") {
   module_out_path = module_output_path
 
   include_dirs = ark_include
@@ -100,7 +100,7 @@ group("unittest") {
   testonly = true
   deps = [
     ":test_ark_api_allowlist",
-    ":test_ark_unittest",
+    ":test_ark_unittest_base",
     ":test_ark_unittest_threadsafe",
   ]
   if (target_cpu == "arm64") {
