@@ -438,6 +438,42 @@ HWTEST_F(NapiSendableTest, SendableClassTest005, testing::ext::TestSize.Level1)
     ASSERT_STREQ("parentNonStatic", str);
 }
 
+HWTEST_F(NapiSendableTest, SendableClassTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value parentClass = nullptr;
+    napi_status parentStatus = napi_define_sendable_class(
+        env, "ParentClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 0, nullptr, nullptr, &parentClass);
+    ASSERT_EQ(parentStatus, napi_ok);
+    napi_value childClass = nullptr;
+    napi_status childStatus = napi_define_sendable_class(
+        env, "ChildClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 0, nullptr, parentClass, &childClass);
+    ASSERT_EQ(childStatus, napi_ok);
+
+    napi_value childInstance = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, childClass, 0, nullptr, &childInstance));
+
+    bool isInstanceOfParent = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, childInstance, parentClass, &isInstanceOfParent));
+    ASSERT_TRUE(isInstanceOfParent);
+
+    bool isInstanceOfChild = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, childInstance, childClass, &isInstanceOfChild));
+    ASSERT_TRUE(isInstanceOfChild);
+}
+
 /**
  * @tc.name: CreateSendableMap001
  * @tc.desc: Test napi_create_sendable_map.
