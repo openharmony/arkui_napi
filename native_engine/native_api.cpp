@@ -1213,9 +1213,11 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
-    if (funcInfo != nullptr) {
-        scopeId = funcInfo->scopeId;
+    if (!function->IsConcurrentFunction(vm)) {
+        auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
+        if (funcInfo != nullptr) {
+            scopeId = funcInfo->scopeId;
+        }
     }
     OHOS::Ace::ContainerScope containerScope(scopeId);
 #endif
