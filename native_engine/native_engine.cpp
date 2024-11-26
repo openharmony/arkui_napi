@@ -28,6 +28,7 @@
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr int32_t API11 = 11;
+static constexpr int32_t API_VERSION_MASK = 1000;
 
 using panda::JSValueRef;
 using panda::Local;
@@ -658,11 +659,17 @@ NativeEngine* NativeEngine::GetHostEngine() const
 void NativeEngine::SetApiVersion(int32_t apiVersion)
 {
     apiVersion_ = apiVersion;
+    realApiVersion_ = apiVersion % API_VERSION_MASK;
 }
 
 int32_t NativeEngine::GetApiVersion()
 {
     return apiVersion_;
+}
+
+int32_t NativeEngine::GetRealApiVersion()
+{
+    return realApiVersion_;
 }
 
 bool NativeEngine::IsApplicationApiVersionAPI11Plus()
