@@ -55,3 +55,7 @@ declare_args() {
 is_ohos_standard_system = is_standard_system && !is_arkui_x
 
 module_output_path = "arkcompiler/napi"
+
+if (!defined(ark_standalone_build)) {
+  ark_standalone_build = false
+}
