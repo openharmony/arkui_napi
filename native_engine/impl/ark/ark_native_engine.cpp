@@ -262,7 +262,7 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
     }
 
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
-    Local<JSValueRef> localParent = JSValueRef::Null(vm);
+    Local<JSValueRef> localParent = JSValueRef::Hole(vm);
     if (parent != nullptr) {
         localParent = LocalValueFromJsValue(parent);
     }
