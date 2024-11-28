@@ -2757,7 +2757,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     if (LIKELY(value->IsTypedArray(vm))) {
         Local<panda::TypedArrayRef> typedArray = Local<panda::TypedArrayRef>(value);
         Local<ArrayBufferRef> localArrayBuffer = typedArray->GetArrayBuffer(vm);
-        size_t byteoffset = typedArray->ByteOffset(vm);
+        size_t byteOffset = typedArray->ByteOffset(vm);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetTypedArrayType(typedArray));
         }
@@ -2765,18 +2765,18 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteoffset;
+            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteOffset;
         }
         if (arraybuffer != nullptr) {
             *arraybuffer = JsValueFromLocalValue(localArrayBuffer);
         }
         if (byte_offset != nullptr) {
-            *byte_offset = byteoffset;
+            *byte_offset = byteOffset;
         }
     } else if (value->IsSharedTypedArray(vm)) {
         Local<panda::SendableTypedArrayRef> typedArray = Local<panda::SendableTypedArrayRef>(value);
         Local<panda::SendableArrayBufferRef> localArrayBuffer = typedArray->GetArrayBuffer(vm);
-        size_t byteoffset = typedArray->ByteOffset(vm);
+        size_t byteOffset = typedArray->ByteOffset(vm);
         if (type != nullptr) {
             *type = static_cast<napi_typedarray_type>(engine->GetSendableTypedArrayType(typedArray));
         }
@@ -2784,13 +2784,13 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *length = typedArray->ByteLength(vm);
         }
         if (data != nullptr) {
-            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteoffset;
+            *data = static_cast<uint8_t*>(localArrayBuffer->GetBuffer(vm)) + byteOffset;
         }
         if (arraybuffer != nullptr) {
             *arraybuffer = JsValueFromLocalValue(localArrayBuffer);
         }
         if (byte_offset != nullptr) {
-            *byte_offset = byteoffset;
+            *byte_offset = byteOffset;
         }
     } else {
         HILOG_ERROR("%{public}s invalid arg", __func__);
