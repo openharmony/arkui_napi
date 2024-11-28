@@ -48,6 +48,21 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 }
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
+                                       napi_value value,
+                                       ArkNativeReferenceConfig &config)
+    : engine_(engine),
+      value_(),
+      refCount_(config.initialRefcount),
+      isProxyReference_(config.isProxyReference),
+      deleteSelf_(config.deleteSelf),
+      napiCallback_(config.napiCallback),
+      data_(config.data)
+{
+    value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
+    ArkNativeReferenceConstructor(config.initialRefcount, config.deleteSelf);
+}
+
+ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
@@ -80,7 +95,11 @@ ArkNativeReference::~ArkNativeReference()
         return;
     }
     hasDelete_ = true;
-    value_.FreeGlobalHandleAddr();
+    if (isProxyReference_) {
+        value_.FreeXRefGlobalHandleAddr();
+    } else {
+        value_.FreeGlobalHandleAddr();
+    }
     FinalizeCallback(FinalizerState::DESTRUCTION);
 }
 
@@ -178,7 +197,11 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 void ArkNativeReference::FreeGlobalCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
-    that->value_.FreeGlobalHandleAddr();
+    if (that->isProxyReference_) {
+        that->value_.FreeXRefGlobalHandleAddr();
+    } else {
+        that->value_.FreeGlobalHandleAddr();
+    }
 }
 
 void ArkNativeReference::NativeFinalizeCallBack(void* ref)

@@ -1833,6 +1833,39 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
+                                       napi_value js_object,
+                                       void* native_object,
+                                       napi_finalize finalize_cb,
+                                       napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, finalize_cb);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    size_t nativeBindingSize = 0;
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    NativeReference* ref = nullptr;
+    ref = engine->CreateXRefReference(js_object, 0, false, callback, native_object);
+    if (reference != nullptr) {
+        *reference = ref;
+    }
+    object->SetNativePointerFieldCount(vm, 1);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
+    PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
 // Ensure thread safety! Async finalizer will be called on the async thread.
 NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
                                                   napi_value js_object,
@@ -1937,6 +1970,28 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     panda::JsiFastNativeScope fastNativeScope(vm);
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
+    *result = nullptr;
+    if (val->IsObject(vm)) {
+        Local<panda::ObjectRef> ext(val);
+        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(vm, 0));
+        *result = ref != nullptr ? ref->GetData() : nullptr;
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_xref_unwrap(napi_env env, napi_value js_object, void** result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
     if (val->IsObject(vm)) {
