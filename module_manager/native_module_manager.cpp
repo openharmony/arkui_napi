@@ -293,8 +293,11 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         tailNativeModule_->next = nullptr;
         tailNativeModule_->moduleLoaded = true;
         tailNativeModule_->systemFilePath = "";
-        HILOG_INFO("At tail register module name is '%{public}s', isAppModule is %{public}d",
-            tailNativeModule_->name, isAppModule_);
+        if (isAppModule_) {
+            HILOG_INFO("At tail register module name is '%{public}s'", tailNativeModule_->name);
+        }
+        HILOG_DEBUG("At tail register module name is '%{public}s', isAppModule is %{public}d", tailNativeModule_->name,
+            isAppModule_);
     } else {
         if (!CreateHeadNativeModule()) {
             HILOG_ERROR("create head nativeModule failed");
