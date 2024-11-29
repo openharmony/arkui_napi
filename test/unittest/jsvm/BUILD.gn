@@ -14,12 +14,10 @@
 import("//build/ohos.gni")
 import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
-import("//foundation/arkui/napi/test/unittest/ut.gni")
 
 ohos_unittest("test_jsvm") {
   module_out_path = "jsvm/unittest"
-  include_dirs = common_include
-  include_dirs += [ "//third_party/node/src" ]
+  include_dirs = []
 
   cflags = [ "-g3" ]
 
@@ -29,6 +27,12 @@ ohos_unittest("test_jsvm") {
   if (use_clang_coverage) {
     defines += [ "CLANG_COVERAGE" ]
   }
+  external_deps = [
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "libuv:uv",
+    "node:node_header_notice",
+  ]
 }
 
 group("jsvm_unittest") {
