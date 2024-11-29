@@ -14,12 +14,11 @@
 import("//foundation/arkui/napi/napi.gni")
 
 import("//build/test.gni")
-import("//foundation/arkui/napi/test/unittest/ut.gni")
 
 ohos_unittest("test_ark_interop") {
   module_out_path = module_output_path
 
-  include_dirs = ark_include
+  include_dirs = []
   include_dirs += [
     "../../../interfaces/inner_api/cjffi/ark_interop/",
     "../../../interfaces/inner_api/cjffi/ark_interop_helper/",
@@ -32,7 +31,6 @@ ohos_unittest("test_ark_interop") {
   deps = [
     "../../..:ace_napi",
     "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
-    "//third_party/libuv:uv",
   ]
   defines = []
   if (use_clang_coverage) {
@@ -43,6 +41,7 @@ ohos_unittest("test_ark_interop") {
     "ets_runtime:libark_jsruntime",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
+    "libuv:uv",
   ]
 }
 
