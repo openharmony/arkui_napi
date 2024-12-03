@@ -16,7 +16,7 @@ import("//build/test.gni")
 import("//foundation/arkui/napi/napi.gni")
 
 ohos_unittest("test_jsvm") {
-  module_out_path = "jsvm/unittest"
+  module_out_path = "node/unittest"
   include_dirs = []
 
   cflags = [ "-g3" ]
