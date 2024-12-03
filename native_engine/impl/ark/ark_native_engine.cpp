@@ -366,8 +366,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     LocalScope scope(vm_);
 
     options_ = new NapiOptions();
-    // Cache of ark runtime cross thread check option.
-    crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
+    // Update cache of ark runtime cross thread check option.
+    UpdateCrossThreadCheckStatus();
 #ifdef ENABLE_CONTAINER_SCOPE
     containerScopeEnable_ = OHOS::system::GetBoolParameter("persist.ace.napiContainerScope.enabled", true);
 #endif
@@ -452,8 +452,8 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
     // enable napi profiler
     EnableNapiProfiler();
 
-    // Cache of ark runtime cross thread check option.
-    crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
+    // Update cache of ark runtime cross thread check option.
+    UpdateCrossThreadCheckStatus();
 
     options_ = new NapiOptions();
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

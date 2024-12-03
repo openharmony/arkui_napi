@@ -386,6 +386,10 @@ public:
     {
         return crossThreadCheck_;
     }
+    inline void UpdateCrossThreadCheckStatus() override
+    {
+        crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm_);
+    }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 
     bool IsContainerScopeEnabled() const override
