@@ -54,12 +54,22 @@ do_man_process() {
     do_compile   > ${out_dir}/log.do_compile
     do_install   > ${out_dir}/log.do_install
     do_strip
-    do_env 1
-    do_fetch     > ${out_dir}/log.do_fetch_unstripped
-    do_patch     > ${out_dir}/log.do_patch_unstripped
-    do_configure > ${out_dir}/log.do_configure_unstripped
-    do_compile   > ${out_dir}/log.do_compile_unstripped
-    do_unstripped_copy
+
+    if [[ "${IS_ASAN}" = "true" && "${USE_HWASEN}" = "true" ]]; then
+        do_env 1
+        do_fetch        > ${out_dir}/log.do_fetch_asan_unstripped
+        do_patch        > ${out_dir}/log.do_patch_asan_unstripped
+        do_configure    > ${out_dir}/log.do_configure_asan_unstripped
+        do_compile      > ${out_dir}/log.do_compile_asan_unstripped
+        do_install_asan > ${out_dir}/log.do_install_asan_unstripped
+    else
+        do_env 1
+        do_fetch     > ${out_dir}/log.do_fetch_unstripped
+        do_patch     > ${out_dir}/log.do_patch_unstripped
+        do_configure > ${out_dir}/log.do_configure_unstripped
+        do_compile   > ${out_dir}/log.do_compile_unstripped
+        do_unstripped_copy
+    fi
 }
 
 do_opt_process() {
@@ -90,6 +100,14 @@ do_opt_process() {
             ;;
         --target_clang_coverage)
             export TARGET_CLANG_COVERAGE=$2
+            shift
+            ;;
+        --is_asan)
+            export IS_ASAN=$2
+            shift
+            ;;
+        --use_hwasan)
+            export USE_HWASEN=$2
             shift
             ;;
         *)

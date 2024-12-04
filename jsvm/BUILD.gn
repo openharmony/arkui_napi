@@ -73,6 +73,10 @@ action("build_libjsvm") {
     rebase_path("$musl_sysroot"),
     "--node_path",
     rebase_path("//third_party/node"),
+    "--is_asan",
+    "$is_asan",
+    "--use_hwasan",
+    "$use_hwasan",
   ]
   if (use_clang_coverage) {
     args += [

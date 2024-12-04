@@ -115,6 +115,17 @@ do_install () {
     cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}
 }
 
+do_install_asan() {
+    # todo replace libv8_shared.so with hwasan
+    mkdir -p ${TARGET_GEN_DIR}/asan
+    cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}/asan
+    cp -u ${workdir}/../../vendor/huawei/binary/artifacts/js_engine_url/lib.unstripped_v8/lib.unstripped/libv8_shared.so ${TARGET_GEN_DIR}/asan
+    
+    mkdir -p ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
+    cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
+    cp -u ${workdir}/../../vendor/huawei/binary/artifacts/js_engine_url/lib.unstripped_v8/lib.unstripped/libv8_shared.so ${TARGET_GEN_DIR}/../../../../../lib.unstripped/jsvm/
+}
+
 do_env() {
     # init workspace
     out_dir=${TARGET_GEN_DIR}/out
@@ -155,6 +166,14 @@ do_env() {
 
     if [[ "${TARGET_CLANG_COVERAGE}" = "true" ]]; then
         cflags+=" --coverage"
+    fi
+
+    if [[ "$1" = 1 && "${IS_ASAN}" = "true" && "${USE_HWASEN}" = "true" ]]; then
+        cflags+=" -shared-libasan"
+        cflags+=" -fsanitize=hwaddress"
+        cflags+=" -mllvm -hwasan-globals=0"
+        cflags+=" -fno-emulated-tls"
+        cflags+=" -fno-omit-frame-pointer"
     fi
 
     cflags+=" ${argurment}"
