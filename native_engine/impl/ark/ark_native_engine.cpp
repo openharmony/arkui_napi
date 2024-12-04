@@ -50,6 +50,8 @@
 #include "musl_preinit_common.h"
 #include "memory_trace.h"
 
+#include "ecmascript/base/config.h"
+
 // LCOV_EXCL_START
 struct alignas(8) HookJsConfig { // 8 is 8 bit
     int32_t jsStackReport = 0;
@@ -735,9 +737,29 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     if (cb != nullptr) {
         if constexpr (changeState) {
             panda::JsiNativeScope nativeScope(vm);
+#if ECMASCRIPT_ENABLE_COLLECTING_OPCODES
+#ifdef ENABLE_HITRACE
+                        StartTrace(HITRACE_TAG_ACE, "Developer::NativeCallBack::One");
+#endif
+#endif
             result = cb(env, runtimeInfo);
+#if ECMASCRIPT_ENABLE_COLLECTING_OPCODES
+#ifdef ENABLE_HITRACE
+                        FinishTrace(HITRACE_TAG_ACE);
+#endif
+#endif
         } else {
+#if ECMASCRIPT_ENABLE_COLLECTING_OPCODES
+#ifdef ENABLE_HITRACE
+                        StartTrace(HITRACE_TAG_ACE, "Developer::NativeCallBack::Two");
+#endif
+#endif
             result = cb(env, runtimeInfo);
+#if ECMASCRIPT_ENABLE_COLLECTING_OPCODES
+#ifdef ENABLE_HITRACE
+                        FinishTrace(HITRACE_TAG_ACE);
+#endif
+#endif
         }
     }
 
