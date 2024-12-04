@@ -136,19 +136,37 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
 
 int main(int argc, char** argv)
 {
-    engine_ = ARKTS_CreateEngine();
     LOGI("main in");
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
-    int ret = testing::UnitTest::GetInstance()->Run();
-    std::thread t([] {
-        ARKTS_DestroyEngine(engine_);
-        engine_ = nullptr;
+
+    auto runner = OHOS::AppExecFwk::EventRunner::Create(true);
+    EXPECT_TRUE(runner);
+    auto handler = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+    EXPECT_TRUE(handler);
+
+    int ret = -1;
+    std::condition_variable cv;
+
+    auto success = handler->PostTask([&ret, &cv] {
+        engine_ = ARKTS_CreateEngine();
+
+        ret = testing::UnitTest::GetInstance()->Run();
+        cv.notify_all();
     });
-    if (!ret) {
-        LOGE("run test failed. return %d", ret);
-        return ret;
-    }
+
+    EXPECT_TRUE(success);
+
+    std::mutex mutex;
+    std::unique_lock<std::mutex> lock(mutex);
+    auto status = cv.wait_for(lock, std::chrono::seconds(10));
+
+    EXPECT_EQ(status, std::cv_status::no_timeout);
+
+    ARKTS_DestroyEngine(engine_);
+    engine_ = nullptr;
+    runner->Stop();
+
     LOGI("main out");
     return ret;
 }
