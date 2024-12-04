@@ -31,7 +31,10 @@ action("copy_v8") {
   deps = []
   script = "copy_v8.sh"
   sources = []
-  outputs = [ "$target_gen_dir/libv8_shared.so" ]
+  outputs = [
+    "$target_gen_dir/libv8_shared.so",
+    "$target_gen_dir/v8-include",
+  ]
   args = [
     "--target_gen_dir",
     rebase_path("$target_gen_dir"),
