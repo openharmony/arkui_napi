@@ -29,6 +29,55 @@ void Print(const char *str)
     printf("%s\n", str);
 }
 
+void PrintException(JSVM_Env env, JSVM_Value exception, const char *call)
+{
+    bool isObject = false;
+    JSVM_Status status = OH_JSVM_IsObject(env, exception, &isObject);
+    ASSERT_EQ(status, JSVM_OK);
+    ASSERT_TRUE(isObject);
+
+    JSVM_Value stack;
+    status = OH_JSVM_GetNamedProperty(env, exception, "stack", &stack);
+    ASSERT_EQ(status, JSVM_OK);
+    char stackStr[BUF_SIZE];
+    OH_JSVM_GetValueStringUtf8(env, stack, stackStr, BUF_SIZE, nullptr);
+    printf("[PrintException] exception.stack: %s\n", stackStr);
+
+    status = OH_JSVM_GetNamedProperty(env, exception, "message", &stack);
+    ASSERT_EQ(status, JSVM_OK);
+    char messageStr[BUF_SIZE];
+    OH_JSVM_GetValueStringUtf8(env, stack, messageStr, BUF_SIZE, nullptr);
+    printf("[PrintException] exception.message: %s\n", messageStr);
+}
+
+void CheckErrorAndException(JSVM_Env env, JSVM_Status returnStatus, const char *call)
+{
+    const JSVM_ExtendedErrorInfo *errorInfo;
+    JSVM_Status status = OH_JSVM_GetLastErrorInfo(env, &errorInfo);
+    ASSERT_EQ(status, JSVM_OK);
+    ASSERT_EQ(returnStatus, errorInfo->errorCode);
+    bool isPending = false;
+    status = OH_JSVM_IsExceptionPending(env, &isPending);
+    ASSERT_EQ(status, JSVM_OK);
+    JSVM_Value exception;
+    status = OH_JSVM_GetAndClearLastException(env, &exception);
+    ASSERT_EQ(status, JSVM_OK);
+    bool isExceptionUndefined = false;
+    status = OH_JSVM_IsUndefined(env, exception, &isExceptionUndefined);
+    ASSERT_EQ(status, JSVM_OK);
+    bool hasException = !isExceptionUndefined;
+    if (hasException) {
+        ASSERT_TRUE(isPending);
+        ASSERT_NE(returnStatus, JSVM_OK);
+        PrintException(env, exception, call);
+        ASSERT_TRUE(false);
+    } else {
+        // no exception
+        ASSERT_FALSE(isPending);
+    }
+    ASSERT_EQ(returnStatus, JSVM_OK);
+}
+
 // jsvm utils
 namespace jsvm {
 
@@ -112,7 +161,7 @@ std::string ToString(JSVM_Value val)
     size_t capacity = length + 1;
     char *buffer = new char[capacity];
     size_t copyLength = 0;
-    JSVMTEST_CALL(OH_JSVM_GetValueStringUtf8(jsvm_env, js_string, buffer, capacity, &copy_length));
+    JSVMTEST_CALL(OH_JSVM_GetValueStringUtf8(jsvm_env, js_string, buffer, capacity, &copyLength));
     std::string str(buffer);
     delete[] buffer;
     return str;
