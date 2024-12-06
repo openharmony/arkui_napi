@@ -73,6 +73,7 @@ EXPORT bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b);
 EXPORT double ARKTS_GetValueNumber(ARKTS_Value value);
 EXPORT bool ARKTS_IsNumber(ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_CreateF64(double value);
+EXPORT ARKTS_Value ARKTS_CreateI32(int32_t value);
 
 EXPORT int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, char* buffer);
 EXPORT int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value);
