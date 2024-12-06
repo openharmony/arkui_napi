@@ -173,7 +173,6 @@ public:
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(napi_value func, napi_value asyncResource,
         napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
-
     virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
@@ -320,7 +319,7 @@ public:
     virtual NativeEngine* GetHostEngine() const;
     virtual void SetApiVersion(int32_t apiVersion);
     virtual int32_t GetApiVersion();
-    virtual int32_t GetRealApiVersion();
+    virtual int32_t GetRealApiVersion() const;
     virtual bool IsApplicationApiVersionAPI11Plus();
 
     virtual napi_status AddCleanupHook(CleanupCallback fun, void* arg);
