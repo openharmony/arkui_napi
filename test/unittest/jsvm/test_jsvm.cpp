@@ -20,10 +20,15 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <csetjmp>
 
 #include "jsvm.h"
 #include "jsvm_types.h"
 #include "jsvm_utils.h"
+
+#define JSVM_PARENT_CLASS_DES_COUNT 2
+#define JSVM_OBJECT_INTERFAIELD_COUNT 3
+#define JSVM_DEFINE_CLASS_OPTIONS_COUNT 2
 
 using namespace std;
 using namespace testing;
@@ -777,4 +782,325 @@ HWTEST_F(JSVMTest, JSVMIterator001, TestSize.Level1)
     JSVM_Value result;
     JSVMTEST_CALL(OH_JSVM_GetSymbolIterator(env, &result));
     ASSERT_TRUE(jsvm::StrictEquals(result, jsvm::Run("Symbol.iterator")));
+}
+
+static jmp_buf g_buf;
+static bool g_beforeFlag1 = false;
+static bool g_beforeFlag2 = false;
+static bool g_beforeFlag3 = false;
+static bool g_afterFlag1 = false;
+static bool g_afterFlag2 = false;
+static int g_nativeValue = 2024;
+
+void OnBeforeGC(JSVM_VM vm, JSVM_GCType gcType, JSVM_GCCallbackFlags flags, void *data)
+{
+    g_beforeFlag1 = true;
+}
+
+void OnBeforeGC2(JSVM_VM vm, JSVM_GCType gcType, JSVM_GCCallbackFlags flags, void *data)
+{
+    if (*(int*)data == g_nativeValue) {
+        g_beforeFlag2 = true;
+    }
+}
+
+void OnBeforeGC3(JSVM_VM vm, JSVM_GCType gcType, JSVM_GCCallbackFlags flags, void *data)
+{
+    g_beforeFlag3 = true;
+}
+
+void OnAfterGC(JSVM_VM vm, JSVM_GCType gcType, JSVM_GCCallbackFlags flags, void *data)
+{
+    g_afterFlag1 = true;
+}
+
+void OnAfterGC2(JSVM_VM vm, JSVM_GCType gcType, JSVM_GCCallbackFlags flags, void *data)
+{
+    g_afterFlag2 = true;
+}
+
+HWTEST_F(JSVMTest, JSVMForwardUsageApplicationScenariosOfGCCB, TestSize.Level1)
+{
+    g_beforeFlag1 = false;
+    g_beforeFlag2 = false;
+    g_beforeFlag3 = false;
+    g_afterFlag1 = false;
+    g_afterFlag2 = false;
+    int data = g_nativeValue;
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC, JSVM_GC_TYPE_ALL, NULL));
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC,
+        OnBeforeGC2, JSVM_GC_TYPE_ALL, (void*)(&data)));
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC3, JSVM_GC_TYPE_SCAVENGE, NULL));
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_AFTER_GC, OnAfterGC, JSVM_GC_TYPE_ALL, NULL));
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_AFTER_GC, OnAfterGC2, JSVM_GC_TYPE_ALL, NULL));
+
+    JSVMTEST_CALL(OH_JSVM_RemoveHandlerForGC(vm, JSVM_CB_TRIGGER_AFTER_GC, OnAfterGC2, NULL));
+
+    // can not remove handler that has not been added.
+    ASSERT_TRUE(OH_JSVM_RemoveHandlerForGC(vm, JSVM_CB_TRIGGER_AFTER_GC, OnAfterGC2, new int(12)) == JSVM_INVALID_ARG);
+
+    jsvm::TryTriggerGC();
+    ASSERT_TRUE(g_beforeFlag1);
+    ASSERT_TRUE(g_beforeFlag2);
+    ASSERT_FALSE(g_beforeFlag3);
+    ASSERT_TRUE(g_afterFlag1);
+    ASSERT_FALSE(g_afterFlag2);
+}
+
+HWTEST_F(JSVMTest, JSVMNegativeApplicationScenariosOfGCCB, TestSize.Level1) {
+    JSVMTEST_CALL(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC, JSVM_GC_TYPE_ALL, NULL));
+    // 1. Repeatedly register the same handler and native-data.
+    ASSERT_TRUE(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC, JSVM_GC_TYPE_ALL, NULL)
+        == JSVM_INVALID_ARG);
+    // 2. Register an empty handler.
+    ASSERT_TRUE(OH_JSVM_AddHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, NULL, JSVM_GC_TYPE_ALL, NULL)
+        == JSVM_INVALID_ARG);
+    // 3. Remove unregistered handlers.
+    ASSERT_TRUE(OH_JSVM_RemoveHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC2, NULL) == JSVM_INVALID_ARG);
+    // 4. Remove the same handler and native-data repeatedly.
+    ASSERT_TRUE(OH_JSVM_RemoveHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC, NULL) == JSVM_OK);
+    ASSERT_TRUE(OH_JSVM_RemoveHandlerForGC(vm, JSVM_CB_TRIGGER_BEFORE_GC, OnBeforeGC, NULL) == JSVM_INVALID_ARG);
+}
+
+static bool g_oomHandlerFinished = false;
+static bool g_fatalHandlerFinished = false;
+static bool g_fatalHandlerFinished2 = false;
+static bool g_promiseRejectFinished = false;
+
+void OnOOMError(const char *location, const char *detail, bool isHeapOOM)
+{
+    std::cout << "location: " << location << std::endl;
+    std::cout << "isHeapOOM: " << isHeapOOM << std::endl;
+    if (detail) {
+        std::cout << "detail: " << detail << std::endl;
+    } else {
+        std::cout << "detail is empty" << std::endl;
+    }
+    g_oomHandlerFinished = true;
+    longjmp(g_buf, 1);
+}
+
+void OnFatalError(const char *location, const char *message)
+{
+    std::cout << "location: " << location << std::endl;
+    std::cout << "message: " << message << std::endl;
+    g_fatalHandlerFinished = true;
+    longjmp(g_buf, 1);
+}
+
+void OnFatalError2(const char *location, const char *message)
+{
+    std::cout << "location: " << location << std::endl;
+    std::cout << "message: " << message << std::endl;
+    g_fatalHandlerFinished2 = true;
+    longjmp(g_buf, 1);
+}
+
+
+void OnPromiseReject(JSVM_Env env, JSVM_PromiseRejectEvent rejectEvent, JSVM_Value rejectInfo)
+{
+    ASSERT_TRUE(jsvm::IsObject(rejectInfo));
+    std::cout << "reject event: " << rejectEvent << std::endl;
+    auto promise = jsvm::GetProperty(rejectInfo, "promise");
+    ASSERT_TRUE(jsvm::IsPromise(promise));
+    auto value = jsvm::GetProperty(rejectInfo, "value");
+    ASSERT_TRUE(jsvm::IsNumber(value));
+    g_promiseRejectFinished = true;
+}
+
+HWTEST_F(JSVMTest, JSVMOOM, TestSize.Level1)
+{
+    g_oomHandlerFinished = false;
+    JSVMTEST_CALL(OH_JSVM_SetHandlerForOOMError(vm, OnOOMError));
+    static bool oomed = false;
+    setjmp(g_buf);
+    if (!oomed) {
+        oomed = true;
+        jsvm::TryTriggerOOM();
+    }
+    ASSERT_TRUE(jsvm::ToNumber(jsvm::Run("42")) == 42);
+    ASSERT_TRUE(g_oomHandlerFinished);
+}
+
+HWTEST_F(JSVMTest, JSVMFatalError, TestSize.Level1)
+{
+    g_fatalHandlerFinished = false;
+    JSVMTEST_CALL(OH_JSVM_SetHandlerForFatalError(vm, OnFatalError));
+    static bool fataled = false;
+    setjmp(g_buf);
+    if (!fataled) {
+        fataled = true;
+        jsvm::TryTriggerFatalError(vm);
+    }
+    ASSERT_TRUE(jsvm::ToNumber(jsvm::Run("42")) == 42);
+    ASSERT_TRUE(g_fatalHandlerFinished);
+}
+
+HWTEST_F(JSVMTest, JSVMPromiseReject, TestSize.Level1)
+{
+    JSVMTEST_CALL(OH_JSVM_SetHandlerForPromiseReject(vm, OnPromiseReject));
+    jsvm::Run("new Promise((resolve, reject) => { reject(42); })");
+}
+
+HWTEST_F(JSVMTest, JSVMCheckHandler, TestSize.Level1)
+{
+    ASSERT_TRUE(g_oomHandlerFinished);
+    ASSERT_TRUE(g_fatalHandlerFinished);
+    ASSERT_TRUE(g_promiseRejectFinished);
+}
+
+static bool g_callAsFunctionFlag = false;
+static bool g_setNamedPropertyFlag = false;
+static bool g_callAsConstructorFlag = false;
+static bool g_propertiesFlag = false;
+
+static JSVM_Value SetNamedPropertyCbInfo2(JSVM_Env env, JSVM_Value name, JSVM_Value property, JSVM_Value thisArg,
+    JSVM_Value data)
+{
+    g_setNamedPropertyFlag = true;
+    return property;
+}
+
+static JSVM_Value Add(JSVM_Env env, JSVM_CallbackInfo info)
+{
+    g_propertiesFlag = true;
+    size_t argc = 2;
+    JSVM_Value args[2];
+    OH_JSVM_GetCbInfo(env, info, &argc, args, NULL, NULL);
+    double num1, num2;
+    OH_JSVM_GetValueDouble(env, args[0], &num1);
+    OH_JSVM_GetValueDouble(env, args[1], &num2);
+    JSVM_Value sum = nullptr;
+    OH_JSVM_CreateDouble(env, num1 + num2, &sum);
+    return sum;
+}
+
+JSVM_Value GenerateParentClass(JSVM_Env env)
+{
+    JSVM_Value parentClass = nullptr;
+    JSVM_CallbackStruct parentClassConstructor;
+    parentClassConstructor.data = nullptr;
+    parentClassConstructor.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+        JSVM_Value thisVar = nullptr;
+        OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+    JSVM_Value fooVal = jsvm::Str("bar");
+    JSVM_PropertyDescriptor des[2];
+    des[0] = {
+        .utf8name = "foo",
+        .value = fooVal,
+    };
+    JSVM_CallbackStruct parentProperties[] = {
+        {.callback = Add, .data = nullptr},
+    };
+    des[1] = {
+        .utf8name = "add",
+        .method = &parentProperties[0],
+    };
+    JSVM_DefineClassOptions options[1];
+    options[0].id = JSVM_DEFINE_CLASS_WITH_COUNT;
+    options[0].content.num = JSVM_OBJECT_INTERFAIELD_COUNT;
+    JSVMTEST_CALL(OH_JSVM_DefineClassWithOptions(env, "parentClass", JSVM_AUTO_LENGTH,
+        &parentClassConstructor, JSVM_PARENT_CLASS_DES_COUNT, des,
+        nullptr, 1, options, &parentClass));
+    return parentClass;
+}
+
+JSVM_Value GenerateSubClass(JSVM_Env env, JSVM_Value parentClass)
+{
+    JSVM_Value subClass = nullptr;
+    JSVM_CallbackStruct subClassConstructor;
+    subClassConstructor.data = nullptr;
+    subClassConstructor.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+        JSVM_Value thisVar = nullptr;
+        g_callAsConstructorFlag = true;
+        OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+    JSVM_DefineClassOptions subOptions[2];
+    JSVM_CallbackStruct callAsFuncParam;
+    callAsFuncParam.data = nullptr;
+    callAsFuncParam.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+        JSVM_Value thisVar = nullptr;
+        g_callAsFunctionFlag = true;
+        OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+    propertyCfg.genericNamedPropertySetterCallback = SetNamedPropertyCbInfo2;
+    JSVM_PropertyHandler propertyHandler = {
+        .propertyHandlerCfg = &propertyCfg,
+        .callAsFunctionCallback = &callAsFuncParam,
+    };
+    subOptions[0].id = JSVM_DEFINE_CLASS_WITH_COUNT;
+    subOptions[0].content.num = JSVM_OBJECT_INTERFAIELD_COUNT;
+    subOptions[1].id = JSVM_DEFINE_CLASS_WITH_PROPERTY_HANDLER;
+    subOptions[1].content.ptr = &propertyHandler;
+    JSVMTEST_CALL(OH_JSVM_DefineClassWithOptions(env, "subClass", JSVM_AUTO_LENGTH, &subClassConstructor, 0, nullptr,
+        parentClass, JSVM_DEFINE_CLASS_OPTIONS_COUNT, subOptions, &subClass));
+    return subClass;
+}
+
+/**
+ * @brief Verify the validity of the following parameters in the OH_JSVM_DefineClassWithOptions interface:
+ * 'consturctor' | 'properties' | 'parentClass' | 'options'
+ */
+HWTEST_F(JSVMTest, JSVMTestParentClassWithCount, TestSize.Level1)
+{
+    g_callAsFunctionFlag = false;
+    g_setNamedPropertyFlag = false;
+    g_callAsConstructorFlag = false;
+    g_propertiesFlag = false;
+    // 1. Define parent-class.
+    JSVM_Value parentClass = GenerateParentClass(env);
+    // 2. Define sub-class.
+    JSVM_Value subClass = GenerateSubClass(env, parentClass);
+    // 3. Verify the validity of 'constructor'.
+    JSVM_Value subInstance;
+    ASSERT_FALSE(g_callAsConstructorFlag);
+    JSVMTEST_CALL(OH_JSVM_NewInstance(env, subClass, 0, nullptr, &subInstance));
+    ASSERT_TRUE(g_callAsConstructorFlag);
+
+    JSVM_Value globalVal;
+    OH_JSVM_GetGlobal(env, &globalVal);
+    OH_JSVM_SetNamedProperty(env, globalVal, "obj", subInstance);
+
+    // 4. Verify the validity of 'parentClass'.
+    JSVM_Value subRes = nullptr;
+    JSVMTEST_CALL(OH_JSVM_GetNamedProperty(env, subInstance, "foo", &subRes));
+    ASSERT_TRUE(jsvm::ToString(subRes).compare("bar") == 0);
+    // 5. Verify the validity of 'properties'.
+    ASSERT_FALSE(g_propertiesFlag);
+    jsvm::Run("obj.add(3, 4);");
+    ASSERT_TRUE(g_propertiesFlag);
+    // 6. Verify the validity of 'options'.
+    ASSERT_FALSE(g_callAsFunctionFlag);
+    jsvm::Run("obj()");
+    ASSERT_TRUE(g_callAsFunctionFlag);
+    ASSERT_FALSE(g_setNamedPropertyFlag);
+    jsvm::Run("obj.x = 123;");
+    ASSERT_TRUE(g_setNamedPropertyFlag);
+    propertyCfg.genericNamedPropertySetterCallback = nullptr;
+}
+
+/**
+ * @brief If parentClass is not an APIFunction, the status code is JSVM_INVALID_ARG.
+ */
+HWTEST_F(JSVMTest, NonAPIFunction, TestSize.Level1) {
+    JSVM_Value script  = jsvm::Str("return 2 + 3;");
+    JSVM_Value nonAPIFunction = nullptr;
+    JSVMTEST_CALL(OH_JSVM_CreateFunctionWithScript(env, nullptr, 0, 0,
+	    nullptr, script, &nonAPIFunction));
+
+    JSVM_Value subClass = nullptr;
+    JSVM_CallbackStruct constructor;
+    constructor.data = nullptr;
+    constructor.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+        JSVM_Value thisVar = nullptr;
+        OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
+        return thisVar;
+    };
+    JSVM_Status status = OH_JSVM_DefineClassWithOptions(env, "subClass", JSVM_AUTO_LENGTH, &constructor, 0, nullptr,
+        nonAPIFunction, 0, nullptr, &subClass);
+    ASSERT_TRUE(status == JSVM_INVALID_ARG);
 }
