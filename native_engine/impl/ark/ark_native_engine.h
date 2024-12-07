@@ -296,6 +296,7 @@ public:
     }
 
     void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
+    void RegisterAllPromiseCallback();
     void HandleUncaughtException() override;
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
@@ -403,6 +404,7 @@ private:
     std::map<NativeModule*, panda::Global<panda::JSValueRef>> loadedModules_ {};
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
+    NapiAllPromiseRejectCallback allPromiseRejectCallback_ {nullptr};
     SourceMapCallback SourceMapCallback_ { nullptr };
     static bool napiProfilerParamReaded;
     bool isLimitedWorker_ = false;

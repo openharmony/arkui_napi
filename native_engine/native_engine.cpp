@@ -71,6 +71,8 @@ std::unordered_set<NativeEngine*> NativeEngine::g_alivedEngine_;
 uint64_t NativeEngine::g_lastEngineId_ = 1;
 std::mutex NativeEngine::g_mainThreadEngineMutex_;
 NativeEngine* NativeEngine::g_mainThreadEngine_;
+NapiErrorManager* NapiErrorManager::instance_ = NULL;
+std::mutex g_errorManagerInstanceMutex;
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
@@ -1100,4 +1102,16 @@ napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_
         HILOG_ERROR("default function is nullptr!");
         return napi_status::napi_generic_failure;
     }
+}
+
+NapiErrorManager* NapiErrorManager::GetInstance()
+{
+    if (instance_ == NULL) {
+        std::lock_guard<std::mutex> lock(g_errorManagerInstanceMutex);
+        if (instance_ == NULL) {
+            instance_ = new NapiErrorManager();
+            HILOG_DEBUG("create error manager instance");
+        }
+    }
+    return instance_;
 }

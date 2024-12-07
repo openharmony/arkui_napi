@@ -114,6 +114,57 @@ HWTEST_F(NativeEngineTest, ExecuteTranslateBySourceMapFunc001, testing::ext::Tes
     ASSERT_EQ(stack, "test1/test2/test3/test.ts");
 }
 
+HWTEST_F(NativeEngineTest, NapiErrorManagerTest001, testing::ext::TestSize.Level0)
+{
+    auto errorManagerCallbackTest =
+        [] (napi_env env, napi_value exception, std::string vm_name, uint32_t type) -> bool {
+        EXPECT_EQ(type, 0);
+        EXPECT_EQ(vm_name, "");
+        return true;
+    };
+
+    NapiErrorManager::GetInstance()->RegisterOnAllErrorCallback(errorManagerCallbackTest);
+    ASSERT_NE(NapiErrorManager::GetInstance()->GetOnAllErrorCallback(), nullptr);
+    auto getWorkerNameCallback  =
+        [] (void* worker) -> std::string {
+        return "test";
+    };
+    void* worker = nullptr;
+    engine_->RegisterGetWorkerNameCallback(getWorkerNameCallback, worker);
+    napi_value exception = nullptr;
+    auto callback = engine_->GetNapiUncaughtExceptionCallback();
+    if (callback) {
+        callback(exception);
+    }
+}
+
+HWTEST_F(NativeEngineTest, NapiErrorManagerTest002, testing::ext::TestSize.Level0)
+{
+    auto allUnhandledRejectionCallbackTest =
+        [] (napi_env env, napi_value* exception, std::string vm_name, uint32_t type) -> bool {
+        EXPECT_EQ(type, 0);
+        EXPECT_EQ(vm_name, "");
+        return true;
+    };
+
+    NapiErrorManager::GetInstance()->RegisterAllUnhandledRejectionCallback(allUnhandledRejectionCallbackTest);
+    ASSERT_NE(NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback(), nullptr);
+    Local<JSValueRef> promise;
+    Local<JSValueRef> reason;
+    panda::PromiseRejectInfo promiseRejectInfo(promise, reason,
+        static_cast<panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT>(0), reinterpret_cast<void*>(engine_));
+
+    ArkNativeEngine::PromiseRejectCallback(reinterpret_cast<void*>(&promiseRejectInfo));
+}
+
+HWTEST_F(NativeEngineTest, HandleTaskpoolExceptionTest001, testing::ext::TestSize.Level0)
+{
+    napi_value exception = nullptr;
+    std::string taskName = "test";
+    engine_->HandleTaskpoolException(exception, taskName);
+    ASSERT_EQ(engine_->GetTaskName(), "test");
+}
+
 HWTEST_F(NativeEngineTest, FinalizersCallbackTest001, testing::ext::TestSize.Level0)
 {
     ASSERT_NE(engine_, nullptr);
