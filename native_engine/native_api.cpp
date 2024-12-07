@@ -4134,3 +4134,24 @@ NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* re
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info *napi_info)
+{
+    CHECK_ARG(env, napi_info);
+    ASSERT(napi_info != nullptr);
+    panda::StackInfo info{napi_info->stack_start, napi_info->stack_size};
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JSNApi::SetStackInfo(vm, info);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result)
+{
+    CHECK_ARG(env, result);
+    ASSERT(result != nullptr);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto res = panda::JSNApi::GetStackInfo(vm);
+    result->stack_start = res.stackStart;
+    result->stack_size = res.stackSize;
+    return napi_clear_last_error(env);
+}
