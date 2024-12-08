@@ -23,6 +23,9 @@ using namespace panda::ecmascript;
 ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Env env, ARKTS_Value value)
 {
     auto tag = BIT_CAST(value, JSValueRef);
+    if (tag.IsNumber()) {
+        return true;
+    }
     if (!tag.IsHeapObject()) {
         return false;
     }
@@ -53,9 +56,9 @@ bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
     if (!v.IsHeapObject()) {
         return false;
     }
-    v = *P_CAST(value, JSValueRef*);
+    auto handle = BIT_CAST(value, Local<JSValueRef>);
     auto vm = P_CAST(env, EcmaVM*);
-    return v.IsObject(vm);
+    return handle->IsObject(vm);
 }
 
 bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
