@@ -701,7 +701,7 @@ int32_t NativeEngine::GetApiVersion()
     return apiVersion_;
 }
 
-int32_t NativeEngine::GetRealApiVersion()
+int32_t NativeEngine::GetRealApiVersion() const
 {
     return realApiVersion_;
 }

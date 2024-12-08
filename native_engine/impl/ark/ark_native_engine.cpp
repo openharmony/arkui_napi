@@ -456,7 +456,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                         } else {
                             buffer = static_cast<const void *>(module->jsCode);
                         }
-                        auto exportObject = arkNativeEngine->LoadArkModule(buffer, module->jsCodeLen, fileName);
+                        auto exportObject = arkNativeEngine->LoadArkModule(buffer,
+                            module->jsCodeLen, fileName);
                         if (exportObject->IsUndefined()) {
                             HILOG_ERROR("load module failed");
                             return scope.Escape(exports);
@@ -1631,7 +1632,7 @@ void ArkNativeEngine::PostFinalizeTasks()
         this->DecreasePendingFinalizersPackNativeBindingSize(totalNativeBindingSize);
     });
     IncreasePendingFinalizersPackNativeBindingSize(bindingSize);
-    
+
     syncWork->data = reinterpret_cast<void *>(finalizersPack);
     int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
         ArkFinalizersPack *finalizersPack = reinterpret_cast<ArkFinalizersPack*>(syncWork->data);
