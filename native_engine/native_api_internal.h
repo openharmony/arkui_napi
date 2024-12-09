@@ -16,6 +16,8 @@
 #ifndef FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H
 
+#include <cinttypes>
+
 #include "napi/native_api.h"
 #include "native_engine.h"
 #include "utils/log.h"
@@ -124,5 +126,32 @@ static inline napi_status napi_set_last_error(napi_env env,
 #ifndef UNLIKELY
 #define UNLIKELY(exp) (__builtin_expect((exp) != 0, false))  // NOLINT(cppcoreguidelines-macro-usage)
 #endif
+
+inline bool ValidEngineCheck(NativeEngine* input,
+                             NativeEngine* owner,
+                             uint64_t ownerId,
+                             const char* func,
+                             const char* file,
+                             int line)
+{
+    if (input != owner) {
+        LOG_IF_SPECIAL(input, UNLIKELY(input->IsCrossThreadCheckEnabled()),
+                       "param env not equal to its owner. %{public}s at %{public}s:%{public}d",
+                       func, file, line);
+        return false;
+    }
+    if (ownerId != input->GetId()) {
+        LOG_IF_SPECIAL(input, UNLIKELY(input->IsCrossThreadCheckEnabled()),
+                       "owner env has been destroyed, "
+                       "owner id: %{public}" PRIu64 ", current env id: %{public}" PRIu64 ". "
+                       "%{public}s at %{public}s:%{public}d, ",
+                       ownerId, input->GetId(), func, file, line);
+        return false;
+    }
+    return true;
+}
+
+#define VALID_ENGINE_CHECK(input, owner, id) \
+    ValidEngineCheck((input), (owner), (id), __FUNCTION__, __FILENAME__, __LINE__)
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */
