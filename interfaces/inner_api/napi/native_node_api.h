@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "js_native_api.h"
 #include "node_api.h"
 #include "native_common.h"
@@ -41,6 +42,11 @@ typedef struct napi_module_with_js {
     NAPIGetJSCode nm_get_abc_code = nullptr;
     NAPIGetJSCode nm_get_js_code = nullptr;
 } napi_module_with_js;
+
+typedef struct napi_stack_info {
+    size_t stack_start;
+    size_t stack_size;
+} napi_stack_info;
 
 typedef enum {
     napi_eprio_vip = 0,
@@ -123,4 +129,6 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
                                                           void** data,
                                                           size_t* byte_length);
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result);
+NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info *napi_info);
+NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
