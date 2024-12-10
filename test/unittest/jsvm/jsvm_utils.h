@@ -160,6 +160,7 @@ bool StrictEquals(JSVM_Value lhs, JSVM_Value rhs);
 // This is a simple log function
 JSVM_Value MyConsoleLog(JSVM_Env env, JSVM_CallbackInfo info);
 void InstallMyConsoleLog(JSVM_Env env);
+void TryTriggerOOM();
 void TryTriggerFatalError(JSVM_VM vm);
 void TryTriggerGC();
 }  // namespace jsvm
