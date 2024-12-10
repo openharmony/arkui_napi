@@ -517,7 +517,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 }
                 NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
                     nullptr, false, errInfo, false, "");
-                MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm));
+                MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm).c_str());
                 if (module != nullptr && arkNativeEngine) {
                     auto it = arkNativeEngine->loadedModules_.find(module);
                     if (it != arkNativeEngine->loadedModules_.end()) {
