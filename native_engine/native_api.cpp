@@ -32,6 +32,7 @@
 #include "native_engine/native_sendable.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/native_value.h"
+#include "native_engine/worker_manager.h"
 #include "securec.h"
 #include "utils/log.h"
 #ifdef ENABLE_HITRACE
@@ -4030,10 +4031,19 @@ NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env* env)
         HILOG_ERROR("invalid create callback");
         return napi_status::napi_invalid_arg;
     }
+
+    bool success = WorkerManager::IncrementArkRuntimeCount();
+    if (!success) {
+        HILOG_ERROR("reach max ARKRuntime count limit");
+        return napi_status::napi_create_ark_runtime_too_many_envs;
+    }
+
     napi_status result = NativeCreateEnv::g_createNapiEnvCallback(env);
     if (result == napi_ok) {
         auto vm = reinterpret_cast<NativeEngine*>(*env)->GetEcmaVm();
         panda::JSNApi::SetExecuteBufferMode(vm);
+    } else {
+        WorkerManager::DecrementArkRuntimeCount();
     }
     return result;
 }
@@ -4044,7 +4054,12 @@ NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env* env)
         HILOG_ERROR("invalid destroy callback");
         return napi_status::napi_invalid_arg;
     }
-    return NativeCreateEnv::g_destroyNapiEnvCallback(env);
+
+    napi_status result = NativeCreateEnv::g_destroyNapiEnvCallback(env);
+    if (result == napi_status::napi_ok) {
+        WorkerManager::DecrementArkRuntimeCount();
+    }
+    return result;
 }
 
 NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value value, bool* result)
