@@ -107,6 +107,19 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiExternal001, TestSize.Level1)
     ARKTS_LoadModule(env, dllName);
 }
 
+HWTEST_F(ArkInteropTest, ArkTSInteropNapiInstanceOf, TestSize.Level1)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    auto global = ARKTS_GetGlobalConstant(env);
+    char clError[] = "Error";
+    auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError));
+    auto errorCls = ARKTS_GetProperty(env, global, jError);
+    auto errorObJ = ARKTS_New(env, errorCls, 0, nullptr);
+    auto isError = ARKTS_InstanceOf(env, errorObJ, errorCls);
+    EXPECT_TRUE(isError);
+    EXPECT_FALSE(ARKTS_InstanceOf(env, jError, errorCls));
+}
+
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiHitrace001, TestSize.Level1)
 {
     char name[] = "";
