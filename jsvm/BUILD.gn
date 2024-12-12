@@ -58,7 +58,14 @@ ohos_prebuilt_shared_library("libjsvm") {
 
 action("build_libjsvm") {
   external_deps = [
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "icu:shared_icui18n",
+    "icu:shared_icuuc",
+    "libuv:uv",
     "node:node_header_notice",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
     "resource_schedule_service:ressched_client",
   ]
   deps = [ "//third_party/musl:musl_all" ]
@@ -70,6 +77,8 @@ action("build_libjsvm") {
     rebase_path("$target_gen_dir"),
     "--target_cpu",
     "$target_cpu",
+    "--target_platform",
+    "$target_platform",
     "--prefix",
     rebase_path("$clang_base_path/bin"),
     "--sysroot",

@@ -19,6 +19,7 @@ declare SYSROOT
 declare PREFIX
 declare TARGET_CPU
 declare TARGET_GEN_DIR
+declare TARGET_PLATFORM
 
 export SCRIPT_PATCH=$(dirname $(readlink -f "$0"))
 
@@ -92,6 +93,10 @@ do_opt_process() {
             ;;
         --target_cpu)
             export TARGET_CPU=$2
+            shift
+            ;;
+        --target_platform)
+            export TARGET_PLATFORM=$2
             shift
             ;;
         --target_gen_dir)
