@@ -112,7 +112,7 @@ bool NativeAsyncWork::Queue()
     }
     engine_->IncreaseWaitingRequestCounter();
 #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "Napi queue, " + this->GetTraceDescription());
+    StartTrace(HITRACE_TAG_ACE, "Native async work queue, " + this->GetTraceDescription());
     HiTraceId taskId = taskTraceId_;
     HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE.c_str());
 #endif
@@ -146,7 +146,7 @@ bool NativeAsyncWork::QueueWithQos(napi_qos_t qos)
     }
     engine_->IncreaseWaitingRequestCounter();
 #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "Napi queueWithQos, " + this->GetTraceDescription());
+    StartTrace(HITRACE_TAG_ACE, "Native async work queueWithQos, " + this->GetTraceDescription());
     HiTraceId taskId = taskTraceId_;
     HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE_WITH_QOS.c_str());
 #endif
@@ -192,7 +192,7 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
     HILOG_DEBUG("NativeAsyncWork::AsyncWorkCallback start to execute.");
 
 #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "Napi execute, " + that->GetTraceDescription());
+    StartTrace(HITRACE_TAG_ACE, "Native async work execute callback, " + that->GetTraceDescription());
     if (that->taskTraceId_.IsValid()) {
         HiTraceId currentId = HiTraceChain::SaveAndSet(that->taskTraceId_);
         HiTraceChain::Tracepoint(HITRACE_TP_SR, that->taskTraceId_, "%s", TRACE_POINT_ASYNCWORKCALLBACK.c_str());
@@ -242,7 +242,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));
     HILOG_DEBUG("NativeAsyncWork::AsyncAfterWorkCallback start to execute.");
 #ifdef ENABLE_HITRACE
-    StartTrace(HITRACE_TAG_ACE, "Napi complete, " + that->GetTraceDescription());
+    StartTrace(HITRACE_TAG_ACE, "Native async work complete callback, " + that->GetTraceDescription());
     bool isValidTraceId = that->taskTraceId_.IsValid();
     if (isValidTraceId) {
         OHOS::HiviewDFX::HiTraceChain::SaveAndSet(that->taskTraceId_);
