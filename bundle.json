@@ -80,7 +80,8 @@
                     "header": {
                       "header_base": "//foundation/arkui/napi/native_engine/",
                       "header_files": [
-                          "native_engine.h"
+                          "native_engine.h",
+                          "worker_manager.h"
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_napi"
