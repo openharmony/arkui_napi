@@ -756,6 +756,295 @@ HWTEST_F(JSVMTest, JSVMIsConcatSpreadable001, TestSize.Level1)
     ASSERT_TRUE(jsvm::StrictEquals(result, jsvm::Run("Symbol.isConcatSpreadable")));
 }
 
+HWTEST_F(JSVMTest, CreateProxy, TestSize.Level1)
+{
+    std::string registerObject = R"JS(
+      target = {
+        message1: "hello",
+        message2: "everyone",
+      };
+
+      handler1 = {};
+      handler2 = {
+        get(target, prop, receiver) {
+          return "world";
+        },
+      };
+    )JS";
+
+    jsvm::Run(registerObject.c_str());
+    auto obj = jsvm::GetProperty(jsvm::Global(), "target");
+    auto handler1 = jsvm::GetProperty(jsvm::Global(), "handler1");
+    auto handler2 = jsvm::GetProperty(jsvm::Global(), "handler2");
+
+    JSVM_Value proxy1 = nullptr;
+    JSVMTEST_CALL(OH_JSVM_CreateProxy(env, obj, handler1, &proxy1));
+
+    JSVM_Value proxy2 = nullptr;
+    JSVMTEST_CALL(OH_JSVM_CreateProxy(env, obj, handler2, &proxy2));
+
+    jsvm::SetProperty(jsvm::Global(), "proxy1", proxy1);
+    jsvm::SetProperty(jsvm::Global(), "proxy2", proxy2);
+
+    std::string checkProxy1 = R"JS(
+      proxy1.message1 == target.message1 && proxy1.message2 == target.message2;
+    )JS";
+
+    auto result = jsvm::Run(checkProxy1.c_str());
+    ASSERT_TRUE(jsvm::IsTrue(result));
+
+    std::string checkProxy2 = R"JS(
+      proxy2.message1 == "world" && proxy2.message2 == "world" &&
+      proxy2.anyProperty == "world";
+    )JS";
+
+    result = jsvm::Run(checkProxy2.c_str());
+    ASSERT_TRUE(jsvm::IsTrue(result));
+}
+
+HWTEST_F(JSVMTest, IsProxy, TestSize.Level1)
+{
+    jsvm::Run(R"JS(
+      target = {
+        message1: "hello",
+        message2: "everyone",
+      };
+
+      handler1 = {};
+      proxy1 = new Proxy(target, handler1);
+    )JS");
+
+    bool isProxy = false;
+
+    auto value = jsvm::GetProperty(jsvm::Global(), "target");
+    JSVMTEST_CALL(OH_JSVM_IsProxy(env, value, &isProxy));
+    ASSERT_TRUE(!isProxy && "target is not JS Proxy");
+
+    value = jsvm::GetProperty(jsvm::Global(), "handler1");
+    JSVMTEST_CALL(OH_JSVM_IsProxy(env, value, &isProxy));
+    ASSERT_TRUE(!isProxy && "handler1 is not JS Proxy");
+
+    value = jsvm::GetProperty(jsvm::Global(), "proxy1");
+    JSVMTEST_CALL(OH_JSVM_IsProxy(env, value, &isProxy));
+    ASSERT_TRUE(isProxy && "proxy1 is JS Proxy");
+}
+
+HWTEST_F(JSVMTest, GetProxyTarget, TestSize.Level1)
+{
+    jsvm::Run(R"JS(
+      target = {
+        message1: "hello",
+        message2: "everyone",
+      };
+
+      handler1 = {};
+      proxy1 = new Proxy(target, handler1);
+    )JS");
+
+    auto target = jsvm::GetProperty(jsvm::Global(), "target");
+    auto proxy1 = jsvm::GetProperty(jsvm::Global(), "proxy1");
+
+    JSVM_Value result = nullptr;
+    JSVMTEST_CALL(OH_JSVM_ProxyGetTarget(env, proxy1, &result));
+
+    ASSERT_TRUE(jsvm::StrictEquals(target, result));
+}
+
+static std::string g_scriptEvalMicrotask = R"JS(
+    evaluateMicrotask = false;
+    Promise.resolve().then(()=>{
+        evaluateMicrotask = true;
+    });
+    evaluateMicrotask
+)JS";
+
+// Default microtask policy is JSVM_MICROTASK_AUTO
+HWTEST_F(JSVMTest, MicrotaskPolicyDefault, TestSize.Level1)
+{
+    auto result = jsvm::Run(g_scriptEvalMicrotask.c_str());
+    ASSERT_TRUE(jsvm::IsFalse(result));
+    result = jsvm::GetProperty(jsvm::Global(), "evaluateMicrotask");
+    ASSERT_TRUE(jsvm::IsTrue(result));
+}
+
+// Test Set Microtask Policy to explicit
+HWTEST_F(JSVMTest, MicrotaskPolicyExplict, TestSize.Level1)
+{
+    OH_JSVM_SetMicrotaskPolicy(vm, JSVM_MicrotaskPolicy::JSVM_MICROTASK_EXPLICIT);
+    auto result = jsvm::Run(g_scriptEvalMicrotask.c_str());
+    ASSERT_TRUE(jsvm::IsFalse(result));
+    result = jsvm::GetProperty(jsvm::Global(), "evaluateMicrotask");
+    ASSERT_TRUE(jsvm::IsFalse(result));
+    OH_JSVM_PerformMicrotaskCheckpoint(vm);
+    result = jsvm::GetProperty(jsvm::Global(), "evaluateMicrotask");
+    ASSERT_TRUE(jsvm::IsTrue(result));
+}
+
+// Test Set Microtask Policy to auto
+HWTEST_F(JSVMTest, MicrotaskPolicyAuto, TestSize.Level1)
+{
+    OH_JSVM_SetMicrotaskPolicy(vm, JSVM_MicrotaskPolicy::JSVM_MICROTASK_EXPLICIT);
+    OH_JSVM_SetMicrotaskPolicy(vm, JSVM_MicrotaskPolicy::JSVM_MICROTASK_AUTO);
+    auto result = jsvm::Run(g_scriptEvalMicrotask.c_str());
+    ASSERT_TRUE(jsvm::IsFalse(result));
+    result = jsvm::GetProperty(jsvm::Global(), "evaluateMicrotask");
+    ASSERT_TRUE(jsvm::IsTrue(result));
+}
+
+HWTEST_F(JSVMTest, MicrotaskInvalidPolicy, TestSize.Level1)
+{
+    JSVM_MicrotaskPolicy invalidPolicy = (JSVM_MicrotaskPolicy)2;
+    auto status = OH_JSVM_SetMicrotaskPolicy(vm, invalidPolicy);
+    ASSERT_TRUE(status != JSVM_OK);
+}
+
+static std::string g_defineFunction = R"JS(
+    var x1 = 0;
+    var x2 = 0;
+    function f1(x) {
+        x1 = x;
+        return x + 1;
+    }
+    function f2(x) {
+        x2 = x;
+        return x + 1;
+    }
+)JS";
+
+static std::string g_init = R"JS(
+    x1 = 0;
+    x2 = 0;
+)JS";
+
+HWTEST_F(JSVMTest, PromiseThen, TestSize.Level1)
+{
+    JSVM_Value promise = nullptr;
+    JSVM_Deferred deffered;
+
+    JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
+    jsvm::Run(defineFunction.c_str());
+
+    JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
+
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, f1, nullptr, nullptr));
+
+    auto x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    auto x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    OH_JSVM_ResolveDeferred(env, deffered, jsvm::Int32(2));
+    deffered = nullptr;
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(2)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+}
+
+HWTEST_F(JSVMTest, PromiseThen2, TestSize.Level1)
+{
+    jsvm::Run(defineFunction.c_str());
+
+    JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
+    auto f2 = jsvm::GetProperty(jsvm::Global(), "f2");
+
+    JSVM_Value promise;
+    JSVM_Deferred deffered;
+
+    // Resolve
+    JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, f1, f2, nullptr));
+
+    auto x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    auto x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    OH_JSVM_ResolveDeferred(env, deffered, jsvm::Int32(2));
+    deffered = nullptr;
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(2)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    jsvm::Run(init.c_str());
+    // Reject
+    JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, f1, f2, nullptr));
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    OH_JSVM_RejectDeferred(env, deffered, jsvm::Int32(3));
+    deffered = nullptr;
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(3)));
+}
+
+HWTEST_F(JSVMTest, PromiseThenChain, TestSize.Level1)
+{
+    jsvm::Run(defineFunction.c_str());
+
+    JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
+    auto f2 = jsvm::GetProperty(jsvm::Global(), "f2");
+
+    JSVM_Value promise, promise1, x1, x2;
+    JSVM_Deferred deffered = nullptr;
+
+    // Resolve
+    JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, f1, nullptr, &promise1));
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise1, f2, nullptr, nullptr));
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    OH_JSVM_ResolveDeferred(env, deffered, jsvm::Int32(2));
+    deffered = nullptr;
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(2)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(3)));
+}
+
+HWTEST_F(JSVMTest, PromiseCatch, TestSize.Level1)
+{
+    jsvm::Run(defineFunction.c_str());
+
+    JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
+
+    JSVM_Value promise;
+    JSVM_Value promise1;
+    JSVM_Deferred deffered = nullptr;
+
+    // Resolve
+    JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
+    JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, nullptr, f1, &promise1));
+
+    auto x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    auto x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(0)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+
+    JSVMTEST_CALL(OH_JSVM_RejectDeferred(env, deffered, jsvm::Int32(2)));
+    deffered = nullptr;
+
+    x1 = jsvm::GetProperty(jsvm::Global(), "x1");
+    x2 = jsvm::GetProperty(jsvm::Global(), "x2");
+    ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(2)));
+    ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
+}
+
 HWTEST_F(JSVMTest, JSVMHasInstance001, TestSize.Level1)
 {
     JSVM_Value result;
