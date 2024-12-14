@@ -36,6 +36,8 @@
                 "hitrace",
                 "hiview",
                 "icu",
+                "zlib",
+                "hisysevent",
                 "libuv",
                 "node",
                 "ffrt",

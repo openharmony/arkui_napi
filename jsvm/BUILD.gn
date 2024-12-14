@@ -31,7 +31,10 @@ action("copy_v8") {
   deps = []
   script = "copy_v8.sh"
   sources = []
-  outputs = [ "$target_gen_dir/libv8_shared.so" ]
+  outputs = [
+    "$target_gen_dir/libv8_shared.so",
+    "$target_gen_dir/v8-include",
+  ]
   args = [
     "--target_gen_dir",
     rebase_path("$target_gen_dir"),
@@ -55,8 +58,17 @@ ohos_prebuilt_shared_library("libjsvm") {
 
 action("build_libjsvm") {
   external_deps = [
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+    "icu:shared_icui18n",
+    "icu:shared_icuuc",
+    "libuv:uv",
     "node:node_header_notice",
+    "openssl:libcrypto_shared",
+    "openssl:libssl_shared",
     "resource_schedule_service:ressched_client",
+    "zlib:libz",
   ]
   deps = [ "//third_party/musl:musl_all" ]
   script = "build_jsvm.sh"
@@ -67,6 +79,8 @@ action("build_libjsvm") {
     rebase_path("$target_gen_dir"),
     "--target_cpu",
     "$target_cpu",
+    "--target_platform",
+    "$target_platform",
     "--prefix",
     rebase_path("$clang_base_path/bin"),
     "--sysroot",

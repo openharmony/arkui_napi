@@ -35,7 +35,8 @@ do_configure() {
         --with-arm-float-abi=hard \
         --without-corepack \
         --without-npm \
-        --without-intl
+        --without-intl \
+        --target-platform=${TARGET_PLATFORM}
     popd
 }
 
