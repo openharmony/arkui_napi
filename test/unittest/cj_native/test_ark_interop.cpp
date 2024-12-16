@@ -112,12 +112,13 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiInstanceOf, TestSize.Level1)
     ARKTS_Env env = ARKTS_GetContext(engine_);
     auto global = ARKTS_GetGlobalConstant(env);
     char clError[] = "Error";
-    auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError));
+    auto jError = ARKTS_CreateUtf8(env, clError, sizeof(clError) - 1);
     auto errorCls = ARKTS_GetProperty(env, global, jError);
     auto errorObJ = ARKTS_New(env, errorCls, 0, nullptr);
     auto isError = ARKTS_InstanceOf(env, errorObJ, errorCls);
     EXPECT_TRUE(isError);
-    EXPECT_FALSE(ARKTS_InstanceOf(env, jError, errorCls));
+    auto jObj = ARKTS_CreateObject(env);
+    EXPECT_FALSE(ARKTS_InstanceOf(env, jObj, errorCls));
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiHitrace001, TestSize.Level1)
@@ -127,6 +128,34 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiHitrace001, TestSize.Level1)
     ARKTS_HiTraceStartTrace(name, taskId);
     ARKTS_HiTraceFinishTrace(name, taskId);
     ARKTS_HiTraceCountTrace(name, taskId);
+}
+
+[[maybe_unused]] static bool IsArrayBufferWithGC(ARKTS_Env env, ARKTS_Value value)
+{
+    auto tag = BIT_CAST(value, panda::JSValueRef);
+    if (!tag.IsHeapObject()) {
+        return false;
+    }
+    auto vm = P_CAST(env, EcmaVM*);
+    auto handle = BIT_CAST(value, panda::Local<panda::JSValueRef>);
+    panda::JSNApi::TriggerGC(vm, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    return handle->IsArrayBuffer(vm) || handle->IsTypedArray(vm) || handle->IsDataView(vm);
+}
+
+TEST_F(ArkInteropTest, ArkIsArrayBufferWithGC)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    auto object = ARKTS_CreateObject(env);
+    EXPECT_EQ(ARKTS_GetValueType(env, object), N_OBJECT);
+
+    constexpr int REPEAT = 1000;
+    int index = 0;
+    for (auto i = 0; i < REPEAT; i++) {
+        if (!IsArrayBufferWithGC(env, object)) {
+            index++;
+        }
+    }
+    EXPECT_EQ(index, REPEAT);
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiLog001, TestSize.Level1)
