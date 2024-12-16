@@ -104,7 +104,7 @@ void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative, i
     ARKTS_ASSERT_V(ARKTS_IsBigInt(env, value), "value is not bigint");
     auto vm = P_CAST(env, panda::EcmaVM*);
 
-    auto bigint = P_CAST(value, panda::BigIntRef*);
+    auto bigint = BIT_CAST(value, panda::Local<panda::BigIntRef>);
     auto u64cnt = bigint->GetWordsArraySize(vm);
     ARKTS_ASSERT_V(byteCount >= u64cnt * WORD_BYTES, "byteCount not enough");
     bigint->GetWordsArray(vm, isNegative, u64cnt, reinterpret_cast<uint64_t*>(bytes));

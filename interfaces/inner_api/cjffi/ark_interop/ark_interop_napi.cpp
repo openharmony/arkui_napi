@@ -231,6 +231,12 @@ ARKTS_Value ARKTS_CreateF64(double value)
     return BIT_CAST(result, ARKTS_Value);
 }
 
+EXPORT ARKTS_Value ARKTS_CreateI32(int32_t value)
+{
+    JSTaggedValue result(value);
+    return BIT_CAST(result, ARKTS_Value);
+}
+
 double ARKTS_GetValueNumber(ARKTS_Value value)
 {
     auto ref = BIT_CAST(value, JSValueRef);
@@ -487,8 +493,8 @@ bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
         return false;
     }
     auto vm = P_CAST(env, EcmaVM*);
-    tag = *P_CAST(value, JSValueRef*);
-    return tag.IsArrayBuffer(vm) || tag.IsTypedArray(vm) || tag.IsDataView(vm);
+    auto handle = BIT_CAST(value, Local<JSValueRef>);
+    return handle->IsArrayBuffer(vm) || handle->IsTypedArray(vm) || handle->IsDataView(vm);
 }
 
 int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
@@ -497,14 +503,14 @@ int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_I(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto tag = *P_CAST(value, JSValueRef*);
-    if (tag.IsArrayBuffer(vm)) {
-        return P_CAST(value, ArrayBufferRef*)->ByteLength(vm);
-    } else if (tag.IsTypedArray(vm)) {
-        auto arr = P_CAST(value, TypedArrayRef*);
+    auto handle = BIT_CAST(value, Local<JSValueRef>);
+    if (handle->IsArrayBuffer(vm)) {
+        return BIT_CAST(value, Local<ArrayBufferRef>)->ByteLength(vm);
+    } else if (handle->IsTypedArray(vm)) {
+        auto arr = BIT_CAST(value, Local<TypedArrayRef>);
         return arr->ByteLength(vm) - arr->ByteOffset(vm);
     } else {
-        auto arr = P_CAST(value, DataViewRef*);
+        auto arr = BIT_CAST(value, Local<DataViewRef>);
         return arr->ByteLength() - arr->ByteOffset();
     }
 }
@@ -515,16 +521,16 @@ void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto tag = *BIT_CAST(value, JSValueRef*);
-    if (tag.IsArrayBuffer(vm)) {
-        return P_CAST(value, ArrayBufferRef*)->GetBuffer(vm);
-    } else if (tag.IsTypedArray(vm)) {
-        auto arr = P_CAST(value, TypedArrayRef*);
+    auto handle = BIT_CAST(value, Local<JSValueRef>);
+    if (handle->IsArrayBuffer(vm)) {
+        return BIT_CAST(value, Local<ArrayBufferRef>)->GetBuffer(vm);
+    } else if (handle->IsTypedArray(vm)) {
+        auto arr = BIT_CAST(value, Local<TypedArrayRef>);
         auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer(vm);
         auto rawOffset = arr->ByteOffset(vm);
         return P_CAST(rawStart, uint8_t*) + rawOffset;
     } else {
-        auto arr = P_CAST(value, DataViewRef*);
+        auto arr = BIT_CAST(value, Local<DataViewRef>);
         auto rawStart = arr->GetArrayBuffer(vm)->GetBuffer(vm);
         auto rawOffset = arr->ByteOffset();
         return P_CAST(rawStart, uint8_t*) + rawOffset;
