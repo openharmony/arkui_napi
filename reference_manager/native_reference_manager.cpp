@@ -41,7 +41,8 @@ void NativeReferenceManager::ReleaseHandler(NativeReference* reference)
 
     if (prev) {
         reinterpret_cast<ArkNativeReference*>(prev)->next_ = next;
-    } else {
+    }
+    if (reference == references_) {
         // reference is the head node.
         references_ = next;
     }
