@@ -14,6 +14,7 @@
  */
 
 #include "ark_native_engine.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
 
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
@@ -92,6 +93,7 @@ using panda::SymbolRef;
 using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
+using ArkCrashHolder = panda::ArkCrashHolder;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
@@ -1561,7 +1563,7 @@ __attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<Ref
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
 #endif
-    INIT_CRASH_HOLDER(holder);
+    INIT_CRASH_HOLDER(holder, "NAPI");
     for (auto iter : (*finalizers)) {
         NapiNativeFinalize callback = iter.first;
         std::tuple<NativeEngine*, void*, void*> &param = iter.second;
@@ -1649,7 +1651,7 @@ __attribute__((optnone)) void ArkNativeEngine::RunCallbacks(AsyncNativeCallbacks
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunNativeCallbacks:" + std::to_string(callbacksPack->GetNumCallBacks()));
 #endif
-    callbacksPack->ProcessAll();
+    callbacksPack->ProcessAll("NAPI");
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
