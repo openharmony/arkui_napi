@@ -272,7 +272,7 @@ bool ArkIdleMonitor::CheckIntervalIdle(int64_t timestamp, int64_t idleDuration)
         std::chrono::high_resolution_clock::now()).time_since_epoch().count();
     int64_t sumDuration = nowTimestamp - timestamp;
     int64_t sumIdleDuration = (GetTotalIdleDuration() - idleDuration) + (nowTimestamp - GetNotifyTimestamp());
-    double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
+    [[maybe_unused]] double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "CheckIntervalIdle::sumDuration:" + std::to_string(sumDuration)
         + "sumIdleDuration:" + std::to_string(sumIdleDuration)
