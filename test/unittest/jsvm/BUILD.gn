@@ -42,4 +42,3 @@ group("jsvm_unittest") {
   testonly = true
   deps = [ ":test_jsvm" ]
 }
-
