@@ -922,7 +922,7 @@ HWTEST_F(JSVMTest, PromiseThen, TestSize.Level1)
     JSVM_Deferred deffered;
 
     JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
-    jsvm::Run(defineFunction.c_str());
+    jsvm::Run(g_defineFunction.c_str());
 
     JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
 
@@ -944,7 +944,7 @@ HWTEST_F(JSVMTest, PromiseThen, TestSize.Level1)
 
 HWTEST_F(JSVMTest, PromiseThen2, TestSize.Level1)
 {
-    jsvm::Run(defineFunction.c_str());
+    jsvm::Run(g_defineFunction.c_str());
 
     JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
     auto f2 = jsvm::GetProperty(jsvm::Global(), "f2");
@@ -969,7 +969,7 @@ HWTEST_F(JSVMTest, PromiseThen2, TestSize.Level1)
     ASSERT_TRUE(jsvm::Equals(x1, jsvm::Int32(2)));
     ASSERT_TRUE(jsvm::Equals(x2, jsvm::Int32(0)));
 
-    jsvm::Run(init.c_str());
+    jsvm::Run(g_init.c_str());
     // Reject
     JSVMTEST_CALL(OH_JSVM_CreatePromise(env, &deffered, &promise));
     JSVMTEST_CALL(OH_JSVM_PromiseRegisterHandler(env, promise, f1, f2, nullptr));
@@ -990,7 +990,7 @@ HWTEST_F(JSVMTest, PromiseThen2, TestSize.Level1)
 
 HWTEST_F(JSVMTest, PromiseThenChain, TestSize.Level1)
 {
-    jsvm::Run(defineFunction.c_str());
+    jsvm::Run(g_defineFunction.c_str());
 
     JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
     auto f2 = jsvm::GetProperty(jsvm::Global(), "f2");
@@ -1019,7 +1019,7 @@ HWTEST_F(JSVMTest, PromiseThenChain, TestSize.Level1)
 
 HWTEST_F(JSVMTest, PromiseCatch, TestSize.Level1)
 {
-    jsvm::Run(defineFunction.c_str());
+    jsvm::Run(g_defineFunction.c_str());
 
     JSVM_Value f1 = jsvm::GetProperty(jsvm::Global(), "f1");
 
