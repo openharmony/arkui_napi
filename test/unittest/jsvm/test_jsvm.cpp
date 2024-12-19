@@ -1267,9 +1267,9 @@ static JSVM_Value Add(JSVM_Env env, JSVM_CallbackInfo info)
 JSVM_Value GenerateParentClass(JSVM_Env env)
 {
     JSVM_Value parentClass = nullptr;
-    JSVM_CallbackStruct parentClassConstructor;
-    parentClassConstructor.data = nullptr;
-    parentClassConstructor.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+    JSVM_CallbackStruct *parentClassConstructor = new JSVM_CallbackStruct;
+    parentClassConstructor->data = nullptr;
+    parentClassConstructor->callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
         JSVM_Value thisVar = nullptr;
         OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
         return thisVar;
@@ -1280,18 +1280,18 @@ JSVM_Value GenerateParentClass(JSVM_Env env)
         .utf8name = "foo",
         .value = fooVal,
     };
-    JSVM_CallbackStruct parentProperties[] = {
-        {.callback = Add, .data = nullptr},
-    };
+    JSVM_CallbackStruct *addMethod = new JSVM_CallbackStruct;
+    addMethod->data = nullptr;
+    addMethod->callback = Add;
     des[1] = {
         .utf8name = "add",
-        .method = &parentProperties[0],
+        .method = addMethod,
     };
     JSVM_DefineClassOptions options[1];
     options[0].id = JSVM_DEFINE_CLASS_WITH_COUNT;
     options[0].content.num = JSVM_OBJECT_INTERFAIELD_COUNT;
     JSVMTEST_CALL(OH_JSVM_DefineClassWithOptions(env, "parentClass", JSVM_AUTO_LENGTH,
-        &parentClassConstructor, JSVM_PARENT_CLASS_DES_COUNT, des,
+        parentClassConstructor, JSVM_PARENT_CLASS_DES_COUNT, des,
         nullptr, 1, options, &parentClass));
     return parentClass;
 }
@@ -1299,18 +1299,18 @@ JSVM_Value GenerateParentClass(JSVM_Env env)
 JSVM_Value GenerateSubClass(JSVM_Env env, JSVM_Value parentClass)
 {
     JSVM_Value subClass = nullptr;
-    JSVM_CallbackStruct subClassConstructor;
-    subClassConstructor.data = nullptr;
-    subClassConstructor.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+    JSVM_CallbackStruct *subClassConstructor = new JSVM_CallbackStruct;
+    subClassConstructor->data = nullptr;
+    subClassConstructor->callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
         JSVM_Value thisVar = nullptr;
         g_callAsConstructorFlag = true;
         OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
         return thisVar;
     };
     JSVM_DefineClassOptions subOptions[2];
-    JSVM_CallbackStruct callAsFuncParam;
-    callAsFuncParam.data = nullptr;
-    callAsFuncParam.callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
+    JSVM_CallbackStruct *callAsFuncParam = new JSVM_CallbackStruct;
+    callAsFuncParam->data = nullptr;
+    callAsFuncParam->callback = [](JSVM_Env env, JSVM_CallbackInfo info) -> JSVM_Value {
         JSVM_Value thisVar = nullptr;
         g_callAsFunctionFlag = true;
         OH_JSVM_GetCbInfo(env, info, nullptr, nullptr, &thisVar, nullptr);
@@ -1319,13 +1319,13 @@ JSVM_Value GenerateSubClass(JSVM_Env env, JSVM_Value parentClass)
     propertyCfg.genericNamedPropertySetterCallback = SetNamedPropertyCbInfo2;
     JSVM_PropertyHandler propertyHandler = {
         .propertyHandlerCfg = &propertyCfg,
-        .callAsFunctionCallback = &callAsFuncParam,
+        .callAsFunctionCallback = callAsFuncParam,
     };
     subOptions[0].id = JSVM_DEFINE_CLASS_WITH_COUNT;
     subOptions[0].content.num = JSVM_OBJECT_INTERFAIELD_COUNT;
     subOptions[1].id = JSVM_DEFINE_CLASS_WITH_PROPERTY_HANDLER;
     subOptions[1].content.ptr = &propertyHandler;
-    JSVMTEST_CALL(OH_JSVM_DefineClassWithOptions(env, "subClass", JSVM_AUTO_LENGTH, &subClassConstructor, 0, nullptr,
+    JSVMTEST_CALL(OH_JSVM_DefineClassWithOptions(env, "subClass", JSVM_AUTO_LENGTH, subClassConstructor, 0, nullptr,
         parentClass, JSVM_DEFINE_CLASS_OPTIONS_COUNT, subOptions, &subClass));
     return subClass;
 }
