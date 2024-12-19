@@ -1158,29 +1158,18 @@ static bool g_promiseRejectFinished = false;
 
 void OnOOMError(const char *location, const char *detail, bool isHeapOOM)
 {
-    std::cout << "location: " << location << std::endl;
-    std::cout << "isHeapOOM: " << isHeapOOM << std::endl;
-    if (detail) {
-        std::cout << "detail: " << detail << std::endl;
-    } else {
-        std::cout << "detail is empty" << std::endl;
-    }
     g_oomHandlerFinished = true;
     longjmp(g_buf, 1);
 }
 
 void OnFatalError(const char *location, const char *message)
 {
-    std::cout << "location: " << location << std::endl;
-    std::cout << "message: " << message << std::endl;
     g_fatalHandlerFinished = true;
     longjmp(g_buf, 1);
 }
 
 void OnFatalError2(const char *location, const char *message)
 {
-    std::cout << "location: " << location << std::endl;
-    std::cout << "message: " << message << std::endl;
     g_fatalHandlerFinished2 = true;
     longjmp(g_buf, 1);
 }
@@ -1189,7 +1178,6 @@ void OnFatalError2(const char *location, const char *message)
 void OnPromiseReject(JSVM_Env env, JSVM_PromiseRejectEvent rejectEvent, JSVM_Value rejectInfo)
 {
     ASSERT_TRUE(jsvm::IsObject(rejectInfo));
-    std::cout << "reject event: " << rejectEvent << std::endl;
     auto promise = jsvm::GetProperty(rejectInfo, "promise");
     ASSERT_TRUE(jsvm::IsPromise(promise));
     auto value = jsvm::GetProperty(rejectInfo, "value");
