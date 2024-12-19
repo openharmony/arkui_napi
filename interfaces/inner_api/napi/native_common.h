@@ -55,69 +55,106 @@
 
 #define NAPI_CALL_RETURN_VOID(env, theCall) NAPI_CALL_BASE(env, theCall, NAPI_RETVAL_NOTHING)
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_PROPERTY(name, val)                                       \
     {                                                                          \
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_default, nullptr \
     }
 
+// W-writable E-enumerable C-configurable tihs define is W
 #define DECLARE_NAPI_INSTANCE_PROPERTY(name, val)                                           \
     {                                                                                       \
         (name), nullptr, nullptr, nullptr, nullptr, val,                                    \
             static_cast<napi_property_attributes>(NATIVE_INSTANCE | napi_writable), nullptr \
     }
 
+// W-writable E-enumerable C-configurable tihs define is W
 #define DECLARE_NAPI_INSTANCE_OBJECT_PROPERTY(name)                                                \
     {                                                                                              \
         (name), nullptr, nullptr, nullptr, nullptr, nullptr,                                       \
             static_cast<napi_property_attributes>(NATIVE_INSTANCE_OBJECT | napi_writable), nullptr \
     }
 
+// W-writable E-enumerable C-configurable tihs define is W
 #define DECLARE_NAPI_INSTANCE_GENERIC_PROPERTY(name)                                                \
     {                                                                                              \
         (name), nullptr, nullptr, nullptr, nullptr, nullptr,                                       \
             static_cast<napi_property_attributes>(NATIVE_INSTANCE_GENERIC | napi_writable), nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default_jsproperty is WEC
 #define DECLARE_NAPI_DEFAULT_PROPERTY(name, val)                                          \
     {                                                                                     \
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_default_jsproperty, nullptr \
     }
 
+//static properties
 #define DECLARE_NAPI_STATIC_PROPERTY(name, val)                               \
     {                                                                         \
         (name), nullptr, nullptr, nullptr, nullptr, val, napi_static, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_FUNCTION(name, func)                                         \
     {                                                                             \
         (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default_jsproperty is WEC
 #define DECLARE_NAPI_DEFAULT_PROPERTY_FUNCTION(name, func)                                   \
     {                                                                                        \
         (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default_jsproperty, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_FUNCTION_WITH_DATA(name, func, data)                      \
     {                                                                          \
         (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, data \
     }
 
+// W-writable E-enumerable C-configurable napi_default_jsproperty is WEC
+#define DECLARE_NAPI_FUNCTION_WITH_WEC(name, func)                                           \
+    {                                                                                        \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default_jsproperty, nullptr \
+    }
+
+// W-writable E-enumerable C-configurable napi_default_jsproperty is WEC
+#define DECLARE_NAPI_FUNCTION_WITH_DATA_WITH_WEC(name, func, data)                           \
+    {                                                                                        \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default_jsproperty, data    \
+    }
+
+// W-writable E-enumerable C-configurable napi_default is not WEC
+#define DECLARE_NAPI_FUNCTION_WITHOUT_WEC(name, func)                             \
+    {                                                                             \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, nullptr \
+    }
+
+// W-writable E-enumerable C-configurable napi_default is not WEC
+#define DECLARE_NAPI_FUNCTION_WITH_DATA_WITHOUT_WEC(name, func)                   \
+    {                                                                             \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, data    \
+    }
+
+//static properties
 #define DECLARE_NAPI_STATIC_FUNCTION(name, func)                                 \
     {                                                                            \
         (name), nullptr, (func), nullptr, nullptr, nullptr, napi_static, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_GETTER(name, getter)                                           \
     {                                                                               \
         (name), nullptr, nullptr, (getter), nullptr, nullptr, napi_default, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_SETTER(name, setter)                                           \
     {                                                                               \
         (name), nullptr, nullptr, nullptr, (setter), nullptr, napi_default, nullptr \
     }
 
+// W-writable E-enumerable C-configurable napi_default is not WEC
 #define DECLARE_NAPI_GETTER_SETTER(name, getter, setter)                             \
     {                                                                                \
         (name), nullptr, nullptr, (getter), (setter), nullptr, napi_default, nullptr \
