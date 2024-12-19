@@ -1382,9 +1382,6 @@ HWTEST_F(JSVMTest, NonAPIFunction, TestSize.Level1) {
     ASSERT_TRUE(status == JSVM_INVALID_ARG);
 }
 
-
-static std::string fakelog = "";
-
 static JSVM_Value LogFunc(JSVM_Env env, JSVM_CallbackInfo info)
 {
     size_t argc = 1;
