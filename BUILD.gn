@@ -87,6 +87,12 @@ config("ace_napi_config") {
   } else if (is_arkui_x && target_os == "android") {
     defines += [ "ANDROID_PLATFORM" ]
   }
+  if (!(defined(is_arkui_x) && is_arkui_x) && is_ohos && is_standard_system &&
+      target_cpu == "arm64" && !is_emulator && defined(global_parts_info) &&
+      defined(global_parts_info.security_code_signature)) {
+    cflags_cc += [ "-march=armv8.4-a" ]
+    defines += [ "NAPI_ENABLE_DATA_PROTECT" ]
+  }
 }
 
 config("module_manager_config") {
