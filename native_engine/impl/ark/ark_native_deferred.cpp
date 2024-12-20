@@ -15,13 +15,11 @@
 
 #include "ark_native_deferred.h"
 
-#include <cstring>
 
 #include "ark_native_engine.h"
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-#include "native_engine/native_utils.h"
 
 ArkNativeDeferred::ArkNativeDeferred(ArkNativeEngine* engine, Local<PromiseCapabilityRef> deferred)
     : engine_(engine), deferred_(engine->GetEcmaVm(), deferred)

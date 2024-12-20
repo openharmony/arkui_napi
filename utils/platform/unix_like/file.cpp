@@ -13,8 +13,6 @@
  * limitations under the License.
  */
 
-#include <cerrno>
-#include <cstring>
 #include <securec.h>
 
 #include "utils/file.h"

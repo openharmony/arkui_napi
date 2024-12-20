@@ -15,7 +15,6 @@
 
 #include "native_engine/native_engine.h"
 
-#include <uv.h>
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <sys/epoll.h>
 #endif
@@ -23,10 +22,8 @@
 #include <sys/event.h>
 #endif
 
-#include "ecmascript/napi/include/jsnapi.h"
 #include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
-#include "utils/log.h"
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";

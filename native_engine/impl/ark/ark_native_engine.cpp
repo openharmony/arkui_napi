@@ -19,17 +19,12 @@
 #include <sys/prctl.h>
 #endif
 
-#include <sstream>
-#include "ark_crash_holder.h"
-#include "ark_finalizers_pack.h"
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
-#include "native_engine/native_property.h"
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
 #include "securec.h"
 #include "utils/file.h"
-#include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #include <uv.h>
@@ -44,7 +39,6 @@
 #include "event_handler.h"
 #endif
 #ifdef ENABLE_HITRACE
-#include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #include "parameter.h"
 #include "musl_preinit_common.h"

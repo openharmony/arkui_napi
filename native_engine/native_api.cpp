@@ -16,28 +16,16 @@
 #define NAPI_EXPERIMENTAL
 #endif
 
-#ifdef ENABLE_HITRACE
-#include <sys/prctl.h>
-#endif
 
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
-#include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
-#include "native_engine/impl/ark/ark_native_engine.h"
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_create_env.h"
-#include "native_engine/native_property.h"
-#include "native_engine/native_sendable.h"
 #include "native_engine/native_utils.h"
-#include "native_engine/native_value.h"
 #include "native_engine/worker_manager.h"
 #include "securec.h"
-#include "utils/log.h"
-#ifdef ENABLE_HITRACE
-#include "hitrace_meter.h"
-#endif
 
 using panda::ArrayRef;
 using panda::ArrayBufferRef;
