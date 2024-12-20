@@ -3912,8 +3912,12 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
 
 Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
+    if (engine == nullptr) {
+        HILOG_ERROR("AttachFuncCallback engine is nullptr");
+        return Local<panda::JSValueRef>();
+    }
     auto vm = reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm();
-    if (attachData == nullptr || (engine == nullptr || buffer ==nullptr)) {
+    if (attachData == nullptr || buffer ==nullptr) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
         return panda::JSValueRef::Undefined(vm);
     }
