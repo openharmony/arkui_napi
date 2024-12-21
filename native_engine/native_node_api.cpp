@@ -13,14 +13,9 @@
  * limitations under the License.
  */
 
-#include "ecmascript/napi/include/jsnapi.h"
-#include "napi/native_node_api.h"
 #include "native_api_internal.h"
-#include "native_engine/impl/ark/ark_native_options.h"
 #include "native_engine/native_async_hook_context.h"
-#include "native_engine/native_engine.h"
 #include "native_engine/native_utils.h"
-#include "utils/log.h"
 
 using panda::Local;
 using panda::StringRef;

@@ -15,7 +15,6 @@
 
 #include "ark_idle_monitor.h"
 
-#include <chrono>
 
 #include "utils/log.h"
 #if defined(ENABLE_FFRT)

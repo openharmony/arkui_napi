@@ -16,21 +16,15 @@
 #include "native_async_work.h"
 
 #ifdef ENABLE_HITRACE
-#include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #include "parameter.h"
-#include <securec.h>
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
 
 #include <cinttypes>
-#include "ecmascript/napi/include/jsnapi.h"
 #include "native_api_internal.h"
-#include "napi/native_api.h"
-#include "native_engine.h"
-#include "utils/log.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
 using OHOS::Ace::ContainerScope;

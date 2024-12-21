@@ -14,7 +14,6 @@
  */
 #include "utils/log.h"
 
-#include <cstdint>
 
 [[maybe_unused]] static void StripFormatString(const std::string& prefix, std::string& str)
 {
