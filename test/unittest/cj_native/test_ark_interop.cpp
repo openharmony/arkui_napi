@@ -51,7 +51,10 @@ public:
         TestObject();
         TestDefineProperty();
         TestArray();
-        TestBigint();
+        TestBigintInt64();
+        TestBigint16Bytes();
+        TestBigint28Bytes();
+        TestBigint32Bytes();
         TestPromise();
         TestSymbol();
         TestFunction();
@@ -66,7 +69,10 @@ private:
     static void TestObject();
     static void TestDefineProperty();
     static void TestArray();
-    static void TestBigint();
+    static void TestBigintInt64();
+    static void TestBigint16Bytes();
+    static void TestBigint28Bytes();
+    static void TestBigint32Bytes();
     static void TestPromise();
     static void TestSymbol();
     static void TestFunction();
@@ -556,7 +562,7 @@ void ArkInteropTest::TestArray()
     }
 }
 
-void ArkInteropTest::TestBigint()
+void ArkInteropTest::TestBigintInt64()
 {
     EXPECT_TRUE(MockContext::GetInstance());
     ARKTS_Env env = MockContext::GetInstance()->GetEnv();
@@ -577,12 +583,78 @@ void ArkInteropTest::TestBigint()
             ARKTS_BigIntGetByteSize(env, values[i]);
         }
     }
-    uint8_t origin[] { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 70, 50, 20, 30, 40, 50};
-    bool isNegtive = false;
-    auto value = ARKTS_CreateBigIntWithBytes(env, isNegtive, std::size(origin), origin);
+}
+
+void ArkInteropTest::TestBigint16Bytes()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50
+    };
+    bool isNegative = false;
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
     EXPECT_TRUE(ARKTS_IsBigInt(env, value));
     EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
-    ARKTS_BigIntGetByteSize(env, value);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), std::size(origin));
+    uint8_t received[std::size(origin)];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, std::size(origin), received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i]);
+    }
+}
+
+void ArkInteropTest::TestBigint28Bytes()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50,
+        1, 2, 3, 4, 5, 6, 7, 8,
+        9, 10, 20, 30,
+    };
+    bool isNegative = false;
+    constexpr int expectSize = 32;
+    // bigint words are 8 bytes aligned, received 32 bytes, and lower 4 bytes would be filled with 0.
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), expectSize);
+    uint8_t received[expectSize];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, expectSize, received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i + expectSize - std::size(origin)]);
+    }
+}
+
+void ArkInteropTest::TestBigint32Bytes()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50,
+        1, 2, 3, 4, 5, 6, 7, 8,
+        9, 10, 20, 30, 40, 50, 60, 70,
+    };
+    bool isNegative = false;
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), std::size(origin));
+    uint8_t received[std::size(origin)];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, std::size(origin), received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i]);
+    }
 }
 
 void ArkInteropTest::TestSymbol()

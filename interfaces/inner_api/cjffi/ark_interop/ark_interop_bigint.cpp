@@ -62,7 +62,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
     u64v.resize(totalCnt);
     
     int64_t wordStart = 0;
-    int64_t wordEnd = firstBytes;
+    int64_t wordEnd = firstBytes ? firstBytes : WORD_BYTES;
     for (int64_t index = totalCnt - 1;index >= 0; --index) {
         uint64_t value = 0;
         for (auto i = wordStart;i < wordEnd; ++i) {
