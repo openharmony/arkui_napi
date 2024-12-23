@@ -517,6 +517,16 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                     nullptr, false, errInfo, false, "");
                 MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm).c_str());
                 if (module != nullptr && arkNativeEngine) {
+                    if (module->registerCallback == nullptr) {
+                        if (module->name != nullptr) {
+                            HILOG_ERROR("requireInternal Init function is nullptr. module name: %{public}s",
+                                module->name);
+                        } else {
+                            HILOG_ERROR("requireInternal Init function is nullptr.");
+                        }
+                        return scope.Escape(exports);
+                    }
+
                     auto it = arkNativeEngine->loadedModules_.find(module);
                     if (it != arkNativeEngine->loadedModules_.end()) {
                         return scope.Escape(it->second.ToLocal(ecmaVm));
