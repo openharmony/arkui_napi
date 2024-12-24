@@ -49,13 +49,7 @@ static constexpr int32_t THREAD_COUNT = 2;
 static constexpr int32_t THREAD_COUNT_FOUR = 4;
 static constexpr int32_t MAX_QUEUE_SIZE = 3;
 static constexpr int32_t SUCCESS_COUNT_JS_FOUR = 4;
-static constexpr int32_t CALL_THREAD_SAFE_SLEEP = 2; // 2s
-static constexpr int32_t FIRST_TASK_SLEEP = 4; // 4s
 static constexpr int32_t INVALID_NAPI_THREAD_SAFE_PRIORITY = -1;
-static constexpr int32_t ADD_FIRST_NUMBER = 1;
-static constexpr int32_t ADD_SECOND_NUMBER = 2;
-static constexpr int32_t ADD_SUMMARY_RESULT = 3;
-static constexpr int32_t ARGS_SIZE = 2;
 static constexpr int32_t FIRST_RECEIVER = 1;
 static constexpr int32_t SECOND_RECEIVER = 2;
 static constexpr int32_t THIRD_RECEIVER = 3;
@@ -63,7 +57,6 @@ static constexpr int32_t FOURTH_RECEIVER = 4;
 static constexpr int32_t FIFTH_RECEIVER = 5;
 static constexpr int32_t DATA_LENGTH = 40;
 static constexpr int32_t THREAD_SIZE = 5;
-static constexpr int32_t FIRST_THREAD_INDEX = 0;
 static constexpr int32_t SECOND_THREAD_INDEX = 1;
 static constexpr int32_t THIRD_THREAD_INDEX = 2;
 static constexpr int32_t FOURTH_THREAD_INDEX = 3;
@@ -315,16 +308,10 @@ static void TsFuncDataSourceThreadCountTotal(void* data)
         std::cout<<"acquireFlag  is true"<<std::endl;
         status = napi_acquire_threadsafe_function(func);
         EXPECT_EQ(status, napi_ok);
-        status = napi_call_threadsafe_function(func, &g_sendData, blockMode);
-        if (status == napi_ok) {
-            g_callSuccessCount++;
-        }
-        status = napi_release_threadsafe_function(func, napi_tsfn_release);
-    } else {
-        status = napi_call_threadsafe_function(func, &g_sendData, blockMode);
-        if (status == napi_ok) {
-            g_callSuccessCount++;
-        }
+    }
+    status = napi_call_threadsafe_function(func, &g_sendData, blockMode);
+    if (status == napi_ok) {
+        g_callSuccessCount++;
     }
     status = napi_release_threadsafe_function(func, napi_tsfn_release);
 }
@@ -419,41 +406,6 @@ static void TsFuncThreadInternal(napi_env env,
     HILOG_INFO("TsFuncThreadInternal end");
 }
 
-static napi_value JsCallback(napi_env env, napi_callback_info info)
-{
-    size_t agrc = ARGS_SIZE;
-    napi_value argv[ARGS_SIZE] = { nullptr };
-    napi_get_cb_info(env, info, &agrc, argv, nullptr, nullptr);
-
-    int32_t number1 = 0;
-    napi_get_value_int32(env, argv[0], &number1);
-
-    int32_t number2 = 0;
-    napi_get_value_int32(env, argv[1], &number2);
-
-    napi_value result = nullptr;
-    napi_create_int32(env, number1 + number2, &result);
-    return result;
-}
-
-static void CallJsCallback(napi_env env, napi_value jsCb)
-{
-    napi_value undefined;
-    napi_get_undefined(env, &undefined);
-    napi_value numberOne = nullptr;
-    napi_create_int32(env, ADD_FIRST_NUMBER, &numberOne);
-    napi_value numberTwo = nullptr;
-    napi_create_int32(env, ADD_SECOND_NUMBER, &numberTwo);
-    napi_value argv[ARGS_SIZE] = { numberOne, numberTwo };
-
-    napi_value result = nullptr;
-    napi_call_function(env, undefined, jsCb, ARGS_SIZE, argv, &result);
-
-    int32_t res = 0;
-    napi_get_value_int32(env, result, &res);
-    EXPECT_EQ(res, ADD_SUMMARY_RESULT);
-}
-
 static void StopCurrentRunner()
 {
     auto runner = OHOS::AppExecFwk::EventRunner::Current();
@@ -463,13 +415,18 @@ static void StopCurrentRunner()
     }
 }
 
+void ThreadFanalize(napi_env env, void* context, void*)
+{
+    StopCurrentRunner();
+    delete reinterpret_cast<CallbackData *>(context);
+}
+
 static void CallJs(napi_env env, napi_value jsCb, void *context, void *data)
 {
-    EXPECT_NE(env, nullptr);
+    napi_release_threadsafe_function(reinterpret_cast<CallbackData*>(context)->tsfn, napi_tsfn_release);
 
     g_receiveCnt++;
     if (g_receiveCnt == FIRST_RECEIVER) {
-        std::this_thread::sleep_for(std::chrono::seconds(FIRST_TASK_SLEEP));
         return;
     }
     // check data string
@@ -491,20 +448,15 @@ static void CallJs(napi_env env, napi_value jsCb, void *context, void *data)
         }
     }
     EXPECT_EQ(ret, 0);
-
-    CallJsCallback(env, jsCb);
-    if (g_receiveCnt == THIRD_RECEIVER) {
-        StopCurrentRunner();
-    }
 }
 
 static void CallJsWithDiffPriority(napi_env env, napi_value jsCb, void *context, void *data)
 {
     EXPECT_NE(env, nullptr);
-
+    auto ctx = reinterpret_cast<CallbackData *>(context);
     g_receiveCnt++;
+    napi_release_threadsafe_function(ctx->tsfn, napi_tsfn_release);
     if (g_receiveCnt == FIRST_RECEIVER) {
-        std::this_thread::sleep_for(std::chrono::seconds(FIRST_TASK_SLEEP));
         return;
     }
     // check data string
@@ -520,12 +472,7 @@ static void CallJsWithDiffPriority(napi_env env, napi_value jsCb, void *context,
     } else if (g_receiveCnt == FIFTH_RECEIVER) {
         ret = strcmp(testData, "hello world from D");
     }
-    EXPECT_EQ(ret, 0);
-
-    CallJsCallback(env, jsCb);
-    if (g_receiveCnt == FIFTH_RECEIVER) {
-        StopCurrentRunner();
-    }
+    EXPECT_EQ(ret, 0) << "data is: " << testData << ", execute id: " << g_receiveCnt;
 }
 
 class UnitLoopHandler : public OHOS::AppExecFwk::FileDescriptorListener,
@@ -578,7 +525,37 @@ void NapiThreadsafeTest::AttachEventHandler()
     HILOG_INFO("AttachEventHandler is completed!");
 }
 
-static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_task_priority priority)
+class AutoTsfn {
+public:
+    explicit AutoTsfn(napi_threadsafe_function tsfn) : tsfn_(tsfn) {}
+    ~AutoTsfn()
+    {
+        if (autoRelease_) {
+            Release();
+        }
+    }
+
+    void Acquire()
+    {
+        ASSERT_EQ(napi_acquire_threadsafe_function(tsfn_), napi_ok);
+    }
+
+    void Release()
+    {
+        ASSERT_EQ(napi_release_threadsafe_function(tsfn_, napi_tsfn_release), napi_ok);
+    }
+
+    void CancelRelease()
+    {
+        autoRelease_ = false;
+    }
+
+private:
+    napi_threadsafe_function tsfn_ {nullptr};
+    bool autoRelease_ {true};
+};
+
+static void CallThreadSafeFunc(napi_threadsafe_function tsfn, AutoTsfn& autoTsfn, napi_task_priority priority)
 {
     char *testData = (char *)malloc(DATA_LENGTH);
     if (testData == nullptr) {
@@ -594,8 +571,22 @@ static void CallThreadSafeFunc(napi_threadsafe_function tsfn, napi_task_priority
     } else if (priority == napi_priority_idle) {
         strcpy_s(testData, DATA_LENGTH, "hello world from D");
     }
-    auto status =
-        napi_call_threadsafe_function_with_priority(tsfn, testData, priority, true);
+    autoTsfn.Acquire();
+    auto status = napi_call_threadsafe_function_with_priority(tsfn, testData, priority, true);
+    if (status != napi_ok) {
+        autoTsfn.Release();
+    }
+    EXPECT_EQ(status, napi_ok);
+}
+
+static void CallThreadSafeFunc(
+    napi_threadsafe_function tsfn, AutoTsfn &autoTsfn, char *testData, napi_task_priority priority, bool isTail)
+{
+    autoTsfn.Acquire();
+    auto status = napi_call_threadsafe_function_with_priority(tsfn, testData, priority, isTail);
+    if (status != napi_ok) {
+        autoTsfn.Release();
+    }
     EXPECT_EQ(status, napi_ok);
 }
 
@@ -606,47 +597,26 @@ void NapiThreadsafeTest::CallThreadSafeWithSamePriorityTest(napi_task_priority p
     napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
     CallbackData *callbackData = new CallbackData();
     callbackData->priority = priority;
-    napi_value testFunc = nullptr;
-    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
 
-    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
-        0, 1, callbackData, nullptr, callbackData, CallJs, &callbackData->tsfn);
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, callbackData, ThreadFanalize, callbackData, CallJs, &callbackData->tsfn);
     EXPECT_EQ(status, napi_ok);
+    std::thread([](napi_env env, void* data) {
+        CallbackData* callbackData = (CallbackData*)data;
+        g_receiveCnt = 1;
 
-    g_receiveCnt = 0;
-    napi_create_async_work(
-        env, nullptr, resourceName, [](napi_env env, void* data) {
-            CallbackData* callbackData = (CallbackData*)data;
-            char *testDataA = (char *)malloc(DATA_LENGTH);
-            memset_s(testDataA, DATA_LENGTH, 0, DATA_LENGTH);
-            strcpy_s(testDataA, DATA_LENGTH, "hello world from A");
+        char *testDataA = (char *)malloc(DATA_LENGTH);
+        memset_s(testDataA, DATA_LENGTH, 0, DATA_LENGTH);
+        strcpy_s(testDataA, DATA_LENGTH, "hello world from A");
 
-            char *testDataB = (char *)malloc(DATA_LENGTH);
-            memset_s(testDataB, DATA_LENGTH, 0, DATA_LENGTH);
-            strcpy_s(testDataB, DATA_LENGTH, "hello world from B");
-            // first call function to post a sleep task, then the next execution from event queue which
-            // contains two tasks.
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA, napi_priority_immediate,
-                    true);
-            EXPECT_EQ(status, napi_ok);
-            std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
-            status = napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataA,
-                callbackData->priority, g_isTailA);
-            EXPECT_EQ(status, napi_ok);
-            status = napi_call_threadsafe_function_with_priority(callbackData->tsfn, testDataB,
-                callbackData->priority, g_isTailB);
-            EXPECT_EQ(status, napi_ok);
-        },
-        [](napi_env env, napi_status status, void* data) {
-            CallbackData* callbackData = (CallbackData*)data;
-            napi_delete_async_work(env, callbackData->work);
-            auto status1 = napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
-            EXPECT_EQ(status1, napi_ok);
-            delete callbackData;
-        },
-        callbackData, &callbackData->work);
-    napi_queue_async_work(env, callbackData->work);
+        char *testDataB = (char *)malloc(DATA_LENGTH);
+        memset_s(testDataB, DATA_LENGTH, 0, DATA_LENGTH);
+        strcpy_s(testDataB, DATA_LENGTH, "hello world from B");
+
+        AutoTsfn tsfn(callbackData->tsfn);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, testDataA, callbackData->priority, g_isTailA);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, testDataB, callbackData->priority, g_isTailB);
+    }, env, callbackData).join();
 }
 
 void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
@@ -655,38 +625,28 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityTest()
     napi_value resourceName = 0;
     napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
     CallbackData *callbackData = new CallbackData();
-    napi_value testFunc = nullptr;
-    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
 
-    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
-        0, 1, callbackData, nullptr, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, callbackData, ThreadFanalize, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
+    EXPECT_EQ(status, napi_ok);
+    AutoTsfn tsfn(callbackData->tsfn);
+    tsfn.Acquire();
+    g_receiveCnt = 0;
+
+    status =
+        napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate,
+            true);
     EXPECT_EQ(status, napi_ok);
 
-    g_receiveCnt = 0;
-    napi_create_async_work(
-        env, nullptr, resourceName, [](napi_env env, void* data) {
-            CallbackData* callbackData = (CallbackData*)data;
-            // first call function to post a sleep task, then the next execution from event queue which
-            // contains four different priority tasks.
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate,
-                    true);
-            EXPECT_EQ(status, napi_ok);
-            std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_high);
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_low);
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_idle);
-        },
-        [](napi_env env, napi_status status, void* data) {
-            CallbackData* callbackData = (CallbackData*)data;
-            napi_delete_async_work(env, callbackData->work);
-            auto status1 = napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
-            EXPECT_EQ(status1, napi_ok);
-            delete callbackData;
-        },
-        callbackData, &callbackData->work);
-    napi_queue_async_work(env, callbackData->work);
+    std::thread([](napi_env env, void* data) {
+        CallbackData* callbackData = (CallbackData*)data;
+        AutoTsfn tsfn(callbackData->tsfn);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_immediate);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_high);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_low);
+        CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_idle);
+        tsfn.CancelRelease();
+    }, env, callbackData).join();
 }
 
 void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
@@ -695,37 +655,55 @@ void NapiThreadsafeTest::CallThreadSafeWithDiffPriorityMultipleThreadTest()
     napi_value resourceName = 0;
     napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
     CallbackData *callbackData = new CallbackData();
-    napi_value testFunc = nullptr;
-    napi_create_function(env, "jsCallback", NAPI_AUTO_LENGTH, JsCallback, nullptr, &testFunc);
 
-    auto status = napi_create_threadsafe_function(env, testFunc, nullptr, resourceName,
-        0, 1, callbackData, nullptr, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
+    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, callbackData, ThreadFanalize, callbackData, CallJsWithDiffPriority, &callbackData->tsfn);
     EXPECT_EQ(status, napi_ok);
 
-    g_receiveCnt = 0;
-    auto runFunc = [callbackData](const napi_env &env, int32_t threadIndex) {
-        if (threadIndex == FIRST_THREAD_INDEX) {
-            auto status =
-                napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr, napi_priority_immediate,
-                    true);
-            EXPECT_EQ(status, napi_ok);
-        } else if (threadIndex == SECOND_THREAD_INDEX) {
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_immediate);
+    g_receiveCnt = 1;
+
+    uint32_t* queuedTasks = new uint32_t;
+    uint32_t* executedTasks = new uint32_t;
+    *queuedTasks = 0;
+    *executedTasks = 0;
+
+    std::mutex taskMutex;
+    std::condition_variable taskExecute;
+
+    auto runFunc = [callbackData, &executedTasks, &taskMutex, &taskExecute](const napi_env &env, int32_t threadIndex) {
+        AutoTsfn tsfn(callbackData->tsfn);
+
+        if (threadIndex == SECOND_THREAD_INDEX) {
+            CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_immediate);
         } else if (threadIndex == THIRD_THREAD_INDEX) {
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_high);
+            CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_high);
         } else if (threadIndex == FOURTH_THREAD_INDEX) {
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_low);
+            CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_low);
         } else if (threadIndex == FIFTH_THREAD_INDEX) {
-            CallThreadSafeFunc(callbackData->tsfn, napi_priority_idle);
+            CallThreadSafeFunc(callbackData->tsfn, tsfn, napi_priority_idle);
         }
+        {
+            std::lock_guard<std::mutex> lock(taskMutex);
+            ++(*executedTasks);
+            taskExecute.notify_one();
+        }
+        tsfn.CancelRelease();
     };
-    std::thread runFirstThread = std::thread(runFunc, std::ref(env), 0);
-    runFirstThread.detach();
-    std::this_thread::sleep_for(std::chrono::seconds(CALL_THREAD_SAFE_SLEEP));
+
     for (int32_t index = 1; index < THREAD_SIZE; ++index) {
         std::thread runThread = std::thread(runFunc, std::ref(env), index);
+        ++(*queuedTasks);
         runThread.detach();
     }
+
+    std::unique_lock<std::mutex> lock(taskMutex);
+    while (*queuedTasks != *executedTasks) {
+        taskExecute.wait(lock, [queuedTasks, executedTasks] {
+            return *queuedTasks == *executedTasks;
+        });
+    }
+    std::cout << "post task finish, posted: " << *queuedTasks << ", executed: " << g_receiveCnt << std::endl;
+    AutoTsfn tsfn(callbackData->tsfn);
 }
 
 /**
@@ -1108,6 +1086,7 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeWithPriorityArgsCheckTest002, testing::ex
     status =
         napi_call_threadsafe_function_with_priority(callbackData->tsfn, nullptr,
             static_cast<napi_task_priority>(INVALID_NAPI_THREAD_SAFE_PRIORITY), true);
+    EXPECT_NE(status, napi_ok);
     delete callbackData;
     HILOG_INFO("ThreadsafeWithPriorityArgsCheckTest002 end");
 }
