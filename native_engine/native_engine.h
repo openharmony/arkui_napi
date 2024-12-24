@@ -325,7 +325,6 @@ public:
     virtual NativeEngine* GetHostEngine() const;
     virtual void SetApiVersion(int32_t apiVersion);
     virtual int32_t GetApiVersion();
-    virtual int32_t GetRealApiVersion() const;
     virtual bool IsApplicationApiVersionAPI11Plus();
 
     virtual napi_status AddCleanupHook(CleanupCallback fun, void* arg);
@@ -588,7 +587,6 @@ private:
     uv_sem_t uvSem_;
     // Application's sdk version
     int32_t apiVersion_ = 8;
-    int32_t realApiVersion_ = 8;
 
     // the old worker api use before api9, the new worker api start with api9
     enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD, NATIVE_THREAD };
