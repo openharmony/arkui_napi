@@ -570,6 +570,33 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     JSNApi::SetAsyncCleanTaskCallback(vm, [this] (AsyncNativeCallbacksPack *callbacksPack) {
         this->PostAsyncTask(callbacksPack);
     });
+    RegisterNapiUncaughtExceptionHandler([this] (napi_value exception) -> void {
+        if (!NativeEngine::IsAlive(this)) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        std::string name = "";
+        if (this->IsWorkerThread() && this->getWorkerNameCallback_) {
+            name = this->getWorkerNameCallback_(this->worker_);
+        } else if (this->IsTaskPoolThread()) {
+            name = this->GetTaskName();
+            this->SetTaskName("");
+        }
+        auto hasAllErrorCallback = NapiErrorManager::GetInstance()->GetHasAllErrorCallback();
+        if (!hasAllErrorCallback) {
+            return;
+        }
+        if (!hasAllErrorCallback()) {
+            return;
+        }
+        JSNApi::GetAndClearUncaughtException(this->GetEcmaVm());
+        auto callback = NapiErrorManager::GetInstance()->GetOnAllErrorCallback();
+        if (callback) {
+            callback(reinterpret_cast<napi_env>(this), exception,
+                name, this->GetJSThreadTypeInt());
+        }
+    });
+    RegisterAllPromiseCallback();
 #if defined(ENABLE_EVENT_HANDLER)
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
         arkIdleMonitor_ = std::make_shared<ArkIdleMonitor>(vm);
@@ -1933,6 +1960,30 @@ bool ArkNativeEngine::AdjustExternalMemory(int64_t ChangeInBytes, int64_t* Adjus
     return true;
 }
 
+void ArkNativeEngine::RegisterAllPromiseCallback()
+{
+    JSNApi::SetHostPromiseRejectionTracker(vm_, reinterpret_cast<void*>(PromiseRejectCallback),
+                                           reinterpret_cast<void*>(this));
+    allPromiseRejectCallback_ = [this] (napi_value* args) -> void {
+        if (!NativeEngine::IsAlive(this)) {
+            HILOG_WARN("napi_env has been destoryed!");
+            return;
+        }
+        std::string name = "";
+        if (this->IsWorkerThread() && this->getWorkerNameCallback_) {
+            name = this->getWorkerNameCallback_(this->worker_);
+        } else if (this->IsTaskPoolThread()) {
+            name = this->GetTaskName();
+            this->SetTaskName("");
+        }
+        auto callback = NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback();
+        if (callback) {
+            callback(reinterpret_cast<napi_env>(this), args,
+                name, this->GetJSThreadTypeInt());
+        }
+    };
+}
+
 void ArkNativeEngine::SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef)
 {
     if (rejectCallbackRef == nullptr || checkCallbackRef == nullptr) {
@@ -1954,11 +2005,6 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
         HILOG_ERROR("engine is nullptr");
         return;
     }
-
-    if (env->promiseRejectCallbackRef_ == nullptr || env->checkCallbackRef_ == nullptr) {
-        HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
-        return;
-    }
     panda::ecmascript::EcmaVM* vm = const_cast<EcmaVM*>(env->GetEcmaVm());
     LocalScope scope(vm);
     Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
@@ -1968,7 +2014,19 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
     Local<JSValueRef> type(IntegerRef::New(vm, static_cast<int32_t>(operation)));
 
     Local<JSValueRef> args[] = {type, promise, reason};
-
+    if (env->allPromiseRejectCallback_) {
+        constexpr int ARGC_THREE = 3;
+        napi_value *callErrorArgs = new napi_value[ARGC_THREE];
+        for (int i = 0; i < ARGC_THREE; i++) {
+            callErrorArgs[i] = JsValueFromLocalValue(args[i]);
+        }
+        env->allPromiseRejectCallback_(callErrorArgs);
+        delete[] callErrorArgs;
+    }
+    if (env->promiseRejectCallbackRef_ == nullptr || env->checkCallbackRef_ == nullptr) {
+        HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
+        return;
+    }
     napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get(env);
     Local<FunctionRef> promiseRejectCallback = LocalValueFromJsValue(promiseNapiRejectCallback);
     if (!promiseRejectCallback.IsEmpty()) {
@@ -2310,9 +2368,24 @@ void ArkNativeEngine::SetMockModuleList(const std::map<std::string, std::string>
     JSNApi::SetMockModuleList(vm_, list);
 }
 
+static void OnAllErrorCallbackForThreadFunc(Local<ObjectRef> value, void *data)
+{
+    if (data == nullptr) {
+        return;
+    }
+    auto engine = static_cast<ArkNativeEngine *>(data);
+    auto napiUncaughtExceptionCallback = engine->GetNapiUncaughtExceptionCallback();
+    if (napiUncaughtExceptionCallback == nullptr) {
+        return;
+    }
+    napi_env env = reinterpret_cast<napi_env>(engine);
+    napiUncaughtExceptionCallback(ArkNativeEngine::ArkValueToNapiValue(env, value));
+}
+
 void ArkNativeEngine::RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback)
 {
     JSNApi::EnableUserUncaughtErrorHandler(vm_);
+    JSNApi::SetOnAllErrorCallbackForThread(vm_, OnAllErrorCallbackForThreadFunc, static_cast<void *>(this));
     napiUncaughtExceptionCallback_ = callback;
 }
 
