@@ -1412,7 +1412,6 @@ HWTEST_F(JSVMTest, test_str_private, TestSize.Level1)
     JSVMTEST_CALL(OH_JSVM_CreatePrivate(env, nullptr, &key));
     auto obj = jsvm::Object();
     JSVMTEST_CALL(OH_JSVM_SetPrivate(env, obj, key, jsvm::Str("a")));
-    static JSVM_CallbackStruct cb = {LogFunc, NULL};
     JSVMTEST_CALL(OH_JSVM_SetPrivate(env, obj, key, jsvm::Str("log")));
     JSVM_Value result;
     JSVMTEST_CALL(OH_JSVM_GetPrivate(env, obj, key, &result));
