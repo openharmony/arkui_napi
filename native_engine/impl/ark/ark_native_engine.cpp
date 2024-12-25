@@ -599,12 +599,14 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     RegisterAllPromiseCallback();
 #if defined(ENABLE_EVENT_HANDLER)
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
-        arkIdleMonitor_ = std::make_shared<ArkIdleMonitor>(vm);
+        ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(vm);
         JSNApi::SetTriggerGCTaskCallback(vm, [this](TriggerGCData& data) {
             this->PostTriggerGCTask(data);
         });
-        arkIdleMonitor_->SetStartTimerCallback();
+        ArkIdleMonitor::GetInstance()->SetStartTimerCallback();
         PostLooperTriggerIdleGCTask();
+    } else {
+        ArkIdleMonitor::GetInstance()->RegisterWorkerEnv(reinterpret_cast<napi_env>(this));
     }
 #endif
 }
@@ -613,6 +615,9 @@ ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
     Deinit();
+    if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
+        ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
+    }
     // Free cached objects
     for (auto&& [module, exportObj] : loadedModules_) {
         exportObj.FreeGlobalHandleAddr();
@@ -628,6 +633,7 @@ ArkNativeEngine::~ArkNativeEngine()
         delete options_;
         options_ = nullptr;
     }
+    ArkIdleMonitor::GetInstance()->UnregisterWorkerEnv(reinterpret_cast<napi_env>(this));
 }
 
 #ifdef ENABLE_HITRACE
@@ -2220,7 +2226,7 @@ size_t ArkNativeEngine::GetFullGCLongTimeCount()
 void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
-    arkIdleMonitor_->NotifyChangeBackgroundState(inBackground);
+    ArkIdleMonitor::GetInstance()->NotifyChangeBackgroundState(inBackground);
 }
 
 void ArkNativeEngine::NotifyIdleStatusControl(std::function<void(bool)> callback)
@@ -2502,7 +2508,7 @@ void ArkNativeEngine::PostLooperTriggerIdleGCTask()
         HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
         return;
     }
-    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = arkIdleMonitor_;
+    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = ArkIdleMonitor::GetInstance();
     auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
         const OHOS::AppExecFwk::StageInfo* info) -> int {
         auto arkIdleMonitor = weakArkIdleMonitor.lock();

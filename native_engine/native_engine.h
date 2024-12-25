@@ -66,6 +66,40 @@ enum class WorkerVersion {
     NONE, OLD, NEW
 };
 
+class WorkerThreadState {
+public:
+    void CheckIdleState()
+    {
+        if (!isRunning_.load() && taskCount_ == lastTaskCount_) {
+            checkCount_++;
+            return;
+        }
+        checkCount_ = 0;
+        lastTaskCount_ = taskCount_;
+    }
+
+    uint32_t GetCheckCount()
+    {
+        return checkCount_;
+    }
+
+    void NoityTaskStart()
+    {
+        taskCount_ ++;
+        isRunning_.store(true);
+    }
+
+    void NotifyTaskEnd()
+    {
+        isRunning_.store(false);
+    }
+private:
+    std::atomic<bool> isRunning_ {false};
+    uint32_t taskCount_ {0};
+    uint32_t lastTaskCount_ {0};
+    uint32_t checkCount_ {0};
+};
+
 using CleanupCallback = void (*)(void*);
 using ThreadId = uint32_t;
 
@@ -528,6 +562,11 @@ public:
         }
     }
 
+    WorkerThreadState* GetWorkerThreadState()
+    {
+        return workerThreadState_;
+    }
+
 private:
     void InitUvField();
     void CreateDefaultFunction(void);
@@ -570,6 +609,7 @@ protected:
 #endif
     NativeEngine* hostEngine_ {nullptr};
     bool isAppModule_ = false;
+    WorkerThreadState* workerThreadState_;
 
 public:
     uint64_t openHandleScopes_ = 0;
@@ -689,5 +729,22 @@ public:
     }
 private:
    NativeEngine* engine_ = nullptr;
+};
+
+class WorkerRunningScope {
+public:
+    explicit WorkerRunningScope(napi_env env) : env_(env)
+    {
+        auto engine = reinterpret_cast<NativeEngine*>(env_);
+        engine->GetWorkerThreadState()->NoityTaskStart();
+    }
+
+    ~WorkerRunningScope()
+    {
+        auto engine = reinterpret_cast<NativeEngine*>(env_);
+        engine->GetWorkerThreadState()->NotifyTaskEnd();
+    }
+private:
+    napi_env env_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_ENGINE_H */

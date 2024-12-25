@@ -79,6 +79,7 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
     SetMainThreadEngine(this);
     SetAlived();
     InitUvField();
+    workerThreadState_ = new WorkerThreadState();
 }
 
 void NativeEngine::InitUvField()
@@ -105,6 +106,9 @@ NativeEngine::~NativeEngine()
     isInDestructor_ = true;
     if (cleanEnv_ != nullptr) {
         cleanEnv_();
+    }
+    if (workerThreadState_ != nullptr) {
+        delete workerThreadState_;
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();

@@ -22,6 +22,8 @@
 #include <array>
 #include <algorithm>
 #include <memory>
+#include <mutex>
+#include <queue>
 
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
@@ -29,6 +31,7 @@
 #include "uv.h"
 #include "ecmascript/napi/include/dfx_jsnapi.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "interfaces/inner_api/napi/native_node_api.h"
 
 namespace panda::ecmascript {
 class Heap;
@@ -41,8 +44,10 @@ class ArkIdleMonitor {
 using Clock = std::chrono::high_resolution_clock;
 using TRIGGER_IDLE_GC_TYPE = panda::JSNApi::TRIGGER_IDLE_GC_TYPE;
 public:
-    explicit ArkIdleMonitor(EcmaVM* vm) : vm_(vm) {};
+    explicit ArkIdleMonitor(){};
     ~ArkIdleMonitor();
+
+    static std::shared_ptr<ArkIdleMonitor> GetInstance();
 
     bool IsIdleState() const
     {
@@ -78,12 +83,12 @@ public:
 
     int64_t GetNotifyTimestamp() const
     {
-        return notifyTimestamp_.load(std::memory_order_relaxed);
+        return idleStartTimestamp_.load(std::memory_order_relaxed);
     }
 
     void SetNotifyTimestamp(int64_t timestamp)
     {
-        notifyTimestamp_.store(timestamp, std::memory_order_relaxed);
+        idleStartTimestamp_.store(timestamp, std::memory_order_relaxed);
     }
 
     int64_t GetTotalIdleDuration() const
@@ -99,6 +104,30 @@ public:
     void AddIdleDuration(int64_t duration)
     {
         totalIdleDuration_.fetch_add(duration, std::memory_order_relaxed);
+    }
+
+    void SetMainThreadEcmaVM(EcmaVM* vm)
+    {
+        mainVM_ = vm;
+    }
+
+    void RegisterWorkerEnv(napi_env workerEnv)
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        workerEnvQueue_.push(workerEnv);
+    }
+
+    void UnregisterWorkerEnv(napi_env workerEnv)
+    {
+        std::lock_guard<std::mutex> lock(queueMutex_);
+        for (size_t i = 0; i < workerEnvQueue_.size(); i++) {
+            napi_env env = workerEnvQueue_.front();
+            workerEnvQueue_.pop();
+            if (env == workerEnv) {
+                return;
+            }
+            workerEnvQueue_.push(env);
+        }
     }
 
     template<typename T, int N>
@@ -146,47 +175,69 @@ public:
         int count_ {0};
     };
 
-    bool ShouldTryTriggerGC(int64_t timestamp);
     void NotifyLooperIdleStart(int64_t timestamp, int idleTime);
     void NotifyLooperIdleEnd(int64_t timestamp);
-    bool CheckLowNotifyState() const;
-    bool CheckLowRunningDurationState() const;
-    void IntervalMonitor();
-    void ClearIdleStats();
     void PostMonitorTask(uint64_t delayMs = IDLE_MONITORING_INTERVAL);
-    void TryTriggerGC(TriggerGCType gcType);
-    void NotifyTryCompressGC();
     void SetStartTimerCallback();
 
 private:
     double GetCpuUsage() const;
+    bool ShouldTryTriggerGC(int64_t interval);
+    bool CheckLowNotifyState() const;
+    bool CheckLowRunningDurationState() const;
+    void IntervalMonitor();
+    void NotifyMainThreadTryCompressGC();
+    void NotifyOneWorkerThreadTryCompressGC();
+    void ClearIdleStats();
+    void TryTriggerGC(TriggerGCType gcType);
+    bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
+    void PostIdleCheckTask();
+    void CheckWorkerEnvQueue();
+    bool CheckWorkerEnvQueueAllInIdle();
+    void StopIdleMonitorTimerTask();
 
-    EcmaVM* vm_;
+    static std::shared_ptr<ArkIdleMonitor> instance_;
 
-    static constexpr int IDLE_CHECK_LENGTH = 15;
-    static constexpr int IDLE_INBACKGROUND_CHECK_LENGTH = 4;
-    static constexpr int IDLE_CHECK_INTERVAL_LENGTH = 5;
+    EcmaVM* mainVM_;
+
+    static constexpr uint32_t IDLE_CHECK_LENGTH = 15;
+    static constexpr uint32_t IDLE_INBACKGROUND_CHECK_LENGTH = 4;
+    static constexpr int IDLE_CHECK_INTERVAL_LENGTH = 4;
     static constexpr int MIN_TRIGGER_FULLGC_INTERVAL = 90;
     static constexpr int LOW_IDLE_NOTIFY_THRESHOLD = 10;
     static constexpr uint64_t IDLE_MONITORING_INTERVAL = 1 * 1000; // ms
     static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000; // ms
-    static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 30; // ms
+    static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 10; // ms
+    static constexpr int64_t MAX_TRIGGER_GC_RUNNING_INTERVAL = 1; //ms
     static constexpr double IDLE_RATIO = 0.985f;
+    static constexpr double SHORT_IDLE_RATIO = 0.96f;
+    static constexpr uint64_t  SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
     static constexpr double IDLE_CPU_USAGE = 0.5f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
+    static constexpr uint32_t IDLE_WORKER_TRIGGER_COUNT = 1; // it needs over IDLE_INBACKGROUND_CHECK_LENGTH
 
     std::atomic<bool> idleState_ {false};
     std::atomic<bool> inBackground_ {true};
     std::atomic<int64_t> idleNotifyCount_ {0};
-    std::atomic<int64_t> notifyTimestamp_ {0};
+    std::atomic<int64_t> idleStartTimestamp_ {0};
     std::atomic<int64_t> totalIdleDuration_ {0};
+    int64_t idleEndTimestamp_ {0};
+    int64_t lastTotalIdleDuration_ {0};
+    int64_t startRecordTimestamp_ {0};
+    bool started_ {false};
+    bool triggeredGC_ {false};
+    bool needCheckIntervalIdle_ = {true};
     int currentTimerHandler_ {-1};
     int waitForStopTimerHandler_ {-1};
-    int64_t startRecordTimestamp_ {0};
-    int64_t needCheckFullGCTimestamp_ {0};
-    int64_t numberOfLowIdleNotifyCycles_ {0};
-    int64_t numberOfHighIdleTimeRatio_ {0};
+    uint32_t numberOfLowIdleNotifyCycles_ {0U};
+    uint32_t numberOfHighIdleTimeRatio_ {0U};
+    std::queue<int> timerHandlerQueue_;
+    uint32_t handlerWaitToStopCount_ {0};
     RingBuffer<int64_t, IDLE_CHECK_INTERVAL_LENGTH> recordedIdleNotifyInterval_;
+    RingBuffer<int64_t, IDLE_CHECK_INTERVAL_LENGTH> recordedRunningNotifyInterval_;
+    std::mutex timerMutex_;
+    std::mutex queueMutex_;
+    std::queue<napi_env> workerEnvQueue_;
 #if defined(ENABLE_EVENT_HANDLER)
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
 #endif
