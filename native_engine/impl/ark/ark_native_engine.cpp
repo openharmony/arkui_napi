@@ -2657,6 +2657,11 @@ bool ArkNativeEngine::RunScriptBuffer(const std::string& path, uint8_t* buffer, 
         return false;
     }
 
+    auto stopPreSoCallback = panda::JSNApi::GetStopPreLoadSoCallback(vm_);
+    if (stopPreSoCallback != nullptr) {
+        stopPreSoCallback();
+        panda::JSNApi::SetStopPreLoadSoCallback(vm_, nullptr);
+    }
     // LCOV_EXCL_START
     panda::JSExecutionScope executionScope(vm_);
     LocalScope scope(vm_);
