@@ -130,6 +130,10 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result);
 NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info *napi_info);
 NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result);
+NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
+                                                   const char* path,
+                                                   const char* module_info,
+                                                   napi_value* result);
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 // XGC specific internal API
 NAPI_EXTERN napi_status napi_vm_handshake(napi_env env, void* inputIface, void** outputIface);
