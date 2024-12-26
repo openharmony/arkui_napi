@@ -152,7 +152,7 @@ NAPI_EXTERN napi_status napi_queue_async_work(napi_env env, napi_async_work work
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
 
-    asyncWork->Queue();
+    asyncWork->Queue(reinterpret_cast<NativeEngine*>(env));
     return napi_status::napi_ok;
 }
 
@@ -163,7 +163,7 @@ NAPI_EXTERN napi_status napi_cancel_async_work(napi_env env, napi_async_work wor
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
 
-    asyncWork->Cancel();
+    asyncWork->Cancel(reinterpret_cast<NativeEngine*>(env));
     return napi_status::napi_ok;
 }
 

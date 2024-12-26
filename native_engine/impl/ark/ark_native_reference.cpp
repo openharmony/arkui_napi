@@ -66,6 +66,8 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 
 ArkNativeReference::~ArkNativeReference()
 {
+    VALID_ENGINE_CHECK(engine_, engine_, engineId_);
+
     if (deleteSelf_ && engine_->GetReferenceManager()) {
         engine_->GetReferenceManager()->ReleaseHandler(this);
         prev_ = nullptr;
@@ -108,36 +110,19 @@ napi_value ArkNativeReference::Get(NativeEngine* engine)
     if (value_.IsEmpty()) {
         return nullptr;
     }
-    if (engine != engine_) {
-        LOG_IF_SPECIAL(engine, engine->IsCrossThreadCheckEnabled(), "param env is not equal to its owner");
-    } else if (engineId_ != engine->GetId()) {
-        LOG_IF_SPECIAL(engine, engine->IsCrossThreadCheckEnabled(),
-                       "owner env has been destroyed, "
-                       "ownerid: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
-                       engineId_, engine_->GetId());
-    }
+    VALID_ENGINE_CHECK(engine, engine_, engineId_);
     Local<JSValueRef> value = value_.ToLocal(engine->GetEcmaVm());
     return JsValueFromLocalValue(value);
 }
 
 napi_value ArkNativeReference::Get()
 {
-    if (value_.IsEmpty()) {
-        return nullptr;
-    }
-    if (engineId_ != engine_->GetId()) {
-        LOG_IF_SPECIAL(engine_, engine_->IsCrossThreadCheckEnabled(),
-                       "owner env has been destroyed, "
-                       "ownerid: %{public}" PRIu64 ", current env id: %{public}" PRIu64,
-                       engineId_, engine_->GetId());
-    }
-    Local<JSValueRef> value = value_.ToLocal(engine_->GetEcmaVm());
-    return JsValueFromLocalValue(value);
+    return Get(engine_);
 }
 
 ArkNativeReference::operator napi_value()
 {
-    return Get();
+    return Get(engine_);
 }
 
 void* ArkNativeReference::GetData()
