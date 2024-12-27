@@ -667,12 +667,12 @@ private:
     static NativeEngine* g_mainThreadEngine_;
 
 public:
-    std::shared_mutex& GetEventMutex() const
+    inline std::shared_mutex& GetEventMutex() const
     {
         return eventMutex_;
     }
 
-    napi_threadsafe_function GetDefaultFunc()
+    inline napi_threadsafe_function GetDefaultFunc()
     {
         return defaultFunc_;
     }
