@@ -317,14 +317,6 @@ NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(napi_value func, napi_val
         finalizeData, finalizeCallback, context, callJsCallback);
 }
 
-NativeEvent* NativeEngine::CreateNativeEvent(napi_value func, napi_value asyncResource,
-    napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
-    NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback)
-{
-    return new NativeEvent(this, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
-        finalizeData, finalizeCallback, context, callJsCallback);
-}
-
 NativeErrorExtendedInfo* NativeEngine::GetLastError()
 {
     return &lastError_;

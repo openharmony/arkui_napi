@@ -113,7 +113,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
         }
         auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
         return safeAsyncWork->SendCancelableEvent(cb, data, priority,
-                                                  (name == nullptr)? DEFAULT_NAME: name, handleId);
+                                                  (name == nullptr) ? DEFAULT_NAME: name, handleId);
     } else {
         HILOG_ERROR("call NativeEngine not alive");
         return napi_status::napi_closing;
@@ -170,7 +170,7 @@ void NativeEvent::CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_funct
     if (defaultFunc) {
         return;
     }
-    napi_env env = reinterpret_cast<napi_env>(this);
+    napi_env env = reinterpret_cast<napi_env>(eng);
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
 

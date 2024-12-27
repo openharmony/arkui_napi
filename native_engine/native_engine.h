@@ -214,9 +214,6 @@ public:
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(napi_value func, napi_value asyncResource,
         napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
-    NativeEvent* CreateNativeEvent(napi_value func, napi_value asyncResource,
-        napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
-        NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
     virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
     virtual napi_value CreatePromise(NativeDeferred** deferred) = 0;
 
