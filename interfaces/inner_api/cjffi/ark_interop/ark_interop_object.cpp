@@ -65,11 +65,11 @@ bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 {
     ARKTS_ASSERT_F(env, "env is null");
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_F(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
+    ARKTS_ASSERT_F(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = BIT_CAST(jkey, Local<JSValueRef>);
+    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
     return object->Has(vm, key);
 }
 
@@ -90,11 +90,11 @@ void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, 
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = BIT_CAST(jkey, Local<JSValueRef>);
+    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
     auto value = ARKTS_ToHandle<JSValueRef>(jvalue);
 
     PropertyAttribute attribute(value, attrs & N_WRITABLE, attrs & N_ENUMERABLE, attrs & N_CONFIGURABLE);
@@ -105,7 +105,7 @@ void ARKTS_DefineAccessors(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, AR
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto undefined = ARKTS_CreateUndefined();
 
@@ -115,7 +115,7 @@ void ARKTS_DefineAccessors(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, AR
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = BIT_CAST(jkey, Local<JSValueRef>);
+    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
     auto handledUndef = ARKTS_ToHandle<JSValueRef>(undefined);
     auto handledGetter = accessor.getter != undefined ? BIT_CAST(accessor.getter, Local<JSValueRef>) : handledUndef;
     auto handledSetter = accessor.setter != undefined ? BIT_CAST(accessor.setter, Local<JSValueRef>) : handledUndef;
@@ -131,11 +131,11 @@ void ARKTS_SetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_
 {
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
+    ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = BIT_CAST(jkey, Local<JSValueRef>);
+    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
     auto value = ARKTS_ToHandle<JSValueRef>(jvalue);
 
     object->Set(vm, key, value);
@@ -145,11 +145,11 @@ ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 {
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_P(ARKTSInner_IsJSKey(env, jkey), "key is not string or symbol");
+    ARKTS_ASSERT_P(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = BIT_CAST(jkey, Local<JSValueRef>);
+    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
 
     auto result = object->Get(vm, key);
     return ARKTS_FromHandle(result);
