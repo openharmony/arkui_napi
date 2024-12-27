@@ -19,7 +19,7 @@
 #include "native_value.h"
 
 #include <mutex>
-#include <queue>
+#include <deque>
 #include <uv.h>
 #ifdef LINUX_PLATFORM
 #include <condition_variable>
@@ -49,10 +49,6 @@ enum class SafeAsyncStatus {
     SAFE_ASYNC_STATUS_CLOSED,
 };
 
-typedef struct CallbackWrapper_ {
-    std::function<void()> cb;
-} CallbackWrapper;
-
 class NativeSafeAsyncWork {
 public:
     static void AsyncCallback(uv_async_t* asyncHandler);
@@ -78,9 +74,8 @@ public:
     virtual bool Unref();
     virtual void* GetContext();
     virtual napi_status PostTask(void *data, int32_t priority, bool isTail);
-    virtual napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority);
 
-private:
+protected:
     void ProcessAsyncHandle();
     SafeAsyncCode CloseHandles();
     void CleanUp();
@@ -101,7 +96,7 @@ private:
     NativeAsyncContext asyncContext_;
     uv_async_t asyncHandler_;
     std::mutex mutex_;
-    std::queue<void*> queue_;
+    std::deque<void*> queue_;
     std::condition_variable condition_;
     SafeAsyncStatus status_ = SafeAsyncStatus::UNKNOW;
 #if defined(ENABLE_EVENT_HANDLER)

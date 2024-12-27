@@ -113,15 +113,6 @@ NativeEngine::~NativeEngine()
     FinalizerInstanceData();
 }
 
-static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
-{
-    if (data != nullptr) {
-        CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
-        cbw->cb();
-        delete cbw;
-    }
-}
-
 void NativeEngine::CreateDefaultFunction(void)
 {
     std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
@@ -131,8 +122,16 @@ void NativeEngine::CreateDefaultFunction(void)
     napi_env env = reinterpret_cast<napi_env>(this);
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
-        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
+
+    auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(ThreadSafeCallback);
+    auto safeAsyncWork = this->CreateNativeEvent(nullptr, nullptr, resourceName, 0,
+        1, nullptr, nullptr, nullptr, callJsCallback);
+    auto ret = safeAsyncWork->Init();
+    if (ret) {
+        defaultFunc_ = reinterpret_cast<napi_threadsafe_function>(safeAsyncWork);
+    } else {
+        delete safeAsyncWork;
+    }
 }
 
 void NativeEngine::DestoryDefaultFunction(bool release)
@@ -144,7 +143,7 @@ void NativeEngine::DestoryDefaultFunction(bool release)
     if (release) {
         napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
     } else {
-        NativeSafeAsyncWork* work = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
+        NativeEvent* work = reinterpret_cast<NativeEvent*>(defaultFunc_);
         delete work; // only free mem due to uv_loop is invalid
     }
     defaultFunc_ = nullptr;
@@ -351,6 +350,14 @@ NativeSafeAsyncWork* NativeEngine::CreateSafeAsyncWork(napi_value func, napi_val
     NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback)
 {
     return new NativeSafeAsyncWork(this, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
+        finalizeData, finalizeCallback, context, callJsCallback);
+}
+
+NativeEvent* NativeEngine::CreateNativeEvent(napi_value func, napi_value asyncResource,
+    napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
+    NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback)
+{
+    return new NativeEvent(this, func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
         finalizeData, finalizeCallback, context, callJsCallback);
 }
 
@@ -1087,18 +1094,6 @@ void NativeEngine::ThrowException(const char* msg)
     auto vm = GetEcmaVm();
     Local<panda::JSValueRef> error = panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, msg));
     panda::JSNApi::ThrowException(vm, error);
-}
-
-napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
-{
-    std::shared_lock<std::shared_mutex> readLock(eventMutex_);
-    if (defaultFunc_) {
-        auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
-        return safeAsyncWork->SendEvent(cb, priority);
-    } else {
-        HILOG_ERROR("default function is nullptr!");
-        return napi_status::napi_generic_failure;
-    }
 }
 
 NapiErrorManager* NapiErrorManager::GetInstance()

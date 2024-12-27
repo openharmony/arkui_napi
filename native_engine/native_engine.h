@@ -33,6 +33,7 @@
 #include "native_engine/native_deferred.h"
 #include "native_engine/native_reference.h"
 #include "native_engine/native_safe_async_work.h"
+#include "native_engine/native_event.h"
 #include "native_engine/native_value.h"
 #include "native_property.h"
 #include "reference_manager/native_reference_manager.h"
@@ -211,6 +212,9 @@ public:
                                              NativeAsyncCompleteCallback complete,
                                              void* data);
     virtual NativeSafeAsyncWork* CreateSafeAsyncWork(napi_value func, napi_value asyncResource,
+        napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
+        NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
+    NativeEvent* CreateNativeEvent(napi_value func, napi_value asyncResource,
         napi_value asyncResourceName, size_t maxQueueSize, size_t threadCount, void* finalizeData,
         NativeFinalize finalizeCallback, void* context, NativeThreadSafeFunctionCallJs callJsCallback);
     virtual void* CreateRuntime(bool isLimitedWorker = false) = 0;
@@ -506,8 +510,6 @@ public:
      */
     napi_status StopEventLoop();
 
-    napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
-
     virtual bool IsCrossThreadCheckEnabled() const = 0;
 
     bool IsInDestructor() const
@@ -668,6 +670,17 @@ private:
     static uint64_t g_lastEngineId_;
     static std::mutex g_mainThreadEngineMutex_;
     static NativeEngine* g_mainThreadEngine_;
+
+public:
+    std::shared_mutex& GetEventMutex()
+    {
+        return eventMutex_;
+    }
+
+    napi_threadsafe_function GetDefaultFunc()
+    {
+        return defaultFunc_;
+    }
 };
 
 class NapiErrorManager {
