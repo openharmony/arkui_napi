@@ -676,6 +676,15 @@ public:
     {
         return defaultFunc_;
     }
+
+    inline static bool IsAliveLocked(NativeEngine* env)
+    {
+        return g_alivedEngine_.find(env) != g_alivedEngine_.end();
+    }
+
+    inline static std::mutex& GetAliveEngineMutex() {
+        return g_alivedEngineMutex_;
+    }
 };
 
 class NapiErrorManager {

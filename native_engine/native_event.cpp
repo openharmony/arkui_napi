@@ -63,29 +63,31 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
         return napi_status::napi_invalid_arg;
     }
     NativeEngine *eng = reinterpret_cast<NativeEngine *>(env);
-    if (NativeEngine::IsAlive(eng)) {
-        // Prevent cb from becoming a floating pointer
-        auto realCb = [cbIn = cb](void *data) {
-            if (cbIn != nullptr) {
-                HILOG_DEBUG("napi_send_event callBack called");
-                cbIn();
-            } else {
-                HILOG_ERROR("napi_send_event callBack is null");
-            }
-        };
-        uint64_t handleId = 0;
-
-        std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
-        if (!eng->GetDefaultFunc()) {
-            HILOG_ERROR("default function is nullptr!");
-            return napi_status::napi_generic_failure;
-        }
-        auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-        return safeAsyncWork->SendCancelableEvent(realCb, nullptr, priority, DEFAULT_NAME, &handleId);
-    } else {
-        HILOG_ERROR("napi_send_event call NativeEngine not alive");
-        return napi_status::napi_closing;
+    NativeEngine::GetAliveEngineMutex().lock();
+    if (!NativeEngine::IsAliveLocked(eng)) {
+        NativeEngine::GetAliveEngineMutex().unlock();
+        return return napi_status::napi_closing;
     }
+    std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
+    NativeEngine::GetAliveEngineMutex().unlock();
+
+    // Prevent cb from becoming a floating pointer
+    auto realCb = [cbIn = cb](void *data) {
+        if (cbIn != nullptr) {
+            HILOG_DEBUG("napi_send_event callBack called");
+            cbIn();
+        } else {
+            HILOG_ERROR("napi_send_event callBack is null");
+        }
+    };
+    uint64_t handleId = 0;
+
+    if (!eng->GetDefaultFunc()) {
+        HILOG_ERROR("default function is nullptr!");
+        return napi_status::napi_generic_failure;
+    }
+    auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
+    return safeAsyncWork->SendCancelableEvent(realCb, nullptr, priority, DEFAULT_NAME, &handleId);
 }
 
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
@@ -105,19 +107,22 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
         return napi_status::napi_invalid_arg;
     }
     NativeEngine *eng = reinterpret_cast<NativeEngine *>(env);
-    if (NativeEngine::IsAlive(eng)) {
-        std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
-        if (!eng->GetDefaultFunc()) {
-            HILOG_ERROR("default function is nullptr!");
-            return napi_status::napi_generic_failure;
-        }
-        auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-        return safeAsyncWork->SendCancelableEvent(cb, data, priority,
-                                                  (name == nullptr) ? DEFAULT_NAME: name, handleId);
-    } else {
-        HILOG_ERROR("call NativeEngine not alive");
-        return napi_status::napi_closing;
+
+    NativeEngine::GetAliveEngineMutex().lock();
+    if (!NativeEngine::IsAliveLocked(eng)) {
+        NativeEngine::GetAliveEngineMutex().unlock();
+        return return napi_status::napi_closing;
     }
+    std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
+    NativeEngine::GetAliveEngineMutex().unlock();
+
+    if (!eng->GetDefaultFunc()) {
+        HILOG_ERROR("default function is nullptr!");
+        return napi_status::napi_generic_failure;
+    }
+    auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
+    return safeAsyncWork->SendCancelableEvent(cb, data, priority,
+                                              (name == nullptr) ? DEFAULT_NAME: name, handleId);
 }
 
 NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const char* name)
@@ -128,18 +133,21 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
         return napi_status::napi_invalid_arg;
     }
     NativeEngine *eng = reinterpret_cast<NativeEngine *>(env);
-    if (NativeEngine::IsAlive(eng)) {
-        std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
-        if (!eng->GetDefaultFunc()) {
-            HILOG_ERROR("default function is nullptr!");
-            return napi_status::napi_generic_failure;
-        }
-        auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-        return safeAsyncWork->CancelEvent(name, handleId);
-    } else {
-        HILOG_ERROR("call NativeEengine not alive");
-        return napi_status::napi_closing;
+
+    NativeEngine::GetAliveEngineMutex().lock();
+    if (!NativeEngine::IsAliveLocked(eng)) {
+        NativeEngine::GetAliveEngineMutex().unlock();
+        return return napi_status::napi_closing;
     }
+    std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
+    NativeEngine::GetAliveEngineMutex().unlock();
+
+    if (!eng->GetDefaultFunc()) {
+        HILOG_ERROR("default function is nullptr!");
+        return napi_status::napi_generic_failure;
+    }
+    auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
+    return safeAsyncWork->CancelEvent(name, handleId);
 }
 
 // static method
@@ -188,17 +196,26 @@ void NativeEvent::CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_funct
 void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function &defaultFunc,
                                          std::shared_mutex &eventMutex)
 {
+    napi_threadsafe_function toReleaseFunc = nullptr;
+    {
+        std::unique_lockstd::shared_mutex writeLock(eventMutex);
+        if (!defaultFunc) {
+            return;
+        }
+        toReleaseFunc = defaultFunc;
+        defaultFunc = nullptr;
+    }
+
     std::unique_lock<std::shared_mutex> writeLock(eventMutex);
-    if (!defaultFunc) {
+    if (!toReleaseFunc) {
         return;
     }
     if (release) {
-        napi_release_threadsafe_function(defaultFunc, napi_tsfn_abort);
+        napi_release_threadsafe_function(toReleaseFunc, napi_tsfn_abort);
     } else {
-        NativeEvent* work = reinterpret_cast<NativeEvent*>(defaultFunc);
+        NativeEvent* work = reinterpret_cast<NativeEvent*>(toReleaseFunc);
         delete work; // only free mem due to uv_loop is invalid
     }
-    defaultFunc = nullptr;
 }
 
 //NativeEvent method
