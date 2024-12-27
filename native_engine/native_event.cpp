@@ -111,7 +111,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
-        return return napi_status::napi_closing;
+        return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
     NativeEngine::GetAliveEngineMutex().unlock();
