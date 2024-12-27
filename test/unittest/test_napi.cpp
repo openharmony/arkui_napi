@@ -5918,6 +5918,20 @@ HWTEST_F(NapiBasicTest, NapiWrapTest004, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_object_expected);
 }
 
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+HWTEST_F(NapiBasicTest, NapiWrapTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result;
+
+    napi_create_object(env, &obj);
+    napi_status status = napi_xref_wrap(env, obj, (void *)TEST_STRING,
+        [](napi_env, void* data, void* hint) {}, &result);
+    ASSERT_EQ(status, napi_object_expected);
+}
+#endif
+
 HWTEST_F(NapiBasicTest, NapiUnwrapTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -5949,6 +5963,19 @@ HWTEST_F(NapiBasicTest, NapiUnwrapTest003, testing::ext::TestSize.Level1)
     napi_status status = napi_unwrap(env, obj, (void **)&testStr);
     ASSERT_EQ(status, napi_object_expected);
 }
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+HWTEST_F(NapiBasicTest, NapiUnwrapTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    char *testStr = nullptr;
+
+    napi_create_object(env, &obj);
+    napi_status status = napi_xref_unwrap(env, obj, (void **)&testStr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+#endif
 
 HWTEST_F(NapiBasicTest, NapiRemoveWrapTest001, testing::ext::TestSize.Level1)
 {

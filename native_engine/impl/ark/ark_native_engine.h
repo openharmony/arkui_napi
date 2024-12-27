@@ -195,6 +195,8 @@ public:
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr,
         size_t nativeBindingSize = 0) override;
+    NativeReference* CreateXRefReference(napi_value value, uint32_t initialRefcount, bool flag = false,
+        NapiNativeFinalize callback = nullptr, void* data = nullptr);
     NativeReference* CreateAsyncReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     napi_value CreatePromise(NativeDeferred** deferred) override;

@@ -34,6 +34,25 @@ enum class FinalizerState {
     COLLECTION,
 };
 
+struct ArkNativeReferenceConfig {
+    uint32_t initialRefcount;
+    bool isProxyReference;
+    bool deleteSelf;
+    NapiNativeFinalize napiCallback;
+    void* data;
+
+    ArkNativeReferenceConfig(uint32_t initialRefcount,
+                             bool isProxyReference,
+                             bool deleteSelf = false,
+                             NapiNativeFinalize napiCallback = nullptr,
+                             void* data = nullptr)
+        : initialRefcount(initialRefcount),
+          isProxyReference(isProxyReference),
+          deleteSelf(deleteSelf),
+          napiCallback(napiCallback),
+          data(data) {}
+};
+
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
@@ -45,6 +64,9 @@ public:
                        void* hint = nullptr,
                        bool isAsyncCall = false,
                        size_t nativeBindingSize = 0);
+    ArkNativeReference(ArkNativeEngine* engine,
+                       napi_value value,
+                       ArkNativeReferenceConfig &config);
     ArkNativeReference(ArkNativeEngine* engine,
                        Local<JSValueRef> value,
                        uint32_t initialRefcount,
@@ -91,6 +113,7 @@ private:
 
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
+    bool isProxyReference_{false};
     bool deleteSelf_ {false};
     bool isAsyncCall_ {false};
 
