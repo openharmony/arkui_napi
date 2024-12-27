@@ -102,7 +102,7 @@ private:
 
 using CleanupCallback = void (*)(void*);
 using ThreadId = uint32_t;
-
+static constexpr uint32_t TASKPOOL_TYPE = 2;
 class NapiOptions;
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
@@ -119,13 +119,15 @@ using SourceMapTranslateCallback = std::function<bool(std::string& url, int& lin
 using AppFreezeFilterCallback = std::function<bool(const int32_t pid)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
-using GetWorkerNameCallback = std::function<std::string(void* worker)>;
-using NapiOnAllErrorCallback = std::function<bool(napi_env env,
+using NapiOnWorkerErrorCallback = std::function<bool(napi_env env,
     napi_value exception, std::string name, uint32_t type)>;
+using NapiOnMainThreadErrorCallback = std::function<bool(napi_env env,
+    std::string summary, std::string name, std::string message, std::string stack)>;
 using NapiAllUnhandledRejectionCallback = std::function<bool(napi_env env,
     napi_value* args, std::string name, uint32_t type)>;
 using NapiAllPromiseRejectCallback = std::function<void(napi_value* args)>;
-using NapiHasOnAllErrorCallback = std::function<bool()>;
+using NapiHasOnErrorCallback = std::function<bool()>;
+using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
@@ -415,6 +417,7 @@ public:
 
     void RegisterWorkerFunction(const NativeEngine* engine);
     virtual void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) = 0;
+    virtual void RegisterAllPromiseCallback(NapiAllPromiseRejectCallback callback) = 0;
     virtual void HandleUncaughtException() = 0;
     virtual bool HasPendingException()
     {
@@ -521,36 +524,6 @@ public:
         return g_mainThreadEngine_;
     }
 
-    void RegisterGetWorkerNameCallback(GetWorkerNameCallback callback, void* worker)
-    {
-        getWorkerNameCallback_ = callback;
-        worker_ = worker;
-    }
-
-    uint32_t GetJSThreadTypeInt()
-    {
-        return GetJSThreadType();
-    }
-
-    void SetTaskName(std::string taskName)
-    {
-        taskName_ = taskName;
-    }
-
-    std::string GetTaskName()
-    {
-        return taskName_;
-    }
-
-    void HandleTaskpoolException(napi_value exception, std::string taskName)
-    {
-        this->SetTaskName(taskName);
-        auto callback = this->GetNapiUncaughtExceptionCallback();
-        if (callback) {
-            callback(exception);
-        }
-    }
-
     static void SetMainThreadEngine(NativeEngine* engine)
     {
         if (g_mainThreadEngine_ == nullptr) {
@@ -558,6 +531,14 @@ public:
             if (g_mainThreadEngine_ == nullptr) {
                 g_mainThreadEngine_ = engine;
             }
+        }
+    }
+
+    void HandleTaskpoolException(napi_value exception)
+    {
+        auto callback = this->GetNapiUncaughtExceptionCallback();
+        if (callback) {
+            callback(exception);
         }
     }
 
@@ -598,7 +579,6 @@ protected:
     NativeErrorExtendedInfo lastError_;
 
     // register for worker
-    GetWorkerNameCallback getWorkerNameCallback_ {nullptr};
     void* worker_ = nullptr;
     InitWorkerFunc initWorkerFunc_ {nullptr};
     GetAssetFunc getAssetFunc_ {nullptr};
@@ -633,11 +613,6 @@ private:
     DataProtect jsThreadType_ {DataProtect(uintptr_t(JSThreadType::MAIN_THREAD))};
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
-    JSThreadType GetJSThreadType()
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData());
-    }
-
 #if !defined(PREVIEW)
     static void UVThreadRunner(void* nativeEngine);
     void PostLoopTask();
@@ -674,19 +649,32 @@ class NapiErrorManager {
 public:
     static NapiErrorManager* GetInstance();
 
-    void RegisterOnAllErrorCallback(NapiOnAllErrorCallback callback)
+    void RegisterOnErrorCallback(NapiOnWorkerErrorCallback workerErrorCb,
+        NapiOnMainThreadErrorCallback mainThreadErrorCb)
     {
-        onAllErrorCb_ = callback;
+        if (!onWorkerErrorCb_) {
+            onWorkerErrorCb_ = workerErrorCb;
+        }
+        if (!onMainThreadErrorCb_) {
+            onMainThreadErrorCb_ = mainThreadErrorCb;
+        }
     }
 
-    NapiOnAllErrorCallback &GetOnAllErrorCallback()
+    NapiOnWorkerErrorCallback &GetOnWorkerErrorCallback()
     {
-        return onAllErrorCb_;
+        return onWorkerErrorCb_;
+    }
+
+    NapiOnMainThreadErrorCallback &GetOnMainThreadErrorCallback()
+    {
+        return onMainThreadErrorCb_;
     }
 
     void RegisterAllUnhandledRejectionCallback(NapiAllUnhandledRejectionCallback callback)
     {
-        allUnhandledRejectionCb_ = callback;
+        if (!allUnhandledRejectionCb_) {
+            allUnhandledRejectionCb_ = callback;
+        }
     }
 
     NapiAllUnhandledRejectionCallback &GetAllUnhandledRejectionCallback()
@@ -694,21 +682,42 @@ public:
         return allUnhandledRejectionCb_;
     }
 
-    void RegisterHasOnAllErrorCallback(NapiHasOnAllErrorCallback callback)
+    void RegisterHasOnErrorCallback(NapiHasOnErrorCallback callback)
     {
-        hasOnAllErrorCb_ = callback;
+        if (!hasOnErrorCb_) {
+            hasOnErrorCb_ = callback;
+        }
     }
 
-    NapiHasOnAllErrorCallback &GetHasAllErrorCallback()
+    NapiHasOnErrorCallback &GetHasErrorCallback()
     {
-        return hasOnAllErrorCb_;
+        return hasOnErrorCb_;
     }
+
+    void RegisterHasAllUnhandledRejectionCallback(NapiHasAllUnhandledRejectionCallback callback)
+    {
+        if (!hasAllUnhandledRejectionCb_) {
+            hasAllUnhandledRejectionCb_ = callback;
+        }
+    }
+
+    NapiHasAllUnhandledRejectionCallback &GetHasAllUnhandledRejectionCallback()
+    {
+        return hasAllUnhandledRejectionCb_;
+    }
+
+    void NotifyUncaughtException(napi_env env, napi_value exception, std::string name, uint32_t type);
+    bool NotifyUncaughtException(napi_env env, const std::string &summary, const std::string &name,
+        const std::string &message, const std::string &stack);
+    void NotifyUnhandledRejection(napi_env env, napi_value* exception, std::string name, uint32_t type);
 
 private:
     static NapiErrorManager *instance_;
-    NapiOnAllErrorCallback onAllErrorCb_ { nullptr };
+    NapiOnWorkerErrorCallback onWorkerErrorCb_ { nullptr };
+    NapiOnMainThreadErrorCallback onMainThreadErrorCb_ { nullptr };
     NapiAllUnhandledRejectionCallback allUnhandledRejectionCb_ { nullptr };
-    NapiHasOnAllErrorCallback hasOnAllErrorCb_ { nullptr };
+    NapiHasOnErrorCallback hasOnErrorCb_ { nullptr };
+    NapiHasAllUnhandledRejectionCallback hasAllUnhandledRejectionCb_ { nullptr };
 };
 
 bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignored = 0, int32_t deepth = -1);

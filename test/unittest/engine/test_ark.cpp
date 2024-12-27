@@ -116,26 +116,31 @@ HWTEST_F(NativeEngineTest, ExecuteTranslateBySourceMapFunc001, testing::ext::Tes
 
 HWTEST_F(NativeEngineTest, NapiErrorManagerTest001, testing::ext::TestSize.Level0)
 {
-    auto errorManagerCallbackTest =
+    auto onWorkerErrorCallback =
         [] (napi_env env, napi_value exception, std::string vm_name, uint32_t type) -> bool {
-        EXPECT_EQ(type, 0);
-        EXPECT_EQ(vm_name, "");
+        EXPECT_EQ(type, 2);
+        EXPECT_EQ(vm_name, "test");
         return true;
     };
-
-    NapiErrorManager::GetInstance()->RegisterOnAllErrorCallback(errorManagerCallbackTest);
-    ASSERT_NE(NapiErrorManager::GetInstance()->GetOnAllErrorCallback(), nullptr);
-    auto getWorkerNameCallback  =
-        [] (void* worker) -> std::string {
-        return "test";
+    auto onMainThreadErrorCallback =
+        [] (napi_env env, std::string summary, std::string name,
+            std::string message, std::string stack) -> bool {
+        EXPECT_EQ(name, "name");
+        EXPECT_EQ(message, "message");
+        return true;
     };
-    void* worker = nullptr;
-    engine_->RegisterGetWorkerNameCallback(getWorkerNameCallback, worker);
+    auto hasOnErrorCb = [] () -> bool {
+        return true;
+    };
+    NapiErrorManager::GetInstance()->RegisterHasOnErrorCallback(hasOnErrorCb);
+    NapiErrorManager::GetInstance()->RegisterOnErrorCallback(onWorkerErrorCallback, onMainThreadErrorCallback);
+    ASSERT_NE(NapiErrorManager::GetInstance()->GetOnWorkerErrorCallback(), nullptr);
+    ASSERT_NE(NapiErrorManager::GetInstance()->GetOnMainThreadErrorCallback(), nullptr);
     napi_value exception = nullptr;
-    auto callback = engine_->GetNapiUncaughtExceptionCallback();
-    if (callback) {
-        callback(exception);
-    }
+    NapiErrorManager::GetInstance()->NotifyUncaughtException(reinterpret_cast<napi_env>(engine_),
+        exception, "test", 2);
+    ASSERT_EQ(NapiErrorManager::GetInstance()->NotifyUncaughtException(reinterpret_cast<napi_env>(engine_),
+        "", "name", "message", ""), true);
 }
 
 HWTEST_F(NativeEngineTest, NapiErrorManagerTest002, testing::ext::TestSize.Level0)
@@ -143,26 +148,43 @@ HWTEST_F(NativeEngineTest, NapiErrorManagerTest002, testing::ext::TestSize.Level
     auto allUnhandledRejectionCallbackTest =
         [] (napi_env env, napi_value* exception, std::string vm_name, uint32_t type) -> bool {
         EXPECT_EQ(type, 0);
-        EXPECT_EQ(vm_name, "");
+        EXPECT_EQ(vm_name, "test");
+        return true;
+    };
+    auto hasAllUnhandledRejectionCb = [] () -> bool {
+        return false;
+    };
+
+    NapiErrorManager::GetInstance()->RegisterHasAllUnhandledRejectionCallback(hasAllUnhandledRejectionCb);
+    napi_value* exception = nullptr;
+    NapiErrorManager::GetInstance()->RegisterAllUnhandledRejectionCallback(allUnhandledRejectionCallbackTest);
+    ASSERT_NE(NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback(), nullptr);
+    NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(engine_),
+        exception, "test", 0);
+}
+
+HWTEST_F(NativeEngineTest, NapiErrorManagerTest003, testing::ext::TestSize.Level0)
+{
+    auto hasOnErrorCb = [] () -> bool {
         return true;
     };
 
-    NapiErrorManager::GetInstance()->RegisterAllUnhandledRejectionCallback(allUnhandledRejectionCallbackTest);
-    ASSERT_NE(NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback(), nullptr);
-    Local<JSValueRef> promise;
-    Local<JSValueRef> reason;
-    panda::PromiseRejectInfo promiseRejectInfo(promise, reason,
-        static_cast<panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT>(0), reinterpret_cast<void*>(engine_));
-
-    ArkNativeEngine::PromiseRejectCallback(reinterpret_cast<void*>(&promiseRejectInfo));
+    NapiErrorManager::GetInstance()->RegisterHasOnErrorCallback(hasOnErrorCb);
+    auto callback = NapiErrorManager::GetInstance()->GetHasErrorCallback();
+    ASSERT_NE(callback, nullptr);
+    ASSERT_EQ(callback(), true);
 }
 
-HWTEST_F(NativeEngineTest, HandleTaskpoolExceptionTest001, testing::ext::TestSize.Level0)
+HWTEST_F(NativeEngineTest, NapiErrorManagerTest004, testing::ext::TestSize.Level0)
 {
-    napi_value exception = nullptr;
-    std::string taskName = "test";
-    engine_->HandleTaskpoolException(exception, taskName);
-    ASSERT_EQ(engine_->GetTaskName(), "test");
+    auto hasAllUnhandledRejectionCb = [] () -> bool {
+        return false;
+    };
+
+    NapiErrorManager::GetInstance()->RegisterHasAllUnhandledRejectionCallback(hasAllUnhandledRejectionCb);
+    auto callback = NapiErrorManager::GetInstance()->GetHasAllUnhandledRejectionCallback();
+    ASSERT_NE(callback, nullptr);
+    ASSERT_EQ(callback(), false);
 }
 
 HWTEST_F(NativeEngineTest, FinalizersCallbackTest001, testing::ext::TestSize.Level0)

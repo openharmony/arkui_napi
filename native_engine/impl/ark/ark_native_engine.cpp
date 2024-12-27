@@ -99,6 +99,7 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
     "system.curves", "ohos.curves", "system.matrix4", "ohos.matrix4"};
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
+static constexpr int ARGC_THREE = 3;
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 std::atomic<uint64_t> g_chainId = 0;
@@ -570,33 +571,17 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     JSNApi::SetAsyncCleanTaskCallback(vm, [this] (AsyncNativeCallbacksPack *callbacksPack) {
         this->PostAsyncTask(callbacksPack);
     });
-    RegisterNapiUncaughtExceptionHandler([this] (napi_value exception) -> void {
-        if (!NativeEngine::IsAlive(this)) {
-            HILOG_WARN("napi_env has been destoryed!");
-            return;
-        }
-        std::string name = "";
-        if (this->IsWorkerThread() && this->getWorkerNameCallback_) {
-            name = this->getWorkerNameCallback_(this->worker_);
-        } else if (this->IsTaskPoolThread()) {
-            name = this->GetTaskName();
-            this->SetTaskName("");
-        }
-        auto hasAllErrorCallback = NapiErrorManager::GetInstance()->GetHasAllErrorCallback();
-        if (!hasAllErrorCallback) {
-            return;
-        }
-        if (!hasAllErrorCallback()) {
-            return;
-        }
-        JSNApi::GetAndClearUncaughtException(this->GetEcmaVm());
-        auto callback = NapiErrorManager::GetInstance()->GetOnAllErrorCallback();
-        if (callback) {
-            callback(reinterpret_cast<napi_env>(this), exception,
-                name, this->GetJSThreadTypeInt());
-        }
-    });
-    RegisterAllPromiseCallback();
+    JSNApi::SetHostPromiseRejectionTracker(vm_, reinterpret_cast<void*>(PromiseRejectCallback),
+                                           reinterpret_cast<void*>(this));
+    if (IsMainThread()) {
+        RegisterAllPromiseCallback([this] (napi_value* args) -> void {
+            if (!NativeEngine::IsAlive(this)) {
+                HILOG_WARN("napi_env has been destoryed!");
+                return;
+            }
+            NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(this), args, "", 0);
+        });
+    }
 #if defined(ENABLE_EVENT_HANDLER)
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
         ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(vm);
@@ -1966,30 +1951,6 @@ bool ArkNativeEngine::AdjustExternalMemory(int64_t ChangeInBytes, int64_t* Adjus
     return true;
 }
 
-void ArkNativeEngine::RegisterAllPromiseCallback()
-{
-    JSNApi::SetHostPromiseRejectionTracker(vm_, reinterpret_cast<void*>(PromiseRejectCallback),
-                                           reinterpret_cast<void*>(this));
-    allPromiseRejectCallback_ = [this] (napi_value* args) -> void {
-        if (!NativeEngine::IsAlive(this)) {
-            HILOG_WARN("napi_env has been destoryed!");
-            return;
-        }
-        std::string name = "";
-        if (this->IsWorkerThread() && this->getWorkerNameCallback_) {
-            name = this->getWorkerNameCallback_(this->worker_);
-        } else if (this->IsTaskPoolThread()) {
-            name = this->GetTaskName();
-            this->SetTaskName("");
-        }
-        auto callback = NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback();
-        if (callback) {
-            callback(reinterpret_cast<napi_env>(this), args,
-                name, this->GetJSThreadTypeInt());
-        }
-    };
-}
-
 void ArkNativeEngine::SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef)
 {
     if (rejectCallbackRef == nullptr || checkCallbackRef == nullptr) {
@@ -1998,8 +1959,6 @@ void ArkNativeEngine::SetPromiseRejectCallback(NativeReference* rejectCallbackRe
     }
     promiseRejectCallbackRef_ = rejectCallbackRef;
     checkCallbackRef_ = checkCallbackRef;
-    JSNApi::SetHostPromiseRejectionTracker(vm_, reinterpret_cast<void*>(PromiseRejectCallback),
-                                           reinterpret_cast<void*>(this));
 }
 
 void ArkNativeEngine::PromiseRejectCallback(void* info)
@@ -2011,6 +1970,12 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
         HILOG_ERROR("engine is nullptr");
         return;
     }
+    bool hasRef = env->promiseRejectCallbackRef_ != nullptr;
+    auto hasCallback = NapiErrorManager::GetInstance()->GetHasAllUnhandledRejectionCallback();
+    if (!hasRef && !hasCallback) {
+        return;
+    }
+
     panda::ecmascript::EcmaVM* vm = const_cast<EcmaVM*>(env->GetEcmaVm());
     LocalScope scope(vm);
     Local<JSValueRef> promise = promiseRejectInfo->GetPromise();
@@ -2021,13 +1986,14 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 
     Local<JSValueRef> args[] = {type, promise, reason};
     if (env->allPromiseRejectCallback_) {
-        constexpr int ARGC_THREE = 3;
-        napi_value *callErrorArgs = new napi_value[ARGC_THREE];
-        for (int i = 0; i < ARGC_THREE; i++) {
-            callErrorArgs[i] = JsValueFromLocalValue(args[i]);
+        if (hasCallback && hasCallback()) {
+            napi_value *callErrorArgs = new napi_value[ARGC_THREE];
+            for (int i = 0; i < ARGC_THREE; i++) {
+                callErrorArgs[i] = JsValueFromLocalValue(args[i]);
+            }
+            env->allPromiseRejectCallback_(callErrorArgs);
+            delete[] callErrorArgs;
         }
-        env->allPromiseRejectCallback_(callErrorArgs);
-        delete[] callErrorArgs;
     }
     if (env->promiseRejectCallbackRef_ == nullptr || env->checkCallbackRef_ == nullptr) {
         HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
@@ -2374,7 +2340,7 @@ void ArkNativeEngine::SetMockModuleList(const std::map<std::string, std::string>
     JSNApi::SetMockModuleList(vm_, list);
 }
 
-static void OnAllErrorCallbackForThreadFunc(Local<ObjectRef> value, void *data)
+static void OnErrorCallbackForThreadFunc(Local<ObjectRef> value, void *data)
 {
     if (data == nullptr) {
         return;
@@ -2391,7 +2357,7 @@ static void OnAllErrorCallbackForThreadFunc(Local<ObjectRef> value, void *data)
 void ArkNativeEngine::RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback)
 {
     JSNApi::EnableUserUncaughtErrorHandler(vm_);
-    JSNApi::SetOnAllErrorCallbackForThread(vm_, OnAllErrorCallbackForThreadFunc, static_cast<void *>(this));
+    JSNApi::SetOnErrorCallback(vm_, OnErrorCallbackForThreadFunc, static_cast<void *>(this));
     napiUncaughtExceptionCallback_ = callback;
 }
 
