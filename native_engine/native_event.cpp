@@ -66,7 +66,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
-        HILOG_ERROR("napi_send_event call NativeEngine not alive");
+        HILOG_ERROR("call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
@@ -112,7 +112,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
-        HILOG_ERROR("napi_send_event call NativeEngine not alive");
+        HILOG_ERROR("call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
@@ -139,7 +139,7 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
-        HILOG_ERROR("napi_send_event call NativeEngine not alive");
+        HILOG_ERROR("call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
