@@ -66,7 +66,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
-        return return napi_status::napi_closing;
+        return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
     NativeEngine::GetAliveEngineMutex().unlock();
@@ -198,7 +198,7 @@ void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function 
 {
     napi_threadsafe_function toReleaseFunc = nullptr;
     {
-        std::unique_lockstd::shared_mutex writeLock(eventMutex);
+        std::unique_lock<std::shared_mutex> writeLock(eventMutex);
         if (!defaultFunc) {
             return;
         }
@@ -206,7 +206,6 @@ void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function 
         defaultFunc = nullptr;
     }
 
-    std::unique_lock<std::shared_mutex> writeLock(eventMutex);
     if (!toReleaseFunc) {
         return;
     }
