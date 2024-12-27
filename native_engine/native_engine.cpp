@@ -123,7 +123,7 @@ void NativeEngine::CreateDefaultFunction(void)
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
 
-    auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(ThreadSafeCallback);
+    auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(NativeEvent::ThreadSafeCallback);
     auto safeAsyncWork = this->CreateNativeEvent(nullptr, nullptr, resourceName, 0,
         1, nullptr, nullptr, nullptr, callJsCallback);
     auto ret = safeAsyncWork->Init();
