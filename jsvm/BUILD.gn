@@ -14,6 +14,13 @@
 import("//build/config/clang/clang.gni")
 import("//build/ohos.gni")
 
+ohos_prebuilt_etc("app_jit_enable_list") {
+  relative_install_dir = "jsvm"
+  source = "./app_jit_enable_list.conf"
+  part_name = "napi"
+  subsystem_name = "arkui"
+}
+
 ohos_prebuilt_shared_library("libv8") {
   deps = [ ":copy_v8" ]
 
@@ -43,6 +50,7 @@ action("copy_v8") {
 
 ohos_prebuilt_shared_library("libjsvm") {
   deps = [
+    ":app_jit_enable_list",
     ":build_libjsvm",
     ":libv8",
   ]
