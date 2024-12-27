@@ -66,6 +66,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
+        HILOG_ERROR("napi_send_event call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
@@ -111,6 +112,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
+        HILOG_ERROR("napi_send_event call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
@@ -137,6 +139,7 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
     NativeEngine::GetAliveEngineMutex().lock();
     if (!NativeEngine::IsAliveLocked(eng)) {
         NativeEngine::GetAliveEngineMutex().unlock();
+        HILOG_ERROR("napi_send_event call NativeEngine not alive");
         return napi_status::napi_closing;
     }
     std::shared_lock<std::shared_mutex> readLock(eng->GetEventMutex());
@@ -206,9 +209,6 @@ void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function 
         defaultFunc = nullptr;
     }
 
-    if (!toReleaseFunc) {
-        return;
-    }
     if (release) {
         napi_release_threadsafe_function(toReleaseFunc, napi_tsfn_abort);
     } else {
@@ -256,6 +256,7 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
 
     napi_status sentEventRes = SendEventByEventHandler(task, eventId, priority, name, handleId);
     if (sentEventRes != napi_status::napi_invalid_arg) {
+        HILOG_ERROR("SendEventByEventHandler fail %{public}d", eventId);
         return sentEventRes;
     }
 
@@ -286,6 +287,7 @@ napi_status NativeEvent::SendEventByEventHandler(const std::function<void()> &ta
         return napi_status::napi_ok;
     }
     *handleId = 0;
+    HILOG_ERROR("PostTask fail %{public}d", eventId);
     return napi_status::napi_generic_failure;
 #endif
     // Internal temporary code
@@ -319,6 +321,7 @@ napi_status NativeEvent::CancelEvent(const char* name, uint64_t handleId)
 {
     auto tc = TraceLogClass("Cancel Event:" + std::string(name) + "|handleId:" + std::to_string(handleId));
     if (handleId == 0) {
+        HILOG_ERROR("handleId = 0");
         return napi_status::napi_invalid_arg;
     }
 #ifdef ENABLE_EVENT_HANDLER
@@ -347,6 +350,7 @@ SafeAsyncCode NativeEvent::UvCancelEvent(uint64_t handleId)
         return SafeAsyncCode::SAFE_ASYNC_CLOSED;
     }
     if (callJsCallback_ == nullptr) {
+        HILOG_ERROR("callJsCallback is nullptr");
         return SafeAsyncCode::SAFE_ASYNC_FAILED;
     }
 
@@ -362,6 +366,7 @@ SafeAsyncCode NativeEvent::UvCancelEvent(uint64_t handleId)
                                                   std::memory_order_acq_rel, std::memory_order_relaxed)) {
             return SafeAsyncCode::SAFE_ASYNC_OK;
         }
+        HILOG_WARN("UvCancelEvent false %{public}d", handleId);
         return SafeAsyncCode::SAFE_ASYNC_FAILED;
     }
     return SafeAsyncCode::SAFE_ASYNC_FAILED;
