@@ -667,7 +667,7 @@ private:
     static NativeEngine* g_mainThreadEngine_;
 
 public:
-    std::shared_mutex& GetEventMutex()
+    std::shared_mutex& GetEventMutex() const
     {
         return eventMutex_;
     }

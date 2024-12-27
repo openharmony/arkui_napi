@@ -143,7 +143,7 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
 }
 
 // static method
-static ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
+static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
 {
     if (data != nullptr) {
         CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);

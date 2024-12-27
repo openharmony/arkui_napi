@@ -16,6 +16,7 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_EVENT_H
 #include <atomic>
 #include <cstdint>
+#include <shared_mutex>
 #include <string>
 #include "native_safe_async_work.h"
 
