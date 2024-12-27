@@ -31,6 +31,7 @@ using namespace OHOS::AppExecFwk;
 static constexpr uint64_t INVALID_EVENT_ID = std::numeric_limits<uint64_t>::max();
 static constexpr const char DEFAULT_NAME[] = "defaultName";
 
+// trace and log
 class TraceLogClass {
 #ifdef ENABLE_HITRACE
     uint64_t traceLable = HITRACE_TAG_ACE;
@@ -53,6 +54,7 @@ class TraceLogClass {
         }
 };
 
+// API
 NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority)
 {
     CHECK_ENV(env);
@@ -111,7 +113,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
         }
         auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
         return safeAsyncWork->SendCancelableEvent(cb, data, priority,
-                                                 (name == nullptr)? DEFAULT_NAME: name, handleId);
+                                                  (name == nullptr)? DEFAULT_NAME: name, handleId);
     } else {
         HILOG_ERROR("call NativeEngine not alive");
         return napi_status::napi_closing;
@@ -140,6 +142,66 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
     }
 }
 
+// static method
+static ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
+{
+    if (data != nullptr) {
+        CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
+        uint64_t expected = cbw->handleId.load(std::memory_order_acquire);
+        if (expected != INVALID_EVENT_ID &&
+            cbw->handleId.compare_exchange_strong(expected, INVALID_EVENT_ID,
+                                                  std::memory_order_acq_rel, std::memory_order_relaxed)) {
+#ifdef ENABLE_HITRACE
+            StartTrace(HITRACE_TAG_ACE, "ThreadSafeCallback excute");
+#endif
+            cbw->cb();
+#ifdef ENABLE_HITRACE
+            FinishTrace(HITRACE_TAG_ACE);
+#endif
+        }
+        delete cbw;
+    }
+}
+
+void NativeEvent::CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_function &defaultFunc,
+                                        std::shared_mutex &eventMutex)
+{
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex);
+    if (defaultFunc) {
+        return;
+    }
+    napi_env env = reinterpret_cast<napi_env>(this);
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
+
+    auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(ThreadSafeCallback);
+    auto safeAsyncWork = new NativeEvent(eng, nullptr, nullptr, resourceName, 0, 1,
+                                         nullptr, nullptr, nullptr, callJsCallback);
+    auto ret = safeAsyncWork->Init();
+    if (ret) {
+        defaultFunc = reinterpret_cast<napi_threadsafe_function>(safeAsyncWork);
+    } else {
+        delete safeAsyncWork;
+    }
+}
+
+void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function &defaultFunc,
+                                         std::shared_mutex &eventMutex)
+{
+    std::unique_lock<std::shared_mutex> writeLock(eventMutex);
+    if (!defaultFunc) {
+        return;
+    }
+    if (release) {
+        napi_release_threadsafe_function(defaultFunc, napi_tsfn_abort);
+    } else {
+        NativeEvent* work = reinterpret_cast<NativeEvent*>(defaultFunc);
+        delete work; // only free mem due to uv_loop is invalid
+    }
+    defaultFunc = nullptr;
+}
+
+//NativeEvent method
 NativeEvent::NativeEvent(NativeEngine* engine,
                          napi_value func,
                          napi_value asyncResource,
@@ -160,26 +222,6 @@ bool NativeEvent::Init()
 {
     sequence_.store(1, std::memory_order_relaxed);
     return NativeSafeAsyncWork::Init();
-}
-
-void NativeEvent::ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
-{
-    if (data != nullptr) {
-        CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
-        uint64_t expected = cbw->handleId.load(std::memory_order_acquire);
-        if (expected != INVALID_EVENT_ID &&
-            cbw->handleId.compare_exchange_strong(expected, INVALID_EVENT_ID,
-                                                  std::memory_order_acq_rel, std::memory_order_relaxed)) {
-#ifdef ENABLE_HITRACE
-            StartTrace(HITRACE_TAG_ACE, "ThreadSafeCallback excute");
-#endif
-            cbw->cb();
-#ifdef ENABLE_HITRACE
-            FinishTrace(HITRACE_TAG_ACE);
-#endif
-        }
-        delete cbw;
-    }
 }
 
 napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &callback,

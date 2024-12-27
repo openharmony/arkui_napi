@@ -37,7 +37,6 @@ public:
                 void* context,
                 NativeThreadSafeFunctionCallJs callJsCallback);
     bool Init() override;
-    static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data);
     virtual napi_status SendCancelableEvent(const std::function<void(void*)> &callback,
                                             void* data,
                                             int32_t priority,
@@ -45,6 +44,10 @@ public:
                                             uint64_t* handleId);
     virtual napi_status CancelEvent(const char* name, uint64_t handleId);
     virtual SafeAsyncCode UvCancelEvent(uint64_t handleId);
+    static void CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_function &defaultFunc,
+                                      std::shared_mutex &eventMutex);
+    static void DestoryDefaultFunction(bool release, napi_threadsafe_function &defaultFunc,
+                                       std::shared_mutex &eventMutex);
 protected:
     //unique key for event
     std::atomic<uint64_t> sequence_;

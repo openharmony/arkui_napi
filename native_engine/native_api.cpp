@@ -4069,8 +4069,6 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threads
     return res;
 }
 
-
-
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope)
 {
     CHECK_ENV(env);

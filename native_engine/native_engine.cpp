@@ -113,42 +113,6 @@ NativeEngine::~NativeEngine()
     FinalizerInstanceData();
 }
 
-void NativeEngine::CreateDefaultFunction(void)
-{
-    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
-    if (defaultFunc_) {
-        return;
-    }
-    napi_env env = reinterpret_cast<napi_env>(this);
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
-
-    auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(NativeEvent::ThreadSafeCallback);
-    auto safeAsyncWork = this->CreateNativeEvent(nullptr, nullptr, resourceName, 0,
-        1, nullptr, nullptr, nullptr, callJsCallback);
-    auto ret = safeAsyncWork->Init();
-    if (ret) {
-        defaultFunc_ = reinterpret_cast<napi_threadsafe_function>(safeAsyncWork);
-    } else {
-        delete safeAsyncWork;
-    }
-}
-
-void NativeEngine::DestoryDefaultFunction(bool release)
-{
-    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
-    if (!defaultFunc_) {
-        return;
-    }
-    if (release) {
-        napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-    } else {
-        NativeEvent* work = reinterpret_cast<NativeEvent*>(defaultFunc_);
-        delete work; // only free mem due to uv_loop is invalid
-    }
-    defaultFunc_ = nullptr;
-}
-
 void NativeEngine::Init()
 {
     HILOG_DEBUG("NativeEngine::Init");
@@ -171,14 +135,14 @@ void NativeEngine::Init()
     }
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-    CreateDefaultFunction();
+    NativeEvent::CreateDefaultFunction(this, defaultFunc_, eventMutex_);
 }
 
 void NativeEngine::Deinit()
 {
     HILOG_INFO("NativeEngine::Deinit");
     if (loop_ != nullptr) {
-        DestoryDefaultFunction(true);
+        NativeEvent::DestoryDefaultFunction(true, defaultFunc_, eventMutex_);
         uv_sem_destroy(&uvSem_);
         uv_close((uv_handle_t*)&uvAsync_, nullptr);
     }
@@ -241,7 +205,7 @@ ThreadId NativeEngine::GetCurSysTid()
 bool NativeEngine::ReinitUVLoop()
 {
     if (defaultFunc_ != nullptr) {
-        DestoryDefaultFunction(false);
+        NativeEvent::DestoryDefaultFunction(false, defaultFunc_, eventMutex_);
     }
 
     if (loop_ != nullptr) {
@@ -266,7 +230,7 @@ bool NativeEngine::ReinitUVLoop()
 
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-    CreateDefaultFunction();
+    NativeEvent::CreateDefaultFunction(this, defaultFunc_, eventMutex_);
 
     return true;
 }

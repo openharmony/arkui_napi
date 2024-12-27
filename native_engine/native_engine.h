@@ -570,8 +570,6 @@ public:
 
 private:
     void InitUvField();
-    void CreateDefaultFunction(void);
-    void DestoryDefaultFunction(bool release);
 
     virtual NapiOptions *GetNapiOptions() const = 0;
 
