@@ -264,7 +264,7 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
 
     napi_status sentEventRes = SendEventByEventHandler(task, eventId, priority, name, handleId);
     if (sentEventRes != napi_status::napi_invalid_arg) {
-        HILOG_ERROR("SendEventByEventHandler fail %{public}lu", eventId);
+        HILOG_ERROR("SendEventByEventHandler fail %{public}s", std::to_string(eventId).c_str());
         return sentEventRes;
     }
 
@@ -295,7 +295,7 @@ napi_status NativeEvent::SendEventByEventHandler(const std::function<void()> &ta
         return napi_status::napi_ok;
     }
     *handleId = 0;
-    HILOG_ERROR("PostTask fail %{public}lu", eventId);
+    HILOG_ERROR("PostTask fail %{public}s", std::to_string(eventId).c_str());
     return napi_status::napi_generic_failure;
 #endif
     // Internal temporary code
@@ -374,7 +374,7 @@ SafeAsyncCode NativeEvent::UvCancelEvent(uint64_t handleId)
                                                   std::memory_order_acq_rel, std::memory_order_relaxed)) {
             return SafeAsyncCode::SAFE_ASYNC_OK;
         }
-        HILOG_WARN("UvCancelEvent false %{public}lu", handleId);
+        HILOG_WARN("UvCancelEvent false %{public}s", std::to_string(handleId).c_str());
         return SafeAsyncCode::SAFE_ASYNC_FAILED;
     }
     return SafeAsyncCode::SAFE_ASYNC_FAILED;
