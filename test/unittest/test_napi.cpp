@@ -10425,3 +10425,139 @@ HWTEST_F(NapiBasicTest, NapiEncodeTest002, testing::ext::TestSize.Level1)
     auto ret = napi_encode(env, undefined, &result);
     ASSERT_EQ(ret, napi_string_expected);
 }
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_send_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto task = [] {
+        HILOG_INFO("function called");
+    }
+    napi_status result = napi_send_event(nullptr, task, napi_eprio_idle);
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_send_event(env, nullptr, napi_eprio_idle);
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_send_event(env, task, napi_event_priority(napi_eprio_idle + 1));
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_send_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto task1 = [] {
+        HILOG_INFO("function called");
+    }
+
+    napi_status result = napi_send_event(env, task, napi_eprio_idle);
+    ASSERT_EQ(result, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_send_cancelable_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    uint64_t handleId = 0;
+    char* testData = (char *)malloc(100);
+    memset(testData, 0, 100);
+    strcpy(testData, "my test data");
+    auto task1 = [] (void* data) {
+        HILOG_INFO("function called");
+    }
+
+    napi_status result = napi_send_cancelable_event(nullptr, task1, testData, napi_eprio_idle, &handleId, "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_send_cancelable_event(env, nullptr, testData, napi_eprio_idle, &handleId, "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_send_cancelable_event(env, task1, nullptr,
+                                        napi_event_priority(napi_eprio_idle + 1), &handleId, "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_send_cancelable_event(env, task1, testData, napi_eprio_idle, nullptr, "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_send_cancelable_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    uint64_t handleId1 = 0;
+    char* testData1 = (char *)malloc(100);
+    memset(testData1, 0, 100);
+    strcpy(testData1, "my test data");
+    auto task1 = [] (void* data) {
+        HILOG_INFO("function called");
+    }
+
+    result = napi_send_cancelable_event(env, task1, testData1, napi_eprio_idle, &handleId1, "default");
+    ASSERT_EQ(result, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_cancel_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t handleId1 = 0;
+
+    napi_status result = napi_cancel_event(nullptr, handleId1,  "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+
+    result = napi_cancel_event(env, handleId1,  "default");
+    ASSERT_EQ(result, napi_status::napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSendEventTest
+ * @tc.desc: Test interface of napi_cancel_event
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSendEventTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t handleId1 = 0;
+    char* testData2 = (char *)malloc(100);
+    memset(testData2, 0, 100);
+    strcpy(testData2, "my test data");
+    auto task2 = [] (void* data) {
+        HILOG_INFO("function called");
+    }
+    result = napi_send_cancelable_event(env, task2, testData2, napi_eprio_idle, &handleId1, "default");
+    ASSERT_NE(handleId1, 0);
+    result = napi_cancel_event(env, handleId1,  "default");
+    ASSERT_EQ(result, napi_status::napi_ok);
+}
+
