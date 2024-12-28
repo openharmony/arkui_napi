@@ -58,6 +58,10 @@ class TraceLogClass {
 NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority)
 {
     CHECK_ENV(env);
+    if (cb == nullptr) {
+        HILOG_ERROR("invalid function is nullptr");
+        return napi_status::napi_invalid_arg;
+    }
     if (priority < napi_eprio_vip || priority > napi_eprio_idle) {
         HILOG_ERROR("invalid priority %{public}d", static_cast<int32_t>(priority));
         return napi_status::napi_invalid_arg;
@@ -99,6 +103,10 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
                                                    const char* name)
 {
     CHECK_ENV(env);
+    if (cb == nullptr) {
+        HILOG_ERROR("invalid function is nullptr");
+        return napi_status::napi_invalid_arg;
+    }
     if (priority < napi_eprio_vip || priority > napi_eprio_idle) {
         HILOG_ERROR("invalid priority %{public}d", static_cast<int32_t>(priority));
         return napi_status::napi_invalid_arg;
