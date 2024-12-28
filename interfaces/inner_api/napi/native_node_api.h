@@ -116,6 +116,13 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
 NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority);
+NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
+                                                   const std::function<void(void*)> cb,
+                                                   void* data,
+                                                   napi_event_priority priority,
+                                                   uint64_t* handleId,
+                                                   const char* name);
+NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const char* name);
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope);
 NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope);
 NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,

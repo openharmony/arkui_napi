@@ -113,43 +113,6 @@ NativeEngine::~NativeEngine()
     FinalizerInstanceData();
 }
 
-static void ThreadSafeCallback(napi_env env, napi_value jsCallback, void* context, void* data)
-{
-    if (data != nullptr) {
-        CallbackWrapper *cbw = static_cast<CallbackWrapper *>(data);
-        cbw->cb();
-        delete cbw;
-    }
-}
-
-void NativeEngine::CreateDefaultFunction(void)
-{
-    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
-    if (defaultFunc_) {
-        return;
-    }
-    napi_env env = reinterpret_cast<napi_env>(this);
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
-    napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
-        nullptr, nullptr, nullptr, ThreadSafeCallback, &defaultFunc_);
-}
-
-void NativeEngine::DestoryDefaultFunction(bool release)
-{
-    std::unique_lock<std::shared_mutex> writeLock(eventMutex_);
-    if (!defaultFunc_) {
-        return;
-    }
-    if (release) {
-        napi_release_threadsafe_function(defaultFunc_, napi_tsfn_abort);
-    } else {
-        NativeSafeAsyncWork* work = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
-        delete work; // only free mem due to uv_loop is invalid
-    }
-    defaultFunc_ = nullptr;
-}
-
 void NativeEngine::Init()
 {
     HILOG_DEBUG("NativeEngine::Init");
@@ -172,14 +135,14 @@ void NativeEngine::Init()
     }
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-    CreateDefaultFunction();
+    NativeEvent::CreateDefaultFunction(this, defaultFunc_, eventMutex_);
 }
 
 void NativeEngine::Deinit()
 {
     HILOG_INFO("NativeEngine::Deinit");
     if (loop_ != nullptr) {
-        DestoryDefaultFunction(true);
+        NativeEvent::DestoryDefaultFunction(true, defaultFunc_, eventMutex_);
         uv_sem_destroy(&uvSem_);
         uv_close((uv_handle_t*)&uvAsync_, nullptr);
     }
@@ -242,7 +205,7 @@ ThreadId NativeEngine::GetCurSysTid()
 bool NativeEngine::ReinitUVLoop()
 {
     if (defaultFunc_ != nullptr) {
-        DestoryDefaultFunction(false);
+        NativeEvent::DestoryDefaultFunction(false, defaultFunc_, eventMutex_);
     }
 
     if (loop_ != nullptr) {
@@ -267,7 +230,7 @@ bool NativeEngine::ReinitUVLoop()
 
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
-    CreateDefaultFunction();
+    NativeEvent::CreateDefaultFunction(this, defaultFunc_, eventMutex_);
 
     return true;
 }
@@ -1087,18 +1050,6 @@ void NativeEngine::ThrowException(const char* msg)
     auto vm = GetEcmaVm();
     Local<panda::JSValueRef> error = panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, msg));
     panda::JSNApi::ThrowException(vm, error);
-}
-
-napi_status NativeEngine::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
-{
-    std::shared_lock<std::shared_mutex> readLock(eventMutex_);
-    if (defaultFunc_) {
-        auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(defaultFunc_);
-        return safeAsyncWork->SendEvent(cb, priority);
-    } else {
-        HILOG_ERROR("default function is nullptr!");
-        return napi_status::napi_generic_failure;
-    }
 }
 
 NapiErrorManager* NapiErrorManager::GetInstance()

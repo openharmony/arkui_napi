@@ -33,6 +33,7 @@
 #include "native_engine/native_deferred.h"
 #include "native_engine/native_reference.h"
 #include "native_engine/native_safe_async_work.h"
+#include "native_engine/native_event.h"
 #include "native_engine/native_value.h"
 #include "native_property.h"
 #include "reference_manager/native_reference_manager.h"
@@ -506,8 +507,6 @@ public:
      */
     napi_status StopEventLoop();
 
-    napi_status SendEvent(const std::function<void()> &cb, napi_event_priority priority = napi_eprio_high);
-
     virtual bool IsCrossThreadCheckEnabled() const = 0;
 
     bool IsInDestructor() const
@@ -568,8 +567,6 @@ public:
 
 private:
     void InitUvField();
-    void CreateDefaultFunction(void);
-    void DestoryDefaultFunction(bool release);
 
     virtual NapiOptions *GetNapiOptions() const = 0;
 
@@ -668,6 +665,26 @@ private:
     static uint64_t g_lastEngineId_;
     static std::mutex g_mainThreadEngineMutex_;
     static NativeEngine* g_mainThreadEngine_;
+
+public:
+    inline std::shared_mutex& GetEventMutex() const
+    {
+        return eventMutex_;
+    }
+
+    inline napi_threadsafe_function GetDefaultFunc()
+    {
+        return defaultFunc_;
+    }
+
+    inline static bool IsAliveLocked(NativeEngine* env)
+    {
+        return g_alivedEngine_.find(env) != g_alivedEngine_.end();
+    }
+
+    inline static std::mutex& GetAliveEngineMutex() {
+        return g_alivedEngineMutex_;
+    }
 };
 
 class NapiErrorManager {
