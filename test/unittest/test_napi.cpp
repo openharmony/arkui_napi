@@ -10438,7 +10438,7 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest001, testing::ext::TestSize.Level1)
 
     auto task = [] {
         HILOG_INFO("function called");
-    }
+    };
     napi_status result = napi_send_event(nullptr, task, napi_eprio_idle);
     ASSERT_EQ(result, napi_status::napi_invalid_arg);
 
@@ -10461,9 +10461,9 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest002, testing::ext::TestSize.Level1)
 
     auto task1 = [] {
         HILOG_INFO("function called");
-    }
+    };
 
-    napi_status result = napi_send_event(env, task, napi_eprio_idle);
+    napi_status result = napi_send_event(env, task1, napi_eprio_idle);
     ASSERT_EQ(result, napi_status::napi_ok);
 }
 
@@ -10483,7 +10483,7 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest003, testing::ext::TestSize.Level1)
     strcpy(testData, "my test data");
     auto task1 = [] (void* data) {
         HILOG_INFO("function called");
-    }
+    };
 
     napi_status result = napi_send_cancelable_event(nullptr, task1, testData, napi_eprio_idle, &handleId, "default");
     ASSERT_EQ(result, napi_status::napi_invalid_arg);
@@ -10515,9 +10515,9 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest004, testing::ext::TestSize.Level1)
     strcpy(testData1, "my test data");
     auto task1 = [] (void* data) {
         HILOG_INFO("function called");
-    }
+    };
 
-    result = napi_send_cancelable_event(env, task1, testData1, napi_eprio_idle, &handleId1, "default");
+    napi_status result = napi_send_cancelable_event(env, task1, testData1, napi_eprio_idle, &handleId1, "default");
     ASSERT_EQ(result, napi_status::napi_ok);
 }
 
@@ -10554,10 +10554,9 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest006, testing::ext::TestSize.Level1)
     strcpy(testData2, "my test data");
     auto task2 = [] (void* data) {
         HILOG_INFO("function called");
-    }
-    result = napi_send_cancelable_event(env, task2, testData2, napi_eprio_idle, &handleId1, "default");
+    };
+    napi_status result = napi_send_cancelable_event(env, task2, testData2, napi_eprio_idle, &handleId1, "default");
     ASSERT_NE(handleId1, 0);
     result = napi_cancel_event(env, handleId1,  "default");
     ASSERT_EQ(result, napi_status::napi_ok);
 }
-
