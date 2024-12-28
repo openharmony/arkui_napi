@@ -10478,9 +10478,7 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest003, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     uint64_t handleId = 0;
-    char* testData = (char *)malloc(100);
-    memset(testData, 0, 100);
-    strcpy(testData, "my test data");
+    char testData[] = "my test data";
     auto task1 = [] (void* data) {
         HILOG_INFO("function called");
     };
@@ -10510,9 +10508,7 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest004, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     uint64_t handleId1 = 0;
-    char* testData1 = (char *)malloc(100);
-    memset(testData1, 0, 100);
-    strcpy(testData1, "my test data");
+    char testData1[] = "my test data";
     auto task1 = [] (void* data) {
         HILOG_INFO("function called");
     };
@@ -10549,9 +10545,7 @@ HWTEST_F(NapiBasicTest, NapiSendEventTest006, testing::ext::TestSize.Level1)
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
     uint64_t handleId1 = 0;
-    char* testData2 = (char *)malloc(100);
-    memset(testData2, 0, 100);
-    strcpy(testData2, "my test data");
+    char testData2[] = "my test data";
     auto task2 = [] (void* data) {
         HILOG_INFO("function called");
     };
