@@ -264,7 +264,6 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
 
     napi_status sentEventRes = SendEventByEventHandler(task, eventId, priority, name, handleId);
     if (sentEventRes != napi_status::napi_invalid_arg) {
-        HILOG_ERROR("SendEventByEventHandler fail %{public}s", std::to_string(eventId).c_str());
         return sentEventRes;
     }
 
