@@ -1457,45 +1457,17 @@ Local<JSValueRef> ArkNativeEngine::NapiLoadNativeModule(std::string path)
     return panda::JSNApi::ExecuteNativeModule(vm_, key);
 }
 
-ModuleTypes ArkNativeEngine::CheckLoadType(const std::string &path)
-{
-    if (path[0] == '@') {
-        return ModuleTypes::NATIVE_MODULE;
-    } else if (path.find("ets/") == 0) { // ets/xxx/xxx
-        return ModuleTypes::MODULE_INNER_FILE;
-    }
-    return ModuleTypes::UNKNOWN;
-}
-
-napi_value ArkNativeEngine::NapiLoadModule(const char* path, const char* module_info)
+napi_value ArkNativeEngine::NapiLoadModule(const char* path)
 {
     if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
         return nullptr;
     }
     panda::EscapeLocalScope scope(vm_);
-    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
-    Local<ObjectRef> exportObj(undefObj);
     std::string inputPath(path);
-    std::string modulePath;
-    if (module_info != nullptr) {
-        modulePath = module_info;
-    }
-    switch (CheckLoadType(inputPath)) {
-        case ModuleTypes::NATIVE_MODULE: {
-            exportObj = NapiLoadNativeModule(inputPath);
-            break;
-        }
-        case ModuleTypes::MODULE_INNER_FILE: {
-            exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath, modulePath);
-            break;
-        }
-        default: {
-            std::string msg = "ArkNativeEngine:NapiLoadModule input path:" + inputPath + " is invalid.";
-            ThrowException(msg.c_str());
-        }
-    }
+    Local exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath);
     if (!exportObj->IsObject(vm_)) {
+        Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
         ThrowException("ArkNativeEngine:NapiLoadModule failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
