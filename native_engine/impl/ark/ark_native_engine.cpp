@@ -616,6 +616,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
+    ArkIdleMonitor::GetInstance()->UnregisterWorkerEnv(reinterpret_cast<napi_env>(this));
     Deinit();
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
         ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
@@ -635,7 +636,6 @@ ArkNativeEngine::~ArkNativeEngine()
         delete options_;
         options_ = nullptr;
     }
-    ArkIdleMonitor::GetInstance()->UnregisterWorkerEnv(reinterpret_cast<napi_env>(this));
 }
 
 #ifdef ENABLE_HITRACE
