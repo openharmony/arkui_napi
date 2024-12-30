@@ -1463,11 +1463,18 @@ napi_value ArkNativeEngine::NapiLoadModule(const char* path)
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
         return nullptr;
     }
+    HILOG_INFO("ArkNativeEngine::NapiLoadModule path:%{public}s", path);
     panda::EscapeLocalScope scope(vm_);
+    Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
+    Local exportObj(undefObj);
     std::string inputPath(path);
-    Local exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath);
+    std::string ohmurl = GetOhmurl(inputPath);
+    if (!ohmurl.empty()) {
+        exportObj = panda::JSNApi::ExecuteNativeModule(vm_, ohmurl);
+    } else {
+        exportObj = panda::JSNApi::GetModuleNameSpaceFromFile(vm_, inputPath);
+    }
     if (!exportObj->IsObject(vm_)) {
-        Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
         ThrowException("ArkNativeEngine:NapiLoadModule failed.");
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
