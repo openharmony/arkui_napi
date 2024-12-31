@@ -296,7 +296,6 @@ public:
     }
 
     void RegisterNapiUncaughtExceptionHandler(NapiUncaughtExceptionCallback callback) override;
-    void RegisterAllPromiseCallback();
     void HandleUncaughtException() override;
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
@@ -314,6 +313,11 @@ public:
     NativeReference* GetPromiseRejectCallBackRef()
     {
         return promiseRejectCallbackRef_;
+    }
+
+    void RegisterAllPromiseCallback(NapiAllPromiseRejectCallback callback) override
+    {
+        allPromiseRejectCallback_ = callback;
     }
 
     void SetPromiseRejectCallBackRef(NativeReference* rejectCallbackRef) override

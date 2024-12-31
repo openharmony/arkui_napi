@@ -1063,3 +1063,51 @@ NapiErrorManager* NapiErrorManager::GetInstance()
     }
     return instance_;
 }
+
+void NapiErrorManager::NotifyUncaughtException(napi_env env, napi_value exception, std::string name, uint32_t type)
+{
+    auto hasOnErrorCallback = NapiErrorManager::GetInstance()->GetHasErrorCallback();
+    if (!hasOnErrorCallback) {
+        return;
+    }
+    if (!hasOnErrorCallback()) {
+        return;
+    }
+    auto callback = NapiErrorManager::GetInstance()->GetOnWorkerErrorCallback();
+    if (callback) {
+        callback(env, exception, name, type);
+    }
+}
+
+bool NapiErrorManager::NotifyUncaughtException(napi_env env, const std::string &summary, const std::string &name,
+    const std::string &message, const std::string &stack)
+{
+    auto hasOnErrorCallback = NapiErrorManager::GetInstance()->GetHasErrorCallback();
+    if (!hasOnErrorCallback) {
+        return false;
+    }
+    if (!hasOnErrorCallback()) {
+        return false;
+    }
+    panda::JSNApi::GetAndClearUncaughtException(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
+    auto callback = NapiErrorManager::GetInstance()->GetOnMainThreadErrorCallback();
+    if (!callback) {
+        return false;
+    }
+    return callback(env, summary, name, message, stack);
+}
+
+void NapiErrorManager::NotifyUnhandledRejection(napi_env env, napi_value* args, std::string name, uint32_t type)
+{
+    auto hasAllUnhandledRejectionCallback = NapiErrorManager::GetInstance()->GetHasAllUnhandledRejectionCallback();
+    if (!hasAllUnhandledRejectionCallback) {
+        return;
+    }
+    if (!hasAllUnhandledRejectionCallback()) {
+        return;
+    }
+    auto callback = NapiErrorManager::GetInstance()->GetAllUnhandledRejectionCallback();
+    if (callback) {
+        callback(env, args, name, type);
+    }
+}
