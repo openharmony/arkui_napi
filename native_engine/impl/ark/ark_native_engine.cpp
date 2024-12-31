@@ -2435,7 +2435,7 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
 
     for (auto &frame : frames) {
         if (frame.isJsFrame) {
-            DFXJSNApi::TranslateJSStackInfo(vm, frame.mapName, frame.line, frame.column);
+            DFXJSNApi::TranslateJSStackInfo(vm, frame.mapName, frame.line, frame.column, frame.packageName);
         }
     }
 
