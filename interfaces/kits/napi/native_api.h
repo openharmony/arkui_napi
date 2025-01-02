@@ -80,6 +80,10 @@ NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char**
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result);
 NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos);
 NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result);
+NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
+                                                   const char* path,
+                                                   const char* module_info,
+                                                   napi_value* result);
 NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
                                                            napi_value* result,
                                                            size_t property_count,
