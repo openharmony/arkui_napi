@@ -54,6 +54,7 @@ static constexpr int32_t TEST_INT32_500 = 500;
 static constexpr uint32_t TEST_UINT32_1000 = 1000;
 static constexpr int64_t TEST_INT64 = 9007199254740991;
 static constexpr const char TEST_CHAR_STRING[] = "TestString";
+static constexpr const char TEST_CHAR_ASYNCWORK[] = "AsyncWorkTest";
 static constexpr const char16_t TEST_CHAR16_STRING[] = u"TestString";
 
 class NapiBasicTest : public NativeEngineTest {
@@ -1608,7 +1609,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest003, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     std::unique_ptr<AsyncWorkContext> asyncWorkContext = std::make_unique<AsyncWorkContext>();
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(
         env, nullptr, nullptr, [](napi_env env, void* data) {},
         [](napi_env env, napi_status status, void* data) {},
@@ -1653,7 +1654,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest004, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     auto asyncWorkContext = new AsyncWorkContext();
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env env, void* data) {},
         [](napi_env env, napi_status status, void* data) {
@@ -1678,7 +1679,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest005, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     auto asyncWorkContext = new AsyncWorkContext();
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env env, void* data) {},
         [](napi_env env, napi_status status, void* data) {
@@ -4061,7 +4062,7 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
     auto asyncWorkContext = new AsyncWorkContext();
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_create_async_work(
         env, nullptr, resourceName, [](napi_env value, void* data) {
             AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
@@ -6343,7 +6344,7 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest002, testing::ext::TestSize.Level
     napi_env env = reinterpret_cast<napi_env>(engine_);
     napi_async_work work = nullptr;
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(env, nullptr, resourceName, nullptr,
                            [](napi_env env, napi_status status, void* data) {}, nullptr, &work);
     ASSERT_EQ(status, napi_invalid_arg);
@@ -6354,7 +6355,7 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest003, testing::ext::TestSize.Level
     napi_env env = reinterpret_cast<napi_env>(engine_);
     napi_async_work work = nullptr;
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
                            nullptr, nullptr, &work);
     ASSERT_EQ(status, napi_invalid_arg);
@@ -6365,7 +6366,7 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest004, testing::ext::TestSize.Level
     napi_env env = reinterpret_cast<napi_env>(engine_);
     napi_async_work* work = nullptr;
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "AsyncWorkTest", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
     napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
                            nullptr, nullptr, work);
     ASSERT_EQ(status, napi_invalid_arg);
@@ -6380,6 +6381,42 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest005, testing::ext::TestSize.Level
     napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
                            nullptr, nullptr, work);
     ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_async_work(
+        env, nullptr, resourceName,
+        [](napi_env env, void *data) {},
+        [](napi_env env, napi_status status, void *data) {},
+        nullptr, &work);
+    ASSERT_EQ(status, napi_ok);
+
+    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
+    auto asyncWorkTraceDesc = asyncWork->GetTraceDescription();
+    ASSERT_TRUE(asyncWorkTraceDesc.find(TEST_CHAR_ASYNCWORK) != std::string::npos);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_get_undefined(env, &resourceName);
+    napi_status status = napi_create_async_work(
+        env, nullptr, resourceName,
+        [](napi_env env, void *data) {},
+        [](napi_env env, napi_status status, void *data) {},
+        nullptr, &work);
+    ASSERT_EQ(status, napi_ok);
+
+    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
+    auto asyncWorkTraceDesc = asyncWork->GetTraceDescription();
+    ASSERT_FALSE(asyncWorkTraceDesc.find(TEST_CHAR_ASYNCWORK) != std::string::npos);
 }
 
 HWTEST_F(NapiBasicTest, NapiDeleteAsyncWorkTest001, testing::ext::TestSize.Level1)
