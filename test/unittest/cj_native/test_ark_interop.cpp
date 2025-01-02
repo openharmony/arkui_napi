@@ -49,6 +49,7 @@ public:
         TestNumber();
         TestString();
         TestObject();
+        TestKeyable();
         TestDefineProperty();
         TestArray();
         TestBigintInt64();
@@ -67,6 +68,7 @@ private:
     static void TestNumber();
     static void TestString();
     static void TestObject();
+    static void TestKeyable();
     static void TestDefineProperty();
     static void TestArray();
     static void TestBigintInt64();
@@ -460,6 +462,26 @@ void ArkInteropTest::TestObject()
     auto key = ARKTS_GetElement(env, keys, 0);
     EXPECT_TRUE(ARKTS_IsString(env, key));
     EXPECT_TRUE(ARKTS_StrictEqual(env, keyA, key));
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestKeyable()
+{
+    auto env = MockContext::GetInstance()->GetEnv();
+    auto scope = ARKTS_OpenScope(env);
+    auto obj = ARKTS_CreateObject(env);
+    ARKTS_Value allowedKeys[] {
+        ARKTS_CreateUtf8(env, "a", 1),
+        ARKTS_CreateI32(12),
+        ARKTS_CreateSymbol(env, "a", 1)
+    };
+    auto value = ARKTS_CreateBool(true);
+    for (auto key : allowedKeys) {
+        ARKTS_SetProperty(env, obj, key, value);
+        auto received = ARKTS_GetProperty(env, obj, key);
+        EXPECT_TRUE(ARKTS_IsBool(received));
+        EXPECT_TRUE(ARKTS_GetValueBool(received));
+    }
     ARKTS_CloseScope(env, scope);
 }
 
