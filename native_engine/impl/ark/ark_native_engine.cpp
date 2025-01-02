@@ -2426,7 +2426,6 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
     const int backtraceDeepth = (deepth < 0 || deepth > DEFAULT_MAX_FRAME_NUM) ? DEFAULT_MAX_FRAME_NUM : deepth;
     auto unwinder = std::make_shared<OHOS::HiviewDFX::Unwinder>();
     std::vector<OHOS::HiviewDFX::DfxFrame> frames;
-    unwinder->EnableMethodIdLocal(true);
     if (unwinder->UnwindLocal(false, false, backtraceDeepth, skipedFrames)) {
         frames = unwinder->GetFrames();
     } else {
