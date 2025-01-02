@@ -147,6 +147,8 @@ NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
                                        NapiXRefDirection ref_direction,
                                        napi_ref* result);
 NAPI_EXTERN napi_status napi_xref_unwrap(napi_env env, napi_value js_object, void** result);
+
+NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref);
 #endif  // PANDA_JS_ETS_HYBRID_MODE
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

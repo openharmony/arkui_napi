@@ -90,6 +90,9 @@ public:
     bool GetFinalRun() override;
     napi_value GetNapiValue() override;
     void ResetFinalizer()  override;
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+    void MarkFromObject();
+#endif // PANDA_JS_ETS_HYBRID_MODE
 
 private:
     inline void ArkNativeReferenceConstructor(uint32_t initialRefCount, bool deleteSelf)
