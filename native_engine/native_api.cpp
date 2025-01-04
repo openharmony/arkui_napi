@@ -1837,6 +1837,7 @@ NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
                                        napi_value js_object,
                                        void* native_object,
                                        napi_finalize finalize_cb,
+                                       NapiXRefDirection ref_direction,
                                        napi_ref* result)
 {
     NAPI_PREAMBLE(env);
@@ -1853,9 +1854,26 @@ NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
     size_t nativeBindingSize = 0;
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
-    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
     NativeReference* ref = nullptr;
-    ref = engine->CreateXRefReference(js_object, 0, false, callback, native_object);
+    Local<panda::ObjectRef> object = JSValueRef::Undefined(vm);
+    switch (ref_direction) {
+        case NapiXRefDirection::NAPI_DIRECTION_DYNAMIC_TO_STATIC:
+            object = panda::ObjectRef::NewJSXRefObject(vm);
+            ref = engine->CreateReference(js_object, 0, false, callback, native_object, nullptr);
+            break;
+        case NapiXRefDirection::NAPI_DIRECTION_STATIC_TO_DYNAMIC:
+            object = panda::ObjectRef::New(vm);
+            ref = engine->CreateXRefReference(js_object, 0, false, callback, native_object);
+            break;
+        case NapiXRefDirection::NAPI_DIRECTION_HYBRID:
+            // Hybrid object may only exist in cross-language inherence case.
+            // To be aborted in the future according to the specification
+            HILOG_ERROR("[napi_xref_wrap] napi_direction_hybrid is not supported now!");
+            return napi_set_last_error(env, napi_invalid_arg);
+        default:
+            HILOG_ERROR("[napi_xref_wrap] invalid ref_direction!");
+            return napi_set_last_error(env, napi_invalid_arg);
+    }
     if (reference != nullptr) {
         *reference = ref;
     }
