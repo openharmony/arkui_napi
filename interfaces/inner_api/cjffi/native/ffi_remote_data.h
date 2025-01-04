@@ -75,7 +75,6 @@ private:
     const int64_t maxId = MAX_INT64;
     // maxCapacity can be set to a larger number if needed, make sure maxCapacity is not larger than maxId
     const int64_t maxCapacity = MAX_INT64;
-    static FFIDataManager* instance_;
     std::mutex mtx;
 
     std::unordered_map<int64_t, sptr<FFIData>> ffiDataStore_;

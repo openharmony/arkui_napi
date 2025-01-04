@@ -27,14 +27,10 @@ namespace {
 constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003901, "CJ-FFIBindNative" };
 } // namespace
 
-FFIDataManager* FFIDataManager::instance_ = nullptr;
-
 FFIDataManager* FFIDataManager::GetInstance()
 {
-    if (instance_ == nullptr) {
-        instance_ = new FFIDataManager();
-    }
-    return instance_;
+    static FFIDataManager singleton;
+    return &singleton;
 }
 
 void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)

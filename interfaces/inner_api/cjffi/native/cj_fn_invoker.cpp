@@ -28,11 +28,8 @@ constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003901, "CJ-FFIFuncs" };
 
 CJFFIFnInvoker* CJFFIFnInvoker::GetInstance()
 {
-    static CJFFIFnInvoker* instance;
-    if (instance == nullptr) {
-        instance = new CJFFIFnInvoker();
-    }
-    return instance;
+    static CJFFIFnInvoker instance;
+    return &instance;
 }
 
 const FFIAtCPackage& CJFFIFnInvoker::GetCJFuncs()
