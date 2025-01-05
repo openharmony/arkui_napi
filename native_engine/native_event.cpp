@@ -132,7 +132,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
     }
     auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
     return safeAsyncWork->SendCancelableEvent(cb, data, priority,
-                                              (name == nullptr) ? DEFAULT_NAME: name, handleId);
+                                              ((name == nullptr) ? DEFAULT_NAME: name), handleId);
 }
 
 NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const char* name)
@@ -158,7 +158,7 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
         return napi_status::napi_generic_failure;
     }
     auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-    return safeAsyncWork->CancelEvent((name == nullptr) ? DEFAULT_NAME: name, handleId);
+    return safeAsyncWork->CancelEvent(((name == nullptr) ? DEFAULT_NAME: name), handleId);
 }
 
 // static method
