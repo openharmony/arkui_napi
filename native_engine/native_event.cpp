@@ -55,7 +55,7 @@ class TraceLogClass {
 };
 
 // API
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority)
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority)
 {
     CHECK_ENV(env);
     if (cb == nullptr) {
@@ -96,7 +96,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
 }
 
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
-                                                   const std::function<void(void*)> cb,
+                                                   const std::function<void(void*)>& cb,
                                                    void* data,
                                                    napi_event_priority priority,
                                                    uint64_t* handleId,

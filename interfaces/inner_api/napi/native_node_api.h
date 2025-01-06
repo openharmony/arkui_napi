@@ -122,7 +122,7 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
  * @param cb CallBack in JS Thread
  * @param priority Task priority
  */
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority);
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority);
 /*
  * @brief Send a task to the JS Thread
  *
@@ -134,7 +134,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
  * @param name Task name, Use the task name and handleId as the tag of task.
  */
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
-                                                   const std::function<void(void*)> cb,
+                                                   const std::function<void(void*)>& cb,
                                                    void* data,
                                                    napi_event_priority priority,
                                                    uint64_t* handleId,
