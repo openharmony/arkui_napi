@@ -95,8 +95,30 @@ config("ace_napi_config") {
   }
 }
 
+config("data_protector_config") {
+  cflags_cc = [ "-march=armv8.4-a" ]
+  defines = [ "NAPI_ENABLE_DATA_PROTECT" ]
+}
+
 config("module_manager_config") {
   include_dirs = [ "module_manager" ]
+}
+
+ohos_source_set("pac_data_protector_feature") {
+  sources = [ "utils/data_protector.cpp" ]
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
+  configs = [
+    ":ace_napi_config",
+    ":data_protector_config",
+  ]
+
+  subsystem_name = "arkui"
+  part_name = "napi"
 }
 
 ohos_source_set("ace_napi_static") {
@@ -202,6 +224,9 @@ if (is_arkui_x) {
   ohos_shared_library("ace_napi") {
     stack_protector_ret = false
     deps = [ ":ace_napi_static" ]
+    if (enabled_data_protector) {
+      deps += [ ":pac_data_protector_feature" ]
+    }
     external_deps = [ "bounds_checking_function:libsec_shared" ]
     public_configs = [
       ":ace_napi_config",

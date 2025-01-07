@@ -19,7 +19,8 @@
         "features": [
           "napi_enable_container_scope",
           "napi_feature_enable_pgo",
-          "napi_feature_pgo_path"
+          "napi_feature_pgo_path",
+          "napi_enable_data_protector"
         ],
         "adapted_system_type": [
             "standard"

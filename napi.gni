@@ -51,6 +51,15 @@ declare_args() {
 
   # Set pgo profdata path
   napi_feature_pgo_path = ""
+
+  # Enable PAC(Pointer Authentication Code) feature
+  napi_enable_data_protector = false
+  enabled_data_protector = false
+}
+
+if (defined(target_cpu) && target_cpu == "arm64" &&
+    napi_enable_data_protector && !is_emulator) {
+  enabled_data_protector = true
 }
 
 is_ohos_standard_system = is_standard_system && !is_arkui_x
