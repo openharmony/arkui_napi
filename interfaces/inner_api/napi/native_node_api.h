@@ -115,13 +115,37 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
                                               napi_value value,
                                               std::string& result);
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority);
+/*
+ * @brief Send a task to the JS Thread
+ *
+ * @param env The native engine.
+ * @param cb CallBack in JS Thread
+ * @param priority Task priority
+ */
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority);
+/*
+ * @brief Send a task to the JS Thread
+ *
+ * @param env The native engine.
+ * @param cb CallBack in JS Thread.
+ * @param data Input parameter of callback.
+ * @param priority Task priority.
+ * @param handleId Handle to cancel a task.
+ * @param name Task name, Use the task name and handleId as the tag of task.
+ */
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
-                                                   const std::function<void(void*)> cb,
+                                                   const std::function<void(void*)>& cb,
                                                    void* data,
                                                    napi_event_priority priority,
                                                    uint64_t* handleId,
                                                    const char* name);
+/*
+ * @brief Send a task to the JS Thread
+ *
+ * @param env The native engine.
+ * @param handleId Handle to cancel a task, But sometimes it do not work when used alone.
+ * @param name Task name, The name must be the same as the name of the task send.
+ */
 NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const char* name);
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope);
 NAPI_EXTERN napi_status napi_close_fast_native_scope(napi_env env, napi_fast_native_scope scope);

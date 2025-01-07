@@ -43,19 +43,19 @@ class TraceLogClass {
 #ifdef ENABLE_HITRACE
             StartTrace(traceLable, value);
 #endif
-            HILOG_INFO("log start{%{public}s}", value.c_str());
+            HILOG_DEBUG("log start{%{public}s}", value.c_str());
         }
         ~TraceLogClass()
         {
 #ifdef ENABLE_HITRACE
             FinishTrace(traceLable);
 #endif
-            HILOG_INFO("log end{%{public}s}", value.c_str());
+            HILOG_DEBUG("log end{%{public}s}", value.c_str());
         }
 };
 
 // API
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()> cb, napi_event_priority priority)
+NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority)
 {
     CHECK_ENV(env);
     if (cb == nullptr) {
@@ -96,7 +96,7 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
 }
 
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
-                                                   const std::function<void(void*)> cb,
+                                                   const std::function<void(void*)>& cb,
                                                    void* data,
                                                    napi_event_priority priority,
                                                    uint64_t* handleId,
@@ -132,7 +132,7 @@ NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
     }
     auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
     return safeAsyncWork->SendCancelableEvent(cb, data, priority,
-                                              (name == nullptr) ? DEFAULT_NAME: name, handleId);
+                                              ((name == nullptr) ? DEFAULT_NAME: name), handleId);
 }
 
 NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const char* name)
@@ -158,7 +158,7 @@ NAPI_EXTERN napi_status napi_cancel_event(napi_env env, uint64_t handleId, const
         return napi_status::napi_generic_failure;
     }
     auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-    return safeAsyncWork->CancelEvent(name, handleId);
+    return safeAsyncWork->CancelEvent(((name == nullptr) ? DEFAULT_NAME: name), handleId);
 }
 
 // static method
@@ -279,7 +279,7 @@ napi_status NativeEvent::SendEventByEventHandler(const std::function<void()> &ta
         return napi_status::napi_invalid_arg;
     }
     bool postRes = eventHandler_->PostTask(task,
-                                           std::to_string(eventId),
+                                           std::string(name) + std::to_string(eventId),
                                            0,
                                            static_cast<EventQueue::Priority>(priority),
                                            {});
@@ -334,7 +334,7 @@ napi_status NativeEvent::CancelEvent(const char* name, uint64_t handleId)
 #ifdef ENABLE_EVENT_HANDLER
     if (eventHandler_) {
         auto evt = TraceLogClass("eventHandler remove task");
-        eventHandler_->RemoveTask(std::to_string(handleId));
+        eventHandler_->RemoveTask(std::string(name) + std::to_string(handleId));
         return napi_status::napi_ok;
     }
 #endif
