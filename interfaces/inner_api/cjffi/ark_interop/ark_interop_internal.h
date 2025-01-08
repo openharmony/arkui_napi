@@ -84,7 +84,9 @@ ARKTS_INLINE panda::JSValueRef ARKTS_ToValue(ARKTS_Value value)
 template<typename T>
 ARKTS_INLINE ARKTS_Value ARKTS_FromHandle(panda::Local<T>& value)
 {
-    if (value->IsHeapObject()) {
+    if (value.IsNull()) {
+        return ARKTS_CreateUndefined();
+    } else if (value->IsHeapObject()) {
         return BIT_CAST(value, ARKTS_Value);
     } else {
         return *BIT_CAST(value, ARKTS_Value*);
