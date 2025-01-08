@@ -896,6 +896,23 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
     }
     EXPECT_TRUE(waitTimes > 0);
 }
+
+TEST_F(ArkInteropTest, ScopeMT)
+{
+    constexpr int threadCount = 1000;
+    std::thread threads[threadCount];
+    for (int i = 0; i < threadCount; i++) {
+        threads[i] = std::thread([] {
+            MockContext local(ARKTS_CreateEngineWithNewThread());
+            auto scope = ARKTS_OpenScope(local.GetEnv());
+            EXPECT_TRUE(scope);
+            ARKTS_CloseScope(local.GetEnv(), scope);
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
 } // namespace
 
 int main(int argc, char** argv)

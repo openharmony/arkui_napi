@@ -16,28 +16,16 @@
 #include "ark_interop_scope.h"
 
 namespace CJ {
-std::vector<ARKTS_ScopeManager> ARKTS_ScopeManager::scopeStack_{};
-
 ARKTS_Scope ARKTS_ScopeManager::OpenScope(panda::ecmascript::EcmaVM* vm)
 {
-    scopeStack_.emplace_back(vm);
-    size_t scopeId = scopeStack_.size();
+    auto scopeId = new panda::LocalScope(vm);
     return P_CAST(scopeId, ARKTS_Scope);
 }
 
 bool ARKTS_ScopeManager::CloseScope(ARKTS_Scope target)
 {
-    auto targetScope = P_CAST(target, int64_t);
-    if (targetScope > (int64_t)scopeStack_.size()) {
-        return false;
-    }
-    while ((int64_t)scopeStack_.size() >= targetScope) {
-        scopeStack_.pop_back();
-    }
+    auto targetScope = P_CAST(target, panda::LocalScope*);
+    delete targetScope;
     return true;
-}
-
-ARKTS_ScopeManager::ARKTS_ScopeManager(panda::ecmascript::EcmaVM* vm): scope_(vm)
-{
 }
 }
