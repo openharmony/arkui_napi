@@ -874,6 +874,27 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
     }
     EXPECT_TRUE(waitTimes > 0);
 }
+
+TEST_F(ArkInteropTest, ScopeMT)
+{
+    constexpr int threadCount = 1000;
+    std::thread threads[threadCount];
+    for (int i = 0; i < threadCount; i++) {
+        threads[i] = std::thread([] {
+            panda::RuntimeOption options;
+            auto vm = panda::JSNApi::CreateJSVM(options);
+            EXPECT_TRUE(vm);
+            auto env = P_CAST(vm, ARKTS_Env);
+            auto scope = ARKTS_OpenScope(env);
+            EXPECT_TRUE(scope);
+            ARKTS_CloseScope(env, scope);
+            panda::JSNApi::DestroyJSVM(vm);
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
 } // namespace
 
 int main(int argc, char** argv)

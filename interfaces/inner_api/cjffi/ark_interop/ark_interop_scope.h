@@ -27,17 +27,9 @@ class EcmaVM;
 
 namespace CJ {
 class ARKTS_ScopeManager final {
-private:
-    static std::vector<ARKTS_ScopeManager> scopeStack_;
-
 public:
     static ARKTS_Scope OpenScope(panda::ecmascript::EcmaVM* vm);
     static bool CloseScope(ARKTS_Scope target);
-
-    explicit ARKTS_ScopeManager(panda::ecmascript::EcmaVM* vm);
-
-private:
-    panda::LocalScope scope_;
 };
 }
 
