@@ -40,6 +40,7 @@ struct JsHeapDumpWork;
 struct JsFrameInfo {
     std::string functionName;
     std::string fileName;
+    std::string packageName;
     std::string pos;
     uintptr_t* nativePointer = nullptr;
 };
