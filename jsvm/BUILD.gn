@@ -47,7 +47,11 @@ ohos_prebuilt_shared_library("libjsvm") {
     ":libv8",
   ]
 
-  source = "$target_gen_dir/libjsvm.so"
+  if (is_asan && use_hwasan) {
+    source = "$target_gen_dir/asan/libjsvm.so"
+  } else {
+    source = "$target_gen_dir/libjsvm.so"
+  }
   subsystem_name = "arkui"
   part_name = "napi"
 
@@ -71,7 +75,11 @@ action("build_libjsvm") {
   deps = [ "//third_party/musl:musl_all" ]
   script = "build_jsvm.sh"
   sources = []
-  outputs = [ "$target_gen_dir/libjsvm.so" ]
+  if (is_asan && use_hwasan) {
+    outputs = [ "$target_gen_dir/asan/libjsvm.so" ]
+  } else {
+    outputs = [ "$target_gen_dir/libjsvm.so" ]
+  }
   args = [
     "--target_gen_dir",
     rebase_path("$target_gen_dir"),
