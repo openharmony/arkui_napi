@@ -71,7 +71,7 @@ uint64_t NativeEngine::g_lastEngineId_ = 1;
 std::mutex NativeEngine::g_mainThreadEngineMutex_;
 NativeEngine* NativeEngine::g_mainThreadEngine_;
 NapiErrorManager* NapiErrorManager::instance_ = NULL;
-std::mutex g_errorManagerInstanceMutex;
+static std::mutex g_errorManagerInstanceMutex;
 
 NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 {
