@@ -567,6 +567,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     JSNApi::SetUnloadNativeModuleCallback(vm, func);
     Init();
     panda::JSNApi::SetLoop(vm, loop_);
+    DFXJSNApi::RegisterAsyncDetectCallBack(vm);
     panda::JSNApi::SetWeakFinalizeTaskCallback(vm, [this] () -> void {
         this->PostFinalizeTasks();
     });
