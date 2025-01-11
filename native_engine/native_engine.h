@@ -103,7 +103,6 @@ private:
 
 using CleanupCallback = void (*)(void*);
 using ThreadId = uint32_t;
-static constexpr uint32_t TASKPOOL_TYPE = 2;
 class NapiOptions;
 using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
