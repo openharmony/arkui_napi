@@ -903,10 +903,14 @@ TEST_F(ArkInteropTest, ScopeMT)
     std::thread threads[threadCount];
     for (int i = 0; i < threadCount; i++) {
         threads[i] = std::thread([] {
-            MockContext local(ARKTS_CreateEngineWithNewThread());
-            auto scope = ARKTS_OpenScope(local.GetEnv());
+            panda::RuntimeOption options;
+            auto vm = panda::JSNApi::CreateJSVM(options);
+            EXPECT_TRUE(vm);
+            auto env = P_CAST(vm, ARKTS_Env);
+            auto scope = ARKTS_OpenScope(env);
             EXPECT_TRUE(scope);
-            ARKTS_CloseScope(local.GetEnv(), scope);
+            ARKTS_CloseScope(env, scope);
+            panda::JSNApi::DestroyJSVM(vm);
         });
     }
     for (auto& thread : threads) {
