@@ -127,7 +127,7 @@ bool WorkerManager::IncrementThreadWorkerCount()
     std::lock_guard<std::mutex> lock(g_threadWorkerCountMutex);
     uint32_t maxWorkers = MAX_THREADWORKER_COUNT;
 #if defined(OHOS_PLATFORM)
-    maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", maxWorkers);
+    maxWorkers = OHOS::system::GetUintParameter<uint32_t>("persist.commonlibrary.maxworkers", maxWorkers);
 #endif
     if (g_threadWorkerCount >= maxWorkers) {
         HILOG_ERROR("reach MAX_THREADWORKER_COUNT");
@@ -191,7 +191,7 @@ bool WorkerManager::IncrementOldWorkerCount()
     std::lock_guard<std::mutex> lock(g_oldWorkerCountMutex);
     uint32_t maxWorkers = MAX_OLDWORKER_COUNT;
 #if defined(OHOS_PLATFORM)
-    maxWorkers = OHOS::system::GetIntParameter<int>("persist.commonlibrary.maxworkers", maxWorkers);
+    maxWorkers = OHOS::system::GetUintParameter<uint32_t>("persist.commonlibrary.maxworkers", maxWorkers);
 #endif
     if (g_oldWorkerCount >= maxWorkers) {
         HILOG_ERROR("reach MAX_OLDWORKER_COUNT");
