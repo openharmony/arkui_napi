@@ -1484,8 +1484,10 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
         exportObj = NapiLoadNativeModule(inputPath);
     }
 
-    if (!exportObj->IsObject(vm_)) {
-        ThrowException("ArkNativeEngine:NapiLoadModuleWithInfo failed.");
+    if (panda::JSNApi::HasPendingException(vm_)) {
+        HILOG_WARN("ArkNativeEngine:NapiLoadModuleWithInfo failed.");
+        panda::JSNApi::PrintExceptionInfo(vm_);
+        panda::JSNApi::GetAndClearUncaughtException(vm_); // clear exception here
         return JsValueFromLocalValue(scope.Escape(undefObj));
     }
     return JsValueFromLocalValue(scope.Escape(exportObj));

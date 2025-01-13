@@ -844,7 +844,7 @@ napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
         ThrowException("RunScriptForAbc: abc file is empty.");
         return nullptr;
     }
-    panda::JSNApi::Execute(vm, ami, entryPoint, false, true);
+    panda::JSNApi::Execute(vm, ami, entryPoint, false, panda::ecmascript::ExecuteTypes::NAPI);
     if (panda::JSNApi::HasPendingException(vm)) {
         HandleUncaughtException();
         return nullptr;
@@ -885,7 +885,7 @@ napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
         return nullptr;
     }
     HILOG_DEBUG("RunScriptInRestrictedThread: GetAmi: %{private}s", ami.c_str());
-    panda::JSNApi::Execute(vm, ami, PANDA_MAIN_FUNCTION, false, true);
+    panda::JSNApi::Execute(vm, ami, PANDA_MAIN_FUNCTION, false, panda::ecmascript::ExecuteTypes::NAPI);
     if (panda::JSNApi::HasPendingException(vm)) {
         HandleUncaughtException();
         return nullptr;
