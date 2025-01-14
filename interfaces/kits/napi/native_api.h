@@ -75,6 +75,7 @@ extern "C" {
 
 typedef void* (*napi_native_binding_detach_callback)(napi_env env, void* native_object, void* hint);
 typedef napi_value (*napi_native_binding_attach_callback)(napi_env env, void* native_object, void* hint);
+typedef void (*napi_detach_finalize_callback)(void* detachedObject, void* finalizeHint);
 
 NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result);
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result);
@@ -99,6 +100,10 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              napi_native_binding_attach_callback attach_cb,
                                                              void* native_object,
                                                              void* hint);
+NAPI_EXTERN napi_status napi_add_detached_finalizer(napi_env env,
+                                                    napi_value native_binding_object,
+                                                    napi_detach_finalize_callback detach_finalize_cb,
+                                                    void* finalize_hint);
 NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode);
 NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env);
 NAPI_EXTERN napi_status napi_create_ark_runtime(napi_env *env);

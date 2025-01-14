@@ -3887,7 +3887,7 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_
     return napi_status::napi_ok;
 }
 
-void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
+static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
 {
     if (detachData == nullptr || (engine == nullptr || object ==nullptr)) {
         HILOG_ERROR("DetachFuncCallback params has nullptr");
@@ -3898,7 +3898,7 @@ void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachDat
     return detachVal;
 }
 
-Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
+static Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, void* hint, void* attachData)
 {
     if (engine == nullptr) {
         HILOG_ERROR("AttachFuncCallback engine is nullptr");
@@ -3967,6 +3967,39 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
         return napi_clear_last_error(env);
     }
     return napi_status::napi_generic_failure;
+}
+
+NAPI_EXTERN napi_status napi_add_detached_finalizer(napi_env env,
+                                                    napi_value native_binding_object,
+                                                    napi_detach_finalize_callback detach_finalize_cb,
+                                                    void* finalize_hint)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, native_binding_object);
+    CHECK_ARG(env, detach_finalize_cb);
+
+    auto jsValue = LocalValueFromJsValue(native_binding_object);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+
+    RETURN_STATUS_IF_FALSE(env, jsValue->IsNativeBindingObject(vm), napi_object_expected);
+    Local<ObjectRef> nativeObject(jsValue);
+
+    Local<panda::NativePointerRef> nativeBindingPointer = nativeObject->GetNativeBindingPointer(vm);
+    if (!nativeBindingPointer->IsNativePointer(vm)) {
+        return napi_generic_failure;
+    }
+
+    auto info = static_cast<panda::JSNApi::NativeBindingInfo*>(nativeBindingPointer->Value());
+    if (info == nullptr) {
+        return napi_generic_failure;
+    }
+
+    info->detachedFinalizer = reinterpret_cast<void *>(detach_finalize_cb);
+    info->detachedHint = finalize_hint;
+
+    return napi_clear_last_error(env);
 }
 
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, std::string& result)
