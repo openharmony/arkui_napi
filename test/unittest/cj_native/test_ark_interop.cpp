@@ -42,8 +42,6 @@ struct ARKTS_ModuleCallbacks {
 namespace {
 ARKTS_Engine engine_ = nullptr;
 
-} // namespace
-
 class ArkInteropTest : public testing::Test {};
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiAsync001, TestSize.Level1)
@@ -175,6 +173,99 @@ HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
 
     ARKTS_DestroyEngine(engine);
 }
+
+TEST_F(ArkInteropTest, TestBigintFromInt64)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    EXPECT_TRUE(env);
+    {
+        int64_t origins[] {
+            0x123'4567'8945,
+            -0x123'4567'8945,
+            0x7FFF'FFFF'FFFF'FFFF,
+            -0x7FFF'FFFF'FFFF'FFFF,
+        };
+        constexpr auto arrSize = std::size(origins);
+        ARKTS_Value values[arrSize];
+        for (auto i = 0; i < arrSize; i++) {
+            values[i] = ARKTS_CreateBigInt(env, origins[i]);
+            EXPECT_TRUE(ARKTS_IsBigInt(env, values[i]));
+            EXPECT_EQ(ARKTS_GetValueType(env, values[i]), N_BIGINT);
+            ARKTS_BigIntGetByteSize(env, values[i]);
+        }
+    }
+}
+
+TEST_F(ArkInteropTest, TestBigint16Bytes)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50
+    };
+    bool isNegative = false;
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), std::size(origin));
+    uint8_t received[std::size(origin)];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, std::size(origin), received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i]);
+    }
+}
+
+TEST_F(ArkInteropTest, TestBigint28Bytes)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50,
+        1, 2, 3, 4, 5, 6, 7, 8,
+        9, 10, 20, 30,
+    };
+    bool isNegative = false;
+    constexpr int expectSize = 32;
+    // bigint words are 8 bytes aligned, received 32 bytes, and lower 4 bytes would be filled with 0.
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), expectSize);
+    uint8_t received[expectSize];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, expectSize, received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i + expectSize - std::size(origin)]);
+    }
+}
+
+TEST_F(ArkInteropTest, TestBigint32Bytes)
+{
+    ARKTS_Env env = ARKTS_GetContext(engine_);
+    EXPECT_TRUE(env);
+    uint8_t origin[] {
+        0, 10, 20, 30, 40, 50, 60, 70,
+        80, 90, 70, 50, 20, 30, 40, 50,
+        1, 2, 3, 4, 5, 6, 7, 8,
+        9, 10, 20, 30, 40, 50, 60, 70,
+    };
+    bool isNegative = false;
+    auto value = ARKTS_CreateBigIntWithBytes(env, isNegative, std::size(origin), origin);
+    EXPECT_TRUE(ARKTS_IsBigInt(env, value));
+    EXPECT_EQ(ARKTS_GetValueType(env, value), N_BIGINT);
+    EXPECT_EQ(ARKTS_BigIntGetByteSize(env, value), std::size(origin));
+    uint8_t received[std::size(origin)];
+    ARKTS_BigIntReadBytes(env, value, &isNegative, std::size(origin), received);
+    EXPECT_FALSE(isNegative);
+    for (auto i = 0; i < std::size(origin); i++) {
+        EXPECT_EQ(origin[i], received[i]);
+    }
+}
+
+} // namespace
 
 int main(int argc, char** argv)
 {
