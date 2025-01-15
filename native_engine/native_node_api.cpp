@@ -123,9 +123,9 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     (void)asyncResource;
     (void)asyncResourceName;
     char name[64] = {0}; // 64:NAME_BUFFER_SIZE
-    if (asyncResourceName->IsString(ecmaVm)) {
+    if (!(asyncResourceName->IsNull() || asyncResourceName->IsUndefined())) {
         panda::Local<panda::StringRef> nativeString(asyncResourceName);
-        uint32_t copied = nativeString->WriteUtf8(ecmaVm, name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
+        int copied = nativeString->WriteUtf8(ecmaVm, name, 63, true) - 1;  // 63:NAME_BUFFER_SIZE
         name[copied] = '\0';
     }
     auto asyncWork  = new NativeAsyncWork(engine, asyncExecute, asyncComplete, name, data);
