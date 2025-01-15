@@ -38,7 +38,7 @@
 #include "native_property.h"
 #include "reference_manager/native_reference_manager.h"
 #include "utils/macros.h"
-#include "utils/data_protect.h"
+#include "utils/data_protector.h"
 
 namespace panda::ecmascript {
     class EcmaVM;
@@ -609,7 +609,7 @@ private:
 
     // the old worker api use before api9, the new worker api start with api9
     enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD, NATIVE_THREAD };
-    DataProtect jsThreadType_ {DataProtect(uintptr_t(JSThreadType::MAIN_THREAD))};
+    DataProtector jsThreadType_ {DataProtector(uintptr_t(JSThreadType::MAIN_THREAD))};
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
 #if !defined(PREVIEW)
