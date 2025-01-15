@@ -37,7 +37,7 @@ struct ARKTS_Loop_ {
         STOPPED,
     };
     uv_loop_t* loop;
-    uv_work_t request;
+    uv_async_t asyncReq;
     Status status;
     std::vector<std::function<void ()>> callbacks;
     std::mutex mutex;
@@ -156,9 +156,15 @@ void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId)
     ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, reinterpret_cast<void*>(callbackId));
 }
 
-ARKTS_Loop_::ARKTS_Loop_(uv_loop_t* loop) : loop(loop), request(), status(IDLE)
+ARKTS_Loop_::ARKTS_Loop_(uv_loop_t* loop) : loop(loop), asyncReq(), status(IDLE)
 {
-    request.data = this;
+    uv_async_init(loop, &asyncReq, [](uv_async_t* work) {
+        auto loop = static_cast<ARKTS_Loop_*>(work->data);
+        if (loop) {
+            loop->DrainTasks();
+        }
+    });
+    asyncReq.data = this;
 }
 
 ARKTS_Loop_::~ARKTS_Loop_()
@@ -193,12 +199,7 @@ void ARKTS_Loop_::PostTask(std::function<void()> task)
     if (status == IDLE) {
         int tryTimes = 3;
         while (tryTimes--) {
-            auto ret = uv_queue_work(loop, &request, [](uv_work_t*) {}, [](uv_work_t* work, int /*status*/) {
-                auto loop = static_cast<ARKTS_Loop_*>(work->data);
-                if (loop) {
-                    loop->DrainTasks();
-                }
-            });
+            auto ret = uv_async_send(&asyncReq);
             if (ret == 0) {
                 status = REQUESTING;
                 break;

@@ -181,10 +181,12 @@ public:
     template<class T, class... Args>
     static sptr<T> Create(Args... args)
     {
-        auto ref = sptr<T>(new (std::nothrow) T(std::forward<Args>(args)...));
-        if (ref) {
-            FFIDataManager::GetInstance()->StoreFFIData(ref);
+        auto rawPtr = new (std::nothrow) T(std::forward<Args>(args)...);
+        if (!rawPtr) {
+            return nullptr;
         }
+        sptr<T> ref = rawPtr;
+        FFIDataManager::GetInstance()->StoreFFIData(ref);
         return ref;
     }
 
