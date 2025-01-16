@@ -27,10 +27,6 @@ ohos_prebuilt_shared_library("libv8") {
   source = "$target_gen_dir/libv8_shared.so"
   subsystem_name = "arkui"
   part_name = "napi"
-
-  install_enable = true
-  install_images = [ "system" ]
-  innerapi_tags = [ "ndk" ]
 }
 
 action("copy_v8") {
