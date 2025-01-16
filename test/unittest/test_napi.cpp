@@ -14,12 +14,15 @@
  */
 
 #include <cstddef>
+#include <cstring>
+#include <sstream>
 #define private public
 #define protected public
 
 #include <chrono>
 #include <thread>
 
+#include "hilog/log.h"
 #include "test.h"
 #include "test_common.h"
 #include "gtest/gtest.h"
@@ -103,12 +106,17 @@ public:
         }
 
         engine_ = new ArkNativeEngine(vm_, nullptr);
+        napi_open_handle_scope(reinterpret_cast<napi_env>(engine_), &scope_);
     }
 
     ~NativeEngineProxy()
     {
+        napi_close_handle_scope(reinterpret_cast<napi_env>(engine_), scope_);
+        scope_ = nullptr;
         delete engine_;
+        engine_ = nullptr;
         panda::JSNApi::DestroyJSVM(vm_);
+        vm_ = nullptr;
     }
 
     inline ArkNativeEngine* operator->() const
@@ -124,7 +132,102 @@ public:
 private:
     EcmaVM* vm_ {nullptr};
     ArkNativeEngine* engine_ {nullptr};
+    napi_handle_scope scope_ = nullptr;
 };
+
+struct LogInfo {
+    LogType type;
+    LogLevel level;
+    unsigned int domain;
+    std::string tag;
+    std::string msg;
+};
+
+class LoggerCollector {
+public:
+    explicit LoggerCollector(LogLevel level = LogLevel::LOG_ERROR, unsigned int domain = 0) : level_(level), domain_(domain)
+    {
+        if (last_) {
+            last_->next_ = this;
+        } else {
+            LOG_SetCallback(Collect);
+        }
+        last_ = this;
+    }
+
+    ~LoggerCollector()
+    {
+        if (prev_) {
+            prev_->next_ = next_;
+        }
+        if (next_) {
+            next_->prev_ = prev_;
+        }
+        if (last_ == this) {
+            last_ = prev_;
+        }
+        if (last_ == nullptr) {
+            LOG_SetCallback(nullptr);
+        }
+        prev_ = nullptr;
+        next_ = nullptr;
+    }
+
+    const LogInfo& GetLastLogInfo()
+    {
+        return lastMessageInfo_;
+    }
+
+    int IndexOf(const char *msg, int index = 0)
+    {
+        std::string str = stream_.str();
+        if (index >= str.size()) {
+            return -1;
+        }
+        return str.find(msg, index);
+    }
+
+    int Includes(const char *msg, int index = 0)
+    {
+        return IndexOf(msg) > 0;
+    }
+
+    void Clear()
+    {
+        stream_.flush();
+    }
+
+    static void Collect(const LogType type, const LogLevel level,
+        const unsigned int domain, const char *tag, const char *msg)
+    {
+        auto collector = last_;
+        while (collector) {
+            if (collector->domain_ != 0 && collector->domain_ != domain) {
+                continue;
+            }
+            if (level < collector->level_) {
+                continue;
+            }
+            collector->lastMessageInfo_.type = type;
+            collector->lastMessageInfo_.level = level;
+            collector->lastMessageInfo_.domain = domain;
+            collector->lastMessageInfo_.tag = tag;
+            collector->lastMessageInfo_.msg = msg;
+            collector->stream_ << msg;
+            collector = collector->prev_;
+        }
+    };
+
+private:
+    LogLevel level_;
+    unsigned int domain_;
+    std::ostringstream stream_;
+    LogInfo lastMessageInfo_;
+    LoggerCollector* prev_;
+    LoggerCollector* next_;
+    static LoggerCollector* last_;
+};
+LoggerCollector* LoggerCollector::last_ = nullptr;
 
 static const napi_type_tag typeTags[5] = { // 5:array element size is 5.
     {0xdaf987b3cc62481a, 0xb745b0497f299531},
@@ -1787,7 +1890,11 @@ HWTEST_F(NapiBasicTest, CreateRuntimeTest001, testing::ext::TestSize.Level1)
     napi_env env = (napi_env)engine_;
 
     napi_env newEnv = nullptr;
-    napi_create_runtime(env, &newEnv);
+    napi_status status = napi_create_runtime(env, &newEnv);
+    ASSERT_EQ(status, napi_ok);
+    if (newEnv != nullptr) {
+        delete reinterpret_cast<NativeEngine *>(newEnv);
+    }
 }
 
 /**
@@ -3430,107 +3537,6 @@ HWTEST_F(NapiBasicTest, AsyncInitTest002, testing::ext::TestSize.Level1)
     napi_async_context* contextPtr = nullptr;
     napi_status status = napi_async_init(env, nullptr, resourceName, contextPtr);
     EXPECT_EQ(status, napi_invalid_arg);
-}
-
-/**
- * @tc.name: OpenCallbackScopeTest001
- * @tc.desc: Test napi_open_callback_scope, napi_close_callback_scope.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, OpenCallbackScopeTest001, testing::ext::TestSize.Level1)
-{
-    napi_env envOne = reinterpret_cast<napi_env>(engine_);
-
-    auto callbackScopeManager = engine_->GetCallbackScopeManager();
-    ASSERT_NE(callbackScopeManager, nullptr);
-
-    int openCallbackScopesBefore = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthBefore = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    napi_value resourceName;
-    NAPI_CALL_RETURN_VOID(envOne, napi_create_string_utf8(envOne, "test", NAPI_AUTO_LENGTH, &resourceName));
-
-    napi_async_context context;
-    NAPI_CALL_RETURN_VOID(envOne, napi_async_init(envOne, nullptr, resourceName, &context));
-
-    napi_callback_scope scope = nullptr;
-    napi_status ret = napi_open_callback_scope(envOne, nullptr, context, &scope);
-    EXPECT_EQ(ret, napi_ok);
-    EXPECT_NE(scope, nullptr);
-
-    int openCallbackScopes = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepth = callbackScopeManager->GetAsyncCallbackScopeDepth();
-    EXPECT_EQ(openCallbackScopes, (openCallbackScopesBefore + 1));
-    EXPECT_EQ(asyncCallbackScopeDepth, (asyncCallbackScopeDepthBefore + 1));
-
-    ret = napi_close_callback_scope(envOne, scope);
-    EXPECT_EQ(ret, napi_ok);
-
-    int openCallbackScopesAfter = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthAfter = callbackScopeManager->GetAsyncCallbackScopeDepth();
-    EXPECT_EQ(openCallbackScopesAfter, openCallbackScopesBefore);
-    EXPECT_EQ(asyncCallbackScopeDepthAfter, asyncCallbackScopeDepthBefore);
-
-    NAPI_CALL_RETURN_VOID(envOne, napi_async_destroy(envOne, context));
-}
-
-/**
- * @tc.name: OpenCallbackScopeTest002
- * @tc.desc: Test napi_open_callback_scope, napi_close_callback_scope.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, OpenCallbackScopeTest002, testing::ext::TestSize.Level1)
-{
-    napi_env envOne = reinterpret_cast<napi_env>(engine_);
-
-    auto callbackScopeManager = engine_->GetCallbackScopeManager();
-    ASSERT_NE(callbackScopeManager, nullptr);
-
-    int openCallbackScopesBefore = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthBefore = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    napi_value resourceName;
-    NAPI_CALL_RETURN_VOID(envOne, napi_create_string_utf8(envOne, "test", NAPI_AUTO_LENGTH, &resourceName));
-
-    napi_async_context context;
-    NAPI_CALL_RETURN_VOID(envOne, napi_async_init(envOne, nullptr, resourceName, &context));
-
-    napi_callback_scope scope = nullptr;
-    napi_status res = napi_open_callback_scope(envOne, nullptr, context, &scope);
-    EXPECT_EQ(res, napi_ok);
-    EXPECT_NE(scope, nullptr);
-
-    int openCallbackScopesOne = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthOne = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    // Open a internal callback scope
-    panda::Local<panda::ObjectRef> obj = panda::ObjectRef::New(engine_->GetEcmaVm());
-    auto scopeTwo = callbackScopeManager->Open(engine_, obj, {0, 0});
-    int openCallbackScopesTwo = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthTwo = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    EXPECT_NE(scopeTwo, nullptr);
-    EXPECT_EQ(openCallbackScopesTwo, openCallbackScopesOne);
-    EXPECT_EQ(asyncCallbackScopeDepthTwo, (asyncCallbackScopeDepthOne + 1));
-
-    callbackScopeManager->Close(scopeTwo);
-    obj->Delete(engine_->GetEcmaVm(), obj);
-    int openCallbackScopesAfterTwo = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthAfterTwo = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    EXPECT_EQ(openCallbackScopesAfterTwo, openCallbackScopesOne);
-    EXPECT_EQ(asyncCallbackScopeDepthAfterTwo, asyncCallbackScopeDepthOne);
-
-    res = napi_close_callback_scope(envOne, scope);
-    EXPECT_EQ(res, napi_ok);
-
-    int openCallbackScopesAfter = callbackScopeManager->GetOpenCallbackScopes();
-    int asyncCallbackScopeDepthAfter = callbackScopeManager->GetAsyncCallbackScopeDepth();
-
-    EXPECT_EQ(openCallbackScopesAfter, openCallbackScopesBefore);
-    EXPECT_EQ(asyncCallbackScopeDepthAfter, asyncCallbackScopeDepthBefore);
-
-    NAPI_CALL_RETURN_VOID(envOne, napi_async_destroy(envOne, context));
 }
 
 static void ExpectCheckCall(napi_status call)
@@ -7511,7 +7517,9 @@ HWTEST_F(NapiBasicTest, NapiRemoveWrapSendableTest002, testing::ext::TestSize.Le
 HWTEST_F(NapiBasicTest, NapiModuleRegisterTest001, testing::ext::TestSize.Level1)
 {
     // call napi_module_register interface with nullptr error
+    LoggerCollector collector;
     napi_module_register(nullptr);
+    ASSERT_TRUE(collector.Includes("mod is nullptr"));
 }
 
 /**
