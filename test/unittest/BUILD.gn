@@ -13,9 +13,8 @@
 
 import("//foundation/arkui/napi/napi.gni")
 
+import("//build/config/components/ace_engine/ace_gen_obj.gni")
 import("//build/test.gni")
-import("//foundation/ability/form_fwk/form_fwk.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/arkui/napi/test/unittest/ut.gni")
 
 ohos_unittest("test_ark_unittest_base") {
@@ -33,13 +32,12 @@ ohos_unittest("test_ark_unittest_base") {
 
   defines = [ "NAPI_TEST" ]
 
-  deps = ark_deps
-
-  deps += [ "../..:ace_napi" ]
+  deps = [ "../..:ace_napi" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
+    "eventhandler:libeventhandler",
   ]
 
   external_deps += [ "hilog:libhilog" ]
@@ -60,16 +58,15 @@ ohos_unittest("test_ark_unittest_threadsafe") {
 
   defines = [ "NAPI_TEST" ]
 
-  deps = ark_deps
-  deps += [ "../..:ace_napi" ]
+  deps = [ "../..:ace_napi" ]
 
-  external_deps = [ "bounds_checking_function:libsec_shared" ]
-
-  external_deps += [
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "ets_runtime:libark_jsruntime",
     "eventhandler:libeventhandler",
     "hilog:libhilog",
   ]
-  external_deps += [ "ets_runtime:libark_jsruntime" ]
 }
 
 ohos_unittest("test_ark_api_allowlist") {
@@ -86,14 +83,15 @@ ohos_unittest("test_ark_api_allowlist") {
 
   defines = [ "NAPI_TEST" ]
 
-  deps = ark_deps
-  deps += [ "../..:ace_napi" ]
-  deps += [ "${form_render_service_path}/..:formrender" ]
+  deps = [ "../..:ace_napi" ]
 
-  external_deps = [ "bounds_checking_function:libsec_shared" ]
-
-  external_deps += [ "hilog:libhilog" ]
-  external_deps += [ "ets_runtime:libark_jsruntime" ]
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "ets_runtime:libark_jsruntime",
+    "eventhandler:libeventhandler",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("test_worker_manager") {
@@ -130,44 +128,46 @@ group("unittest") {
   }
 }
 
-#jerry tdd test for phone running
-group("jerry_tdd_test_run") {
-  testonly = true
-  deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_test" ]
-}
+if (!ohos_indep_compiler_enable) {
+  #jerry tdd test for phone running
+  group("jerry_tdd_test_run") {
+    testonly = true
+    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_test" ]
+  }
 
-#jerry es2015 test for phone running
-group("jerry_jstest_es2015") {
-  testonly = true
-  deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es2015" ]
-}
+  #jerry es2015 test for phone running
+  group("jerry_jstest_es2015") {
+    testonly = true
+    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es2015" ]
+  }
 
-#jerry es2015 test for host running
-group("jerry_host_jstest_es2015") {
-  testonly = true
-  deps = [
-    "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es2015",
-    "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
-  ]
-}
+  #jerry es2015 test for host running
+  group("jerry_host_jstest_es2015") {
+    testonly = true
+    deps = [
+      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es2015",
+      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
+    ]
+  }
 
-#jerry es5.1 test for phone running
-group("jerry_jstest_es5.1") {
-  testonly = true
-  deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es5.1" ]
-}
+  #jerry es5.1 test for phone running
+  group("jerry_jstest_es5.1") {
+    testonly = true
+    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es5.1" ]
+  }
 
-#jerry es5.1 test for host running
-group("jerry_host_jstest_es5.1") {
-  testonly = true
-  deps = [
-    "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es5.1",
-    "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
-  ]
-}
+  #jerry es5.1 test for host running
+  group("jerry_host_jstest_es5.1") {
+    testonly = true
+    deps = [
+      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es5.1",
+      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
+    ]
+  }
 
-#jerry tdd test for host running
-group("jerry_tdd_host_test_run") {
-  testonly = true
-  deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test" ]
+  #jerry tdd test for host running
+  group("jerry_tdd_host_test_run") {
+    testonly = true
+    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test" ]
+  }
 }
