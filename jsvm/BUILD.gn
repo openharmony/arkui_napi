@@ -13,6 +13,7 @@
 
 import("//build/config/clang/clang.gni")
 import("//build/ohos.gni")
+import("jsvm.gni")
 
 ohos_prebuilt_shared_library("libv8") {
   deps = [ ":copy_v8" ]
@@ -47,7 +48,7 @@ ohos_prebuilt_shared_library("libjsvm") {
     ":libv8",
   ]
 
-  if (is_asan && use_hwasan) {
+  if (support_hwasan && is_asan && use_hwasan) {
     source = "$target_gen_dir/asan/libjsvm.so"
   } else {
     source = "$target_gen_dir/libjsvm.so"
@@ -75,7 +76,7 @@ action("build_libjsvm") {
   deps = [ "//third_party/musl:musl_all" ]
   script = "build_jsvm.sh"
   sources = []
-  if (is_asan && use_hwasan) {
+  if (support_hwasan && is_asan && use_hwasan) {
     outputs = [ "$target_gen_dir/asan/libjsvm.so" ]
   } else {
     outputs = [ "$target_gen_dir/libjsvm.so" ]
@@ -96,7 +97,7 @@ action("build_libjsvm") {
     "--is_asan",
     "$is_asan",
     "--use_hwasan",
-    "$use_hwasan",
+    "$support_hwasan && $use_hwasan",
   ]
   if (use_clang_coverage) {
     args += [
