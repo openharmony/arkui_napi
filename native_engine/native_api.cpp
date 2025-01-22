@@ -4230,6 +4230,19 @@ NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, error);
+
+    auto nativeValue = LocalValueFromJsValue(error);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+
+    panda::JSNApi::ThrowException(vm, nativeValue);
+    return napi_clear_last_error(env);
+}
+
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
     [[maybe_unused]] void* inputIface,
