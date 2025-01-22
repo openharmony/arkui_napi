@@ -33,6 +33,10 @@ config("ace_napi_config") {
     defines += [ "PREVIEW" ]
   }
 
+  if ("${target_platform}" == "watch" || is_wearable_product) {
+    defines += [ "DISABLE_SHORT_IDLE_CHECK" ]
+  }
+
   if (is_arkui_x || ark_standalone_build) {
     include_dirs += [
       "//third_party/node/src",
