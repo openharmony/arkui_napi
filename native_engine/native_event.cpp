@@ -309,7 +309,12 @@ napi_status NativeEvent::SendEventByUv(const std::function<void()> &task, uint64
         HILOG_ERROR("malloc failed!");
         return napi_status::napi_generic_failure;
     }
-    cbw->cb = task;
+    engine_->IncreaseWaitingRequestCounter();
+    auto incCountTask = [eng = engine_, task]() {
+        eng->DecreaseWaitingRequestCounter();
+        task();
+    };
+    cbw->cb = incCountTask;
     cbw->handleId.store(eventId, std::memory_order_release);
     napi_status status = SendConvertStatus2NapiStatus(reinterpret_cast<void *>(cbw), NATIVE_TSFUNC_NONBLOCKING);
     *handleId = eventId;
@@ -320,6 +325,7 @@ napi_status NativeEvent::SendEventByUv(const std::function<void()> &task, uint64
         HILOG_ERROR("send event failed(%{public}d)", status);
         delete cbw;
         *handleId = 0;
+        engine_->DecreaseWaitingRequestCounter();
     }
     return status;
 }
@@ -371,6 +377,7 @@ SafeAsyncCode NativeEvent::UvCancelEvent(uint64_t handleId)
         }
         if (cbw->handleId.compare_exchange_strong(handleId, INVALID_EVENT_ID,
                                                   std::memory_order_acq_rel, std::memory_order_relaxed)) {
+            engine_->DecreaseWaitingRequestCounter();
             return SafeAsyncCode::SAFE_ASYNC_OK;
         }
         HILOG_WARN("UvCancelEvent false %{public}s", std::to_string(handleId).c_str());
