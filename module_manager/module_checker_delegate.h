@@ -36,7 +36,7 @@ public:
      * @return false The module cannot be loaded
      */
     virtual bool CheckModuleLoadable(const char* moduleName,
-        std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker) = 0;
+        std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, bool isAppModule) = 0;
 
     /**
      * @brief Whether loadable rules only work for disk case

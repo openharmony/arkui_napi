@@ -146,7 +146,7 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest001, testing::ext::TestSi
     napi_env env = reinterpret_cast<napi_env>(arkNativeEngine);
     std::unique_ptr<ApiAllowListChecker> apiAllowListFilter = nullptr;
     std::shared_ptr<FormModuleChecker> formChecker = std::make_shared<FormModuleChecker>();
-    formChecker->CheckModuleLoadable("i18n", apiAllowListFilter);
+    formChecker->CheckModuleLoadable("i18n", apiAllowListFilter, true);
 
     napi_property_descriptor systemProperties[] = {
         DECLARE_NAPI_FUNCTION("getSystemLanguage", TestFunction),
@@ -198,7 +198,7 @@ HWTEST_F(ArkApiAllowlistTest, CopyPropertyApiFilterTest002, testing::ext::TestSi
     napi_env env = reinterpret_cast<napi_env>(arkNativeEngine);
     std::unique_ptr<ApiAllowListChecker> apiAllowListFilter = nullptr;
     std::shared_ptr<FormModuleChecker> formChecker = std::make_shared<FormModuleChecker>();
-    formChecker->CheckModuleLoadable("intl", apiAllowListFilter);
+    formChecker->CheckModuleLoadable("intl", apiAllowListFilter, true);
 
     napi_property_descriptor l2Properties[] = {
         DECLARE_NAPI_FUNCTION("function001", TestFunction),

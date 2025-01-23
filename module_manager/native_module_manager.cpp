@@ -553,12 +553,18 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         return nullptr;
     }
 
+    std::string relativePathStr(relativePath);
+    if (relativePathStr.find("..") != std::string::npos) {
+        HILOG_ERROR("get relativePath error,relativePath contains .., moduleName:%{public}s", moduleName);
+        return nullptr;
+    }
+
     HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
         moduleName, path, relativePath);
 
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
-        !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
+        !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
         HILOG_ERROR("%{public}s", errInfo.c_str());
         return nullptr;
@@ -1031,7 +1037,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
 {
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
-    if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker)) {
+    if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
         HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
