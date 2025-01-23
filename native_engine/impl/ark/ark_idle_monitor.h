@@ -195,6 +195,7 @@ private:
     void CheckWorkerEnvQueue();
     bool CheckWorkerEnvQueueAllInIdle();
     void StopIdleMonitorTimerTask();
+    void CheckShortIdleTask(int64_t timestamp, int idleTime);
 
     static std::shared_ptr<ArkIdleMonitor> instance_;
 
