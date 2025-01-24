@@ -144,6 +144,13 @@ ohos_source_set("ace_napi_static") {
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
+  if (ark_standalone_build && (is_debug || is_fastverify)) {
+    cflags_cc += [
+      "-ggdb3",
+      "-gdwarf-4",
+      "-fno-omit-frame-pointer",
+    ]
+  }
 
   if (is_ohos && is_clang && defined(enhanced_opt) && enhanced_opt) {
     if (napi_feature_enable_pgo) {
