@@ -125,10 +125,13 @@ public:
         if (existed != nullptr) {
             return sptr<T>(existed.GetRefPtr()->template DynamicCast<T>());
         }
-        auto ref = sptr<T>(new (std::nothrow) T(id));
-        if (ref) {
-            manager->StoreRemoteData(ref);
+        auto rawRef = new (std::nothrow) T(id);
+        if (!rawRef) {
+            return nullptr;
         }
+        sptr<T> ref(rawRef);
+        manager->StoreRemoteData(ref);
+
         return ref;
     }
 
