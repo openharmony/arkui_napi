@@ -232,7 +232,7 @@ bool NativeEngine::ReinitUVLoop()
     uv_async_init(loop_, &uvAsync_, nullptr);
     uv_sem_init(&uvSem_, 0);
     NativeEvent::CreateDefaultFunction(this, defaultFunc_, eventMutex_);
-
+    panda::JSNApi::NotifyEnvInitialized(const_cast<EcmaVM*>(GetEcmaVm()));
     return true;
 }
 
