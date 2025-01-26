@@ -70,6 +70,8 @@ ohos_unittest("test_ark_unittest_threadsafe") {
     "hilog:libhilog",
   ]
   external_deps += [ "ets_runtime:libark_jsruntime" ]
+
+  defines += [ "ENABLE_EVENT_HANDLER" ]
 }
 
 ohos_unittest("test_unittest_sendevent") {
