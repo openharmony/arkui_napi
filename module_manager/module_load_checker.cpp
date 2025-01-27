@@ -18,7 +18,7 @@
 #include "utils/log.h"
 
 bool ModuleLoadChecker::CheckModuleLoadable(
-    const char* moduleName, std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker)
+    const char* moduleName, std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, bool isAppModule)
 {
     std::shared_lock lock(moduleCheckerDelegateMutex_);
     apiAllowListChecker = nullptr;
@@ -26,7 +26,7 @@ bool ModuleLoadChecker::CheckModuleLoadable(
         HILOG_DEBUG("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
     }
-    return moduleCheckerDelegate_->CheckModuleLoadable(moduleName, apiAllowListChecker);
+    return moduleCheckerDelegate_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule);
 }
 
 bool ModuleLoadChecker::DiskCheckOnly()
