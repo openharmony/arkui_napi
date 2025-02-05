@@ -1842,6 +1842,54 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     return GET_RETURN_STATUS(env);
 }
 
+// Methods to work with external data objects, support pass native_object size and finalize_cb async execute or not
+NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
+                                          napi_value js_object,
+                                          void* native_object,
+                                          napi_finalize finalize_cb,
+                                          bool async_finalizer,
+                                          void* finalize_hint,
+                                          size_t native_binding_size,
+                                          napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    NativeReference* ref = nullptr;
+    if (!async_finalizer) {
+        if (reference != nullptr) {
+            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint,
+                                          native_binding_size);
+            *reference = ref;
+        } else {
+            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint,
+                                          native_binding_size);
+        }
+    } else {
+        if (reference != nullptr) {
+            ref = engine->CreateAsyncReference(js_object, 1, false, callback, native_object, finalize_hint);
+            *reference = ref;
+        } else {
+            ref = engine->CreateAsyncReference(js_object, 0, true, callback, native_object, finalize_hint);
+        }
+    }
+    object->SetNativePointerFieldCount(vm, 1);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, native_binding_size);
+    PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
 // Ensure thread safety! Async finalizer will be called on the async thread.
 NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
                                                   napi_value js_object,
