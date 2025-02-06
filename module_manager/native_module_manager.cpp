@@ -1248,10 +1248,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     for (NativeModule* temp = headNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
             || !strcasecmp(temp->name, moduleName)) {
-            if (strcmp(temp->name, moduleName)) {
-                HILOG_WARN("moduleName '%{public}s' seems not match plugin's name '%{public}s'",
-                           moduleName, temp->name);
-            }
             int label = 0;
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
             while (label < NATIVE_PATH_NUMBER && strcmp(temp->systemFilePath, nativeModulePath[label])) {
