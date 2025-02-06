@@ -20,7 +20,11 @@
 #include "napi/native_node_api.h"
 #include "native_engine.h"
 
-static constexpr const char DEFAULT_NAME[] = "defaultName";
+static char g_defaultName[] = "defaultName";
+static char g_defaultData[] = "testData";
+static void Task(void* data)
+{
+}
 
 class NapiSendEventTest : public NativeEngineTest {
 public:
@@ -65,9 +69,9 @@ HWTEST_F(NapiSendEventTest, SendEventTest003, testing::ext::TestSize.Level1)
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
     const std::function<void()> cb = []() -> void {};
-    auto status = napi_send_event(env, cb, static_cast<napi_event_priority>(-1));
+    auto status = napi_send_event(env, cb, napi_event_priority(napi_eprio_vip - 1));
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
-    status = napi_send_event(env, cb, static_cast<napi_event_priority>(9));
+    status = napi_send_event(env, cb, napi_event_priority(napi_eprio_idle + 1));
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
 }
 
@@ -116,16 +120,14 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent001, testing::ext::TestSize.Level1
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
     uint64_t handleId = 0;
-    char data[] = "test data";
-    auto task = [](void* data) {};
-    auto status = napi_send_cancelable_event(nullptr, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(nullptr, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
-    status = napi_send_cancelable_event(env, nullptr, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    status = napi_send_cancelable_event(env, nullptr, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
-    status = napi_send_cancelable_event(env, task, data, napi_event_priority(napi_eprio_idle + 1),
-                                            &handleId, DEFAULT_NAME);
+    status = napi_send_cancelable_event(env, Task, g_defaultData, napi_event_priority(napi_eprio_idle + 1),
+                                            &handleId, g_defaultName);
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
-    status = napi_send_cancelable_event(env, task, data, napi_eprio_high, nullptr, DEFAULT_NAME);
+    status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, nullptr, g_defaultName);
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
 }
 
@@ -138,8 +140,6 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent002, testing::ext::TestSize.Level1
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
-    auto task = [](void* data) {};
-    char data[] = "test data";
     uint64_t handleId = 0;
     if (eventHandler_ == nullptr) {
         auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
@@ -147,7 +147,7 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent002, testing::ext::TestSize.Level1
         eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
         ASSERT_NE(eventHandler_, nullptr);
     }
-    auto status = napi_send_cancelable_event(env, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     ASSERT_EQ(status, napi_status::napi_ok);
 }
 
@@ -160,11 +160,10 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent003, testing::ext::TestSize.Level1
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
-    auto task = [](void* data) {};
-    char data[] = "test data";
+    
     uint64_t handleId = 0;
     eventHandler_ = nullptr;
-    auto status = napi_send_cancelable_event(env, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     ASSERT_EQ(status, napi_status::napi_ok);
 }
 
@@ -178,14 +177,12 @@ HWTEST_F(NapiSendEventTest, CancelEvent001, testing::ext::TestSize.Level1)
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
     uint64_t handleId = 0;
-    char data[] = "test data";
-    auto task = [](void* data) {};
-    auto result = napi_cancel_event(env, handleId, DEFAULT_NAME);
+    auto result = napi_cancel_event(env, handleId, g_defaultName);
     ASSERT_EQ(result, napi_status::napi_invalid_arg);
-    auto status = napi_send_cancelable_event(env, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     ASSERT_NE(handleId, 0);
     ASSERT_EQ(status, napi_status::napi_ok);
-    result = napi_cancel_event(nullptr, handleId, DEFAULT_NAME);
+    result = napi_cancel_event(nullptr, handleId, g_defaultName);
     ASSERT_EQ(result, napi_status::napi_invalid_arg);
 }
 
@@ -198,8 +195,6 @@ HWTEST_F(NapiSendEventTest, CancelEvent002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
-    auto task = [](void* data) {};
-    char data[] = "test data";
     uint64_t handleId = 0;
     if (eventHandler_ == nullptr) {
         auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
@@ -207,10 +202,10 @@ HWTEST_F(NapiSendEventTest, CancelEvent002, testing::ext::TestSize.Level1)
         eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
         ASSERT_NE(eventHandler_, nullptr);
     }
-    auto status = napi_send_cancelable_event(env, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     ASSERT_NE(handleId, 0);
     ASSERT_EQ(status, napi_status::napi_ok);
-    auto result = napi_cancel_event(env, handleId, DEFAULT_NAME);
+    auto result = napi_cancel_event(env, handleId, g_defaultName);
     ASSERT_EQ(result, napi_status::napi_ok);
 }
 
@@ -223,13 +218,11 @@ HWTEST_F(NapiSendEventTest, CancelEvent003, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
-    auto task = [](void* data) {};
-    char data[] = "test data";
     uint64_t handleId = 0;
     eventHandler_ = nullptr;
-    auto status = napi_send_cancelable_event(env, task, data, napi_eprio_high, &handleId, DEFAULT_NAME);
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
     ASSERT_EQ(status, napi_status::napi_ok);
     ASSERT_NE(handleId, 0);
-    auto result = napi_cancel_event(env, handleId, DEFAULT_NAME);
+    auto result = napi_cancel_event(env, handleId, g_defaultName);
     ASSERT_EQ(result, napi_status::napi_ok);
 }
