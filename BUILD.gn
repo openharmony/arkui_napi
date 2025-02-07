@@ -33,6 +33,10 @@ config("ace_napi_config") {
     defines += [ "PREVIEW" ]
   }
 
+  if ("${target_platform}" == "watch" || is_wearable_product) {
+    defines += [ "DISABLE_SHORT_IDLE_CHECK" ]
+  }
+
   if (is_arkui_x || ark_standalone_build) {
     include_dirs += [
       "//third_party/node/src",
@@ -86,12 +90,6 @@ config("ace_napi_config") {
     defines += [ "IOS_PLATFORM" ]
   } else if (is_arkui_x && target_os == "android") {
     defines += [ "ANDROID_PLATFORM" ]
-  }
-  if (!(defined(is_arkui_x) && is_arkui_x) && is_ohos && is_standard_system &&
-      target_cpu == "arm64" && !is_emulator && defined(global_parts_info) &&
-      defined(global_parts_info.security_code_signature)) {
-    cflags_cc += [ "-march=armv8.4-a" ]
-    defines += [ "NAPI_ENABLE_DATA_PROTECT" ]
   }
 }
 

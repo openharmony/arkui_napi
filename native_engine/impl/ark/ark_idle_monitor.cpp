@@ -35,13 +35,19 @@
 
 namespace panda::ecmascript {
 
-void ArkIdleMonitor::NotifyLooperIdleStart(int64_t timestamp, int idleTime)
+void ArkIdleMonitor::NotifyLooperIdleStart(int64_t timestamp, [[maybe_unused]] int idleTime)
 {
     SetIdleState(true);
     AddIdleNotifyCount();
-    int64_t notifyInterval = timestamp - GetNotifyTimestamp();
     recordedRunningNotifyInterval_.Push(timestamp - idleEndTimestamp_);
+#ifndef DISABLE_SHORT_IDLE_CHECK
+    CheckShortIdleTask(timestamp, idleTime);
+#endif
     SetNotifyTimestamp(timestamp);
+}
+
+void ArkIdleMonitor::CheckShortIdleTask(int64_t timestamp, int idleTime)
+{
 #if defined(ENABLE_FFRT)
     while (handlerWaitToStopCount_ > 0) {
         if (timerHandlerQueue_.size() <= 0) {
@@ -68,7 +74,9 @@ void ArkIdleMonitor::NotifyLooperIdleStart(int64_t timestamp, int idleTime)
 #endif
          return;
      }
-    if (ShouldTryTriggerGC(notifyInterval) && idleTime > MIN_TRIGGER_GC_IDLE_INTERVAL && needCheckIntervalIdle_) {
+    if (ShouldTryTriggerGC(timestamp - GetNotifyTimestamp()) &&
+        idleTime > MIN_TRIGGER_GC_IDLE_INTERVAL &&
+        needCheckIntervalIdle_) {
         PostIdleCheckTask();
     }
     if (!needCheckIntervalIdle_) {
@@ -296,6 +304,10 @@ bool ArkIdleMonitor::CheckIntervalIdle(int64_t timestamp, int64_t idleDuration)
             triggeredGC_ = JSNApi::NotifyLooperIdleStart(mainVM_, 0, 0);
             needCheckIntervalIdle_ = false;
             handlerWaitToStopCount_++;
+            // If GC is triggered, reset the statistics to avoid triggering monitoring tasks continuously.
+            if (!triggeredGC_) {
+                recordedIdleNotifyInterval_.Reset();
+            }
         };
         mainThreadHandler_->PostTask(task, "ARKTS_IDLE_NOTIFY", 0, OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
     }

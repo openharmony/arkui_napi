@@ -70,7 +70,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const c
 }
 
 bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName,
-    std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker)
+    std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, bool isAppModule)
 {
     apiAllowListChecker = nullptr;
     GTEST_LOG_(INFO) << g_mockCheckModuleLoadable;

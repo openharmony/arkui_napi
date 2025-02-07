@@ -42,7 +42,11 @@ public:
     sptr<FFIData> GetFFIData(int64_t id)
     {
         std::lock_guard<std::mutex> lock(mtx);
-        return ffiDataStore_[id];
+        auto itor = ffiDataStore_.find(id);
+        if (itor == ffiDataStore_.end()) {
+            return nullptr;
+        }
+        return itor->second;
     }
         
     sptr<RemoteData> GetRemoteData(int64_t id)
@@ -125,10 +129,13 @@ public:
         if (existed != nullptr) {
             return sptr<T>(existed.GetRefPtr()->template DynamicCast<T>());
         }
-        auto ref = sptr<T>(new (std::nothrow) T(id));
-        if (ref) {
-            manager->StoreRemoteData(ref);
+        auto rawRef = new (std::nothrow) T(id);
+        if (!rawRef) {
+            return nullptr;
         }
+        sptr<T> ref(rawRef);
+        manager->StoreRemoteData(ref);
+
         return ref;
     }
 
