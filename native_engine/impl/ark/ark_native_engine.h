@@ -291,7 +291,7 @@ public:
         return arkFinalizersPack_;
     }
 
-    std::vector<RefFinalizer> &GetPendingAsyncFinalizers()
+    std::vector<RefAsyncFinalizer> &GetPendingAsyncFinalizers()
     {
         return pendingAsyncFinalizers_;
     }
@@ -383,7 +383,7 @@ private:
     }
 
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
-    static void RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers);
+    static void RunAsyncCallbacks(std::vector<RefAsyncFinalizer> *finalizers);
     static void RunCallbacks(AsyncNativeCallbacksPack *callbacks);
     static void RunCallbacks(TriggerGCData *triggerGCData);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
@@ -414,7 +414,7 @@ private:
     bool isLimitedWorker_ = false;
     size_t pendingFinalizersPackNativeBindingSize_ {0};
     ArkFinalizersPack arkFinalizersPack_ {};
-    std::vector<RefFinalizer> pendingAsyncFinalizers_ {};
+    std::vector<RefAsyncFinalizer> pendingAsyncFinalizers_ {};
     // napi options and its cache
     NapiOptions* options_ { nullptr };
     bool crossThreadCheck_ { false };
