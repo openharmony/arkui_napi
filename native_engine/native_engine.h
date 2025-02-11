@@ -86,7 +86,7 @@ public:
 
     void NoityTaskStart()
     {
-        taskCount_ ++;
+        taskCount_++;
         isRunning_.store(true);
     }
 
