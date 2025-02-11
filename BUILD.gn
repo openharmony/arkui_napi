@@ -144,7 +144,8 @@ ohos_source_set("ace_napi_static") {
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
-  if (ark_standalone_build && (is_debug || is_fastverify)) {
+  if (ark_standalone_build &&
+      (is_debug || (defined(is_fastverify) && is_fastverify))) {
     cflags_cc += [
       "-ggdb3",
       "-gdwarf-4",
