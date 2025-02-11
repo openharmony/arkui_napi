@@ -4244,4 +4244,13 @@ NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    reference->MarkFromObject();
+    return napi_clear_last_error(env);
+}
 #endif  // PANDA_JS_ETS_HYBRID_MODE

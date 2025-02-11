@@ -241,3 +241,10 @@ void ArkNativeReference::ResetFinalizer()
     data_ = nullptr;
     hint_ = nullptr;
 }
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+void ArkNativeReference::MarkFromObject()
+{
+    value_.MarkFromObject();
+}
+#endif // PANDA_JS_ETS_HYBRID_MODE

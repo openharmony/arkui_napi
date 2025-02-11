@@ -5928,7 +5928,7 @@ HWTEST_F(NapiBasicTest, NapiWrapTest005, testing::ext::TestSize.Level1)
     napi_create_object(env, &obj);
     napi_status status = napi_xref_wrap(env, obj, (void *)TEST_STRING,
         [](napi_env, void* data, void* hint) {}, NapiXRefDirection::NAPI_DIRECTION_DYNAMIC_TO_STATIC, &result);
-    ASSERT_EQ(status, napi_object_expected);
+    ASSERT_EQ(status, napi_ok);
 }
 
 HWTEST_F(NapiBasicTest, NapiWrapTest006, testing::ext::TestSize.Level1)
@@ -5940,7 +5940,7 @@ HWTEST_F(NapiBasicTest, NapiWrapTest006, testing::ext::TestSize.Level1)
     napi_create_object(env, &obj);
     napi_status status = napi_xref_wrap(env, obj, (void *)TEST_STRING,
         [](napi_env, void* data, void* hint) {}, NapiXRefDirection::NAPI_DIRECTION_STATIC_TO_DYNAMIC, &result);
-    ASSERT_EQ(status, napi_object_expected);
+    ASSERT_EQ(status, napi_ok);
 }
 
 HWTEST_F(NapiBasicTest, NapiWrapTest007, testing::ext::TestSize.Level1)
@@ -5990,6 +5990,19 @@ HWTEST_F(NapiBasicTest, NapiWrapTest010, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
+HWTEST_F(NapiBasicTest, NapiMarkFromObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result = nullptr;
+
+    napi_create_object(env, &obj);
+    napi_status status = napi_xref_wrap(env, obj, (void *)TEST_STRING,
+        [](napi_env, void* data, void* hint) {}, NapiXRefDirection::NAPI_DIRECTION_STATIC_TO_DYNAMIC, &result);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_mark_from_object(env, result);
+    ASSERT_EQ(status, napi_ok);
+}
 #endif
 
 HWTEST_F(NapiBasicTest, NapiUnwrapTest001, testing::ext::TestSize.Level1)
@@ -6033,7 +6046,7 @@ HWTEST_F(NapiBasicTest, NapiUnwrapTest004, testing::ext::TestSize.Level1)
 
     napi_create_object(env, &obj);
     napi_status status = napi_xref_unwrap(env, obj, (void **)&testStr);
-    ASSERT_EQ(status, napi_object_expected);
+    ASSERT_EQ(status, napi_ok);
 }
 #endif
 
