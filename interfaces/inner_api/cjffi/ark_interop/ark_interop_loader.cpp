@@ -53,21 +53,11 @@ static bool ParseLoadParams(napi_env env, napi_callback_info info, char* nameBuf
     return true;
 }
 
-static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* result)
+static bool LoadArkCJModule(void *handle, napi_env env, const char* libName, napi_value* result)
 {
-    const char* targetName;
-#ifdef __OHOS__
-    targetName = "libark_interop.z.so";
-#elif defined(__WINDOWS__)
-    targetName = "libark_interop.dll";
-#elif defined(__LINUX__)
-    targetName = "libark_interop.so";
-#endif
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto runtime = OHOS::CJEnv::LoadInstance();
-    auto handle = runtime->loadLibrary(0, targetName);
-    if (!handle) {
-        LOGE("open '%{public}s' failed", targetName);
+    if (handle == nullptr) {
         return false;
     }
     if (auto symbol = runtime->getSymbol(handle, "ARKTS_LoadModuleByNapiEnv")) {
@@ -84,6 +74,39 @@ static bool LoadArkCJModule(napi_env env, const char* libName, napi_value* resul
     return true;
 }
 
+static void *GetArkInteropLibHandle(napi_env env)
+{
+    const char* targetName;
+#ifdef __OHOS__
+    targetName = "libark_interop.z.so";
+#elif defined(__WINDOWS__)
+    targetName = "libark_interop.dll";
+#elif defined(__LINUX__)
+    targetName = "libark_interop.so";
+#endif
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    auto handle = runtime->loadLibrary(0, targetName);
+    if (!handle) {
+        LOGE("open '%{public}s' failed", targetName);
+        return nullptr;
+    }
+    return handle;
+}
+
+static bool RegisterStackInfoCallbacks(void *arkInteropLibHandle)
+{
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    auto updateStackInfoFunc = runtime->getSymbol(arkInteropLibHandle, "ARKTS_UpdateStackInfo");
+    if (updateStackInfoFunc == nullptr) {
+        LOGE("load symbol ARKTS_UpdateStackInfo failed");
+        return false;
+    }
+    runtime->registerStackInfoCallbacks(
+        reinterpret_cast<void(*)(unsigned long long, void *, unsigned int)>(updateStackInfoFunc)
+    );
+    return true;
+}
+
 static napi_value LoadCJModule(napi_env env, napi_callback_info info)
 {
     napi_value result;
@@ -93,6 +116,7 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
     constexpr size_t BUF_SIZE = 256;
     char nameBuf[BUF_SIZE];
     size_t realSize = BUF_SIZE;
+    void *arkInteropHandle = nullptr;
     if (!ParseLoadParams(env, info, nameBuf, realSize)) {
         return result;
     }
@@ -106,12 +130,18 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
         LOGE("start cjruntime failed");
         return result;
     }
+    arkInteropHandle = GetArkInteropLibHandle(env);
+    RegisterStackInfoCallbacks(arkInteropHandle);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    auto vmAddr = static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(vm));
+    runtime->registerArkVMInRuntime(vmAddr);
     if (!runtime->startUIScheduler()) {
         LOGE("start cj ui context failed");
         return result;
     }
-
-    LoadArkCJModule(env, nameBuf, &result);
+    
+    LoadArkCJModule(arkInteropHandle, env, nameBuf, &result);
     return result;
 }
 

@@ -220,6 +220,8 @@ EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 
 EXPORT void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env);
 
+EXPORT void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, unsigned int opKind);
+
 DECL_END
 
 #endif //NAPI_ARK_INTEROP_NAPI_H
