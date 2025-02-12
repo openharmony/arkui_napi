@@ -134,11 +134,13 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
     if (napiCallback_ != nullptr && !engine_->IsInDestructor()) {
         if (state == FinalizerState::COLLECTION) {
-            std::tuple<NativeEngine*, void*, void*> tuple = std::make_tuple(engine_, data_, hint_);
-            RefFinalizer finalizer = std::make_pair(napiCallback_, tuple);
             if (isAsyncCall_) {
-                engine_->GetPendingAsyncFinalizers().emplace_back(finalizer);
+                std::pair<void*, void*> pair = std::make_pair(data_, hint_);
+                RefAsyncFinalizer asyncFinalizer = std::make_pair(napiCallback_, pair);
+                engine_->GetPendingAsyncFinalizers().emplace_back(asyncFinalizer);
             } else {
+                std::tuple<NativeEngine*, void*, void*> tuple = std::make_tuple(engine_, data_, hint_);
+                RefFinalizer finalizer = std::make_pair(napiCallback_, tuple);
                 engine_->GetArkFinalizersPack().AddFinalizer(finalizer, nativeBindingSize_);
             }
         } else {

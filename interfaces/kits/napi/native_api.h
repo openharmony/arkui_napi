@@ -143,6 +143,14 @@ NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_
 NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_value* result);
 NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_value* result);
 NAPI_EXTERN napi_status napi_map_iterator_get_next(napi_env env, napi_value iterator, napi_value* result);
+NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
+                                          napi_value js_object,
+                                          void* native_object,
+                                          napi_finalize finalize_cb,
+                                          bool async_finalizer,
+                                          void* finalize_hint,
+                                          size_t native_binding_size,
+                                          napi_ref* result);
 
 // ======================================= sendable api begin ======================================= //
 NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,

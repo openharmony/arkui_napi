@@ -1583,7 +1583,7 @@ __attribute__((optnone)) void ArkNativeEngine::RunCallbacks(ArkFinalizersPack *f
 #endif
 }
 
-__attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<RefFinalizer> *finalizers)
+__attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<RefAsyncFinalizer> *finalizers)
 {
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunFinalizeCallbacks:" + std::to_string(finalizers->size()));
@@ -1591,10 +1591,9 @@ __attribute__((optnone)) void ArkNativeEngine::RunAsyncCallbacks(std::vector<Ref
     INIT_CRASH_HOLDER(holder, "NAPI");
     for (auto iter : (*finalizers)) {
         NapiNativeFinalize callback = iter.first;
-        std::tuple<NativeEngine*, void*, void*> &param = iter.second;
+        std::pair<void*, void*> &param = iter.second;
         holder.UpdateCallbackPtr(reinterpret_cast<uintptr_t>(callback));
-        callback(reinterpret_cast<napi_env>(std::get<0>(param)),
-                 std::get<1>(param), std::get<2>(param)); // 2 is the param.
+        callback(nullptr, std::get<0>(param), std::get<1>(param)); // 1 is the param.
     }
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
@@ -1608,12 +1607,13 @@ void ArkNativeEngine::PostFinalizeTasks()
     }
     if (!pendingAsyncFinalizers_.empty()) {
         uv_work_t *asynWork = new uv_work_t;
-        std::vector<RefFinalizer> *asyncFinalizers = new std::vector<RefFinalizer>();
+        std::vector<RefAsyncFinalizer> *asyncFinalizers = new std::vector<RefAsyncFinalizer>();
         asyncFinalizers->swap(pendingAsyncFinalizers_);
         asynWork->data = reinterpret_cast<void *>(asyncFinalizers);
 
         int ret = uv_queue_work_with_qos(GetUVLoop(), asynWork, [](uv_work_t *asynWork) {
-            std::vector<RefFinalizer> *finalizers = reinterpret_cast<std::vector<RefFinalizer> *>(asynWork->data);
+            std::vector<RefAsyncFinalizer> *finalizers =
+                reinterpret_cast<std::vector<RefAsyncFinalizer> *>(asynWork->data);
             RunAsyncCallbacks(finalizers);
             HILOG_DEBUG("uv_queue_work async running ");
             delete finalizers;
