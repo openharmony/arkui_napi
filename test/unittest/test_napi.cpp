@@ -32,7 +32,7 @@
 #include "securec.h"
 #include "utils/log.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
-#include "napi/native_engine/native_create_env.h"
+#include "native_engine/native_create_env.h"
 
 using panda::RuntimeOption;
 

@@ -18,27 +18,10 @@ common_include = [
   "//foundation/arkui/napi/interfaces/inner_api",
   "//foundation/arkui/napi/interfaces/kits",
   "//foundation/arkui/napi/native_engine",
-  "//third_party/googletest/include",
-  "//third_party/node/src",
-  "//commonlibrary/c_utils/base/include",
 ]
 
 ark_include = common_include
 ark_include += [ "//foundation/arkui/napi/native_engine/impl/ark" ]
-ark_include +=
-    [ "//foundation/ability/form_fwk/services/form_render_service/include" ]
-ark_include += [ "//foundation/ability/form_fwk/interfaces/inner_api/include" ]
-ark_include += [ "//base/global/i18n/interfaces/js/kits/include" ]
-ark_include += [ "//base/global/i18n/frameworks/intl/include" ]
-ark_include += [
-  "//base/global/i18n/interfaces/native/inner_api/preferred_language/include",
-]
-ark_include +=
-    [ "//third_party/skia/third_party/externals/icu/source/common/unicode" ]
-ark_include += [ "//third_party/libphonenumber" ]
-ark_include += [ "//third_party/libphonenumber/cpp/src" ]
-ark_include += [ "//third_party/protobuf/src" ]
-ark_include += [ "//foundation/arkui" ]
 
 jerryscript_include = common_include
 jerryscript_include += [
@@ -47,16 +30,9 @@ jerryscript_include += [
   "//third_party/jerryscript/jerry-core/include",
 ]
 
-common_deps = [
-  "//third_party/googletest:gtest",
-  "//third_party/googletest:gtest_main",
-]
+ark_deps = [ "//foundation/arkui/napi:ace_napi" ]
 
-ark_deps = common_deps
-ark_deps += [ "//foundation/arkui/napi:ace_napi" ]
-
-jerryscript_deps = common_deps
-jerryscript_deps += [
+jerryscript_deps = [
   "//foundation/arkui/napi:ace_napi_jerryscript",
   "//third_party/jerryscript:libjerryscript",
 ]

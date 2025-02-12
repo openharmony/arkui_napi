@@ -24,7 +24,7 @@
 #include "event_runner.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "napi/native_engine/native_safe_async_work.h"
+#include "native_safe_async_work.h"
 #include "securec.h"
 #include "utils/log.h"
 

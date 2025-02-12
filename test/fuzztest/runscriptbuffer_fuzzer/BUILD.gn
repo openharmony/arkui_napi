@@ -26,15 +26,13 @@ ohos_fuzztest("RunScriptBufferFuzzTest") {
 
   configs = [ "../../..:ace_napi_config" ]
 
-  deps = [
-    "../../..:ace_napi",
-    "//third_party/libuv:uv",
-  ]
+  deps = [ "../../..:ace_napi" ]
 
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
+    "libuv:uv",
   ]
 }
 
