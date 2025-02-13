@@ -174,12 +174,12 @@ ohos_source_set("ace_napi_static") {
 
   # Use static libuv and icu for cross build
   if (is_arkui_x) {
-    external_deps += [
-      "bounds_checking_function:libsec_static",
-      "ets_runtime:libark_jsruntime_static",
-      "icu:static_icui18n",
-      "icu:static_icuuc",
-      "libuv:uv_static",
+    deps += [
+      "${ets_runtime_path}:libark_jsruntime_static",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/icu/icu4c:static_icui18n",
+      "//third_party/icu/icu4c:static_icuuc",
+      "//third_party/libuv:uv_static",
     ]
     configs += [ "${ets_runtime_path}:ark_jsruntime_public_config" ]
   } else {

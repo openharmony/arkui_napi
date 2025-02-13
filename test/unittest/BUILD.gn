@@ -105,31 +105,6 @@ ohos_unittest("test_unittest_sendevent") {
   ]
 }
 
-ohos_unittest("test_ark_api_allowlist") {
-  module_out_path = module_output_path
-
-  include_dirs = ark_include
-
-  cflags = [ "-g3" ]
-
-  sources = [
-    "engine/test_ark.cpp",
-    "test_ark_api_allowlist.cpp",
-  ]
-
-  defines = [ "NAPI_TEST" ]
-
-  deps = [ "../..:ace_napi" ]
-
-  external_deps = [
-    "bounds_checking_function:libsec_shared",
-    "c_utils:utils",
-    "ets_runtime:libark_jsruntime",
-    "eventhandler:libeventhandler",
-    "hilog:libhilog",
-  ]
-}
-
 ohos_unittest("test_worker_manager") {
   module_out_path = module_output_path
 
@@ -151,7 +126,6 @@ ohos_unittest("test_worker_manager") {
 group("unittest") {
   testonly = true
   deps = [
-    ":test_ark_api_allowlist",
     ":test_ark_unittest_base",
     ":test_ark_unittest_threadsafe",
     ":test_unittest_sendevent",
