@@ -14,14 +14,11 @@
 common_include = [
   "./common",
   "./engine",
-  "//foundation/arkui/napi",
-  "//foundation/arkui/napi/interfaces/inner_api",
-  "//foundation/arkui/napi/interfaces/kits",
-  "//foundation/arkui/napi/native_engine",
+  "../../napi/interfaces/inner_api",
+  "../../napi/interfaces/kits",
+  "../../napi/native_engine",
+  "../../napi/native_engine/impl/ark",
 ]
-
-ark_include = common_include
-ark_include += [ "//foundation/arkui/napi/native_engine/impl/ark" ]
 
 jerryscript_include = common_include
 jerryscript_include += [
@@ -29,8 +26,6 @@ jerryscript_include += [
   "//third_party/jerryscript",
   "//third_party/jerryscript/jerry-core/include",
 ]
-
-ark_deps = [ "//foundation/arkui/napi:ace_napi" ]
 
 jerryscript_deps = [
   "//foundation/arkui/napi:ace_napi_jerryscript",

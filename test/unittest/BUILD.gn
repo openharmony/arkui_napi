@@ -20,7 +20,7 @@ import("//foundation/arkui/napi/test/unittest/ut.gni")
 ohos_unittest("test_ark_unittest_base") {
   module_out_path = module_output_path
 
-  include_dirs = ark_include
+  include_dirs = common_include
 
   cflags = [ "-g3" ]
 
@@ -37,17 +37,22 @@ ohos_unittest("test_ark_unittest_base") {
   external_deps = [
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
+    "ets_runtime:libark_jsruntime",
     "eventhandler:libeventhandler",
   ]
 
-  external_deps += [ "hilog:libhilog" ]
-  external_deps += [ "ets_runtime:libark_jsruntime" ]
+  external_deps += [
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "libuv:uv",
+  ]
 }
 
 ohos_unittest("test_ark_unittest_threadsafe") {
   module_out_path = module_output_path
 
-  include_dirs = ark_include
+  include_dirs = common_include
 
   cflags = [ "-g3" ]
 
@@ -64,10 +69,15 @@ ohos_unittest("test_ark_unittest_threadsafe") {
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ets_runtime:libark_jsruntime",
-    "eventhandler:libeventhandler",
-    "hilog:libhilog",
   ]
-  external_deps += [ "ets_runtime:libark_jsruntime" ]
+
+  external_deps += [
+    "eventhandler:libeventhandler",
+    "googletest:gtest",
+    "googletest:gtest_main",
+    "hilog:libhilog",
+    "libuv:uv",
+  ]
 
   defines += [ "ENABLE_EVENT_HANDLER" ]
 }
