@@ -97,9 +97,9 @@ ohos_shared_library("ark_interop") {
   }
 
   if (is_arkui_x) {
-    external_deps += [
-      "bounds_checking_function:libsec_static",
-      "libuv:uv",
+    deps += [
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/libuv:uv",
     ]
   } else {
     external_deps += [
