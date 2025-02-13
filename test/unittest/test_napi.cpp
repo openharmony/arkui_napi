@@ -2751,6 +2751,82 @@ HWTEST_F(NapiBasicTest, WrapWithSizeTest002, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: WrapEnhanceTest001
+ * @tc.desc: Test wrap with size and finalize_cb execute sync.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, WrapEnhanceTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testWrapClass = nullptr;
+    napi_define_class(
+        env, "TestWrapClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &testWrapClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testWrapClass, 0, nullptr, &instanceValue);
+
+    const char* testWrapStr = "WrapEnhance";
+    size_t size = sizeof(*testWrapStr) / sizeof(char);
+    napi_wrap_enhance(
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, false, nullptr, size,
+        nullptr);
+
+    char* tempTestStr = nullptr;
+    napi_unwrap(env, instanceValue, (void**)&tempTestStr);
+    ASSERT_STREQ(testWrapStr, tempTestStr);
+
+    char* tempTestStr1 = nullptr;
+    napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
+    ASSERT_STREQ(testWrapStr, tempTestStr1);
+}
+
+/**
+ * @tc.name: WrapEnhanceTest002
+ * @tc.desc: Test wrap with size and finalize_cb execute async.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, WrapEnhanceTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testWrapClass = nullptr;
+    napi_define_class(
+        env, "TestWrapClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &testWrapClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testWrapClass, 0, nullptr, &instanceValue);
+
+    const char* testWrapStr = "WrapEnhance";
+    size_t size = sizeof(*testWrapStr) / sizeof(char);
+    napi_wrap_enhance(
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, true, nullptr, size,
+        nullptr);
+
+    char* tempTestStr = nullptr;
+    napi_unwrap(env, instanceValue, (void**)&tempTestStr);
+    ASSERT_STREQ(testWrapStr, tempTestStr);
+
+    char* tempTestStr1 = nullptr;
+    napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
+    ASSERT_STREQ(testWrapStr, tempTestStr1);
+}
+
+/**
  * @tc.name: CreateExternalWithSizeTest001
  * @tc.desc: Test create external with size.
  * @tc.type: FUNC
