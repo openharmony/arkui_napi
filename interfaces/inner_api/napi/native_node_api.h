@@ -130,6 +130,7 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result);
 NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info *napi_info);
 NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info *result);
+NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error);
 typedef enum {
     NAPI_DIRECTION_INVALID = 0,
     NAPI_DIRECTION_DYNAMIC_TO_STATIC = 1, // JS object references the STS object
