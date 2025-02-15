@@ -764,3 +764,11 @@ void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env)
     auto vm = P_CAST(env, EcmaVM*);
     return JSNApi::GetEnv(vm);
 }
+
+void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, unsigned int opKind)
+{
+    ARKTS_ASSERT_V(vmAddress, "vm is null");
+    ARKTS_ASSERT_V(subStackInfo, "stack info is null");
+    auto vm = reinterpret_cast<panda::EcmaVM*>(vmAddress);
+    panda::JSNApi::UpdateStackInfo(vm, subStackInfo, opKind);
+}

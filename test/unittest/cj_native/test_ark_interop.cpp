@@ -40,6 +40,16 @@ struct ARKTS_ModuleCallbacks {
     void (*deleteJSContext)(ARKTS_Env env) = nullptr;
 };
 
+enum StackInfoOpKind : uint32_t {
+    SWITCH_TO_SUB_STACK_INFO = 0,
+    SWITCH_TO_MAIN_STACK_INFO,
+};
+
+struct StackInfo {
+    uint64_t stackLimit;
+    uint64_t lastLeaveFrame;
+};
+
 namespace {
 class ArkInteropTest : public testing::Test {
 public:
@@ -62,6 +72,7 @@ public:
         TestClass();
         TestInstanceOf();
         TestArrayBuffer();
+        TestUpdateStackInfo();
     }
 private:
     static void TestPrime();
@@ -81,6 +92,7 @@ private:
     static void TestClass();
     static void TestArrayBuffer();
     static void TestInstanceOf();
+    static void TestUpdateStackInfo();
 };
 
 template <typename T>
@@ -825,6 +837,21 @@ void ArkInteropTest::TestArrayBuffer()
         EXPECT_EQ(origin[i], received[i]);
     }
 
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestUpdateStackInfo()
+{
+    EXPECT_TRUE(MockContext::GetInstance());
+    ARKTS_Env env = MockContext::GetInstance()->GetEnv();
+    EXPECT_TRUE(env);
+    auto scope = ARKTS_OpenScope(env);
+    unsigned long long vmAddress = reinterpret_cast<unsigned long long>(env);
+    StackInfo stackInfo;
+    stackInfo.stackLimit = 0x5be506e000;
+    stackInfo.lastLeaveFrame = 0;
+    ARKTS_UpdateStackInfo(vmAddress, &stackInfo, SWITCH_TO_SUB_STACK_INFO);
+    ARKTS_UpdateStackInfo(vmAddress, &stackInfo, SWITCH_TO_MAIN_STACK_INFO);
     ARKTS_CloseScope(env, scope);
 }
 
