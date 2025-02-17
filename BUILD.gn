@@ -354,7 +354,7 @@ if (!ark_standalone_build) {
     if (target_cpu == "arm64" || target_cpu == "x86_64") {
       deps += [
         "interfaces/inner_api/cjffi/ark_interop:ark_interop",
-        "interfaces/inner_api/cjffi/ark_interop:ark_interop_loader",
+        "interfaces/inner_api/cjffi/ark_interop:cjLibLoader",
       ]
     }
   }

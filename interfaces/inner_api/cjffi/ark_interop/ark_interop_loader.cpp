@@ -161,7 +161,7 @@ extern "C" __attribute__((constructor)) void LoadCJModuleRegister()
         .nm_flags = 0,
         .nm_filename = nullptr,
         .nm_register_func = ExportLoadCJModule,
-        .nm_modname = "ark_interop_loader",
+        .nm_modname = "cjLibLoader",
         .nm_priv = nullptr,
         .reserved = { 0 },
     };
