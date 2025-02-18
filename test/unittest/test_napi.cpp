@@ -22,17 +22,17 @@
 #include <chrono>
 #include <thread>
 
+#include "ark_native_engine.h"
+#include "gtest/gtest.h"
 #include "hilog/log.h"
+#include "napi/native_api.h"
+#include "napi/native_common.h"
+#include "napi/native_node_api.h"
+#include "native_create_env.h"
+#include "securec.h"
 #include "test.h"
 #include "test_common.h"
-#include "gtest/gtest.h"
-#include "napi/native_api.h"
-#include "napi/native_node_api.h"
-#include "napi/native_common.h"
-#include "securec.h"
 #include "utils/log.h"
-#include "native_engine/impl/ark/ark_native_engine.h"
-#include "native_engine/native_create_env.h"
 
 using panda::RuntimeOption;
 
@@ -4254,7 +4254,7 @@ HWTEST_F(NapiBasicTest, AsyncInitTest002, testing::ext::TestSize.Level1)
     napi_status status = napi_async_init(env, nullptr, resourceName, contextPtr);
     EXPECT_EQ(status, napi_invalid_arg);
 }
- 
+
 /**
  * @tc.name: AsyncInitTest003
  * @tc.desc: Test napi_async_init with invalid arguments.
