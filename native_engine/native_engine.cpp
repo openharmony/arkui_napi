@@ -660,6 +660,8 @@ void NativeEngine::SetApiVersion(int32_t apiVersion)
 {
     apiVersion_ = apiVersion;
     realApiVersion_ = apiVersion % API_VERSION_MASK;
+    EcmaVM* vm = const_cast<EcmaVM*>(GetEcmaVm());
+    panda::JSNApi::SetVMAPIVersion(vm, apiVersion);
 }
 
 int32_t NativeEngine::GetApiVersion()
