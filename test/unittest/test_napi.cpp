@@ -403,6 +403,21 @@ HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest004, testing::ext::TestSize.Lev
 }
 
 /**
+ * @tc.name: ToNativeBindingObjectTest005
+ * @tc.desc: Test nativeBinding object type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ToNativeBindingObjectTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value object = nullptr;
+    napi_status status = napi_create_object(env, &object);
+    ASSERT_EQ(status, napi_status::napi_ok);
+    status = napi_add_detached_finalizer(env, object, TestDetachFinalizer, nullptr);
+    ASSERT_EQ(status, napi_status::napi_object_expected);
+}
+
+/**
  * @tc.name: UndefinedTest001
  * @tc.desc: Test undefined type.
  * @tc.type: FUNC
@@ -7186,6 +7201,20 @@ HWTEST_F(NapiBasicTest, NapiUnwrapTest005, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_object_expected);
 }
 
+HWTEST_F(NapiBasicTest, NapiUnwrapTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    char **testStr = nullptr;
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+
+    napi_create_function(env, nullptr, 0, func, nullptr, &obj);
+    napi_status status = napi_unwrap(env, obj, (void **)testStr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
 HWTEST_F(NapiBasicTest, NapiRemoveWrapTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -7240,6 +7269,20 @@ HWTEST_F(NapiBasicTest, NapiRemoveWrapTest005, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_object_expected);
 }
 
+HWTEST_F(NapiBasicTest, NapiRemoveWrapTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    char **testStr = nullptr;
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+
+    napi_create_function(env, nullptr, 0, func, nullptr, &obj);
+    napi_status status = napi_remove_wrap(env, obj, (void **)testStr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
 HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -7287,17 +7330,6 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest004, testing::ext::TestSize.Level
 HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest005, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
-    napi_async_work* work = nullptr;
-    napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, TEST_STRING, NAPI_AUTO_LENGTH, &resourceName);
-    napi_status status = napi_create_async_work(env, nullptr, resourceName, [](napi_env value, void* data) {},
-                           nullptr, nullptr, work);
-    ASSERT_EQ(status, napi_invalid_arg);
-}
-
-HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest006, testing::ext::TestSize.Level1)
-{
-    napi_env env = reinterpret_cast<napi_env>(engine_);
     napi_async_work work = nullptr;
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
@@ -7311,6 +7343,24 @@ HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest006, testing::ext::TestSize.Level
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
     auto asyncWorkTraceDesc = asyncWork->GetTraceDescription();
     ASSERT_TRUE(asyncWorkTraceDesc.find(TEST_CHAR_ASYNCWORK) != std::string::npos);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_get_null(env, &resourceName);
+    napi_status status = napi_create_async_work(
+        env, nullptr, resourceName,
+        [](napi_env env, void *data) {},
+        [](napi_env env, napi_status status, void *data) {},
+        nullptr, &work);
+    ASSERT_EQ(status, napi_ok);
+
+    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
+    auto asyncWorkTraceDesc = asyncWork->GetTraceDescription();
+    ASSERT_FALSE(asyncWorkTraceDesc.find(TEST_CHAR_ASYNCWORK) != std::string::npos);
 }
 
 HWTEST_F(NapiBasicTest, NapiCreateAsyncWorkTest007, testing::ext::TestSize.Level1)
@@ -7895,6 +7945,19 @@ HWTEST_F(NapiBasicTest, NapiGetDateValueTest003, testing::ext::TestSize.Level1)
     napi_status status = napi_create_object(env, &date);
     status = napi_get_date_value(env, date, &result);
     ASSERT_EQ(status, napi_date_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiGetDateValueTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    double time = 202110181203150;
+    napi_value date;
+    double result;
+
+    napi_status status = napi_create_date(env, time, &date);
+    status = napi_get_date_value(env, date, &result);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(time, result);
 }
 
 HWTEST_F(NapiBasicTest, NapiCreateBigintInt64Test001, testing::ext::TestSize.Level1)
