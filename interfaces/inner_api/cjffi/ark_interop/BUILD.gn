@@ -121,7 +121,7 @@ ohos_shared_library("ark_interop") {
   }
 }
 
-ohos_shared_library("ark_interop_loader") {
+ohos_shared_library("cjLibLoader") {
   part_name = "napi"
   subsystem_name = "arkui"
   relative_install_dir = "module"
