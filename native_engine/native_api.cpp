@@ -1149,20 +1149,44 @@ NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* resu
 
 NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, uint32_t* result)
 {
-    CHECK_ENV((env));
+    // Omit to use NAPI_PREAMBLE and CHECK_ARG directly for performance.
+    CHECK_ENV(env);
     RETURN_STATUS_IF_FALSE(env, (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
         napi_pending_exception);
-    CHECK_ARG(env, value);
-    CHECK_ARG(env, result);
+    napi_clear_last_error((env));
 
+    // This interface will not throw JS exceptions actively.
+    // JS exception can only occur before calling the interface.
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+
+    // check value and result
+    if ((value == nullptr) || (result == nullptr)) {
+        if (panda::JSNApi::HasPendingException(vm)) {
+            reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+        }
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    // get array length
     bool isArrayOrSharedArray = false;
+    bool isPendingException = false;
     panda::Local<panda::JSValueRef> nativeValue = LocalValueFromJsValue(value);
-    nativeValue->TryGetArrayLength(vm, &isArrayOrSharedArray, result);
+    nativeValue->TryGetArrayLength(vm, &isPendingException, &isArrayOrSharedArray, result);
+
     if (!isArrayOrSharedArray) {
+        if (isPendingException) {
+            reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+        }
         return napi_set_last_error(env, napi_array_expected);
     }
-    return napi_clear_last_error(env);
+
+    if (UNLIKELY(isPendingException)) {
+        HILOG_ERROR("pending exception before napi_get_array_length called, print exception info: ");
+        panda::JSNApi::PrintExceptionInfo(vm);
+        reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+        return napi_set_last_error(env, napi_pending_exception);
+    }
+    return napi_ok;
 }
 
 NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result)
