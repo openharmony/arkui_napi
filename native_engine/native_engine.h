@@ -117,7 +117,7 @@ using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool su
 using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
 using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column,
     std::string& packageName)>;
-using AppFreezeFilterCallback = std::function<bool(const int32_t pid)>;
+using AppFreezeFilterCallback = std::function<bool(const int32_t pid, const bool needDecreaseQuota)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using NapiOnWorkerErrorCallback = std::function<bool(napi_env env,
