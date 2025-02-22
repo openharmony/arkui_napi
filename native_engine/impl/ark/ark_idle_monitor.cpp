@@ -253,15 +253,15 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
 {
     inBackground_.store(inBackground, std::memory_order_relaxed);
     ClearIdleStats();
-    if (!started_) {
+    if (!started_ && inBackground) {
+        HILOG_DEBUG("ArkIdleMonitor change to background but not started idle check");
         return;
     }
 #if defined(ENABLE_FFRT)
-    if (inBackground == false) {
-        return;
+    if (started_ && inBackground) {
+        StopIdleMonitorTimerTask();
+        IntervalMonitor();
     }
-    StopIdleMonitorTimerTask();
-    IntervalMonitor();
 #endif
 }
 
