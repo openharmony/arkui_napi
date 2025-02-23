@@ -2019,6 +2019,18 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
     }
 }
 
+void ArkNativeEngine::DumpHeapSnapshot(int fd, bool isFullGC,
+                                       const std::function<void(uint8_t)> &callback)
+{
+    panda::ecmascript::DumpSnapShotOption dumpOption;
+    dumpOption.isVmMode = true;
+    dumpOption.isPrivate = false;
+    dumpOption.isFullGC = isFullGC;
+    dumpOption.isSync = false;
+    dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+    DFXJSNApi::DumpHeapSnapshot(vm_, fd, dumpOption, callback);
+}
+
 void ArkNativeEngine::DumpCpuProfile()
 {
     DFXJSNApi::DumpCpuProfile(vm_);
