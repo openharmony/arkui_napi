@@ -3081,7 +3081,7 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
     auto engine = reinterpret_cast<NativeEngine*>(env);
     *result = engine->NapiLoadModuleWithInfo(path, module_info);
     if (*result != nullptr) {
-        CHECK_AND_RETURN(LocalValueFromJsValue(*result)->IsUndefined(), napi_generic_failure);
+        RETURN_STATUS_IF_FALSE(env, !LocalValueFromJsValue(*result)->IsUndefined(), napi_generic_failure);
     }
     return GET_RETURN_STATUS(env);
 }
