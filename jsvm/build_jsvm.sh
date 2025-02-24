@@ -52,8 +52,12 @@ do_man_process() {
     do_patch     > ${out_dir}/log.do_patch
     do_configure > ${out_dir}/log.do_configure
     do_compile   > ${out_dir}/log.do_compile
-    do_install   > ${out_dir}/log.do_install
-    do_strip
+    if [[ "${IS_ASAN}" = "true" && "${USE_HWASAN}" = "true" ]]; then
+        do_install_hwasan > ${out_dir}/log.do_install_hwasan
+    else
+        do_install   > ${out_dir}/log.do_install
+        do_strip
+    fi
 }
 
 do_opt_process() {
@@ -84,6 +88,14 @@ do_opt_process() {
             ;;
         --target_clang_coverage)
             export TARGET_CLANG_COVERAGE=$2
+            shift
+            ;;
+        --is_asan)
+            export IS_ASAN=$2
+            shift
+            ;;
+        --use_hwasan)
+            export USE_HWASAN=$2
             shift
             ;;
         *)
