@@ -128,6 +128,18 @@ ohos_shared_library("cjLibLoader") {
 
   configs = [ ":ark_interop_config" ]
 
+  defines = []
+  if (current_cpu == "arm64") {
+    defines += [ "USE_LIBS_ARM64" ]
+  } else if (current_cpu == "arm") {
+    defines += [ "USE_LIBS_ARM" ]
+  } else if (current_cpu == "x86_64") {
+    defines += [ "USE_LIBS_x86_64" ]
+  } else {
+    print("unsupported cpu ${current_cpu}")
+    assert(false)
+  }
+
   sources = [ "ark_interop_loader.cpp" ]
 
   external_deps = [ "hilog:libhilog" ]
