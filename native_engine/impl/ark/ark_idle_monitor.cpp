@@ -241,6 +241,27 @@ void ArkIdleMonitor::NotifyMainThreadTryCompressGC()
 #endif
 }
 
+void ArkIdleMonitor::NotifyMainThreadTryCompressGCByBackground()
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    if (mainVM_ == nullptr) {
+        return;
+    }
+    if (mainThreadHandler_ == nullptr) {
+        mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
+            OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
+    };
+    auto task = [this]() {
+        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::FULL_GC);
+        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+    };
+    if (IsIdleState()) {
+        mainThreadHandler_->PostTask(task, "ARKTS_BACKGROUND_COMPRESS", 0,
+            OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+    }
+#endif
+}
+
 void ArkIdleMonitor::SetStartTimerCallback()
 {
     JSNApi::SetStartIdleMonitorCallback([this]() {
@@ -259,8 +280,9 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
     }
 #if defined(ENABLE_FFRT)
     if (started_ && inBackground) {
+        HILOG_DEBUG("ArkIdleMonitor post check switch background gc task");
         StopIdleMonitorTimerTask();
-        IntervalMonitor();
+        PostSwitchBackgroundGCTask();
     }
 #endif
 }
@@ -343,6 +365,48 @@ void ArkIdleMonitor::PostIdleCheckTask()
 #endif
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
+#endif
+}
+
+void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration)
+{
+    int64_t nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+    int64_t sumDuration = nowTimestamp - timestamp;
+    int64_t sumIdleDuration = (GetTotalIdleDuration() - idleDuration) + (nowTimestamp - GetNotifyTimestamp());
+    double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
+    double cpuUsage = GetCpuUsage();
+    if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE) {
+        NotifyMainThreadTryCompressGCByBackground();
+    } else {
+        HILOG_INFO("ArkIdleMonitor canceled background GC task, idlePercentage:%{public}.2f, cpuUsage:%{public}.2f",
+            idlePercentage, cpuUsage);
+    }
+    PostMonitorTask(SLEEP_MONITORING_INTERVAL);
+    ClearIdleStats();
+}
+
+void ArkIdleMonitor::PostSwitchBackgroundGCTask()
+{
+#if defined(ENABLE_FFRT)
+    if (switchBackgroundTimerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, switchBackgroundTimerHandler_);
+    }
+    auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+    std::tuple<ArkIdleMonitor*, int64_t, int64_t> myTuple = std::make_tuple(this, nowTimestamp, GetTotalIdleDuration());
+    std::tuple<ArkIdleMonitor*, int64_t, int64_t> *data = new std::tuple<ArkIdleMonitor*, int64_t, int64_t>(myTuple);
+    auto task = [](void* data) {
+        std::tuple<ArkIdleMonitor*, int64_t, int64_t>* tuple =
+            reinterpret_cast<std::tuple<ArkIdleMonitor*, int64_t, int64_t>*>(data);
+        if (tuple == nullptr || std::get<0>(*tuple) == nullptr) {
+            return;
+        }
+        std::get<0>(*tuple)->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
+        delete tuple;
+    };
+    switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, IDLE_MONITORING_INTERVAL,
+        reinterpret_cast<void*>(data), task, false);
 #endif
 }
 

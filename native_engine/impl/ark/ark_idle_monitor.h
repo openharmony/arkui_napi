@@ -185,17 +185,20 @@ private:
     bool ShouldTryTriggerGC(int64_t interval);
     bool CheckLowNotifyState() const;
     bool CheckLowRunningDurationState() const;
+    bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
+    bool CheckWorkerEnvQueueAllInIdle();
+    void SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration);
     void IntervalMonitor();
     void NotifyMainThreadTryCompressGC();
+    void NotifyMainThreadTryCompressGCByBackground();
     void NotifyOneWorkerThreadTryCompressGC();
     void ClearIdleStats();
     void TryTriggerGC(TriggerGCType gcType);
-    bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
     void PostIdleCheckTask();
     void CheckWorkerEnvQueue();
-    bool CheckWorkerEnvQueueAllInIdle();
     void StopIdleMonitorTimerTask();
     void CheckShortIdleTask(int64_t timestamp, int idleTime);
+    void PostSwitchBackgroundGCTask();
 
     static std::shared_ptr<ArkIdleMonitor> instance_;
 
@@ -212,8 +215,10 @@ private:
     static constexpr int64_t MAX_TRIGGER_GC_RUNNING_INTERVAL = 1; //ms
     static constexpr double IDLE_RATIO = 0.985f;
     static constexpr double SHORT_IDLE_RATIO = 0.96f;
+    static constexpr double BACKGROUND_IDLE_RATIO = 0.85f;
     static constexpr uint64_t  SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
     static constexpr double IDLE_CPU_USAGE = 0.5f;
+    static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.7f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
     static constexpr uint32_t IDLE_WORKER_TRIGGER_COUNT = 1; // it needs over IDLE_INBACKGROUND_CHECK_LENGTH
 
@@ -230,6 +235,7 @@ private:
     bool needCheckIntervalIdle_ = {true};
     int currentTimerHandler_ {-1};
     int waitForStopTimerHandler_ {-1};
+    int switchBackgroundTimerHandler_ {-1};
     uint32_t numberOfLowIdleNotifyCycles_ {0U};
     uint32_t numberOfHighIdleTimeRatio_ {0U};
     std::queue<int> timerHandlerQueue_;
