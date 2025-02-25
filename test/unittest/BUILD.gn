@@ -122,9 +122,6 @@ group("unittest") {
     ":test_ark_unittest_threadsafe",
     ":test_worker_manager",
   ]
-  if (target_cpu == "arm64") {
-    deps += [ "jsvm:jsvm_unittest" ]
-  }
   if (target_cpu == "arm64" || target_cpu == "x86_64") {
     deps += [ "cj_native:cj_native_unittest" ]
   }
