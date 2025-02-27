@@ -586,7 +586,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
         });
     }
 #if defined(ENABLE_EVENT_HANDLER)
-    if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
+    bool enableIdleGC = OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
+    if (enableIdleGC && JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
         ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(vm);
         JSNApi::SetTriggerGCTaskCallback(vm, [this](TriggerGCData& data) {
             this->PostTriggerGCTask(data);
