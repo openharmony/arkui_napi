@@ -67,7 +67,7 @@ using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
 
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
-
+class NativeTimerCallbackInfo;
 template <bool changeState = true>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
 void NapiDefinePropertyInner(napi_env env,
@@ -378,6 +378,15 @@ public:
     }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 
+    NativeTimerCallbackInfo* GetTimerListHead() const
+    {
+        return TimerListHead_;
+    }
+    void SetTimerListHead(NativeTimerCallbackInfo* info)
+    {
+        TimerListHead_ = info;
+    }
+
 private:
     inline NapiOptions *GetNapiOptions() const override
     {
@@ -420,5 +429,6 @@ private:
     // napi options and its cache
     NapiOptions* options_ { nullptr };
     bool crossThreadCheck_ { false };
+    NativeTimerCallbackInfo* TimerListHead_ {nullptr};
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

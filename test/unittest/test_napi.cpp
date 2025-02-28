@@ -11313,6 +11313,21 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleTest003, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: NapiLoadModuleTest
+ * @tc.desc: Test interface of napi_load_module
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module(env, "@ohos:xxx", &result);
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+/**
  * @tc.name: NapiCreateObjectWithPropertiesTest
  * @tc.desc: Test interface of napi_create_object_with_properties
  * @tc.type: FUNC
@@ -11577,6 +11592,24 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest003, testing::ext::TestSize.Le
     napi_value result = nullptr;
     auto res = napi_load_module_with_info(env, nullptr, nullptr, &result);
     ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoTest
+ * @tc.desc: Test interface of napi_load_module_with_info
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result1 = nullptr;
+    napi_status res = napi_load_module_with_info(env, "@ohos:xxxx", nullptr, &result1);
+    ASSERT_EQ(res, napi_generic_failure);
+    const napi_extended_error_info* result2;
+    napi_get_last_error_info(env, &result2);
+    ASSERT_EQ(result2->error_code, napi_generic_failure);
 }
 
 /**

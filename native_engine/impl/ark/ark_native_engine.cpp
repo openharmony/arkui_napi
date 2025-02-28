@@ -22,6 +22,7 @@
 
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
+#include "ark_native_timer.h"
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
 #include "securec.h"
@@ -576,6 +577,9 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     });
     JSNApi::SetHostPromiseRejectionTracker(vm_, reinterpret_cast<void*>(PromiseRejectCallback),
                                            reinterpret_cast<void*>(this));
+    JSNApi::SetTimerTaskCallback(vm, NativeTimerCallbackInfo::TimerTaskCallback);
+    JSNApi::SetCancelTimerCallback(vm, NativeTimerCallbackInfo::CancelTimerCallback);
+    JSNApi::NotifyEnvInitialized(vm);
     if (IsMainThread()) {
         RegisterAllPromiseCallback([this] (napi_value* args) -> void {
             if (!NativeEngine::IsAlive(this)) {
@@ -604,6 +608,9 @@ ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
     ArkIdleMonitor::GetInstance()->UnregisterWorkerEnv(reinterpret_cast<napi_env>(this));
+    JSNApi::SetTimerTaskCallback(vm_, nullptr);
+    JSNApi::SetCancelTimerCallback(vm_, nullptr);
+    NativeTimerCallbackInfo::ReleaseTimerList(this);
     Deinit();
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
         ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
