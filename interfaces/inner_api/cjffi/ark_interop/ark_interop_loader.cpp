@@ -73,17 +73,22 @@ static bool ParseLoadParams(napi_env env, napi_callback_info info, char* nameBuf
 static bool LoadArkCJModule(void *handle, napi_env env, const char* libName, napi_value* result)
 {
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto runtime = OHOS::CJEnv::LoadInstance();
-    if (handle == nullptr) {
-        return false;
-    }
-    std::lock_guardstd::mutex lock(g_mutex);
+    std::lock_guard<std::mutex> lock(g_mutex);
     std::string str(libName);
     if (envMap.find(env) != envMap.end() && envMap[env].find(str) != envMap[env].end()) {
         napi_value callback = nullptr;
         napi_get_reference_value(env, envMap[env][str], &callback);
-        result = callback;
+        *result = callback;
         return true;
+    }
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    if (handle == nullptr) {
+        LOGE("get handle failed");
+        return false;
+    }
+    if (runtime == nullptr) {
+        LOGE("load Instance failed");
+        return false;
     }
     if (auto symbol = runtime->getSymbol(handle, "ARKTS_LoadModuleByNapiEnv")) {
         auto loader = reinterpret_cast<napi_value(*)(napi_env, const char*)>(symbol);
@@ -113,6 +118,10 @@ static void *GetArkInteropLibHandle(napi_env env)
     targetName = "libark_interop.so";
 #endif
     auto runtime = OHOS::CJEnv::LoadInstance();
+    if (!runtime) {
+        LOGE("load Instance failed");
+        return nullptr;
+    }
     auto handle = runtime->loadLibrary(0, targetName);
     if (!handle) {
         LOGE("open '%{public}s' failed", targetName);
@@ -124,6 +133,10 @@ static void *GetArkInteropLibHandle(napi_env env)
 static bool RegisterStackInfoCallbacks(void *arkInteropLibHandle)
 {
     auto runtime = OHOS::CJEnv::LoadInstance();
+    if (!runtime) {
+        LOGE("load Instance failed");
+        return false;
+    }
     auto updateStackInfoFunc = runtime->getSymbol(arkInteropLibHandle, "ARKTS_UpdateStackInfo");
     if (updateStackInfoFunc == nullptr) {
         LOGE("load symbol ARKTS_UpdateStackInfo failed");
@@ -152,6 +165,10 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
         std::lock_guard<std::mutex> lock(g_mutex);
         if (!g_isInited) {
             auto runtime = OHOS::CJEnv::LoadInstance();
+            if (!runtime) {
+                LOGE("load Instance failed");
+                return result;
+            }
             runtime->initCJChipSDKNS("/system/lib64/chipset-pub-sdk");
             runtime->initCJAppNS("/data/storage/el1/bundle/libs/" LIBS_NAME);
             runtime->initCJSDKNS("/data/storage/el1/bundle/libs/" LIBS_NAME "/ohos:"
