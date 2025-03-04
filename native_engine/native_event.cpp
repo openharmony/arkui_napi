@@ -15,6 +15,9 @@
 #include "native_event.h"
 #include <string>
 
+#ifdef ENABLE_CONTAINER_SCOPE_SEND_EVENT
+#include "core/common/container_scope.h"
+#endif
 #include "native_api_internal.h"
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
@@ -26,6 +29,9 @@
 #include "utils/log.h"
 #if defined(ENABLE_EVENT_HANDLER)
 using namespace OHOS::AppExecFwk;
+#endif
+#ifdef ENABLE_CONTAINER_SCOPE_SEND_EVENT
+using OHOS::Ace::ContainerScope;
 #endif
 
 static constexpr uint64_t INVALID_EVENT_ID = std::numeric_limits<uint64_t>::max();
@@ -227,18 +233,17 @@ void NativeEvent::DestoryDefaultFunction(bool release, napi_threadsafe_function 
 
 //NativeEvent method
 NativeEvent::NativeEvent(NativeEngine* engine,
-                         napi_value func,
-                         napi_value asyncResource,
-                         napi_value asyncResourceName,
-                         size_t maxQueueSize,
-                         size_t threadCount,
-                         void* finalizeData,
-                         NativeFinalize finalizeCallback,
-                         void* context,
-                         NativeThreadSafeFunctionCallJs callJsCallback)
-                         :NativeSafeAsyncWork(engine, func, asyncResource, asyncResourceName,
-                             maxQueueSize, threadCount, finalizeData, finalizeCallback,
-                             context, callJsCallback)
+    napi_value func,
+    napi_value asyncResource,
+    napi_value asyncResourceName,
+    size_t maxQueueSize,
+    size_t threadCount,
+    void* finalizeData,
+    NativeFinalize finalizeCallback,
+    void* context,
+    NativeThreadSafeFunctionCallJs callJsCallback) : NativeSafeAsyncWork(engine,
+        func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
+        finalizeData, finalizeCallback, context, callJsCallback)
 {
 }
 
@@ -255,7 +260,13 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
                                              uint64_t* handleId)
 {
     uint64_t eventId = GenerateUniqueID();
+#ifdef ENABLE_CONTAINER_SCOPE_SEND_EVENT
+    int32_t containerScopeId = ContainerScope::CurrentId();
+    std::function<void()> task = [eng = engine_, callback, data, eventId, containerScopeId]() {
+        ContainerScope containerScope(containerScopeId);
+#else
     std::function<void()> task = [eng = engine_, callback, data, eventId]() {
+#endif
         auto tcin = TraceLogClass("Cancelable Event callback:handleId:" + std::to_string(eventId));
         auto vm = eng->GetEcmaVm();
         panda::LocalScope scope(vm);
