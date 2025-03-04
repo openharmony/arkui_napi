@@ -2027,7 +2027,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(int fd, bool isFullGC,
+void ArkNativeEngine::DumpHeapSnapshot(int& fd, bool isFullGC,
                                        const std::function<void(uint8_t)> &callback)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
