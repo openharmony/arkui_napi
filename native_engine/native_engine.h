@@ -129,6 +129,7 @@ using NapiAllUnhandledRejectionCallback = std::function<bool(napi_env env,
 using NapiAllPromiseRejectCallback = std::function<void(napi_value* args)>;
 using NapiHasOnErrorCallback = std::function<bool()>;
 using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
+
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
@@ -269,43 +270,39 @@ public:
     virtual void TriggerFatalException(panda::Local<panda::JSValueRef> exceptionValue) = 0;
     virtual bool AdjustExternalMemory(int64_t ChangeInBytes, int64_t* AdjustedValue) = 0;
 
-    void MarkWorkerThread()
-    {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::WORKER_THREAD));
-    }
-    void MarkRestrictedWorkerThread()
-    {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::RESTRICTEDWORKER_THREAD));
-    }
-    void MarkTaskPoolThread()
-    {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::TASKPOOL_THREAD));
-    }
-    void MarkNativeThread()
-    {
-        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::NATIVE_THREAD));
-    }
-    bool IsWorkerThread() const
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::WORKER_THREAD;
-    }
-    bool IsRestrictedWorkerThread() const
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::RESTRICTEDWORKER_THREAD;
-    }
-    bool IsTaskPoolThread() const
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::TASKPOOL_THREAD;
-    }
-    bool IsMainThread() const
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::MAIN_THREAD;
-    }
-    bool IsNativeThread() const
-    {
-        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::NATIVE_THREAD;
+#define NATIVE_ENGINE_THREAD_TYPE(XX)                   \
+    XX(MainThread, MAIN_THREAD)                         \
+    XX(WorkerThread, WORKER_THREAD)                     \
+    XX(RestrictedWorkerThread, RESTRICTEDWORKER_THREAD) \
+    XX(TaskPoolThread, TASKPOOL_THREAD)                 \
+    XX(FormThread, FORM_THREAD)                         \
+    XX(NativeThread, NATIVE_THREAD)
+
+#define GEN_THREAD_TYPE_METHOD(name, type)                                               \
+    void Mark##name()                                                                    \
+    {                                                                                    \
+        jsThreadType_.Update(static_cast<uintptr_t>(JSThreadType::type));                \
+    }                                                                                    \
+    bool Is##name() const                                                                \
+    {                                                                                    \
+        return static_cast<JSThreadType>(jsThreadType_.GetData()) == JSThreadType::type; \
     }
 
+    NATIVE_ENGINE_THREAD_TYPE(GEN_THREAD_TYPE_METHOD)
+
+#undef GEN_THREAD_TYPE_METHOD
+
+private:
+    // the old worker api use before api9, the new worker api start with api9
+#define GEN_THREAD_TYPE_ENUM(_, type) type,
+    enum JSThreadType { NATIVE_ENGINE_THREAD_TYPE(GEN_THREAD_TYPE_ENUM) };
+#undef GEN_THREAD_TYPE_ENUM
+
+#undef NATIVE_ENGINE_THREAD_TYPE
+
+    DataProtector jsThreadType_ {DataProtector(uintptr_t(JSThreadType::MAIN_THREAD))};
+
+public:
     bool CheckAndSetWorkerVersion(WorkerVersion expected, WorkerVersion desired)
     {
         return workerVersion_.compare_exchange_strong(expected, desired);
@@ -609,9 +606,6 @@ private:
     int32_t apiVersion_ = 8;
     int32_t realApiVersion_ = 8;
 
-    // the old worker api use before api9, the new worker api start with api9
-    enum JSThreadType { MAIN_THREAD, WORKER_THREAD, TASKPOOL_THREAD, RESTRICTEDWORKER_THREAD, NATIVE_THREAD };
-    DataProtector jsThreadType_ {DataProtector(uintptr_t(JSThreadType::MAIN_THREAD))};
     // current is hostengine, can create old worker, new worker, or no workers on hostengine
     std::atomic<WorkerVersion> workerVersion_ { WorkerVersion::NONE };
 #if !defined(PREVIEW)
