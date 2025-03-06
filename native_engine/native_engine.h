@@ -235,7 +235,7 @@ public:
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false, bool captureNumericValue = false) = 0;
-    virtual void DumpHeapSnapshot(int fd, bool isFullGC, const std::function<void(uint8_t)> &callback) = 0;
+    virtual void DumpHeapSnapshot(int& fd, bool isFullGC, const std::function<void(uint8_t)> &callback) = 0;
     virtual void DumpCpuProfile() = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false, bool isFullGC = true) = 0;
