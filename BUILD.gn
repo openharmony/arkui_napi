@@ -169,6 +169,10 @@ ohos_source_set("ace_napi_static") {
     if (product_name != "ohos-sdk" && napi_enable_container_scope) {
       deps += [ "ace_engine:ace_container_scope" ]
       defines += [ "ENABLE_CONTAINER_SCOPE" ]
+      defines += [ "ENABLE_CONTAINER_SCOPE_SEND_EVENT" ]
+    } else if (product_name != "ohos-sdk") {
+      external_deps += [ "ace_engine:ace_container_scope" ]
+      defines += [ "ENABLE_CONTAINER_SCOPE_SEND_EVENT" ]
     }
   }
 
