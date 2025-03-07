@@ -182,7 +182,7 @@ EXPORT void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARK
 EXPORT bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFulfilled,
     ARKTS_Value onRejected);
-EXPORT void ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback);
+EXPORT ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback);
 
 EXPORT void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId);
 

@@ -30,6 +30,11 @@
 #define LOG_DOMAIN 0xD003900
 #define LOG_TAG "ARKTS-INTEROP"
 
+#define LOGD(...)                                           \
+if (HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_DEBUG)) {      \
+    HILOG_DEBUG(LOG_CORE, __VA_ARGS__);                     \
+}
+
 #define LOGI(...)                                           \
 if (HiLogIsLoggable(LOG_DOMAIN, LOG_TAG, LOG_INFO)) {       \
     HILOG_INFO(LOG_CORE, ##__VA_ARGS__);                    \

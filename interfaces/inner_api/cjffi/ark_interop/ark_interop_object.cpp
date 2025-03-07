@@ -52,6 +52,7 @@ bool ARKTS_IsHeapObject(ARKTS_Value value)
 
 bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(env, "env is null");
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
