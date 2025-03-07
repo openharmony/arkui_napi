@@ -18,7 +18,6 @@
 
 #include "native_value.h"
 
-#include <atomic>
 #include <mutex>
 #include <deque>
 #include <uv.h>
@@ -101,8 +100,8 @@ protected:
     std::condition_variable condition_;
     SafeAsyncStatus status_ = SafeAsyncStatus::UNKNOW;
 #if defined(ENABLE_EVENT_HANDLER)
+    std::mutex eventHandlerMutex_;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
-    std::atomic<uint32_t> taskSize_ = 0;
 #endif
 
 #ifdef ENABLE_CONTAINER_SCOPE
