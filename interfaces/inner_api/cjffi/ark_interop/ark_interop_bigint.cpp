@@ -80,6 +80,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
 
 bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(env, "env is null");
     auto tag = BIT_CAST(value, panda::JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
@@ -100,6 +101,7 @@ int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value)
 
 void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative, int64_t byteCount, uint8_t bytes[])
 {
+    ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(bytes, "bytes is null");
     ARKTS_ASSERT_V(ARKTS_IsBigInt(env, value), "value is not bigint");
     auto vm = P_CAST(env, panda::EcmaVM*);

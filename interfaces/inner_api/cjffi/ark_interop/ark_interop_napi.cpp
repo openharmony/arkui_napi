@@ -358,6 +358,7 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
 {
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(ARKTS_IsCallable(env, func), "func is not callable");
+    ARKTS_ASSERT_P(numArgs >= 0, "numArgs must be non-negative");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
@@ -379,6 +380,7 @@ ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_V
 {
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(ARKTS_IsClass(env, clazz), "clazz is not class");
+    ARKTS_ASSERT_P(numArgs >= 0, "numArgs must be non-negative");
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
@@ -439,6 +441,7 @@ void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Va
     auto jArr = BIT_CAST(array, Local<ArrayRef>);
 
     ArrayRef::SetValueAt(vm, jArr, index, ARKTS_ToHandle<JSValueRef>(value));
+    ARKTSInner_ReportJSErrors(env, false);
 }
 
 ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index)
@@ -450,7 +453,7 @@ ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index)
     ARKTS_ASSERT_P(arr->Length(vm) > index, "out of index");
 
     auto result = ArrayRef::GetValueAt(vm, arr, index);
-
+    ARKTSInner_ReportJSErrors(env, false);
     return ARKTS_FromHandle(result);
 }
 
@@ -469,6 +472,7 @@ bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value)
 ARKTS_Value ARKTS_CreateArrayBuffer(ARKTS_Env env, int32_t length)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(length >= 0, "length must be non-negative");
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayBufferRef::New(vm, length);
     return ARKTS_FromHandle(result);
@@ -478,6 +482,7 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
     int64_t finalizerHint)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(length >= 0, "length must be non-negative");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayBufferRef::New(vm, buffer, length, ARKTSInner_CJArrayBufferDeleter,
@@ -488,6 +493,7 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
 
 bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(env, "env is null");
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
@@ -542,8 +548,10 @@ int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest
     auto src = ARKTS_GetArrayBufferRawPtr(env, buffer);
     auto srcSize = ARKTS_GetArrayBufferLength(env, buffer);
     auto targetSize = std::min(srcSize, count);
-    if (memcpy_s(dest, count, src, targetSize) != targetSize) {
-        LOGE("ARKTS_ArrayBufferReadBytes error, memcpy_s ret size incorrect");
+    auto status = memcpy_s(dest, count, src, targetSize);
+    if (status != 0) {
+        LOGE("ARKTS_ArrayBufferReadBytes error, memcpy_s ret %{public}d", status);
+        return 0;
     }
     return targetSize;
 }
@@ -551,6 +559,7 @@ int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest
 ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(data, "data is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = NativePointerRef::New(vm, data, ARKTSInner_CJExternalDeleter, env);
@@ -559,6 +568,7 @@ ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
 
 bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(env, "env is null");
     auto prime = BIT_CAST(value, JSValueRef);
     if (!prime.IsHeapObject()) {
         return false;
@@ -623,6 +633,7 @@ void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Valu
 
 bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(env, "env is null");
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
@@ -652,16 +663,17 @@ ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFul
     return ARKTS_FromHandle(result);
 }
 
-void ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback)
+ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback)
 {
-    ARKTS_ASSERT_V(env, "env is null");
-    ARKTS_ASSERT_V(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
-    ARKTS_ASSERT_V(ARKTS_IsCallable(env, callback), "callback is not callable");
+    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
+    ARKTS_ASSERT_P(ARKTS_IsCallable(env, callback), "callback is not callable");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = BIT_CAST(prom, PromiseRef*);
     auto callbackFunc = BIT_CAST(callback, Local<FunctionRef>);
-    promise->Catch(vm, callbackFunc);
+    auto result = promise->Catch(vm, callbackFunc);
+    return ARKTS_FromHandle(result);
 }
 
 ARKTS_Scope ARKTS_OpenScope(ARKTS_Env env)

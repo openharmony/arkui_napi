@@ -74,7 +74,7 @@ void ARKTS_SetCJModuleCallback(ARKTS_ModuleCallbacks* callback)
 // export but only for internal
 panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName)
 {
-    LOGE("ARKTS_LoadCJModule start: %{public}s", dllName);
+    LOGD("ARKTS_LoadCJModule start: %{public}s", dllName);
     // HandleScope
     auto scope = ARKTS_OpenScope(env);
 

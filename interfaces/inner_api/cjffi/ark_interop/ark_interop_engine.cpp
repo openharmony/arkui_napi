@@ -189,6 +189,7 @@ void* ARKTS_GetNAPIEnv(ARKTS_Engine engine)
 
 void ARKTS_DestroyEngine(ARKTS_Engine engine)
 {
+    ARKTS_ASSERT_V(engine, "engine is null");
     ARKTS_ASSERT_V(ARKTS_GetPosixThreadId() != ARKTS_GetThreadIdOfEngine(engine),
         "can not destroy engine at it's running thread");
 #ifdef __OHOS__
@@ -216,6 +217,7 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
 
 ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine)
 {
+    ARKTS_ASSERT_P(engine, "engine is null");
     return P_CAST(engine->vm, ARKTS_Env);
 }
 
@@ -337,5 +339,6 @@ ARKTS_Engine ARKTS_CreateEngineWithNewThread()
 
 uint64_t ARKTS_GetThreadIdOfEngine(ARKTS_Engine engine)
 {
+    ARKTS_ASSERT_I(engine, "engine is null");
     return engine->threadId;
 }
