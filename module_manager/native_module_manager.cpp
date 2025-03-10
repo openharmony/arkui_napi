@@ -571,7 +571,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         return nullptr;
     }
     std::string prefixTmp;
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM)
     std::string strModule(moduleName);
     std::string strCutName = strModule;
     if (path != nullptr) {
@@ -597,7 +597,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     nativeModulePath[2][0] = 0; // 2 : Element index value
     NativeModule* cacheNativeModule = nullptr;
     NativeModuleHeadTailStruct cacheHeadTailNativeModule;
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM)
     if (!GetNativeModulePath(strCutName.c_str(), path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
         errInfo = "failed to get native file path of module " + std::string(moduleName);
         HILOG_WARN("%{public}s", errInfo.c_str());
@@ -651,9 +651,14 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
             nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule,
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #elif defined(IOS_PLATFORM)
-            HILOG_INFO("module '%{public}s' does not in cache", strCutName.c_str());
-            nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule,
-                                                  errInfo, nativeModulePath, cacheNativeModule);
+            nativeModule =
+                FindNativeModuleByCache(moduleName, nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+
+            if (nativeModule == nullptr) {
+                HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
+                nativeModule = FindNativeModuleByDisk(moduleName, path, relativePath, internal, isAppModule, errInfo,
+                                                      nativeModulePath, cacheNativeModule);
+            }
 #else
             HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
             nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule,
@@ -782,8 +787,10 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
             dupModuleName[i] = tolower(dupModuleName[i]);
         }
 #ifdef IOS_PLATFORM
-        std::string sandboxPath = appLibPathMap_[path];
-        sysAbcPrefix = sandboxPath + "/systemres/abc";
+        if (appLibPathMap_.find("default") != appLibPathMap_.end()) {
+            std::string sandboxPath(appLibPathMap_["default"]);
+            sysAbcPrefix = sandboxPath + "/systemres/abc";
+        }
 #endif
     }
 
@@ -813,19 +820,11 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, zfix, soPostfix) == -1) {
                 return false;
             }
-#ifdef IOS_PLATFORM
-            char* lastUnderScore = strrchr(dupModuleName, '_');
-            const char *moduleNamePart = (lastUnderScore != nullptr) ? (lastUnderScore + 1) : dupModuleName;
-            if (sprintf_s(nativeModulePath[MODULE_PATH_SECONDARY_INDEX], pathLength, "%s/%s%s",
-                sysAbcPrefix.c_str(), moduleNamePart, abcfix) == -1) {
-                return false;
-            }
-#else
+            
             if (sprintf_s(nativeModulePath[MODULE_PATH_SECONDARY_INDEX], pathLength, "%s/%s%s",
                 sysAbcPrefix.c_str(), dupModuleName, abcfix) == -1) {
                 return false;
             }
-#endif
         } else {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
@@ -887,10 +886,17 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, afterDot, zfix, soPostfix) == -1) {
                 return false;
             }
+#ifdef IOS_PLATFORM
+            if (sprintf_s(nativeModulePath[MODULE_PATH_SECONDARY_INDEX], pathLength, "%s/%s%s",
+                sysAbcPrefix.c_str(), afterDot, abcfix) == -1) {
+                return false;
+            }
+#else
             if (sprintf_s(nativeModulePath[2], pathLength, "%s/%s/%s%s", // 2 : Element index value
                 sysAbcPrefix.c_str(), dupModuleName, afterDot, abcfix) == -1) {
                 return false;
             }
+#endif
         } else {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
