@@ -193,15 +193,14 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
 const std::string NATIVE_ASYNC_WORK_BEGIN = "1000";
 const std::string NATIVE_ASYNC_WORK_END = "1001";
 
-static void SchedPerfHintNativeAsyncWork(bool begin)
-{
+static void SchedPerfHintNativeAsyncWork(bool begin) {
     static const char fileName[] = "/dev/hisi_perf_hint";
-    static int perf_hint_fd = open(fileName, O_WRONLY);
-    if (perf_hint_fd < 0) {
+    static FILE* perf_hint_fd = fopen(fileName, "w");
+    if (perf_hint_fd == nullptr) {
         return;
     }
     std::string hint = begin ? NATIVE_ASYNC_WORK_BEGIN : NATIVE_ASYNC_WORK_END;
-    if (write(perf_hint_fd, hint.c_str(), hint.length()) == -1) {
+    if (fwrite(hint.c_str(), hint.length(), 1, perf_hint_fd) < 1) {
         return;
     }
 }
