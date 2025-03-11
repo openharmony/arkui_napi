@@ -196,14 +196,14 @@ const std::string PERFHINT_NATIVE_ASYNC_WORK_END = "1001";
 static void SchedPerfHintNativeAsyncWork(bool begin)
 {
     static const char fileName[] = "/dev/hisi_perf_hint";
-    static FILE* perf_hint_fd = fopen(fileName, "w");
-    if (perf_hint_fd == nullptr) {
+    static FILE* perfHintFd = fopen(fileName, "w");
+    if (perfHintFd == nullptr) {
         return;
     }
     if (begin) {
-        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_BEGIN.c_str(), PERFHINT_NATIVE_ASYNC_WORK_BEGIN.length(), 1, perf_hint_fd);
+        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_BEGIN.c_str(), PERFHINT_NATIVE_ASYNC_WORK_BEGIN.length(), 1, perfHintFd);
     } else {
-        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_END.c_str(), PERFHINT_NATIVE_ASYNC_WORK_END.length(), 1, perf_hint_fd);
+        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_END.c_str(), PERFHINT_NATIVE_ASYNC_WORK_END.length(), 1, perfHintFd);
     }
 }
 
