@@ -201,7 +201,8 @@ static void SchedPerfHintNativeAsyncWork(bool begin)
         return;
     }
     if (begin) {
-        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_BEGIN.c_str(), PERFHINT_NATIVE_ASYNC_WORK_BEGIN.length(), 1, perfHintFd);
+        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_BEGIN.c_str(), PERFHINT_NATIVE_ASYNC_WORK_BEGIN.length(), 1,
+            perfHintFd);
     } else {
         (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_END.c_str(), PERFHINT_NATIVE_ASYNC_WORK_END.length(), 1, perfHintFd);
     }
