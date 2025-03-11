@@ -84,7 +84,9 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     }
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
-    containerScopeId_ = ContainerScope::CurrentId();
+    if (engine->IsContainerScopeEnabled()) {
+        containerScopeId_ = ContainerScope::CurrentId();
+    }
 #endif
 }
 
@@ -215,7 +217,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
             nstatus = napi_generic_failure;
     }
 #ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(that->containerScopeId_);
+    ContainerScope containerScope(that->containerScopeId_, engine->IsContainerScopeEnabled());
 #endif
 
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));

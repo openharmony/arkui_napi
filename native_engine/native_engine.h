@@ -514,6 +514,9 @@ public:
     napi_status StopEventLoop();
 
     virtual bool IsCrossThreadCheckEnabled() const = 0;
+#ifdef ENABLE_CONTAINER_SCOPE
+    virtual bool IsContainerScopeEnabled() const = 0;
+#endif
 
     bool IsInDestructor() const
     {
