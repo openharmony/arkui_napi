@@ -24,6 +24,8 @@
 #endif
 
 #include <cinttypes>
+#include <fcntl.h>
+#include <unistd.h>
 #include "native_api_internal.h"
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -188,6 +190,24 @@ void NativeAsyncWork::AsyncWorkCallback(uv_work_t* req)
 #endif
 }
 
+const std::string PERFHINT_NATIVE_ASYNC_WORK_BEGIN = "1000";
+const std::string PERFHINT_NATIVE_ASYNC_WORK_END = "1001";
+
+static void SchedPerfHintNativeAsyncWork(bool begin)
+{
+    static const char fileName[] = "/dev/hisi_perf_hint";
+    static FILE* perfHintFd = fopen(fileName, "w");
+    if (perfHintFd == nullptr) {
+        return;
+    }
+    if (begin) {
+        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_BEGIN.c_str(), PERFHINT_NATIVE_ASYNC_WORK_BEGIN.length(), 1,
+            perfHintFd);
+    } else {
+        (void)fwrite(PERFHINT_NATIVE_ASYNC_WORK_END.c_str(), PERFHINT_NATIVE_ASYNC_WORK_END.length(), 1, perfHintFd);
+    }
+}
+
 void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 {
     if (req == nullptr) {
@@ -220,6 +240,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));
     HILOG_DEBUG("NativeAsyncWork::AsyncAfterWorkCallback start to execute.");
+    SchedPerfHintNativeAsyncWork(true);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "Native async work complete callback, " + that->GetTraceDescription());
     bool isValidTraceId = that->taskTraceId_.IsValid();
@@ -240,6 +261,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
         OHOS::HiviewDFX::HiTraceChain::ClearId();
     }
 #endif
+    SchedPerfHintNativeAsyncWork(false);
 }
 
 std::string NativeAsyncWork::GetTraceDescription()
