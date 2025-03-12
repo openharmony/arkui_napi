@@ -2421,7 +2421,6 @@ std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawS
     if (SourceMapCallback_ != nullptr) {
         return SourceMapCallback_(rawStack);
     } else {
-        HILOG_WARN("SourceMapCallback_ is nullptr.");
         return rawStack;
     }
 }
