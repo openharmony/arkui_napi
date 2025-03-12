@@ -653,7 +653,6 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #elif defined(IOS_PLATFORM)
             nativeModule =
                 FindNativeModuleByCache(moduleName, nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
-
             if (nativeModule == nullptr) {
                 HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
                 nativeModule = FindNativeModuleByDisk(moduleName, path, relativePath, internal, isAppModule, errInfo,
