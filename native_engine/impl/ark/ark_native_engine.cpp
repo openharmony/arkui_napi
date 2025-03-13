@@ -127,8 +127,13 @@ panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v)
 }
 
 #ifdef ENABLE_CONTAINER_SCOPE
-void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &value)
+void FunctionSetContainerId(napi_env env, panda::Local<panda::JSValueRef> &value)
 {
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsContainerScopeEnabled()) {
+        return;
+    }
+    auto vm = engine->GetEcmaVm();
     if (!value->IsFunction(vm)) {
         return;
     }
@@ -176,7 +181,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     funcInfo->callback = callback;
     funcInfo->data = data;
 #ifdef ENABLE_CONTAINER_SCOPE
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsContainerScopeEnabled()) {
         funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
     }

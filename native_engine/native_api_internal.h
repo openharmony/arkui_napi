@@ -152,14 +152,9 @@ inline bool ValidEngineCheck(NativeEngine* input,
 #ifdef ENABLE_CONTAINER_SCOPE
 inline bool EnableContainerScope(napi_env env)
 {
-    NativeEngine* engine = reinterpret_cast<NativeEngine*>((env));
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     return engine->IsContainerScopeEnabled();
 }
-
-#define DO_IF_ENABLE_CONTAINER_SCOPE(env, toDo) \
-    if (EnableContainerScope(env)) {            \
-        toDo;                                   \
-    }
 #endif
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */
