@@ -25,6 +25,7 @@
 #include "ark_native_timer.h"
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
+#include "cj_support.h"
 #include "securec.h"
 #include "utils/file.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
@@ -415,6 +416,10 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 
                 if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
                     Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
+                    if (UNLIKELY(IsCJModule(moduleName->ToString(ecmaVm).c_str()))) {
+                        return NapiValueToLocalValue(
+                            LoadCJModule((napi_env)arkNativeEngine, moduleName->ToString(ecmaVm).c_str()));
+                    }
                     module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
                         path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "");
                 } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
