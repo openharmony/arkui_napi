@@ -15,6 +15,7 @@
 
 #include "cj_support.h"
 
+#if defined(OHOS_STANDARD_PLATFORM)
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -23,12 +24,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if !defined(PREVIEW)
-#include "elf.h"
-#endif
-
 #include "ark_native_engine.h"
 #include "cj_envsetup.h"
+#include "elf.h"
 #include "utils/log.h"
 
 #ifdef NAPI_TARGET_ARM64
@@ -41,7 +39,6 @@
 #error current platform not supported
 #endif
 
-#if !defined(PREVIEW)
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -132,13 +129,9 @@ static bool HasCJMetadata(int fd)
     free(shstrtab);
     return found;
 }
-#endif
 
 bool IsCJModule(const char* moduleName)
 {
-#if defined(PREVIEW)
-    return false;
-#else
     HILOG_INFO("Checking whether is cj module, module name: %{public}s", moduleName);
     std::string absolutePath("/data/storage/el1/bundle/libs/" LIBS_NAME);
     std::string libName = "lib" + std::string(moduleName) + ".so";
@@ -179,7 +172,6 @@ bool IsCJModule(const char* moduleName)
         HILOG_INFO("Not Found 'cjmetadata' section %{public}s", soPath);
         return false;
     }
-#endif
 }
 
 static bool LoadArkCJModule(napi_env env, const char* moduleName, napi_value* result)
@@ -234,3 +226,14 @@ napi_value LoadCJModule(napi_env env, const char* nameBuf)
     LoadArkCJModule(env, nameBuf, &result);
     return result;
 }
+#else
+bool IsCJModule(const char* moduleName)
+{
+    return false;
+}
+
+napi_value LoadCJModule(napi_env env, const char* nameBuf)
+{
+    return nullptr;
+}
+#endif
