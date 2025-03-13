@@ -123,7 +123,8 @@ ohos_source_set("ace_napi_static") {
   stack_protector_ret = false
   defines = []
   public_configs = [ ":ace_napi_config" ]
-  deps = []
+  include_dirs = [ "interfaces/inner_api/cjffi/ark_interop" ]
+  deps = [ "interfaces/inner_api/cjffi/ark_interop:cj_envsetup" ]
   external_deps = []
   configs = []
 
