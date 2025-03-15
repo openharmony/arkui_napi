@@ -31,7 +31,6 @@ using OHOS::Ace::ContainerScope;
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
 using namespace OHOS::AppExecFwk;
-static constexpr int32_t API_VERSION_SIXTEEN = 16;
 #endif
 
 // static methods start
@@ -302,6 +301,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     size_t size = queue_.size();
     void* data = nullptr;
+
     auto vm = engine_->GetEcmaVm();
     panda::LocalScope scope(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -310,10 +310,12 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
     while (size > 0) {
         data = queue_.front();
+
         // when queue is full, notify send.
         if (size == maxQueueSize_ && maxQueueSize_ > 0) {
             condition_.notify_one();
         }
+
         napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
         lock.unlock();
         if (callJsCallback_ != nullptr) {
@@ -322,30 +324,23 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
             CallJs(engine_, func_, context_, data);
         }
         lock.lock();
+
         if (tryCatch.HasCaught()) {
             engine_->HandleUncaughtException();
         }
         queue_.pop_front();
         size--;
     }
+
     if (!queue_.empty()) {
         auto ret = uv_async_send(&asyncHandler_);
         if (ret != 0) {
             HILOG_ERROR("uv async send failed in ProcessAsyncHandle ret = %{public}d", ret);
         }
     }
+
     if (queue_.empty() && threadCount_ == 0) {
-#if defined(ENABLE_EVENT_HANDLER)
-        if (engine_->GetRealApiVersion() < API_VERSION_SIXTEEN) {
-            CloseHandles();
-            return;
-        }
-        if (taskSize_.load() == 0) {
-            CloseHandles();
-        }
-#else
         CloseHandles();
-#endif
     }
 }
 
@@ -387,17 +382,7 @@ void NativeSafeAsyncWork::CleanUp()
         }
         queue_.pop_front();
     }
-#if defined(ENABLE_EVENT_HANDLER)
-    if (engine_->GetRealApiVersion() < API_VERSION_SIXTEEN) {
-        delete this;
-        return;
-    }
-    if (taskSize_.load() == 0) {
-        delete this;
-    }
-#else
     delete this;
-#endif
 }
 
 bool NativeSafeAsyncWork::IsSameTid()
@@ -410,6 +395,7 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
 {
 #if defined(ENABLE_EVENT_HANDLER)
     HILOG_DEBUG("NativeSafeAsyncWork::PostTask called");
+    std::unique_lock<std::mutex> lock(eventHandlerMutex_);
     if (engine_ == nullptr || eventHandler_ == nullptr) {
         HILOG_ERROR("post task failed due to nullptr engine or eventHandler");
         return napi_status::napi_generic_failure;
@@ -424,23 +410,8 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
         } else {
             CallJs(engine_, func_, context_, data);
         }
-        if (engine_->GetRealApiVersion() < API_VERSION_SIXTEEN) {
-            return;
-        }
-        taskSize_--;
-        std::unique_lock<std::mutex> lock(mutex_);
-        if (taskSize_.load() == 0 && queue_.empty()) {
-            if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED) {
-                HILOG_DEBUG("NativeSafeAsyncWork is closed!");
-                delete this;
-                return;
-            }
-            auto ret = uv_async_send(&asyncHandler_);
-            if (ret != 0) {
-                HILOG_ERROR("uv async send failed in PostTask ret = %{public}d", ret);
-            }
-        }
     };
+
     bool res = false;
     if (isTail) {
         HILOG_DEBUG("The task is posted from tail");
@@ -449,14 +420,10 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
         HILOG_DEBUG("The task is posted from head");
         res = eventHandler_->PostTaskAtFront(task, std::string(), static_cast<EventQueue::Priority>(priority));
     }
-    if (res) {
-        if (engine_->GetRealApiVersion() >= API_VERSION_SIXTEEN) {
-            taskSize_++;
-        }
-        return napi_status::napi_ok;
-    }
+
+    return res ? napi_status::napi_ok : napi_status::napi_generic_failure;
 #else
     HILOG_WARN("EventHandler feature is not supported");
-#endif
     return napi_status::napi_generic_failure;
+#endif
 }
