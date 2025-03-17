@@ -449,7 +449,9 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->callback = callback;
     funcInfo->data = data;
 #ifdef ENABLE_CONTAINER_SCOPE
-    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+    if (EnableContainerScope(env)) {
+        funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+    }
 #endif
 
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
@@ -896,7 +898,7 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
                                                              reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
 #ifdef ENABLE_CONTAINER_SCOPE
-    FunctionSetContainerId(vm, value);
+    FunctionSetContainerId(env, value);
 #endif
     *result = JsValueFromLocalValue(value);
 
@@ -992,7 +994,7 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
     Local<panda::JSValueRef> value = JSNApi::NapiGetNamedProperty(vm, reinterpret_cast<uintptr_t>(object), utf8name);
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
 #ifdef ENABLE_CONTAINER_SCOPE
-    FunctionSetContainerId(vm, value);
+    FunctionSetContainerId(env, value);
 #endif
     *result = JsValueFromLocalValue(value);
 
@@ -1063,7 +1065,7 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, obj);
     Local<panda::JSValueRef> value = obj->Get(vm, index);
 #ifdef ENABLE_CONTAINER_SCOPE
-    FunctionSetContainerId(vm, value);
+    FunctionSetContainerId(env, value);
 #endif
     *result = JsValueFromLocalValue(value);
 
@@ -1225,14 +1227,18 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
     panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
-    int32_t scopeId = OHOS::Ace::ContainerScope::CurrentId();
-    if (!function->IsConcurrentFunction(vm)) {
-        auto funcInfo = reinterpret_cast<NapiFunctionInfo *>(function->GetData(vm));
-        if (funcInfo != nullptr) {
-            scopeId = funcInfo->scopeId;
+    int32_t scopeId = -1;
+    bool enableContainerScope = EnableContainerScope(env);
+    if (enableContainerScope) {
+        scopeId = OHOS::Ace::ContainerScope::CurrentId();
+        if (!function->IsConcurrentFunction(vm)) {
+            auto funcInfo = reinterpret_cast<NapiFunctionInfo*>(function->GetData(vm));
+            if (funcInfo != nullptr) {
+                scopeId = funcInfo->scopeId;
+            }
         }
     }
-    OHOS::Ace::ContainerScope containerScope(scopeId);
+    OHOS::Ace::ContainerScope containerScope(scopeId, enableContainerScope);
 #endif
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
@@ -1323,7 +1329,7 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
             for (; i < j && i < *argc; i++) {
                 panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
 #ifdef ENABLE_CONTAINER_SCOPE
-                FunctionSetContainerId(vm, value);
+                FunctionSetContainerId(env, value);
 #endif
                 argv[i] = JsValueFromLocalValue(value);
             }
@@ -1365,7 +1371,7 @@ NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbi
     auto thisVarObj = info->GetThisRef();
 #ifdef ENABLE_CONTAINER_SCOPE
     panda::Local<panda::JSValueRef> newValue = info->GetNewTargetRef();
-    FunctionSetContainerId(vm, newValue);
+    FunctionSetContainerId(env, newValue);
     auto functionVal = newValue;
 #else
     auto functionVal = info->GetNewTargetRef();

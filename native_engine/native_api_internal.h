@@ -149,4 +149,12 @@ inline bool ValidEngineCheck(NativeEngine* input,
 #define VALID_ENGINE_CHECK(input, owner, id) \
     ValidEngineCheck((input), (owner), (id), __FUNCTION__, __FILENAME__, __LINE__)
 
+#ifdef ENABLE_CONTAINER_SCOPE
+inline bool EnableContainerScope(napi_env env)
+{
+    NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
+    return engine->IsContainerScopeEnabled();
+}
+#endif
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */

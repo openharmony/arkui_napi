@@ -79,7 +79,7 @@ bool NapiDefineProperty(napi_env env, panda::Local<panda::ObjectRef> &obj, NapiP
 NAPI_EXPORT panda::Local<panda::JSValueRef> NapiValueToLocalValue(napi_value v);
 NAPI_EXPORT napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local);
 #ifdef ENABLE_CONTAINER_SCOPE
-void FunctionSetContainerId(const EcmaVM *vm, panda::Local<panda::JSValueRef> &local);
+void FunctionSetContainerId(napi_env env, panda::Local<panda::JSValueRef> &local);
 #endif
 panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, NapiNativeCallback callback,
                                                 void* data, const NapiPropertyDescriptor* properties, size_t length);
@@ -378,6 +378,13 @@ public:
     }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 
+#ifdef ENABLE_CONTAINER_SCOPE
+    inline bool IsContainerScopeEnabled() const override
+    {
+        return containerScopeEnable_;
+    }
+#endif
+
     NativeTimerCallbackInfo* GetTimerListHead() const
     {
         return TimerListHead_;
@@ -429,6 +436,9 @@ private:
     // napi options and its cache
     NapiOptions* options_ { nullptr };
     bool crossThreadCheck_ { false };
+#ifdef ENABLE_CONTAINER_SCOPE
+    bool containerScopeEnable_ { true };
+#endif
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

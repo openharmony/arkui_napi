@@ -25,7 +25,9 @@ ArkNativeDeferred::ArkNativeDeferred(ArkNativeEngine* engine, Local<PromiseCapab
     : engine_(engine), deferred_(engine->GetEcmaVm(), deferred)
 {
 #ifdef ENABLE_CONTAINER_SCOPE
-    scopeId_ = OHOS::Ace::ContainerScope::CurrentId();
+    if (engine->IsContainerScopeEnabled()) {
+        scopeId_ = OHOS::Ace::ContainerScope::CurrentId();
+    }
 #endif
 }
 
@@ -38,7 +40,7 @@ ArkNativeDeferred::~ArkNativeDeferred()
 void ArkNativeDeferred::Resolve(napi_value data)
 {
 #ifdef ENABLE_CONTAINER_SCOPE
-    OHOS::Ace::ContainerScope containerScope(scopeId_);
+    OHOS::Ace::ContainerScope containerScope(scopeId_, engine_->IsContainerScopeEnabled());
 #endif
     auto vm = engine_->GetEcmaVm();
     deferred_->Resolve(vm, reinterpret_cast<uintptr_t>(data));
@@ -47,7 +49,7 @@ void ArkNativeDeferred::Resolve(napi_value data)
 void ArkNativeDeferred::Reject(napi_value reason)
 {
 #ifdef ENABLE_CONTAINER_SCOPE
-    OHOS::Ace::ContainerScope containerScope(scopeId_);
+    OHOS::Ace::ContainerScope containerScope(scopeId_, engine_->IsContainerScopeEnabled());
 #endif
     auto vm = engine_->GetEcmaVm();
     deferred_->Reject(vm, reinterpret_cast<uintptr_t>(reason));

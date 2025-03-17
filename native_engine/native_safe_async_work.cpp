@@ -94,7 +94,9 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
     }
 
 #ifdef ENABLE_CONTAINER_SCOPE
-    containerScopeId_ = ContainerScope::CurrentId();
+    if (engine->IsContainerScopeEnabled()) {
+        containerScopeId_ = ContainerScope::CurrentId();
+    }
 #endif
 
 #if defined(ENABLE_EVENT_HANDLER)
@@ -305,7 +307,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     auto vm = engine_->GetEcmaVm();
     panda::LocalScope scope(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(containerScopeId_);
+    ContainerScope containerScope(containerScopeId_, engine_->IsContainerScopeEnabled());
 #endif
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
     while (size > 0) {
