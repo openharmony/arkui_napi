@@ -57,8 +57,10 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, napi_value transfer_list,
                                              napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
                                              void** result);
-NAPI_EXTERN napi_status napi_run_actor(napi_env env, uint8_t* buffer, size_t bufferSize,
-                                       const char* descriptor, napi_value* result, char* entryPoint = nullptr);
+NAPI_EXTERN napi_status napi_run_actor(napi_env env,
+                                       const char* path,
+                                       char* entryPoint,
+                                       napi_value* result);
 NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
                                             napi_value js_object,
                                             void* native_object,

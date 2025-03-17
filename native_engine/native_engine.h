@@ -108,8 +108,9 @@ using PostTask = std::function<void(bool needSync)>;
 using CleanEnv = std::function<void()>;
 using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, uint8_t **buff, size_t *buffSize,
-    std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, bool isRestricted)>;
+    std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, void** mapper, bool isRestricted)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
+using ReleaseWorkerSafeMemFunc = std::function<void(void* mapper)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
@@ -340,12 +341,15 @@ public:
     GetAssetFunc GetGetAssetFunc() const;
     virtual void SetOffWorkerFunc(OffWorkerFunc func);
     OffWorkerFunc GetOffWorkerFunc() const;
+    virtual void SetReleaseWorkerSafeMemFunc(ReleaseWorkerSafeMemFunc func);
+    ReleaseWorkerSafeMemFunc GetReleaseWorkerSafeMemFunc() const;
 
     // call init worker func
     virtual bool CallInitWorkerFunc(NativeEngine* engine);
     virtual bool CallGetAssetFunc(const std::string& uri, uint8_t **buff, size_t *buffSize,
-        std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, bool isRestricted);
+        std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, void** mapper, bool isRestricted);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
+    virtual bool CallReleaseWorkerSafeMemFunc(void* mapper);
 
     // adapt worker to ace container
     virtual void SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func);
@@ -448,8 +452,9 @@ public:
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);
     napi_value RunScriptInRestrictedThread(const char* path);
+    napi_value GetAbcBufferAndRunActor(std::string pathStr, char* entryPoint);
     bool GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize, std::vector<uint8_t>& content,
-        std::string& ami, bool isRestrictedWorker = false);
+        std::string& ami, void** mapper, bool isRestrictedWorker = false);
 
     const char* GetModuleFileName();
 
@@ -589,7 +594,7 @@ protected:
     NativeEngine* hostEngine_ {nullptr};
     bool isAppModule_ = false;
     WorkerThreadState* workerThreadState_;
-
+    ReleaseWorkerSafeMemFunc releaseWorkerSafeMemFunc_ {nullptr};
 public:
     uint64_t openHandleScopes_ = 0;
     panda::Local<panda::ObjectRef> lastException_;

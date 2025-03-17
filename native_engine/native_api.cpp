@@ -3029,17 +3029,16 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
 }
 
 NAPI_EXTERN napi_status napi_run_actor(napi_env env,
-                                       uint8_t* buffer,
-                                       size_t bufferSize,
-                                       const char* descriptor,
-                                       napi_value* result,
-                                       char* entryPoint)
+                                       const char* path,
+                                       char* entryPoint,
+                                       napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
 
+    std::string pathStr(path);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->RunActor(buffer, bufferSize, descriptor, entryPoint, false);
+    *result = engine->GetAbcBufferAndRunActor(pathStr, entryPoint);
     return GET_RETURN_STATUS(env);
 }
 
