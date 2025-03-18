@@ -59,6 +59,7 @@ ohos_prebuilt_shared_library("libjsvm") {
   }
   subsystem_name = "arkui"
   part_name = "napi"
+  license_file = "v8_OpenSource.txt"
 
   install_enable = true
   install_images = [ "system" ]
