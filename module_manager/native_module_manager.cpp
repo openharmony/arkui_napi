@@ -72,6 +72,9 @@ NativeModuleManager::~NativeModuleManager()
             if (headNativeModule_->jsABCCode) {
                 delete[] headNativeModule_->jsABCCode;
             }
+            if (headNativeModule_->systemFilePath && headNativeModule_->systemFilePath[0] != '\0') {
+                free(const_cast<char *>(headNativeModule_->systemFilePath));
+            }
             delete headNativeModule_;
             headNativeModule_ = nativeModule;
         }
@@ -1190,12 +1193,10 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)
 {
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
-
     if (headNativeModule_ == nullptr) {
         HILOG_WARN("NativeModule list is empty");
         return false;
     }
-
     NativeModule* nativeModule = headNativeModule_;
     if (!strcasecmp(nativeModule->moduleName, moduleKey.c_str())) {
         if (headNativeModule_ == tailNativeModule_) {
@@ -1206,14 +1207,16 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
         if (nativeModule->moduleName) {
             delete[] nativeModule->moduleName;
         }
-        if (headNativeModule_->jsABCCode) {
-            delete[] headNativeModule_->jsABCCode;
+        if (nativeModule->jsABCCode) {
+            delete[] nativeModule->jsABCCode;
+        }
+        if (nativeModule->systemFilePath && nativeModule->systemFilePath[0] != '\0') {
+            free(const_cast<char *>(nativeModule->systemFilePath));
         }
         delete nativeModule;
         HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
         return true;
     }
-
     bool moduleDeleted = false;
     NativeModule* prev = headNativeModule_;
     NativeModule* curr = prev->next;
@@ -1230,6 +1233,9 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
             if (curr->jsABCCode) {
                 delete[] curr->jsABCCode;
             }
+            if (curr->systemFilePath && curr->systemFilePath[0] != '\0') {
+                free(const_cast<char *>(curr->systemFilePath));
+            }
             delete curr;
             HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
             moduleDeleted = true;
@@ -1238,7 +1244,6 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
         prev = prev->next;
         curr = prev->next;
     }
-
     return moduleDeleted;
 }
 
