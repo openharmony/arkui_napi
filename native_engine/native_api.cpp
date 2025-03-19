@@ -4279,6 +4279,17 @@ NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_register_appstate_callback(napi_env env, NapiAppStateCallback callback)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, callback);
+
+    auto *engine = reinterpret_cast<NativeEngine*>(env);
+    engine->RegisterAppStateCallback(callback);
+
+    return napi_clear_last_error(env);
+}
+
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
     [[maybe_unused]] void* inputIface,
