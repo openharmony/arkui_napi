@@ -3967,7 +3967,7 @@ static Local<panda::JSValueRef> AttachFuncCallback(void* engine, void* buffer, v
         return Local<panda::JSValueRef>();
     }
     auto vm = reinterpret_cast<NativeEngine*>(engine)->GetEcmaVm();
-    if (attachData == nullptr || buffer ==nullptr) {
+    if (attachData == nullptr || buffer == nullptr) {
         HILOG_ERROR("AttachFuncCallback params has nullptr");
         return panda::JSValueRef::Undefined(vm);
     }
