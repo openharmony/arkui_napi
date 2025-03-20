@@ -564,6 +564,14 @@ OffWorkerFunc NativeEngine::GetOffWorkerFunc() const
 {
     return offWorkerFunc_;
 }
+void NativeEngine::SetReleaseWorkerSafeMemFunc(ReleaseWorkerSafeMemFunc func)
+{
+    releaseWorkerSafeMemFunc_ = func;
+}
+ReleaseWorkerSafeMemFunc NativeEngine::GetReleaseWorkerSafeMemFunc() const
+{
+    return releaseWorkerSafeMemFunc_;
+}
 
 // call init worker func
 bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
@@ -576,10 +584,10 @@ bool NativeEngine::CallInitWorkerFunc(NativeEngine* engine)
 }
 
 bool NativeEngine::CallGetAssetFunc(const std::string& uri, uint8_t** buffer, size_t* bufferSize,
-    std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, bool isRestrictedWorker)
+    std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, void** mapper, bool isRestrictedWorker)
 {
     if (getAssetFunc_ != nullptr) {
-        getAssetFunc_(uri, buffer, bufferSize, content, ami, useSecureMem, isRestrictedWorker);
+        getAssetFunc_(uri, buffer, bufferSize, content, ami, useSecureMem, mapper, isRestrictedWorker);
         return true;
     }
     return false;
@@ -589,6 +597,18 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
     if (offWorkerFunc_ != nullptr) {
         offWorkerFunc_(engine);
+        return true;
+    }
+    return false;
+}
+
+bool NativeEngine::CallReleaseWorkerSafeMemFunc(void* mapper)
+{
+    if (mapper == nullptr) {
+        return true;
+    }
+    if (releaseWorkerSafeMemFunc_ != nullptr) {
+        releaseWorkerSafeMemFunc_(mapper);
         return true;
     }
     return false;
@@ -829,6 +849,7 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetInitWorkerFunc(engine->GetInitWorkerFunc());
     SetGetAssetFunc(engine->GetGetAssetFunc());
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
+    SetReleaseWorkerSafeMemFunc(engine->GetReleaseWorkerSafeMemFunc());
 }
 
 // this interface for restrictedWorker with entryPoint to execute mergeabc
@@ -841,8 +862,9 @@ napi_value NativeEngine::RunScriptForAbc(const char* path, char* entryPoint)
     size_t scriptContentSize = 0;
     std::vector<uint8_t> content;
     std::string ami;
+    void* mapper = nullptr;
     if (!GetAbcBuffer(normalizedPath.c_str(), &scriptContent, &scriptContentSize,
-        content, ami, true)) {
+        content, ami, &mapper, true)) {
         HILOG_ERROR("RunScript: GetAbcBuffer failed");
         return nullptr;
     }
@@ -868,7 +890,8 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
     size_t scriptContentSize = 0;
     std::vector<uint8_t> content;
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami)) {
+    void* mapper = nullptr;
+    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, &mapper)) {
         HILOG_ERROR("RunScript: GetAbcBuffer failed");
         return nullptr;
     }
@@ -878,7 +901,11 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
         HILOG_ERROR("RunScript: buffer size is empty, please check abc path");
         return nullptr;
     }
-    return RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint, false);
+    napi_value result = RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint, false);
+    if (!CallReleaseWorkerSafeMemFunc(mapper)) {
+        HILOG_ERROR("RunScript: CallReleaseWorkerSafeMemFunc error");
+    }
+    return result;
 }
 
 napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
@@ -889,7 +916,8 @@ napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
     size_t scriptContentSize = 0;
     std::vector<uint8_t> content;
     std::string ami;
-    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, true)) {
+    void* mapper = nullptr;
+    if (!GetAbcBuffer(path, &scriptContent, &scriptContentSize, content, ami, &mapper, true)) {
         HILOG_ERROR("RunScriptInRestrictedThread: GetAbcBuffer failed");
         return nullptr;
     }
@@ -903,15 +931,33 @@ napi_value NativeEngine::RunScriptInRestrictedThread(const char* path)
     return JsValueFromLocalValue(scope.Escape(undefObj));
 }
 
+napi_value NativeEngine::GetAbcBufferAndRunActor(std::string pathStr, char *entryPoint)
+{
+    uint8_t* scriptContent = nullptr;
+    size_t scriptContentSize = 0;
+    std::vector<uint8_t> content;
+    std::string workerAmi;
+    void* mapper = nullptr;
+    if (!GetAbcBuffer(pathStr.c_str(), &scriptContent, &scriptContentSize, content, workerAmi, &mapper)) {
+        HILOG_ERROR("GetAbcBufferAndRunActor: GetAbcBuffer error");
+        return nullptr;
+    }
+    napi_value result = RunActor(scriptContent, scriptContentSize, workerAmi.c_str(), entryPoint, false);
+    if (!CallReleaseWorkerSafeMemFunc(mapper)) {
+        HILOG_ERROR("GetAbcBufferAndRunActor: CallReleaseWorkerSafeMemFunc error");
+    }
+    return result;
+}
+
 /* buffer, bufferSize is for secureMem; content is for normalMem.
  * If output is not secureMem, fullfill buffer, bufferSize with content data and size.
  */
 bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* bufferSize,
-    std::vector<uint8_t>& content, std::string& ami, bool isRestrictedWorker)
+    std::vector<uint8_t>& content, std::string& ami, void** mapper, bool isRestrictedWorker)
 {
     std::string pathStr(path);
     bool useSecureMem = false;
-    if (!CallGetAssetFunc(pathStr, buffer, bufferSize, content, ami, useSecureMem, isRestrictedWorker)) {
+    if (!CallGetAssetFunc(pathStr, buffer, bufferSize, content, ami, useSecureMem, mapper, isRestrictedWorker)) {
         HILOG_ERROR("Get asset error");
         return false;
     }
