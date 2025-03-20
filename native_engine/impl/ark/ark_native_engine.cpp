@@ -2124,6 +2124,7 @@ void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
     arkIdleMonitor_->NotifyChangeBackgroundState(inBackground);
+    interopAppState_.Notify(inBackground ? NAPI_APP_STATE_BACKGROUND : NAPI_APP_STATE_FOREGROUND);
 }
 
 void ArkNativeEngine::NotifyIdleStatusControl(std::function<void(bool)> callback)
@@ -2146,12 +2147,15 @@ void ArkNativeEngine::NotifyForceExpandState(int32_t value)
     switch (ForceExpandState(value)) {
         case ForceExpandState::FINISH_COLD_START:
             DFXJSNApi::NotifyFinishColdStart(vm_, true);
+            interopAppState_.Notify(NAPI_APP_STATE_COLD_START_FINISHED);
             break;
         case ForceExpandState::START_HIGH_SENSITIVE:
             DFXJSNApi::NotifyHighSensitive(vm_, true);
+            interopAppState_.Notify(NAPI_APP_STATE_SENSITIVE_START);
             break;
         case ForceExpandState::FINISH_HIGH_SENSITIVE:
             DFXJSNApi::NotifyHighSensitive(vm_, false);
+            interopAppState_.Notify(NAPI_APP_STATE_SENSITIVE_END);
             break;
         default:
             HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
@@ -2414,6 +2418,11 @@ void ArkNativeEngine::PostLooperTriggerIdleGCTask()
         static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
     mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
 #endif
+}
+
+void ArkNativeEngine::RegisterAppStateCallback(NapiAppStateCallback callback)
+{
+    interopAppState_.SetCallback(callback);
 }
 
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
