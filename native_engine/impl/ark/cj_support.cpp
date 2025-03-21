@@ -186,6 +186,10 @@ static bool LoadArkCJModule(napi_env env, const char* moduleName, napi_value* re
 #endif
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto runtime = OHOS::CJEnv::LoadInstance();
+    if (runtime == nullptr) {
+        HILOG_ERROR("Get CJEnvMethods failed");
+        return false;
+    }
     auto handle = runtime->loadLibrary(0, targetName);
     if (!handle) {
         HILOG_ERROR("open '%{public}s' failed", targetName);
@@ -213,6 +217,10 @@ napi_value LoadCJModule(napi_env env, const char* nameBuf)
         return result;
     }
     auto runtime = OHOS::CJEnv::LoadInstance();
+    if (runtime == nullptr) {
+        HILOG_ERROR("Get CJEnvMethods failed");
+        return result;
+    }
     runtime->initCJAppNS("/data/storage/el1/bundle/libs/" LIBS_NAME);
     if (!runtime->startRuntime()) {
         HILOG_ERROR("start cjruntime failed");
