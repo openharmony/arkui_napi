@@ -42,7 +42,6 @@ struct JsFrameInfo {
     std::string fileName;
     std::string packageName;
     std::string pos;
-    uintptr_t* nativePointer = nullptr;
 };
 struct ApiCheckContext {
     NativeModuleManager* moduleManager;
