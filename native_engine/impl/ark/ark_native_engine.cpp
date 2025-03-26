@@ -1423,7 +1423,7 @@ napi_value ArkNativeEngine::NapiLoadModule(const char* path, const char* module_
     return JsValueFromLocalValue(scope.Escape(exportObj));
 }
 
-napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char* module_info)
+napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid)
 {
     if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
@@ -1436,7 +1436,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
     std::string modulePath;
     if (module_info != nullptr) {
         modulePath = module_info;
-        exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfo(vm_, inputPath, modulePath);
+        exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfo(vm_, inputPath, modulePath, isHybrid);
     } else {
         exportObj = NapiLoadNativeModule(inputPath);
     }

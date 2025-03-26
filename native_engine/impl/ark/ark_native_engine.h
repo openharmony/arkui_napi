@@ -329,7 +329,7 @@ public:
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
     napi_value NapiLoadModule(const char* path, const char* module_info) override;
-    napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) override;
+    napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid = false) override;
     std::string GetOhmurl(std::string str);
     Local<JSValueRef> NapiLoadNativeModule(std::string path);
     ModuleTypes CheckLoadType(const std::string &path);
