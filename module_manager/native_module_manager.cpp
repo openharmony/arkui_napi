@@ -667,11 +667,13 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #endif
             g_isLoadingModule = false;
+            if (nativeModule != nullptr) {
+                MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
+            }
         }
 
         (void)pthread_mutex_unlock(&mutex_);
     }
-    MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
