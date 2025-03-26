@@ -2213,7 +2213,6 @@ NAPI_EXTERN napi_status napi_delete_reference(napi_env env, napi_ref ref)
     uint32_t refCount = reference->GetRefCount();
     if (refCount > 0 || reference->GetFinalRun()) {
         delete reference;
-        reference = nullptr;
     } else {
         reference->SetDeleteSelf();
     }
