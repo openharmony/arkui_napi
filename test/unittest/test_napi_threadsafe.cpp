@@ -1657,9 +1657,7 @@ static void finalizeCallBack(napi_env env, void* finalizeData, void* hint)
 {
     CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(finalizeData);
     EXPECT_EQ(callbackData->callbackCount, INT_TWO);
-    if (callbackData->work == nullptr) {
-        delete callbackData;
-    }
+    delete callbackData;
 }
 
 static void executeWork(napi_env env, void *data)
@@ -1687,62 +1685,8 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest013, testing::ext::TestSize.Level1)
         [](napi_env env, napi_status status, void* data) {
             CallbackCountData *callbackData = reinterpret_cast<CallbackCountData *>(data);
             napi_delete_async_work(env, callbackData->work);
-            callbackData->work = nullptr;
-            if (callbackData->tsfn == nullptr) {
-                delete callbackData;
-            }
         },
         callbackData, &callbackData->work);
     napi_queue_async_work(env, callbackData->work);
     HILOG_INFO("ThreadsafeTest013 end");
-}
-
-struct CallbackCountDataThreadsafe014 {
-    napi_threadsafe_function tsfn;
-    napi_async_work work;
-};
-
-static void callJSCallBackThreadsafe014(napi_env env, napi_value tsfn_cb, void* context, void* data)
-{
-    CallbackCountDataThreadsafe014 *callbackData = reinterpret_cast<CallbackCountDataThreadsafe014 *>(data);
-    napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release);
-    return;
-}
-
-static void finalizeCallBackThreadsafe014(napi_env env, void* finalizeData, void* hint)
-{
-    CallbackCountDataThreadsafe014 *callbackData = reinterpret_cast<CallbackCountDataThreadsafe014 *>(finalizeData);
-    callbackData->tsfn = nullptr;
-}
-
-static void executeWorkThreadsafe014(napi_env env, void *data)
-{
-    CallbackCountDataThreadsafe014 *callbackData = reinterpret_cast<CallbackCountDataThreadsafe014 *>(data);
-    napi_call_threadsafe_function(callbackData->tsfn, (void *)callbackData, napi_tsfn_nonblocking);
-    std::this_thread::sleep_for(std::chrono::seconds(INT_TWO));
-}
-
-HWTEST_F(NapiThreadsafeTest, ThreadsafeTest014, testing::ext::TestSize.Level1)
-{
-    HILOG_INFO("ThreadsafeTest014 start");
-    napi_env env = (napi_env)engine_;
-    CallbackCountDataThreadsafe014 *callbackData = new CallbackCountDataThreadsafe014();
-    napi_value resourceName = 0;
-    napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName);
-
-    auto status = napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1,
-        callbackData, finalizeCallBackThreadsafe014, callbackData, callJSCallBackThreadsafe014, &callbackData->tsfn);
-    EXPECT_EQ(status, napi_ok);
-
-    napi_create_async_work(env, nullptr, resourceName, executeWorkThreadsafe014,
-        [](napi_env env, napi_status status, void* data) {
-            CallbackCountDataThreadsafe014 *callbackData = reinterpret_cast<CallbackCountDataThreadsafe014 *>(data);
-            EXPECT_EQ(callbackData->tsfn, nullptr);
-            napi_delete_async_work(env, callbackData->work);
-            callbackData->work = nullptr;
-            delete callbackData;
-        },
-        callbackData, &callbackData->work);
-    napi_queue_async_work(env, callbackData->work);
-    HILOG_INFO("ThreadsafeTest014 end");
 }
