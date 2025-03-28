@@ -63,7 +63,7 @@ typedef enum {
     NAPI_APP_STATE_COLD_START_FINISHED = 4,
 } NapiAppState;
 
-using NapiAppStateCallback = std::function<void(int state, int64_t timestamp)>;
+using NapiAppStateCallback = void (*)(int state, int64_t timestamp);
 
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
