@@ -1043,6 +1043,15 @@ bool NativeModuleManager::CheckModuleExist(const char* modulePath)
     return false;
 }
 
+void NativeModuleManager::Napi_onLoadCallback(LIBHANDLE lib, const char* moduleName)
+{
+    auto onLoadFunc = reinterpret_cast<NapiOnLoadCallback>(LIBSYM(lib, "napi_onLoad"));
+    if (onLoadFunc != nullptr) {
+        onLoadFunc();
+        HILOG_INFO("napi_onLoad call, moduleName:%{public}s", moduleName);
+    }
+}
+
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
     char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
@@ -1097,6 +1106,10 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         }
     }
 
+    if (lib != nullptr) {
+        Napi_onLoadCallback(lib, moduleName);
+    }
+    
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (tailNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
