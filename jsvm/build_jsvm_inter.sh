@@ -151,7 +151,7 @@ do_env() {
         cflags+=" --coverage"
     fi
 
-    if [[ "${IS_ASAN}" = "true" && "${USE_HWASAN}" = "true"]]; then
+    if [[ "${IS_ASAN}" = "true" && "${USE_HWASAN}" = "true" ]]; then
         cflags+=" -shared-libasan"
         cflags+=" -fsanitize=hwaddress"
         cflags+=" -mllvm -hwasan-globals=0"
