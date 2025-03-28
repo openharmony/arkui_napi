@@ -61,6 +61,9 @@ public:
         TestObject();
         TestKeyable();
         TestDefineProperty();
+        TestDefinePropertyWritable();
+        TestDefinePropertyConfigurable();
+        TestDefinePropertyConfigurableV2();
         TestArray();
         TestBigintInt64();
         TestBigint16Bytes();
@@ -81,6 +84,9 @@ private:
     static void TestObject();
     static void TestKeyable();
     static void TestDefineProperty();
+    static void TestDefinePropertyWritable();
+    static void TestDefinePropertyConfigurable();
+    static void TestDefinePropertyConfigurableV2();
     static void TestArray();
     static void TestBigintInt64();
     static void TestBigint16Bytes();
@@ -364,6 +370,57 @@ void MockContext::Init()
 
 MockContext* MockContext::instance_ = nullptr;
 
+class ErrorCaptureContext : public MockContext {
+public:
+    ErrorCaptureContext() = default;
+    ~ErrorCaptureContext()
+    {
+        if (hasJSError_ || hasNativeError_) {
+            printf("has unhandled js error or native error\n");
+            std::abort();
+        }
+    }
+
+    bool HasAndClearJSError()
+    {
+        if (hasJSError_) {
+            hasJSError_ = false;
+            return true;
+        }
+        return false;
+    }
+
+    bool HasAndClearNativeError()
+    {
+        if (hasNativeError_) {
+            hasNativeError_ = false;
+            return true;
+        }
+        return false;
+    }
+protected:
+    void ThrowJSError(ARKTS_Env env, ARKTS_Value) override
+    {
+        if (hasJSError_) {
+            printf("has unhandled js error\n");
+            std::abort();
+        }
+        hasJSError_ = true;
+    }
+
+    void ThrowNativeError(const char* error) override
+    {
+        if (hasNativeError_) {
+            printf("has unhandled native error: %s\n", error);
+            std::abort();
+        }
+        hasNativeError_ = true;
+    }
+private:
+    bool hasJSError_ = false;
+    bool hasNativeError_ = false;
+};
+
 void ArkInteropTest::TestPrime()
 {
     auto env = MockContext::GetInstance()->GetEnv();
@@ -502,26 +559,37 @@ struct PropCase {
     bool writable;
     bool enumerable;
     bool configurable;
+
+    static PropCase cases[];
+};
+
+PropCase PropCase::cases[] {
+    {'a', false, false, false},
+    {'b', true, false, false},
+    {'c', false, true, false},
+    {'d', false, false, true},
+    {'e', true, true, false},
+    {'f', true, false, true},
+    {'g', false, true, true},
+    {'h', true, true, true}
 };
 
 void ArkInteropTest::TestDefineProperty()
 {
-    auto env = MockContext::GetInstance()->GetEnv();
+    ErrorCaptureContext local;
+    auto env = local.GetEnv();
     auto scope = ARKTS_OpenScope(env);
     auto obj = ARKTS_CreateObject(env);
-    PropCase cases[] {
-        {'a', false, false, false}, {'b', true, false, false}, {'c', false, true, false}, {'d', false, false, true},
-        {'e', true, true, false}, {'f', true, false, true}, {'g', false, true, true}, {'h', true, true, true}
-    };
-    constexpr auto totalCases = std::size(cases);
-    auto valueT = ARKTS_CreateBool(true), valueF = ARKTS_CreateBool(false);
+
+    constexpr auto totalCases = std::size(PropCase::cases);
+    auto valueF = ARKTS_CreateBool(false);
     ARKTS_Value keys[totalCases];
     for (auto i = 0; i < totalCases; i++) {
-        keys[i] = ARKTS_CreateUtf8(env, &cases[i].k, 1);
+        keys[i] = ARKTS_CreateUtf8(env, &PropCase::cases[i].k, 1);
         ARKTS_DefineOwnProperty(env, obj, keys[i], valueF, static_cast<ARKTS_PropertyFlag>(
-            (cases[i].writable ? N_WRITABLE : 0) |
-            (cases[i].enumerable ? N_ENUMERABLE : 0) |
-            (cases[i].configurable ? N_CONFIGURABLE : 0)
+            (PropCase::cases[i].writable ? N_WRITABLE : 0) |
+            (PropCase::cases[i].enumerable ? N_ENUMERABLE : 0) |
+            (PropCase::cases[i].configurable ? N_CONFIGURABLE : 0)
         ));
     }
     constexpr int expectKeys = 4;
@@ -535,23 +603,111 @@ void ArkInteropTest::TestDefineProperty()
         ARKTS_GetValueUtf8(env, jsKey, 1, &buffer);
         EXPECT_TRUE(buffer == 'c' || buffer == 'e' || buffer == 'g' || buffer == 'h');
     }
+
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestDefinePropertyWritable()
+{
+    ErrorCaptureContext local;
+    auto env = local.GetEnv();
+    auto scope = ARKTS_OpenScope(env);
+    auto obj = ARKTS_CreateObject(env);
+
+    constexpr auto totalCases = std::size(PropCase::cases);
+    auto valueT = ARKTS_CreateBool(true);
+    auto valueF = ARKTS_CreateBool(false);
+    ARKTS_Value keys[totalCases];
+    for (auto i = 0; i < totalCases; i++) {
+        keys[i] = ARKTS_CreateUtf8(env, &PropCase::cases[i].k, 1);
+        ARKTS_DefineOwnProperty(env, obj, keys[i], valueF, static_cast<ARKTS_PropertyFlag>(
+            (PropCase::cases[i].writable ? N_WRITABLE : 0) |
+            (PropCase::cases[i].enumerable ? N_ENUMERABLE : 0) |
+            (PropCase::cases[i].configurable ? N_CONFIGURABLE : 0)
+        ));
+    }
+
     for (auto i = 0; i < totalCases; i++) { // writable
-        if (cases[i].writable && cases[i].configurable) {
+        if (PropCase::cases[i].writable && PropCase::cases[i].configurable) {
             ARKTS_SetProperty(env, obj, keys[i], valueT);
             auto receivedJS = ARKTS_GetProperty(env, obj, keys[i]);
             auto recievedN = ARKTS_GetValueBool(receivedJS);
             EXPECT_TRUE(recievedN);
         }
     }
+
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestDefinePropertyConfigurable()
+{
+    ErrorCaptureContext local;
+    auto env = local.GetEnv();
+    auto scope = ARKTS_OpenScope(env);
+    auto obj = ARKTS_CreateObject(env);
+
+    constexpr auto totalCases = std::size(PropCase::cases);
+    auto valueT = ARKTS_CreateBool(true);
+    auto valueF = ARKTS_CreateBool(false);
+    ARKTS_Value keys[totalCases];
+    for (auto i = 0; i < totalCases; i++) {
+        keys[i] = ARKTS_CreateUtf8(env, &PropCase::cases[i].k, 1);
+        ARKTS_DefineOwnProperty(env, obj, keys[i], valueF, static_cast<ARKTS_PropertyFlag>(
+            (PropCase::cases[i].writable ? N_WRITABLE : 0) |
+            (PropCase::cases[i].enumerable ? N_ENUMERABLE : 0) |
+            (PropCase::cases[i].configurable ? N_CONFIGURABLE : 0)
+        ));
+    }
+
     for (auto i = 0;i < totalCases; ++i) { // configurable
-        if (cases[i].configurable) {
+        if (PropCase::cases[i].configurable) {
             ARKTS_DefineOwnProperty(env, obj, keys[i], valueT,
                 static_cast<ARKTS_PropertyFlag>(N_WRITABLE | N_ENUMERABLE | N_CONFIGURABLE));
+            auto received = ARKTS_GetProperty(env, obj, keys[i]);
+            EXPECT_TRUE(ARKTS_IsBool(received));
+            EXPECT_TRUE(ARKTS_GetValueBool(received));
         }
     }
-    jsKeys = ARKTS_EnumOwnProperties(env, obj);
+    auto jsKeys = ARKTS_EnumOwnProperties(env, obj);
     constexpr int expectLength = 6;
     EXPECT_EQ(ARKTS_GetArrayLength(env, jsKeys), expectLength);
+
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestDefinePropertyConfigurableV2()
+{
+    ErrorCaptureContext local;
+    auto env = local.GetEnv();
+    auto scope = ARKTS_OpenScope(env);
+    auto obj = ARKTS_CreateObject(env);
+
+    constexpr auto totalCases = std::size(PropCase::cases);
+    auto valueT = ARKTS_CreateBool(true);
+    auto valueF = ARKTS_CreateBool(false);
+    ARKTS_Value keys[totalCases];
+    for (auto i = 0; i < totalCases; i++) {
+        keys[i] = ARKTS_CreateUtf8(env, &PropCase::cases[i].k, 1);
+        ARKTS_DefineOwnProperty(env, obj, keys[i], valueF, static_cast<ARKTS_PropertyFlag>(
+            (PropCase::cases[i].writable ? N_WRITABLE : 0) |
+            (PropCase::cases[i].enumerable ? N_ENUMERABLE : 0) |
+            (PropCase::cases[i].configurable ? N_CONFIGURABLE : 0)
+        ));
+    }
+
+    for (auto i = 0;i < totalCases; ++i) { // configurable
+        auto result = ARKTS_DefineOwnPropertyV2(env, obj, keys[i], valueT,
+            static_cast<ARKTS_PropertyFlag>(N_WRITABLE | N_ENUMERABLE | N_CONFIGURABLE));
+        if (PropCase::cases[i].configurable) {
+            EXPECT_TRUE(result);
+        } else {
+            EXPECT_TRUE(local.HasAndClearJSError());
+        }
+    }
+    auto jsKeys = ARKTS_EnumOwnProperties(env, obj);
+    constexpr int expectLength = 6;
+    EXPECT_EQ(ARKTS_GetArrayLength(env, jsKeys), expectLength);
+
     ARKTS_CloseScope(env, scope);
 }
 

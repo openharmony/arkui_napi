@@ -125,6 +125,8 @@ EXPORT bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jk
 EXPORT ARKTS_Value ARKTS_EnumOwnProperties(ARKTS_Env env, ARKTS_Value jobj);
 EXPORT void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey,
     ARKTS_Value jvalue, ARKTS_PropertyFlag attrs);
+EXPORT bool ARKTS_DefineOwnPropertyV2(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Value jvalue,
+    ARKTS_PropertyFlag attrs);
 
 typedef struct ARKTS_Accessor_ {
     ARKTS_Value getter;
@@ -133,6 +135,7 @@ typedef struct ARKTS_Accessor_ {
 } ARKTS_Accessor;
 
 EXPORT void ARKTS_DefineAccessors(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Accessor accessor);
+EXPORT bool ARKTS_DefineAccessorsV2(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Accessor accessor);
 EXPORT void ARKTS_SetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Value jvalue);
 EXPORT ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey);
 
