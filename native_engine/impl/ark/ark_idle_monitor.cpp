@@ -382,7 +382,7 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
         HILOG_INFO("ArkIdleMonitor canceled background GC task, idlePercentage:%{public}.2f, cpuUsage:%{public}.2f",
             idlePercentage, cpuUsage);
     }
-    PostMonitorTask(SLEEP_MONITORING_INTERVAL);
+    StopIdleMonitorTimerTaskAndPostSleepTask();
     ClearIdleStats();
 }
 
@@ -469,6 +469,23 @@ void ArkIdleMonitor::StopIdleMonitorTimerTask()
         ffrt_timer_stop(ffrt_qos_user_initiated, waitForStopTimerHandler_);
         waitForStopTimerHandler_ = -1;
     }
+#endif
+}
+
+void ArkIdleMonitor::StopIdleMonitorTimerTaskAndPostSleepTask()
+{
+#if defined(ENABLE_FFRT)
+    std::lock_guard<std::mutex> lock(timerMutex_);
+    HILOG_INFO("StopIdleMonitorTimerTask get timerMutex_");
+    if (currentTimerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, currentTimerHandler_);
+        currentTimerHandler_ = -1;
+    }
+    if (waitForStopTimerHandler_ != -1) {
+        ffrt_timer_stop(ffrt_qos_user_initiated, waitForStopTimerHandler_);
+        waitForStopTimerHandler_ = -1;
+    }
+    PostMonitorTask(SLEEP_MONITORING_INTERVAL);
 #endif
 }
 

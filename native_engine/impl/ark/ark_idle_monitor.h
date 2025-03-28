@@ -197,6 +197,7 @@ private:
     void PostIdleCheckTask();
     void CheckWorkerEnvQueue();
     void StopIdleMonitorTimerTask();
+    void StopIdleMonitorTimerTaskAndPostSleepTask();
     void CheckShortIdleTask(int64_t timestamp, int idleTime);
     void PostSwitchBackgroundGCTask();
 
