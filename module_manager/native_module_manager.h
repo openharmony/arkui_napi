@@ -52,6 +52,8 @@ typedef napi_value (*RegisterCallback)(napi_env, napi_value);
 
 typedef void (*GetJSCodeCallback)(const char** buf, int* bufLen);
 
+typedef void (*NapiOnLoadCallback)();
+
 struct NativeModule {
     const char* name = nullptr;       /* .nm_modname from native c++ register info */
     const char* moduleName = nullptr; /* moduleName required or imported */
@@ -159,6 +161,7 @@ private:
     bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule);
     void MoveApiAllowListCheckerPtr(
         std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule);
+    void Napi_onLoadCallback(LIBHANDLE lib, const char* moduleName);
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();
