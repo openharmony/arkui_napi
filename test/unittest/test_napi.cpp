@@ -6045,6 +6045,14 @@ HWTEST_F(NapiBasicTest, NapiRegisterAppStateCallbakcTest001, testing::ext::TestS
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
+HWTEST_F(NapiBasicTest, NapiRegisterAppStateCallbakcTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_status status = napi_register_appstate_callback(env, [](int state, int64_t timestamp) {});
+    ASSERT_EQ(status, napi_ok);
+}
+
 HWTEST_F(NapiBasicTest, NapiUnwrapTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
