@@ -106,11 +106,6 @@ do_install () {
     cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}
 }
 
-do_install_hwasan () {
-    mkdir -p ${TARGET_GEN_DIR}/asan
-    cp -u ${workdir}/out/Release/libjsvm.so ${TARGET_GEN_DIR}/asan
-}
-
 do_env() {
     # init workspace
     out_dir=${TARGET_GEN_DIR}/out
@@ -149,14 +144,6 @@ do_env() {
 
     if [[ "${TARGET_CLANG_COVERAGE}" = "true" ]]; then
         cflags+=" --coverage"
-    fi
-
-    if [[ "${IS_ASAN}" = "true" && "${USE_HWASAN}" = "true"]]; then
-        cflags+=" -shared-libasan"
-        cflags+=" -fsanitize=hwaddress"
-        cflags+=" -mllvm -hwasan-globals=0"
-        cflags+=" -fno-emulated-tls"
-        cflags+=" -fno-omit-frame-pointer"
     fi
 
     cflags+=" ${argurment}"
