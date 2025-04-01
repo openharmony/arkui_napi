@@ -164,10 +164,10 @@ public:
     void NotifyTaskFinished() const override;
 
     // judge_typedarray
-    bool NapiNewTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
+    bool NapiNewTypedArray(NativeTypedArrayType typedArrayType,
                            Local<panda::ArrayBufferRef> arrayBuf,
                            size_t byte_offset, size_t length, napi_value* result) override;
-    bool NapiNewSendableTypedArray(const EcmaVM* vm, NativeTypedArrayType typedArrayType,
+    bool NapiNewSendableTypedArray(NativeTypedArrayType typedArrayType,
                                    Local<panda::SendableArrayBufferRef> arrayBuf,
                                    size_t byte_offset, size_t length, napi_value* result) override;
     NativeTypedArrayType GetTypedArrayType(panda::Local<panda::TypedArrayRef> typedArray) override;

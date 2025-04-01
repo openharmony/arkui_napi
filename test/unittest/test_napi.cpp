@@ -9930,8 +9930,9 @@ HWTEST_F(NapiBasicTest, NapiGetBooleanTest005, testing::ext::TestSize.Level1)
     ASSERT_EQ(res2, napi_ok);
     ASSERT_TRUE(checkBooleanValue(env, result2, false));
     bool res3 = false;
-    napi_strict_equals(env, result1, result2, &res3);
-    ASSERT_TRUE(res3);
+    napi_status res4 = napi_strict_equals(env, result1, result2, &res3);
+    ASSERT_EQ(res4, napi_ok);
+    ASSERT_FALSE(res3);
 }
 
 /**
@@ -10026,8 +10027,9 @@ HWTEST_F(NapiBasicTest, NapiGetGlobalTest005, testing::ext::TestSize.Level1)
     ASSERT_EQ(res2, napi_ok);
     ASSERT_NE(result2, nullptr);
     bool res3 = false;
-    napi_strict_equals(env, result1, result2, &res3);
-    ASSERT_TRUE(res3);
+    napi_status res4 =  napi_strict_equals(env, result1, result2, &res3);
+    ASSERT_EQ(res4, napi_ok);
+    ASSERT_FALSE(res3);
     env1->Init();
     env2->Init();
 }
