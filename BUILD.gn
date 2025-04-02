@@ -108,12 +108,14 @@ config("module_manager_config") {
 
 ohos_source_set("pac_data_protector_feature") {
   sources = [ "utils/data_protector.cpp" ]
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    debug = false
+  if (!ark_standalone_build) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+    branch_protector_ret = "pac_ret"
   }
-  branch_protector_ret = "pac_ret"
   configs = [
     ":ace_napi_config",
     ":data_protector_config",
