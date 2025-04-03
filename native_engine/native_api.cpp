@@ -4026,6 +4026,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     if (res) {
         return napi_clear_last_error(env);
     }
+    delete data;
     return napi_status::napi_generic_failure;
 }
 
