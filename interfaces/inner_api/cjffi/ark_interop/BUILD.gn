@@ -11,7 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/ohos.gni")
+if (!defined(ark_standalone_build)) {
+  ark_standalone_build = false
+}
+
+if (ark_standalone_build) {
+  import("$build_root/ark.gni")
+  use_clang_coverage = false
+  build_ohos_sdk = false
+} else {
+  import("//build/ohos.gni")
+}
 
 config("ark_interop_config") {
   include_dirs = [ "../../.." ]
@@ -73,10 +83,11 @@ ohos_shared_library("ark_interop") {
     "../../../..:ace_napi",
   ]
 
-  external_deps = [
-    "ets_runtime:libark_jsruntime",
-    "hilog:libhilog",
-  ]
+  external_deps = [ "ets_runtime:libark_jsruntime" ]
+
+  if (!ark_standalone_build) {
+    external_deps += [ "hilog:libhilog" ]
+  }
 
   if (!is_mingw && !is_mac && !is_linux && !is_arkui_x && is_standard_system) {
     external_deps += [ "c_utils:utils" ]
@@ -114,10 +125,12 @@ ohos_shared_library("ark_interop") {
       "NO_CONTAINER",
     ]
   } else {
-    external_deps += [
-      "eventhandler:libeventhandler",
-      "hitrace:hitrace_meter",
-    ]
+    if (!ark_standalone_build) {
+      external_deps += [
+        "eventhandler:libeventhandler",
+        "hitrace:hitrace_meter",
+      ]
+    }
   }
 }
 
@@ -140,8 +153,9 @@ ohos_shared_library("cjLibLoader") {
   }
 
   sources = [ "ark_interop_loader.cpp" ]
-
-  external_deps = [ "hilog:libhilog" ]
+  if (!ark_standalone_build) {
+    external_deps = [ "hilog:libhilog" ]
+  }
 
   deps = [
     ":cj_envsetup",
