@@ -20,6 +20,11 @@
 #include "native_api_internal.h"
 #include <securec.h>
 
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#include "parameter.h"
+#endif
+
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
@@ -31,6 +36,13 @@ using OHOS::Ace::ContainerScope;
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
 using namespace OHOS::AppExecFwk;
+#endif
+
+#ifdef ENABLE_HITRACE
+std::atomic<bool> g_SafeWorkTraceIdEnabled(false);
+std::once_flag g_SafeWorkParamUpdated;
+constexpr size_t TRACEID_PARAM_SIZE = 10;
+using namespace OHOS::HiviewDFX;
 #endif
 
 // static methods start
@@ -105,6 +117,8 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
         eventHandler_ = std::make_shared<EventHandler>(runner);
     }
 #endif
+
+    InitSafeAsyncWorkTraceId();
 }
 
 NativeSafeAsyncWork::~NativeSafeAsyncWork()
@@ -310,6 +324,8 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     ContainerScope containerScope(containerScopeId_, engine_->IsContainerScopeEnabled());
 #endif
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
+
+    bool isValidTraceId = SaveAndSetTraceId();
     while (size > 0) {
         data = queue_.front();
 
@@ -333,6 +349,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
         queue_.pop_front();
         size--;
     }
+    RestoreTraceId(isValidTraceId);
 
     if (!queue_.empty()) {
         auto ret = uv_async_send(&asyncHandler_);
@@ -370,7 +387,7 @@ SafeAsyncCode NativeSafeAsyncWork::CloseHandles()
 void NativeSafeAsyncWork::CleanUp()
 {
     HILOG_DEBUG("NativeSafeAsyncWork::CleanUp called");
-
+    bool isValidTraceId = SaveAndSetTraceId();
     if (finalizeCallback_ != nullptr) {
         finalizeCallback_(engine_, finalizeData_, context_);
     }
@@ -384,6 +401,8 @@ void NativeSafeAsyncWork::CleanUp()
         }
         queue_.pop_front();
     }
+    ClearTraceId(isValidTraceId);
+
     delete this;
 }
 
@@ -406,11 +425,13 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
         HILOG_DEBUG("The task is executing in main thread or worker thread");
         panda::LocalScope scope(engine_->GetEcmaVm());
         napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
+        bool isValidTraceId = SaveAndSetTraceId();
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
             CallJs(engine_, func_, context_, data);
         }
+        RestoreTraceId(isValidTraceId);
     };
 
     bool res = false;
@@ -426,5 +447,31 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
 #else
     HILOG_WARN("EventHandler feature is not supported");
     return napi_status::napi_generic_failure;
+#endif
+}
+
+void NativeSafeAsyncWork::InitSafeAsyncWorkTraceId()
+{
+#ifdef ENABLE_HITRACE
+    std::call_once(g_SafeWorkParamUpdated, []() {
+        char napiTraceIdEnabled[TRACEID_PARAM_SIZE] = {0};
+        int ret = GetParameter("persist.hiviewdfx.napitraceid.enabled", "false",
+            napiTraceIdEnabled, sizeof(napiTraceIdEnabled));
+        if (ret > 0 && strcmp(napiTraceIdEnabled, "true") == 0) {
+            g_SafeWorkTraceIdEnabled.store(true);
+        }
+    });
+    bool createdTraceId = false;
+    HiTraceId thisId = HiTraceChain::GetId();
+    if (g_SafeWorkTraceIdEnabled.load() && (!thisId.IsValid())) {
+        thisId = HiTraceChain::Begin("New NativeAsyncWork", 0);
+        createdTraceId = true;
+    }
+    if (thisId.IsValid()) {
+        taskTraceId_ = HiTraceChain::CreateSpan();
+    }
+    if (createdTraceId) {
+        OHOS::HiviewDFX::HiTraceChain::ClearId();
+    }
 #endif
 }

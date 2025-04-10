@@ -24,7 +24,7 @@
 #ifdef ENABLE_UCOLLECTION
 #include "cpu_collector_client.h"
 #endif
-#ifdef ENABLE_HITRACE
+#if defined(ENABLE_HITRACE) || defined(ENABLE_EVENT_HANDLER)
 #include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #include "parameter.h"
