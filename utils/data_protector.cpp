@@ -19,7 +19,7 @@
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 
-uintptr_t DataProtector::AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address)
+uintptr_t DataProtector::AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address) const
 {
     auto hwcaps = getauxval(AT_HWCAP);
     if (!(hwcaps & HWCAP_PACA)) {
@@ -51,7 +51,7 @@ uintptr_t DataProtector::PacEncrypt(const uintptr_t pointer, [[maybe_unused]]con
     return reinterpret_cast<uintptr_t>(t1);
 }
 #else
-uintptr_t DataProtector::AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address)
+uintptr_t DataProtector::AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address) const
 {
     return pointer;
 }

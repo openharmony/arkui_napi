@@ -17,6 +17,7 @@
 #define FOUNDATION_ACE_NAPI_UTILS_DATA_PROTECTOR_H
 
 #include <cstdint>
+#include "utils/macros.h"
 
 class DataProtector {
 public:
@@ -28,32 +29,24 @@ public:
 
     ~DataProtector() = default;
 
-    static uintptr_t AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address);
-    static uintptr_t PacEncrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address);
+    NAPI_EXPORT uintptr_t AutDecrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address) const;
+    NAPI_EXPORT uintptr_t PacEncrypt(const uintptr_t pointer, [[maybe_unused]]const uintptr_t address);
 
     void Update(const uintptr_t pointer)
     {
-#if defined(NAPI_ENABLE_DATA_PROTECT)
         if (pointer == 0) {
             encryptedAddrOrData = 0;
             return;
         }
         encryptedAddrOrData = PacEncrypt(pointer, reinterpret_cast<uintptr_t>(&encryptedAddrOrData));
-#else
-        encryptedAddrOrData = pointer;
-#endif
     }
 
     uintptr_t GetData() const
     {
-#if defined(NAPI_ENABLE_DATA_PROTECT)
         if (encryptedAddrOrData == 0) {
             return encryptedAddrOrData;
         }
         return AutDecrypt(encryptedAddrOrData, reinterpret_cast<uintptr_t>(&encryptedAddrOrData));
-#else
-        return encryptedAddrOrData;
-#endif
     }
     
 private:
