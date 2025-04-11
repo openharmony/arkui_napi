@@ -161,6 +161,12 @@ public:
     virtual void CancelCheckUVLoop();
 #endif
     virtual void* GetJsEngine();
+    virtual void SetInstanceId(int32_t id) {
+        instanceId_ = id;
+    };
+    virtual int32_t GetInstanceId() {
+        return instanceId_;
+    };
 
     virtual const EcmaVM* GetEcmaVm() const = 0;
     virtual bool NapiNewTypedArray(NativeTypedArrayType typedArrayType,
@@ -625,6 +631,8 @@ private:
 #endif
     mutable std::shared_mutex eventMutex_;
     napi_threadsafe_function defaultFunc_ = nullptr;
+    // Record the instance of FA model to find the correct ArkUI instance while posting cross-thread task
+    int32_t instanceId_ = -1;
     PostTask postTask_ = nullptr;
     CleanEnv cleanEnv_ = nullptr;
     uv_async_t uvAsync_;

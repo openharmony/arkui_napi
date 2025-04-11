@@ -126,7 +126,10 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env,
  *
  * @return napi_status Return send event status
  */
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority);
+NAPI_EXTERN napi_status napi_send_event(napi_env env,
+                                        const std::function<void()>& cb,
+                                        napi_event_priority priority,
+                                        const char* name = nullptr);
 /*
  * @brief Send a task to the JS Thread
  *
