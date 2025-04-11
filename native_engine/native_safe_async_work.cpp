@@ -389,8 +389,7 @@ void NativeSafeAsyncWork::CleanUp()
 
 bool NativeSafeAsyncWork::IsSameTid()
 {
-    auto tid = pthread_self();
-    return (tid == engine_->GetTid()) ? true : false;
+    return pthread_self() == engine_->GetTid();
 }
 
 napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isTail)
@@ -405,10 +404,10 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
     // the task will be execute at main thread or worker thread
     auto task = [this, data]() {
         HILOG_DEBUG("The task is executing in main thread or worker thread");
-        panda::LocalScope scope(this->engine_->GetEcmaVm());
-        napi_value func_ = (this->ref_ == nullptr) ? nullptr : this->ref_->Get(engine_);
-        if (this->callJsCallback_ != nullptr) {
-            this->callJsCallback_(engine_, func_, context_, data);
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
+        if (callJsCallback_ != nullptr) {
+            callJsCallback_(engine_, func_, context_, data);
         } else {
             CallJs(engine_, func_, context_, data);
         }
