@@ -30,6 +30,7 @@
 
 #if defined(ENABLE_EVENT_HANDLER)
 namespace OHOS::AppExecFwk {
+    class EventRunner;
     class EventHandler;
 }
 #endif
@@ -101,6 +102,7 @@ protected:
     std::condition_variable condition_;
     SafeAsyncStatus status_ = SafeAsyncStatus::UNKNOW;
 #if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> runner_ = nullptr;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
     std::atomic<uint32_t> taskSize_ = 0;
 #endif
