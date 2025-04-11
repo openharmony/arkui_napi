@@ -4743,7 +4743,7 @@ NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result)
+NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool *result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, ref);
@@ -4752,7 +4752,7 @@ NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* r
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result)
+NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool *result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, ref);
