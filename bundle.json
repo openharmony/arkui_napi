@@ -13,8 +13,7 @@
         "name": "napi",
         "subsystem": "arkui",
         "syscap": [
-            "SystemCapability.ArkUI.ArkUI.Napi",
-            "SystemCapability.ArkCompiler.JSVM"
+            "SystemCapability.ArkUI.ArkUI.Napi"
         ],
         "features": [
           "napi_enable_container_scope",
