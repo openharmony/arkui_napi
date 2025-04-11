@@ -4436,6 +4436,24 @@ NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool *result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    *result = reference->IsObjectAlive();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool *result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    *result = reference->IsValidHeapObject();
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_create_xref(napi_env env, napi_value value, uint32_t initial_refcount, napi_ref* result)
 {
     CHECK_ENV(env);
@@ -4478,6 +4496,25 @@ NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
     object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
     PropertyAttribute attr(object, true, false, true);
     nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result)
+{
+    *result = false;
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+
+    if (nativeObject->Has(vm, key)) {
+        *result = true;
+    }
     return GET_RETURN_STATUS(env);
 }
 #endif // PANDA_JS_ETS_HYBRID_MODE
