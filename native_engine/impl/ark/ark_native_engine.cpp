@@ -96,6 +96,10 @@ using panda::IntegerRef;
 using panda::DateRef;
 using panda::BigIntRef;
 using ArkCrashHolder = panda::ArkCrashHolder;
+using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
+using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
+using TriggerGCData = panda::TriggerGCData;
+
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
 static constexpr auto PANDA_MODULE_NAME = "_GLOBAL_MODULE_NAME";
 static constexpr auto PANDA_MODULE_NAME_LEN = 32;
@@ -605,33 +609,25 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
             NapiErrorManager::GetInstance()->NotifyUnhandledRejection(reinterpret_cast<napi_env>(this), args, "", 0);
         });
     }
-#if defined(ENABLE_EVENT_HANDLER)
-    bool enableIdleGC = OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
-    if (enableIdleGC && JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
-        ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(vm);
-        JSNApi::SetTriggerGCTaskCallback(vm, [this](TriggerGCData& data) {
-            this->PostTriggerGCTask(data);
-        });
-        ArkIdleMonitor::GetInstance()->SetStartTimerCallback();
-        PostLooperTriggerIdleGCTask();
-    } else {
-        ArkIdleMonitor::GetInstance()->RegisterWorkerEnv(reinterpret_cast<napi_env>(this));
-    }
-#endif
+    // enable idle gc
+    ArkIdleMonitor::GetInstance()->EnableIdleGC(this);
 }
 
 ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
-    ArkIdleMonitor::GetInstance()->UnregisterWorkerEnv(reinterpret_cast<napi_env>(this));
+    // unregister worker env for idle GC
+    ArkIdleMonitor::GetInstance()->UnregisterEnv(this);
+
     JSNApi::SetTimerTaskCallback(vm_, nullptr);
     JSNApi::SetCancelTimerCallback(vm_, nullptr);
     NativeTimerCallbackInfo::ReleaseTimerList(this);
+    // destroy looper resource on the ark native engine
     Deinit();
     if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
         ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
     }
-    // Free cached objects
+    // Free cached module objects
     for (auto&& [module, exportObj] : loadedModules_) {
         exportObj.FreeGlobalHandleAddr();
     }
@@ -2482,42 +2478,6 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
     return true;
 #endif
     return false;
-}
-
-
-void ArkNativeEngine::PostLooperTriggerIdleGCTask()
-{
-#if defined(ENABLE_EVENT_HANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
-        OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-    if (mainThreadRunner.get() == nullptr) {
-        HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
-        return;
-    }
-    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = ArkIdleMonitor::GetInstance();
-    auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
-        const OHOS::AppExecFwk::StageInfo* info) -> int {
-        auto arkIdleMonitor = weakArkIdleMonitor.lock();
-        if (nullptr == arkIdleMonitor) {
-            HILOG_ERROR("ArkIdleMonitor has been destructed.");
-            return 0;
-        }
-        switch (stage) {
-            case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
-                arkIdleMonitor->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
-                break;
-            case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
-                arkIdleMonitor->NotifyLooperIdleEnd(info->timestamp);
-                break;
-            default:
-                HILOG_ERROR("this branch is unreachable");
-        }
-        return 0;
-    };
-    uint32_t stage = (static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING) |
-        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
-    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
-#endif
 }
 
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)

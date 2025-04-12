@@ -18,6 +18,7 @@
 #include "native_engine/impl/ark/ark_native_engine.h"
 #include "utils/log.h"
 
+using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
 using panda::RuntimeOption;
 
 struct ThreadArgs {

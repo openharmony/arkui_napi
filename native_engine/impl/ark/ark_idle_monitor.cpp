@@ -28,12 +28,17 @@
 #include "hitrace/trace.h"
 #include "hitrace_meter.h"
 #include "parameter.h"
+#include "parameters.h"
 #include "musl_preinit_common.h"
 #include "memory_trace.h"
 #endif
 #include "ark_native_engine.h"
 
 namespace panda::ecmascript {
+#if defined(ENABLE_EVENT_HANDLER)
+bool ArkIdleMonitor::gEnableIdleGC =
+    OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
+#endif
 
 void ArkIdleMonitor::NotifyLooperIdleStart(int64_t timestamp, [[maybe_unused]] int idleTime)
 {
@@ -268,6 +273,67 @@ void ArkIdleMonitor::SetStartTimerCallback()
         this->IntervalMonitor();
         started_ = true;
     });
+}
+
+void ArkIdleMonitor::PostLooperTriggerIdleGCTask()
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
+        OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    if (mainThreadRunner.get() == nullptr) {
+        HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
+        return;
+    }
+    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = ArkIdleMonitor::GetInstance();
+    auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
+        const OHOS::AppExecFwk::StageInfo* info) -> int {
+        auto arkIdleMonitor = weakArkIdleMonitor.lock();
+        if (nullptr == arkIdleMonitor) {
+            HILOG_ERROR("ArkIdleMonitor has been destructed.");
+            return 0;
+        }
+        switch (stage) {
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
+                arkIdleMonitor->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
+                break;
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
+                arkIdleMonitor->NotifyLooperIdleEnd(info->timestamp);
+                break;
+            default:
+                HILOG_ERROR("this branch is unreachable");
+        }
+        return 0;
+    };
+    uint32_t stage = (static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING) |
+        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
+    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
+#endif
+}
+
+void ArkIdleMonitor::EnableIdleGC(NativeEngine *engine)
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    auto vm = const_cast<EcmaVM *>(engine->GetEcmaVm());
+    if (gEnableIdleGC && JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
+        SetMainThreadEcmaVM(vm);
+        JSNApi::SetTriggerGCTaskCallback(vm, [engine](TriggerGCData& data) {
+            engine->PostTriggerGCTask(data);
+        });
+        SetStartTimerCallback();
+        PostLooperTriggerIdleGCTask();
+    } else {
+        RegisterWorkerEnv(reinterpret_cast<napi_env>(engine));
+    }
+#endif
+}
+
+void ArkIdleMonitor::UnregisterEnv(NativeEngine *engine)
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    if (!gEnableIdleGC || !JSNApi::IsJSMainThreadOfEcmaVM(engine->GetEcmaVm())) {
+        UnregisterWorkerEnv(reinterpret_cast<napi_env>(engine));
+    }
+#endif
 }
 
 void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
