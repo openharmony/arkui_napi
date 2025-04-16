@@ -33,6 +33,8 @@
 #include "ecmascript/napi/include/jsnapi.h"
 #include "interfaces/inner_api/napi/native_node_api.h"
 
+class NativeEngine;
+
 namespace panda::ecmascript {
 class Heap;
 class SharedHeap;
@@ -44,7 +46,7 @@ class ArkIdleMonitor {
 using Clock = std::chrono::high_resolution_clock;
 using TRIGGER_IDLE_GC_TYPE = panda::JSNApi::TRIGGER_IDLE_GC_TYPE;
 public:
-    explicit ArkIdleMonitor(){};
+    ArkIdleMonitor(){};
     ~ArkIdleMonitor();
 
     static std::shared_ptr<ArkIdleMonitor> GetInstance();
@@ -179,6 +181,9 @@ public:
     void NotifyLooperIdleEnd(int64_t timestamp);
     void PostMonitorTask(uint64_t delayMs = IDLE_MONITORING_INTERVAL);
     void SetStartTimerCallback();
+    void PostLooperTriggerIdleGCTask();
+    void EnableIdleGC(NativeEngine *engine);
+    void UnregisterEnv(NativeEngine *engine);
 
 private:
     double GetCpuUsage() const;
@@ -248,6 +253,7 @@ private:
     std::queue<napi_env> workerEnvQueue_;
 #if defined(ENABLE_EVENT_HANDLER)
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
+    static bool gEnableIdleGC;
 #endif
 };
 
