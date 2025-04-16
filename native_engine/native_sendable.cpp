@@ -21,6 +21,7 @@
 using panda::ObjectRef;
 using panda::StringRef;
 using panda::SymbolRef;
+using PropertyAttribute = panda::PropertyAttribute;
 
 FunctionRef::SendablePropertiesInfos NativeSendable::CreateSendablePropertiesInfos(
     napi_env env,
@@ -118,6 +119,7 @@ Local<JSValueRef> NativeSendable::NapiNativeCreateSendableFunction(napi_env env,
     }
     funcInfo->callback = cb;
     funcInfo->data = value;
+    funcInfo->env = env;
 
     Local<FunctionRef> fn = FunctionRef::NewSendable(
         vm, ArkNativeFunctionCallBack,
