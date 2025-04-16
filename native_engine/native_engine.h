@@ -560,6 +560,8 @@ private:
 
     virtual NapiOptions *GetNapiOptions() const = 0;
 
+    virtual void EnableNapiProfiler() = 0;
+
     inline void SetUnalived()
     {
         std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
