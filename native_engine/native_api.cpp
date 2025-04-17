@@ -448,6 +448,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     }
     funcInfo->callback = callback;
     funcInfo->data = data;
+    funcInfo->env = env;
 #ifdef ENABLE_CONTAINER_SCOPE
     if (EnableContainerScope(env)) {
         funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();

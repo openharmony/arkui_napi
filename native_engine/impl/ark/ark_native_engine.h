@@ -50,14 +50,13 @@ struct ApiCheckContext {
     panda::Local<panda::ObjectRef>& exportObj;
     panda::EscapeLocalScope& scope;
 };
-}
+} // panda::ecmascript
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using DFXJSNApi = panda::DFXJSNApi;
 using LocalScope = panda::LocalScope;
 using JSNApi = panda::JSNApi;
 using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
-using PropertyAttribute = panda::PropertyAttribute;
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
 
@@ -397,6 +396,8 @@ private:
     {
         return options_;
     }
+
+    void EnableNapiProfiler() override;
 
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
     static void RunAsyncCallbacks(std::vector<RefAsyncFinalizer> *finalizers);
