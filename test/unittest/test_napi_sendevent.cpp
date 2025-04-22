@@ -22,6 +22,7 @@
 
 static char g_defaultName[] = "defaultName";
 static char g_defaultData[] = "testData";
+static char g_testName[] = "testName";
 static void Task(void* data)
 {
 }
@@ -107,6 +108,34 @@ HWTEST_F(NapiSendEventTest, SendEventTest005, testing::ext::TestSize.Level1)
     const std::function<void()> cb = []() -> void {};
     eventHandler_ = nullptr;
     auto status = napi_send_event(env, cb, napi_eprio_high);
+    EXPECT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendEventTest006
+ * @tc.desc: Test napi_send_event defaultParams
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high);
+    EXPECT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendEventTest007
+ * @tc.desc: Test napi_send_event allParams
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high, g_testName);
     EXPECT_EQ(status, napi_status::napi_ok);
 }
 

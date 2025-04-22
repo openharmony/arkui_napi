@@ -61,7 +61,10 @@ class TraceLogClass {
 };
 
 // API
-NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()>& cb, napi_event_priority priority)
+NAPI_EXTERN napi_status napi_send_event(napi_env env,
+                                        const std::function<void()>& cb,
+                                        napi_event_priority priority,
+                                        const char* name)
 {
     CHECK_ENV(env);
     if (cb == nullptr) {
@@ -98,7 +101,8 @@ NAPI_EXTERN napi_status napi_send_event(napi_env env, const std::function<void()
         return napi_status::napi_generic_failure;
     }
     auto safeAsyncWork = reinterpret_cast<NativeEvent*>(eng->GetDefaultFunc());
-    return safeAsyncWork->SendCancelableEvent(realCb, nullptr, priority, DEFAULT_NAME, &handleId);
+    return safeAsyncWork->SendCancelableEvent(realCb, nullptr, priority,
+                                              ((name == nullptr) ? DEFAULT_NAME: name), &handleId);
 }
 
 NAPI_EXTERN napi_status napi_send_cancelable_event(napi_env env,
@@ -267,6 +271,9 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
     uint64_t eventId = GenerateUniqueID();
 #ifdef ENABLE_CONTAINER_SCOPE_SEND_EVENT
     int32_t containerScopeId = ContainerScope::CurrentId();
+    if (containerScopeId == -1) {
+        containerScopeId = engine_->GetInstanceId();
+    }
     std::function<void()> task = [eng = engine_, callback, data, eventId, containerScopeId]() {
         ContainerScope containerScope(containerScopeId);
 #else
