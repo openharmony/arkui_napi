@@ -119,7 +119,7 @@ Local<JSValueRef> NativeSendable::NapiNativeCreateSendableFunction(napi_env env,
     }
     funcInfo->callback = cb;
     funcInfo->data = value;
-    funcInfo->env = env;
+    funcInfo->isSendable = true;
 
     Local<FunctionRef> fn = FunctionRef::NewSendable(
         vm, ArkNativeFunctionCallBack,

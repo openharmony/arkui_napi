@@ -242,8 +242,7 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
     }
     funcInfo->callback = callback;
     funcInfo->data = data;
-    funcInfo->env = env;
-
+    funcInfo->isSendable = true;
     std::string className(name);
     if (ArkNativeEngine::napiProfilerEnabled) {
         className = ArkNativeEngine::tempModuleName_ + "." + name;
@@ -729,7 +728,12 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     bool getStackBeforeCallNapiSuccess = false;
     JSNApi::GetStackBeforeCallNapiSuccess(vm, getStackBeforeCallNapiSuccess);
     auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
-    auto env = info->env;
+    napi_env env = nullptr;
+    if (info->isSendable) {
+        env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
+    } else {
+        env = info->env;
+    }
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto cb = info->callback;
     if (engine == nullptr) {
