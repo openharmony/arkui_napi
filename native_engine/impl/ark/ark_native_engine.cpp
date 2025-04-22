@@ -1984,7 +1984,7 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, DumpFormat dumpFormat,
+void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat,
                                        bool isPrivate, bool captureNumericValue)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
@@ -2008,7 +2008,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string& path, bool isVmMode, D
     }
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(int& fd, bool isFullGC,
+void ArkNativeEngine::DumpHeapSnapshot(bool isFullGC, const std::string &path,
                                        const std::function<void(uint8_t)> &callback)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
@@ -2017,7 +2017,7 @@ void ArkNativeEngine::DumpHeapSnapshot(int& fd, bool isFullGC,
     dumpOption.isFullGC = isFullGC;
     dumpOption.isSync = false;
     dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
-    DFXJSNApi::DumpHeapSnapshot(vm_, fd, dumpOption, callback);
+    DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption, callback);
 }
 
 void ArkNativeEngine::DumpCpuProfile()
