@@ -2195,6 +2195,17 @@ void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
     DFXJSNApi::NotifyMemoryPressure(vm_, inHighMemoryPressure);
 }
 
+NativeEngine* ArkNativeEngine::GetArkNativeEngineByID(uint64_t tid)
+{
+    for (auto engine : g_alivedEngine_) {
+        if (static_cast<uint64_t>(engine->GetTid()) == tid ||
+            static_cast<uint64_t>(engine->GetSysTid()) == tid) {
+                return engine;
+        }
+    }
+    return nullptr;
+}
+
 void ArkNativeEngine::NotifyForceExpandState(int32_t value)
 {
     switch (ForceExpandState(value)) {
@@ -2211,6 +2222,16 @@ void ArkNativeEngine::NotifyForceExpandState(int32_t value)
             HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
             break;
     }
+}
+
+void ArkNativeEngine::NotifyForceExpandState(uint64_t tid, int32_t value)
+{
+    std::lock_guard<std::mutex> alivedEngLock(GetAliveEngineMutex());
+    NativeEngine *nativeEngine = GetArkNativeEngineByID(tid);
+    if (nativeEngine == nullptr) {
+        return;
+    }
+    nativeEngine->NotifyForceExpandState(value);
 }
 #else
 void ArkNativeEngine::PrintStatisticResult()
@@ -2315,6 +2336,17 @@ void ArkNativeEngine::NotifyMemoryPressure([[maybe_unused]] bool inHighMemoryPre
 }
 
 void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] int32_t value)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+}
+
+NativeEngine* ArkNativeEngine::GetArkNativeEngineByID([[maybe_unused]] uint64_t tid)
+{
+    HILOG_WARN("ARK does not support dfx on windows");
+    return nullptr;
+}
+
+void ArkNativeEngine::NotifyForceExpandState([[maybe_unused]] uint64_t tid, [[maybe_unused]] int32_t value)
 {
     HILOG_WARN("ARK does not support dfx on windows");
 }

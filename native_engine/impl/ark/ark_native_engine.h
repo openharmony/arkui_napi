@@ -262,6 +262,7 @@ public:
     void NotifyIdleTime(int idleMicroSec) override;
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
     void NotifyForceExpandState(int32_t value) override;
+    void NotifyForceExpandState(uint64_t tid, int32_t value) override;
 
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);
@@ -405,6 +406,7 @@ private:
     static void RunCallbacks(panda::TriggerGCData *triggerGCData);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
+    static NativeEngine* GetArkNativeEngineByID(uint64_t tid);
     static bool CheckArkApiAllowList(
         NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy);
     void IncreasePendingFinalizersPackNativeBindingSize(size_t nativeBindingSize)
