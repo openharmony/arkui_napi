@@ -35,7 +35,7 @@ FFIDataManager* FFIDataManager::GetInstance()
 
 void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)
 {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::recursive_mutex> lock(mtx);
     int64_t id = data->GetID();
     // 0 represents invalid status
     if (id == 0) {
@@ -48,13 +48,13 @@ void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)
 
 void FFIDataManager::StoreRemoteData(const sptr<RemoteData>& data)
 {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::recursive_mutex> lock(mtx);
     remoteDataStore_[data->GetID()] = data;
 }
 
 int64_t FFIDataManager::NewFFIDataId()
 {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::recursive_mutex> lock(mtx);
     if (static_cast<int64_t>(ffiDataStore_.size()) >= maxCapacity) {
         HiLog::Fatal(LABEL, "FFIData store_ over max capacity: %{public}" PRId64, maxCapacity);
         // 0 represents invalid status in CJ RemoteData, will be handled by CJ Exception
