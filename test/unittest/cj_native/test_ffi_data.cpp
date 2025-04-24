@@ -49,7 +49,7 @@ void FfiDataTest::TestFfiManager()
     } else {
         EXPECT_TRUE(false);
     }
-    mgr->RemoveFFIData(id)
+    mgr->RemoveFFIData(id);
 }
 
 TEST_F(FfiDataTest, Types)
