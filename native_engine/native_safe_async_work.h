@@ -26,12 +26,23 @@
 #endif
 
 #include "native_async_context.h"
+#ifdef ENABLE_HITRACE
+#include "hitrace/trace.h"
+#endif
 
 #if defined(ENABLE_EVENT_HANDLER)
 namespace OHOS::AppExecFwk {
     class EventRunner;
     class EventHandler;
 }
+#endif
+
+#ifdef ENABLE_HITRACE
+namespace OHOS {
+namespace HiviewDFX {
+class HiTraceId;
+}
+} // namespace OHOS
 #endif
 
 enum class SafeAsyncCode {
@@ -109,6 +120,42 @@ protected:
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t containerScopeId_;
 #endif
+
+#ifdef ENABLE_HITRACE
+    OHOS::HiviewDFX::HiTraceId taskTraceId_;
+    OHOS::HiviewDFX::HiTraceId currentId_;
+#endif
+
+    void InitSafeAsyncWorkTraceId();
+    inline bool SaveAndSetTraceId()
+    {
+        bool isValidTraceId = false;
+#ifdef ENABLE_HITRACE
+        isValidTraceId = taskTraceId_.IsValid();
+        if (isValidTraceId) {
+            currentId_ = OHOS::HiviewDFX::HiTraceChain::SaveAndSet(taskTraceId_);
+        }
+#endif
+        return isValidTraceId;
+    }
+
+    inline void RestoreTraceId(bool isValidTraceId)
+    {
+#ifdef ENABLE_HITRACE
+        if (isValidTraceId) {
+            OHOS::HiviewDFX::HiTraceChain::Restore(currentId_);
+        }
+#endif
+    }
+
+    inline void ClearTraceId(bool isValidTraceId)
+    {
+#ifdef ENABLE_HITRACE
+        if (isValidTraceId) {
+            OHOS::HiviewDFX::HiTraceChain::ClearId();
+        }
+#endif
+    }
 };
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_SAFE_ASYNC_WORK_H */
