@@ -424,6 +424,7 @@ public:
     virtual void NotifyIdleTime(int idleMicroSec) = 0;
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
     virtual void NotifyForceExpandState(int32_t value) = 0;
+    virtual void NotifyForceExpandState(uint64_t tid, int32_t value) = 0;
     virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
     virtual int32_t GetObjectHash(napi_env env, napi_value src) = 0;
 
@@ -605,6 +606,7 @@ protected:
     bool isAppModule_ = false;
     WorkerThreadState* workerThreadState_;
     ReleaseWorkerSafeMemFunc releaseWorkerSafeMemFunc_ {nullptr};
+    static std::unordered_set<NativeEngine*> g_alivedEngine_;
 public:
     uint64_t openHandleScopes_ = 0;
     panda::Local<panda::ObjectRef> lastException_;
@@ -654,7 +656,6 @@ private:
 
     // protect alived engine set and last engine id
     static std::mutex g_alivedEngineMutex_;
-    static std::unordered_set<NativeEngine*> g_alivedEngine_;
     static uint64_t g_lastEngineId_;
     static std::mutex g_mainThreadEngineMutex_;
     static NativeEngine* g_mainThreadEngine_;
