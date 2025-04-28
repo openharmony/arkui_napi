@@ -99,10 +99,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 #endif
 
 #if defined(ENABLE_EVENT_HANDLER)
-    std::shared_ptr<EventRunner> runner = EventRunner::Current();
-    if (runner != nullptr) {
-        eventHandler_ = std::make_shared<EventHandler>(runner);
-    }
+    runner_ = EventRunner::Current();
 #endif
 }
 
@@ -410,8 +407,8 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
 {
 #if defined(ENABLE_EVENT_HANDLER)
     HILOG_DEBUG("NativeSafeAsyncWork::PostTask called");
-    if (engine_ == nullptr || eventHandler_ == nullptr) {
-        HILOG_ERROR("post task failed due to nullptr engine or eventHandler");
+    if (runner_ == nullptr || engine_ == nullptr) {
+        HILOG_ERROR("post task failed due to nullptr engine or eventRunner");
         return napi_status::napi_generic_failure;
     }
     // the task will be execute at main thread or worker thread
@@ -441,6 +438,10 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
             }
         }
     };
+
+    if (UNLIKELY(eventHandler_ == nullptr)) {
+        eventHandler_ = std::make_shared<EventHandler>(runner_);
+    }
     bool res = false;
     if (isTail) {
         HILOG_DEBUG("The task is posted from tail");
