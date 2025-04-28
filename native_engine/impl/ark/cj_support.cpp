@@ -132,7 +132,7 @@ static bool HasCJMetadata(int fd)
 
 bool IsCJModule(const char* moduleName)
 {
-    HILOG_INFO("Checking whether is cj module, module name: %{public}s", moduleName);
+    HILOG_DEBUG("Checking whether is cj module, module name: %{public}s", moduleName);
     std::string absolutePath("/data/storage/el1/bundle/libs/" LIBS_NAME);
     std::string libName = "lib" + std::string(moduleName) + ".so";
 
@@ -166,10 +166,10 @@ bool IsCJModule(const char* moduleName)
     close(fd);
 
     if (result == 1) {
-        HILOG_INFO("Found 'cjmetadata' section %{public}s", soPath);
+        HILOG_DEBUG("Found 'cjmetadata' section %{public}s", soPath);
         return true;
     } else {
-        HILOG_INFO("Not Found 'cjmetadata' section %{public}s", soPath);
+        HILOG_DEBUG("Not Found 'cjmetadata' section %{public}s", soPath);
         return false;
     }
 }
