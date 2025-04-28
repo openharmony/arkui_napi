@@ -54,6 +54,8 @@ static constexpr int INT_HUNDRED = 100;
 
 static constexpr double TEST_DOUBLE = 1.1;
 static constexpr char TEST_STRING[5] = "test";
+static constexpr char TEST_PROP[9] = "property";
+static constexpr char TEST_PROP_TEST[11] = "property99";
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr int32_t TEST_INT32_MINUS_1 = -1;
 static constexpr int32_t TEST_INT32_1 = 1;
@@ -1755,6 +1757,7 @@ HWTEST_F(NapiBasicTest, PromiseTest007, testing::ext::TestSize.Level1)
             napi_call_threadsafe_function(callbackData->tsfn, (void *)callbackData, napi_tsfn_nonblocking);
         },
         [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
             CallbackDeferred *callbackData = reinterpret_cast<CallbackDeferred *>(data);
             napi_delete_async_work(env, callbackData->work);
             callbackData->work = nullptr;
@@ -1765,6 +1768,7 @@ HWTEST_F(NapiBasicTest, PromiseTest007, testing::ext::TestSize.Level1)
         callbackData, &callbackData->work);
     EXPECT_EQ(status, napi_ok);
     napi_queue_async_work(env, callbackData->work);
+    RUN_EVENT_LOOP(env);
 }
 
 /**
@@ -1835,6 +1839,7 @@ HWTEST_F(NapiBasicTest, PromiseTest008, testing::ext::TestSize.Level1)
             napi_call_threadsafe_function(callbackData->tsfn, (void *)callbackData, napi_tsfn_nonblocking);
         },
         [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
             CallbackDeferred *callbackData = reinterpret_cast<CallbackDeferred *>(data);
             napi_delete_async_work(env, callbackData->work);
             callbackData->work = nullptr;
@@ -1845,6 +1850,7 @@ HWTEST_F(NapiBasicTest, PromiseTest008, testing::ext::TestSize.Level1)
         callbackData, &callbackData->work);
     EXPECT_EQ(status, napi_ok);
     napi_queue_async_work(env, callbackData->work);
+    RUN_EVENT_LOOP(env);
 }
 
 /**
@@ -11683,8 +11689,12 @@ static void executeWork1(napi_env env, void *data)
     CallbackDataAsyncWork007 *callbackData = reinterpret_cast<CallbackDataAsyncWork007 *>(data);
     int count = 50;
     for(int i = 0; i < count; i++) {
+        std::string str = TEST_PROP + std::to_string(i);
+        char* prop = new char[str.size() + 1];
+        errno_t ret = strncpy_s(prop, str.size() + 1, str.c_str(), str.size());
+        ASSERT_EQ(ret, EOK);
         napi_property_descriptor property = {
-            "property",
+            prop,
             nullptr,
             nullptr,
             nullptr,
@@ -11702,8 +11712,12 @@ static void executeWork2(napi_env env, void *data)
     CallbackDataAsyncWork007 *callbackData = reinterpret_cast<CallbackDataAsyncWork007 *>(data);
     int count = 100;
     for(int i = 50; i < count; i++) {
+        std::string str = TEST_PROP + std::to_string(i);
+        char* prop = new char[str.size() + 1];
+        errno_t ret = strncpy_s(prop, str.size() + 1, str.c_str(), str.size());
+        ASSERT_EQ(ret, EOK);
         napi_property_descriptor property = {
-            "property",
+            prop,
             nullptr,
             nullptr,
             nullptr,
@@ -11721,7 +11735,7 @@ static void completeWork1(napi_env env, napi_status status, void* data)
     CallbackDataAsyncWork007 *callbackData = reinterpret_cast<CallbackDataAsyncWork007 *>(data);
     napi_value object = nullptr;
     napi_get_reference_value(env, callbackData->objref, &object);
-    napi_define_properties(env, object, callbackData->desc->size(), callbackData->desc->data());
+    ASSERT_CHECK_CALL(napi_define_properties(env, object, callbackData->desc->size(), callbackData->desc->data()));
 
     napi_delete_async_work(env, callbackData->work1);
     callbackData->work1 = nullptr;
@@ -11730,6 +11744,7 @@ static void completeWork1(napi_env env, napi_status status, void* data)
         delete callbackData->desc;
         delete callbackData->input;
         delete callbackData;
+        STOP_EVENT_LOOP(env);
     }
 }
 
@@ -11738,7 +11753,7 @@ static void completeWork2(napi_env env, napi_status status, void* data)
     CallbackDataAsyncWork007 *callbackData = reinterpret_cast<CallbackDataAsyncWork007 *>(data);
     napi_value object = nullptr;
     napi_get_reference_value(env, callbackData->objref, &object);
-    napi_define_properties(env, object, callbackData->desc->size(), callbackData->desc->data());
+    ASSERT_CHECK_CALL(napi_define_properties(env, object, callbackData->desc->size(), callbackData->desc->data()));
 
     napi_delete_async_work(env, callbackData->work2);
     callbackData->work2 = nullptr;
@@ -11747,6 +11762,7 @@ static void completeWork2(napi_env env, napi_status status, void* data)
         delete callbackData->desc;
         delete callbackData->input;
         delete callbackData;
+        STOP_EVENT_LOOP(env);
     }
 }
 
@@ -11779,14 +11795,25 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest007, testing::ext::TestSize.Level1)
 
     napi_value resourceName1 = nullptr;
     napi_create_string_utf8(env, "AsyncWorkTest007-1", NAPI_AUTO_LENGTH, &resourceName1);
-    napi_create_async_work(env, nullptr, resourceName1, executeWork1, completeWork1,
-        callbackData, &callbackData->work1);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName1, executeWork1, completeWork1,
+        callbackData, &callbackData->work1));
 
     napi_value resourceName2 = nullptr;
     napi_create_string_utf8(env, "AsyncWorkTest007-2", NAPI_AUTO_LENGTH, &resourceName2);
-    napi_create_async_work(env, nullptr, resourceName2, executeWork2, completeWork2,
-        callbackData, &callbackData->work2);
-    napi_queue_async_work(env, callbackData->work1);
-    napi_queue_async_work(env, callbackData->work2);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName2, executeWork2, completeWork2,
+        callbackData, &callbackData->work2));
+    ASSERT_CHECK_CALL(napi_queue_async_work(env, callbackData->work1));
+    ASSERT_CHECK_CALL(napi_queue_async_work(env, callbackData->work2));
+    RUN_EVENT_LOOP(env);
+
+    bool hasProperty = false;
+    napi_has_named_property(env, object, TEST_PROP_TEST, &hasProperty);
+    ASSERT_EQ(hasProperty, true);
+
+    napi_value prop = nullptr;
+    napi_get_named_property(env, object, TEST_PROP_TEST, &prop);
+    int32_t value = -1;
+    napi_get_value_int32(env, prop, &value);
+    ASSERT_EQ(value, 99);
     HILOG_INFO("AsyncWorkTest007 end");
 }
