@@ -618,6 +618,10 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
         ArkIdleMonitor::GetInstance()->RegisterWorkerEnv(reinterpret_cast<napi_env>(this));
     }
 #endif
+
+    // save the first context
+    context_ = Global<JSValueRef>(vm, JSNApi::GetCurrentContext(vm));
+    isMainEnvContext_ = true;
 }
 
 ArkNativeEngine::~ArkNativeEngine()
@@ -2783,4 +2787,52 @@ bool ArkNativeEngine::ExecuteJsBin(const std::string& fileName, bool checkPath)
     bool ret = JSNApi::Execute(vm_, fileName, PANDA_MAIN_FUNCTION);
     return ret;
     // LCOV_EXCL_STOP
+}
+
+napi_status ArkNativeEngine::SetContext(const Local<JSValueRef>& context)
+{
+    if (context.IsEmpty()) {
+        HILOG_ERROR("invalid argument");
+        return napi_generic_failure;
+    }
+    if (!context_.IsEmpty()) {
+        HILOG_ERROR("context cannot be set again");
+        return napi_generic_failure;
+    }
+    context_ = panda::Global<panda::JSValueRef>(vm_, context);
+    return napi_ok;
+}
+
+napi_status ArkNativeEngine::SwitchContext()
+{
+    if (context_.IsEmpty()) {
+        HILOG_ERROR("no env context exists");
+        return napi_generic_failure;
+    }
+
+    panda::JSNApi::SwitchContext(vm_, context_.ToLocal(vm_));
+    return napi_ok;
+}
+
+napi_status ArkNativeEngine::DestroyContext()
+{
+    if (context_.IsEmpty()) {
+        HILOG_ERROR("no env context exists");
+        return napi_generic_failure;
+    }
+    // the original context cannot be destroyed
+    if (isMainEnvContext_) {
+        HILOG_ERROR("main env context cannot be destroyed");
+        return napi_invalid_arg;
+    }
+
+    // the current running context also cannot be destroyed
+    Local<JSValueRef> currentContext = panda::JSNApi::GetCurrentContext(vm_);
+    if (context_.ToLocal(vm_) == currentContext) {
+        HILOG_ERROR("running env context cannot be destroyed");
+        return napi_invalid_arg;
+    }
+
+    context_.FreeGlobalHandleAddr();
+    return napi_ok;
 }
