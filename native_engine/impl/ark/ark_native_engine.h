@@ -50,22 +50,16 @@ struct ApiCheckContext {
     panda::Local<panda::ObjectRef>& exportObj;
     panda::EscapeLocalScope& scope;
 };
-}
+} // panda::ecmascript
 using JsFrameInfo = panda::ecmascript::JsFrameInfo;
 using DFXJSNApi = panda::DFXJSNApi;
 using LocalScope = panda::LocalScope;
 using JSNApi = panda::JSNApi;
 using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
-using PropertyAttribute = panda::PropertyAttribute;
-using NativePointerCallbackData = panda::NativePointerCallbackData;
-using AsyncNativeCallbacksPack = panda::AsyncNativeCallbacksPack;
-using TriggerGCTaskCallback = panda::TriggerGCTaskCallback;
-using TriggerGCData = panda::TriggerGCData;
-using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
-
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
+
 class NativeTimerCallbackInfo;
 template <bool changeState = true>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
@@ -284,8 +278,8 @@ public:
     void NotifyNativeCalling(const void *nativeAddress);
 
     void PostFinalizeTasks();
-    void PostAsyncTask(AsyncNativeCallbacksPack *callbacksPack);
-    void PostTriggerGCTask(TriggerGCData& data);
+    void PostAsyncTask(panda::AsyncNativeCallbacksPack *callbacksPack);
+    void PostTriggerGCTask(panda::TriggerGCData& data) override;
 
     ArkFinalizersPack &GetArkFinalizersPack()
     {
@@ -361,7 +355,6 @@ public:
     std::string GetPkgName(const std::string &moduleName) override;
     bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) override;
     int GetProcessStartRealTime() override;
-    void PostLooperTriggerIdleGCTask();
 
     static bool napiProfilerEnabled;
     static std::string tempModuleName_;
@@ -393,16 +386,23 @@ public:
         TimerListHead_ = info;
     }
 
+    inline bool IsMainEnvContext() const
+    {
+        return isMainEnvContext_;
+    }
+
 private:
     inline NapiOptions *GetNapiOptions() const override
     {
         return options_;
     }
 
+    void EnableNapiProfiler() override;
+
     static void RunCallbacks(ArkFinalizersPack *finalizersPack);
     static void RunAsyncCallbacks(std::vector<RefAsyncFinalizer> *finalizers);
-    static void RunCallbacks(AsyncNativeCallbacksPack *callbacks);
-    static void RunCallbacks(TriggerGCData *triggerGCData);
+    static void RunCallbacks(panda::AsyncNativeCallbacksPack *callbacks);
+    static void RunCallbacks(panda::TriggerGCData *triggerGCData);
     static void SetAttribute(bool isLimitedWorker, panda::RuntimeOption &option);
     static NativeEngine* CreateRuntimeFunc(NativeEngine* engine, void* jsEngine, bool isLimitedWorker = false);
     static bool CheckArkApiAllowList(
@@ -439,5 +439,6 @@ private:
     bool containerScopeEnable_ { true };
 #endif
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
+    bool isMainEnvContext_ = true;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
