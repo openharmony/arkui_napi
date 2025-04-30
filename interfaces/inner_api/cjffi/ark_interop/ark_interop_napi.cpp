@@ -559,7 +559,6 @@ int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest
 ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(data, "data is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = NativePointerRef::New(vm, data, ARKTSInner_CJExternalDeleter, env);
