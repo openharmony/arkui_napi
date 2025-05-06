@@ -45,7 +45,39 @@ ohos_unittest("test_ark_interop") {
   ]
 }
 
+ohos_unittest("test_ffi_data") {
+  module_out_path = module_output_path
+
+  include_dirs = []
+  include_dirs += [
+    "../../../interfaces/inner_api/cjffi/cj_ffi/",
+    "../../../interfaces/inner_api/cjffi/native/",
+  ]
+
+  cflags = [ "-g3" ]
+
+  sources = [ "test_ffi_data.cpp" ]
+
+  deps = [
+    "../../..:cj_bind_ffi",
+    "../../..:cj_bind_ffi_source",
+    "../../..:cj_bind_native",
+  ]
+  defines = []
+  if (use_clang_coverage) {
+    defines += [ "CLANG_COVERAGE" ]
+  }
+
+  external_deps = [
+    "hilog:libhilog",
+    "libuv:uv",
+  ]
+}
+
 group("cj_native_unittest") {
   testonly = true
-  deps = [ ":test_ark_interop" ]
+  deps = [
+    ":test_ark_interop",
+    ":test_ffi_data",
+  ]
 }
