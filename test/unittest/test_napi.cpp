@@ -11790,3 +11790,137 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest007, testing::ext::TestSize.Level1)
     napi_queue_async_work(env, callbackData->work2);
     HILOG_INFO("AsyncWorkTest007 end");
 }
+
+class FinalizerChecker {
+public:
+    FinalizerChecker() : called_(false), data_(nullptr) {}
+
+    static void Callback(void* arg) {
+        FinalizerChecker* checker = static_cast<FinalizerChecker*>(arg);
+        checker->called_ = true;
+        checker->data_ = arg;
+    }
+
+    bool called() const { return called_; }
+    void* data() const { return data_; }
+
+private:
+    bool called_;
+    void* data_;
+};
+
+/**
+* @tc.name: AddCleanupFinalizerTest001
+* @tc.desc: Test AddCleanupFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest001, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy env;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+
+    napi_status status = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(status, napi_ok);
+    delete checker;
+}
+
+/**
+* @tc.name: AddCleanupFinalizerTest002
+* @tc.desc: Test AddCleanupFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest002, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+    void* testData = new char[10];
+    CleanupFinalizerCallBack callback = [](void* arg) {
+        delete[] reinterpret_cast<char*>(arg);
+    };
+
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
+}
+
+/**
+* @tc.name: RemoveCleanupFinalizerTest001
+* @tc.desc: Test RemoveCleanupFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest001, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy env;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+
+    napi_status addStatus = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
+
+    napi_status removeStatus = napi_remove_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
+    delete checker;
+}
+
+/**
+* @tc.name: RemoveCleanupFinalizerTest002
+* @tc.desc: Test RemoveCleanupFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest002, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+    void* testData = new char[10];
+    CleanupFinalizerCallBack callback = [](void* arg) {
+        delete[] reinterpret_cast<char*>(arg);
+    };
+
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
+
+    napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
+    delete[] reinterpret_cast<char*>(testData);
+}
+
+/**
+* @tc.name: RunInstanceFinalizerTest001
+* @tc.desc: Test RunInstanceFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, RunInstanceFinalizerTest001, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+    CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
+
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
+
+    engine->RunInstanceFinalizer();
+    EXPECT_TRUE(checker->called());
+    delete checker;
+}
+
+/**
+* @tc.name: RunInstanceFinalizer002
+* @tc.desc: Test RunInstanceFinalizer.
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, RunInstanceFinalizer002, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+    CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
+
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
+
+    napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
+
+    engine->RunInstanceFinalizer();
+    EXPECT_FALSE(checker->called());
+    delete checker;
+}

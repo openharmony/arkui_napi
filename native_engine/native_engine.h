@@ -102,6 +102,7 @@ private:
 };
 
 using CleanupCallback = void (*)(void*);
+using CleanupFinalizerCallBack = void (*)(void*);
 using ThreadId = uint32_t;
 class NapiOptions;
 using PostTask = std::function<void(bool needSync)>;
@@ -377,6 +378,8 @@ public:
 
     virtual napi_status AddCleanupHook(CleanupCallback fun, void* arg);
     virtual napi_status RemoveCleanupHook(CleanupCallback fun, void* arg);
+    virtual napi_status AddCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
+    virtual napi_status RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
 
     void CleanupHandles();
     void IncreaseWaitingRequestCounter();
@@ -580,6 +583,8 @@ private:
     // should only call once in life cycle of ArkNativeEngine(NativeEngine)
     inline void SetAlived();
 
+    virtual void RunInstanceFinalizer();
+
 protected:
     void *jsEngine_ = nullptr;
 
@@ -644,6 +649,8 @@ private:
     uv_async_t uvAsync_;
     std::unordered_map<void*, std::pair<CleanupCallback, uint64_t>> cleanupHooks_;
     uint64_t cleanupHookCounter_ = 0;
+    std::unordered_map<void*, std::pair<CleanupFinalizerCallBack, uint64_t>> instanceFinalizer_;
+    uint64_t instanceFinalizerCounter_ = 0;
     std::atomic_int requestWaiting_ { 0 };
     std::atomic_int listeningCounter_ { 0 };
     std::atomic_int subEnvCounter_ { 0 };
