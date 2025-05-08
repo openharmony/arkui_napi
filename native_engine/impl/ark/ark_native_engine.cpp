@@ -2201,6 +2201,7 @@ void ArkNativeEngine::NotifyMemoryPressure(bool inHighMemoryPressure)
 
 NativeEngine* ArkNativeEngine::GetArkNativeEngineByID(uint64_t tid)
 {
+#if defined(OHOS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM)
     for (auto engine : g_alivedEngine_) {
         if (static_cast<uint64_t>(engine->GetTid()) == tid ||
             static_cast<uint64_t>(engine->GetSysTid()) == tid) {
@@ -2208,6 +2209,9 @@ NativeEngine* ArkNativeEngine::GetArkNativeEngineByID(uint64_t tid)
         }
     }
     return nullptr;
+#else
+    return nullptr;
+#endif
 }
 
 void ArkNativeEngine::NotifyForceExpandState(int32_t value)
