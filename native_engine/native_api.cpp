@@ -269,9 +269,13 @@ NAPI_EXTERN napi_status napi_create_sendable_array(napi_env env, napi_value* res
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
 
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::SendableArrayRef> object = panda::SendableArrayRef::New(vm, 0);
+    Local<panda::SendableArrayRef> object = panda::SendableArrayRef::New(engine->GetEcmaVm(), 0);
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -282,8 +286,13 @@ NAPI_EXTERN napi_status napi_create_sendable_array_with_length(napi_env env, siz
     CHECK_ENV(env);
     CHECK_ARG(env, result);
 
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::SendableArrayRef> object = panda::SendableArrayRef::New(vm, length);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    Local<panda::SendableArrayRef> object = panda::SendableArrayRef::New(engine->GetEcmaVm(), length);
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -1179,8 +1188,14 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
     auto nativeValue = LocalValueFromJsValue(value);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
 
     *result = nativeValue->IsJSShared(vm) || nativeValue->IsString(vm) || nativeValue->IsNumber() ||
@@ -1443,6 +1458,12 @@ NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
     }
     CHECK_ARG(env, result);
 
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
     auto callback = reinterpret_cast<NapiNativeCallback>(constructor);
     auto nativeProperties = reinterpret_cast<const NapiPropertyDescriptor*>(properties);
 
@@ -1452,7 +1473,7 @@ NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
         HILOG_ERROR("napi_define_sendable_class strncpy_s failed");
         *result = nullptr;
     } else {
-        EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
+        EscapeLocalScope scope(engine->GetEcmaVm());
         auto resultValue =
             NapiDefineSendableClass(env, newName, callback, data, nativeProperties, property_count, parent);
         *result = JsValueFromLocalValue(scope.Escape(resultValue));
@@ -1468,6 +1489,12 @@ NAPI_EXTERN napi_status napi_create_sendable_object_with_properties(napi_env env
 {
     CHECK_ENV(env);
     CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
 
     auto nativeProperties = reinterpret_cast<const NapiPropertyDescriptor*>(properties);
     auto object = NapiCreateSObjectWithProperties(env, property_count, nativeProperties);
@@ -1493,8 +1520,13 @@ NAPI_EXTERN napi_status napi_create_sendable_map(napi_env env, napi_value* resul
     CHECK_ENV(env);
     CHECK_ARG(env, result);
 
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::ArrayRef> object = panda::SendableMapRef::New(vm);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    Local<panda::ArrayRef> object = panda::SendableMapRef::New(engine->GetEcmaVm());
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -2066,9 +2098,14 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
@@ -2089,9 +2126,14 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
@@ -2107,8 +2149,14 @@ NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object,
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
     auto nativeValue = LocalValueFromJsValue(js_object);
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
     Local<ObjectRef> nativeObject(nativeValue);
@@ -2123,8 +2171,13 @@ NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_ob
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
-    auto nativeValue = LocalValueFromJsValue(js_object);
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
@@ -2503,7 +2556,12 @@ NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t by
     CHECK_ARG(env, data);
     CHECK_ARG(env, result);
 
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    auto vm = engine->GetEcmaVm();
     uint8_t** values = (uint8_t**)(data);
     Local<panda::SendableArrayBufferRef> res = panda::SendableArrayBufferRef::New(vm, byte_length);
     if (values != nullptr) {
@@ -2793,7 +2851,13 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
 
     auto value = LocalValueFromJsValue(arraybuffer);
     auto typedArrayType = (NativeTypedArrayType)type;
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, value->IsSendableArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::SendableArrayBufferRef> arrayBuf(value);
@@ -4258,4 +4322,65 @@ NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* 
     *result = nativeValue->IsBitVector(vm);
 
     return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
+{
+    NAPI_PREAMBLE(env);
+    auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = nativeEngine->GetEcmaVm();
+    // cannot to utilize a created env to generate a new env
+    if (!nativeEngine->IsMainEnvContext()) {
+        HILOG_ERROR("env cannot be generate by using a created env");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    // worker and taskpool will support multi-context later
+    if (!nativeEngine->IsMainThread()) {
+        HILOG_FATAL("multi-context feature only support main thread");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    // create env will be implemented later
+    auto newNativeEngine = reinterpret_cast<NativeEngine*>(*newEnv);
+    auto context = panda::JSNApi::CreateContext(vm);
+    napi_status status = newNativeEngine->SetContext(context);
+    if (status != napi_ok) {
+        return napi_set_last_error(env, status);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
+{
+    NAPI_PREAMBLE(env);
+    auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    // worker and taskpool will support multi-context later
+    if (!nativeEngine->IsMainThread()) {
+        HILOG_FATAL("multi-context feature only support main thread");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    napi_status status = nativeEngine->SwitchContext();
+    if (status != napi_ok) {
+        return napi_set_last_error(env, status);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
+{
+    NAPI_PREAMBLE(env);
+    auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    // worker and taskpool will support multi-context later
+    if (!nativeEngine->IsMainThread()) {
+        HILOG_FATAL("multi-context feature only support main thread");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    napi_status status = nativeEngine->DestroyContext();
+    if (status != napi_ok) {
+        return napi_set_last_error(env, status);
+    }
+    delete nativeEngine;
+    return GET_RETURN_STATUS(env);
 }

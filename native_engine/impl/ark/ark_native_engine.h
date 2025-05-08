@@ -387,10 +387,21 @@ public:
         TimerListHead_ = info;
     }
 
-    inline bool IsMainEnvContext() const
+    inline bool IsMainEnvContext() const override
     {
         return isMainEnvContext_;
     }
+
+    Local<JSValueRef> GetContext() const override
+    {
+        return context_.ToLocal();
+    }
+
+    napi_status SetContext(const Local<JSValueRef>& context) override;
+
+    napi_status SwitchContext() override;
+
+    napi_status DestroyContext() override;
 
 private:
     inline NapiOptions *GetNapiOptions() const override
@@ -440,6 +451,7 @@ private:
     bool containerScopeEnable_ { true };
 #endif
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
-    bool isMainEnvContext_ = true;
+    bool isMainEnvContext_ = false;
+    panda::Global<panda::JSValueRef> context_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
