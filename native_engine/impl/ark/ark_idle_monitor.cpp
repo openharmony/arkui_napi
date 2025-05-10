@@ -166,18 +166,22 @@ void ArkIdleMonitor::IntervalMonitor()
     CheckWorkerEnvQueue();
     uint32_t checkCounts = IsInBackground() ? IDLE_INBACKGROUND_CHECK_LENGTH : IDLE_CHECK_LENGTH;
     uint32_t workThreadCheckCounts = checkCounts - IDLE_WORKER_TRIGGER_COUNT;
+    int64_t intervalDuration = nowTimestamp - intervalTimestamp_;
     if (numberOfLowIdleNotifyCycles_ >= checkCounts &&
-            numberOfHighIdleTimeRatio_ >= checkCounts) {
+            numberOfHighIdleTimeRatio_ >= checkCounts &&
+            intervalDuration < DELAY_OVER_TIME) {
         NotifyMainThreadTryCompressGC();
         PostMonitorTask(SLEEP_MONITORING_INTERVAL);
         ClearIdleStats();
     } else if (numberOfLowIdleNotifyCycles_ >= workThreadCheckCounts &&
-                    numberOfHighIdleTimeRatio_ >= workThreadCheckCounts) {
+                    numberOfHighIdleTimeRatio_ >= workThreadCheckCounts &&
+                    intervalDuration < DELAY_OVER_TIME) {
         NotifyOneWorkerThreadTryCompressGC();
         PostMonitorTask(IDLE_MONITORING_INTERVAL);
     } else {
         PostMonitorTask(IDLE_MONITORING_INTERVAL);
     }
+    intervalTimestamp_ = nowTimestamp;
     timerMutex_.unlock();
 }
 
@@ -442,11 +446,12 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
     int64_t sumIdleDuration = (GetTotalIdleDuration() - idleDuration) + (nowTimestamp - GetNotifyTimestamp());
     double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
     double cpuUsage = GetCpuUsage();
-    if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE) {
+    if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE
+        && sumDuration < DELAY_OVER_TIME) {
         NotifyMainThreadTryCompressGCByBackground();
     } else {
-        HILOG_INFO("ArkIdleMonitor canceled background GC task, idlePercentage:%{public}.2f, cpuUsage:%{public}.2f",
-            idlePercentage, cpuUsage);
+        HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}lld",
+            idlePercentage, cpuUsage, sumDuration);
     }
     StopIdleMonitorTimerTaskAndPostSleepTask();
     ClearIdleStats();

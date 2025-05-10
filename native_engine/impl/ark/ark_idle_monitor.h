@@ -217,6 +217,8 @@ private:
     static constexpr int LOW_IDLE_NOTIFY_THRESHOLD = 10;
     static constexpr uint64_t IDLE_MONITORING_INTERVAL = 1 * 1000; // ms
     static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000; // ms
+    // DELAY_OVER_TIME Detect whether there is any process freezing during the delay process of the delay task
+    static constexpr uint64_t DELAY_OVER_TIME = IDLE_MONITORING_INTERVAL + 100; //ms
     static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 10; // ms
     static constexpr int64_t MAX_TRIGGER_GC_RUNNING_INTERVAL = 1; //ms
     static constexpr double IDLE_RATIO = 0.985f;
@@ -236,6 +238,7 @@ private:
     int64_t idleEndTimestamp_ {0};
     int64_t lastTotalIdleDuration_ {0};
     int64_t startRecordTimestamp_ {0};
+    int64_t intervalTimestamp_ {0};
     bool started_ {false};
     bool triggeredGC_ {false};
     bool needCheckIntervalIdle_ = {true};
