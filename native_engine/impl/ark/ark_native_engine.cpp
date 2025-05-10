@@ -2082,6 +2082,12 @@ bool ArkNativeEngine::BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInf
 #endif
 }
 
+void ArkNativeEngine::GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr)
+{
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    DFXJSNApi::GetMainThreadStackTrace(vm, stackTraceStr);
+}
+
 bool ArkNativeEngine::DeleteWorker(NativeEngine* workerEngine)
 {
     if (workerEngine != nullptr) {
