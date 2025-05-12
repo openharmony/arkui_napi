@@ -427,9 +427,17 @@ uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array)
     ARKTS_ASSERT_I(ARKTS_IsArray(env, array), "array is not array");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto jArr = *P_CAST(array, ArrayRef*);
-
-    return jArr.Length(vm);
+    auto ref = P_CAST(array, JSValueRef*);
+    if (ref->IsJSArray(vm)) {
+        return P_CAST(array, ArrayRef*)->Length(vm);
+    }
+    auto l = ARKTS_CreateUtf8(env, "length", 6);
+    auto r = ARKTS_GetProperty(env, array, l);
+    if (ARKTS_IsNumber(r)) {
+        auto n = ARKTS_GetValueNumber(r);
+        return static_cast<uint32_t>(n);
+    }
+    return 0;
 }
 
 void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Value value)
