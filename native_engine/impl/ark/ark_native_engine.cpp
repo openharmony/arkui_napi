@@ -523,6 +523,11 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                         arkNativeEngine->SetModuleName(exportObj, module->name);
                         module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
                                                  JsValueFromLocalValue(exportObj));
+                        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
+                        panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
+                        if (CheckArkApiAllowList(module, context, exportCopy)) {
+                            return scope.Escape(exportCopy);
+                        }
                         exports = exportObj;
                         arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
                     } else {
