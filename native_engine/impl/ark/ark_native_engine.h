@@ -60,6 +60,8 @@ using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
 
+typedef bool (*NapiModuleValidateCallback)(const char* moduleName);
+
 class NativeTimerCallbackInfo;
 template <bool changeState = true>
 panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo);
@@ -129,6 +131,12 @@ private:
     size_t size_;
 };
 
+enum class ArkNativeEngineState : uint8_t {
+    RUNNING,
+    STOPPED,
+    RELEASING,
+};
+
 class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
@@ -137,13 +145,20 @@ public:
     // ArkNativeEngine destructor
     ~ArkNativeEngine() override;
 
+    static ArkNativeEngine* New(NativeEngine* engine, EcmaVM* vm, const Local<JSValueRef>& context);
+
+    bool IsReadyToDelete();
+    void Delete();
+
     NAPI_EXPORT const EcmaVM* GetEcmaVm() const override
     {
         return vm_;
     }
+    const ArkNativeEngine* GetParent() const override;
 
     void Loop(LoopMode mode, bool needSync = false) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
+    static void SetModuleValidateCallback(NapiModuleValidateCallback validateCallback);
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
@@ -373,12 +388,10 @@ public:
     }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 
-#ifdef ENABLE_CONTAINER_SCOPE
-    inline bool IsContainerScopeEnabled() const override
+    bool IsContainerScopeEnabled() const override
     {
         return containerScopeEnable_;
     }
-#endif
 
     NativeTimerCallbackInfo* GetTimerListHead() const
     {
@@ -394,18 +407,40 @@ public:
         return isMainEnvContext_;
     }
 
-    Local<JSValueRef> GetContext() const override
-    {
-        return context_.ToLocal();
-    }
-
-    napi_status SetContext(const Local<JSValueRef>& context) override;
+    Local<JSValueRef> GetContext() const override;
 
     napi_status SwitchContext() override;
 
     napi_status DestroyContext() override;
 
 private:
+    // ArkNativeEngine constructor for multi-context
+    ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context);
+    void DeconstructCtxEnv();
+    static void EnvironmentCleanup(void* arg);
+
+    // -1: failed to load module
+    //  0: success to found module -> need load
+    //  1: success to load module -> return exports
+    int CheckAndGetModule(
+        JsiRuntimeCallInfo *info,
+        NativeModuleManager* moduleManager,
+        bool &isAppModule,
+        Local<panda::StringRef> &moduleName,
+        NativeModule *&module,
+        Local<JSValueRef> exports,
+        std::string &errInfo
+    );
+    Local<JSValueRef> LoadNativeModule(
+        NativeModuleManager* moduleManager,
+        Local<panda::StringRef> &moduleName,
+        NativeModule* module,
+        Local<JSValueRef> exports,
+        std::string &errInfo);
+    static Local<JSValueRef> RequireNapi(JsiRuntimeCallInfo *info);
+    static Local<JSValueRef> RequireNapiForCtxEnv(JsiRuntimeCallInfo *info);
+    static Local<JSValueRef> RequireInternal(JsiRuntimeCallInfo *info);
+
     inline NapiOptions *GetNapiOptions() const override
     {
         return options_;
@@ -431,9 +466,21 @@ private:
         pendingFinalizersPackNativeBindingSize_ -= nativeBindingSize;
     }
 
+    bool IsLimitWorker() const override
+    {
+        return isLimitedWorker_;
+    }
+
+    // ecma vm
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
     panda::LocalScope topScope_;
+    panda::Global<panda::JSValueRef> context_;
+
+    // for context env
+    ArkNativeEngine* parentEngine_ { nullptr };
+    static std::atomic<NapiModuleValidateCallback> moduleValidateCallback_;
+
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
     NativeReference* checkCallbackRef_ { nullptr };
@@ -450,11 +497,10 @@ private:
     // napi options and its cache
     NapiOptions* options_ { nullptr };
     bool crossThreadCheck_ { false };
-#ifdef ENABLE_CONTAINER_SCOPE
-    bool containerScopeEnable_ { true };
-#endif
+    // Initialize the default value to false rather than isolating it with macros.
+    bool containerScopeEnable_ { false };
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
     bool isMainEnvContext_ = false;
-    panda::Global<panda::JSValueRef> context_;
+    ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

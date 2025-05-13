@@ -28,6 +28,7 @@
 #include "cj_support.h"
 #include "securec.h"
 #include "utils/file.h"
+#include <cinttypes>
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #include <uv.h>
@@ -108,6 +109,16 @@ static std::unordered_set<std::string> NATIVE_MODULE = {"system.app", "ohos.app"
 static constexpr auto NATIVE_MODULE_PREFIX = "@native:";
 static constexpr auto OHOS_MODULE_PREFIX = "@ohos:";
 static constexpr int ARGC_THREE = 3;
+
+// See `ArkNativeEngine::RequireNapi` for more information.
+#ifndef PREVIEW
+static constexpr const char* REQUIRE_NAPI_FUNCTION_NAME = "requireNapi";
+#else
+static constexpr const char* REQUIRE_NAPI_FUNCTION_NAME = "requireNapiPreview";
+#endif
+// See `ArkNativeEngine::RequireInternal` for more information.
+static constexpr const char* REQUIRE_NAPI_INTERNAL_NAME = "requireInternal";
+
 #ifdef ENABLE_HITRACE
 constexpr auto NAPI_PROFILER_PARAM_SIZE = 10;
 std::atomic<uint64_t> g_chainId = 0;
@@ -118,6 +129,7 @@ std::string ArkNativeEngine::tempModuleName_ {""};
 bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
+std::atomic<NapiModuleValidateCallback> ArkNativeEngine::moduleValidateCallback_ {nullptr};
 
 // This interface is using by ace_engine
 napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local)
@@ -290,6 +302,15 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
     return cb;
 }
 
+void ArkNativeEngine::SetModuleValidateCallback(NapiModuleValidateCallback validateCallback)
+{
+    if (moduleValidateCallback_.load()) {
+        HILOG_ERROR("Module Validate Callback is already set, do not set more than once.");
+        return;
+    }
+    moduleValidateCallback_ = validateCallback;
+}
+
 bool ArkNativeEngine::CheckArkApiAllowList(
     NativeModule* module, panda::ecmascript::ApiCheckContext context, panda::Local<panda::ObjectRef>& exportCopy)
 {
@@ -337,15 +358,15 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                                                                                      topScope_(vm),
                                                                                      isLimitedWorker_(isLimitedWorker)
 {
-    HILOG_DEBUG("ArkNativeEngine::ArkNativeEngine");
+    HILOG_INFO("ArkNativeEngine is created, id %{public}" PRIu64, GetId());
+
     JSNApi::SetEnv(vm, this);
     // enable napi profiler
     EnableNapiProfiler();
     LocalScope scope(vm_);
-    Local<StringRef> requireInternalName = StringRef::NewFromUtf8(vm, "requireInternal");
-    void* requireData = static_cast<void*>(this);
 
     options_ = new NapiOptions();
+    // Cache of ark runtime cross thread check option.
     crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
     containerScopeEnable_ = OHOS::system::GetBoolParameter("persist.ace.napiContainerScope.enabled", true);
@@ -356,199 +377,16 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
         options_->SetProperties(napiProperties);
     }
 #endif
-    Local<FunctionRef> requireNapi =
-        FunctionRef::New(
-            vm,
-            [](JsiRuntimeCallInfo *info) -> Local<JSValueRef> {
-                EcmaVM *ecmaVm = info->GetVM();
-                panda::EscapeLocalScope scope(ecmaVm);
-                NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-                ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
-                Local<StringRef> moduleName(info->GetCallArgRef(0));
-                NativeModule* module = nullptr;
-                bool isAppModule = false;
-                std::string errInfo = "";
-                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
-#ifdef IOS_PLATFORM
-                if (arkNativeEngine->isLimitedWorker_) {
-                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
-                        HILOG_ERROR("module %{public}s does not found in whitelist",
-                            moduleName->ToString(ecmaVm).c_str());
-                        return scope.Escape(exports);
-                    }
-                }
-                module = moduleManager->LoadNativeModule(
-                    moduleName->ToString(ecmaVm).c_str(), nullptr, false, errInfo, false, "");
-#else
-                const uint32_t lengthMax = 2;
-                if (info->GetArgsNumber() >= lengthMax) {
-                    Local<BooleanRef> ret(info->GetCallArgRef(1));
-                    isAppModule = ret->Value();
-                }
-                arkNativeEngine->isAppModule_ = isAppModule;
-                if (arkNativeEngine->isLimitedWorker_ && !isAppModule) {
-                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
-                        HILOG_ERROR("module %{public}s does not found in whitelist",
-                            moduleName->ToString(ecmaVm).c_str());
-                        return scope.Escape(exports);
-                    }
-                }
 
-                if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
-                    Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
-                    if (UNLIKELY(IsCJModule(moduleName->ToString(ecmaVm).c_str()))) {
-                        return NapiValueToLocalValue(
-                            LoadCJModule((napi_env)arkNativeEngine, moduleName->ToString(ecmaVm).c_str()));
-                    }
-                    module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
-                        path->ToString(ecmaVm).c_str(), isAppModule, errInfo, false, "");
-                } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
-                    Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
-                    Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
-                    module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(), nullptr, isAppModule,
-                        errInfo, false, relativePath->ToString(ecmaVm).c_str());
-                } else {
-                    module =
-                        moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
-                        nullptr, isAppModule, errInfo, false, "");
-                }
-#endif
-                if (module != nullptr) {
-                    auto it = arkNativeEngine->loadedModules_.find(module);
-                    if (it != arkNativeEngine->loadedModules_.end()) {
-                        return scope.Escape(it->second.ToLocal(ecmaVm));
-                    }
-                    std::string strModuleName = moduleName->ToString(ecmaVm);
-                    moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
-                    MoudleNameLocker nameLocker(strModuleName);
-
-                    if (module->jsCode == nullptr && module->getABCCode != nullptr) {
-                        module->getABCCode(&module->jsCode, &module->jsCodeLen);
-                    }
-                    if (module->jsABCCode != nullptr || module->jsCode != nullptr) {
-                        char fileName[NAPI_PATH_MAX] = { 0 };
-                        const char* name = module->name;
-                        if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
-                            HILOG_ERROR("sprintf_s file name failed");
-                            return scope.Escape(exports);
-                        }
-                        HILOG_DEBUG("load js code from %{public}s", fileName);
-                        const void *buffer = nullptr;
-                        if (module->jsABCCode) {
-                            buffer = static_cast<const void *>(module->jsABCCode);
-                        } else {
-                            buffer = static_cast<const void *>(module->jsCode);
-                        }
-                        auto exportObject = arkNativeEngine->LoadArkModule(buffer,
-                            module->jsCodeLen, fileName);
-                        if (exportObject->IsUndefined()) {
-                            HILOG_ERROR("load module failed");
-                            return scope.Escape(exports);
-                        } else {
-                            exports = exportObject;
-                            arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
-                        }
-                    } else if (module->registerCallback != nullptr) {
-                        Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
-#ifdef ENABLE_HITRACE
-                        StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
-#endif
-                        arkNativeEngine->SetModuleName(exportObj, module->name);
-                        module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
-                                                 JsValueFromLocalValue(exportObj));
-#ifdef ENABLE_HITRACE
-                        FinishTrace(HITRACE_TAG_ACE);
-#endif
-                        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
-                        panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
-                        if (CheckArkApiAllowList(module, context, exportCopy)) {
-                            return scope.Escape(exportCopy);
-                        }
-                        exports = exportObj;
-                        arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
-                    } else {
-                        HILOG_ERROR("init module failed");
-                        return scope.Escape(exports);
-                    }
-                }
-                if (module == nullptr) {
-                    HILOG_INFO("%{public}s", errInfo.c_str());
-                    exports = panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo);
-                }
-                return scope.Escape(exports);
-            },
-            nullptr,
-            requireData);
-
-    Local<FunctionRef> requireInternal =
-        FunctionRef::New(
-            vm,
-            [](JsiRuntimeCallInfo *info) -> Local<JSValueRef> {
-                EcmaVM *ecmaVm = info->GetVM();
-                panda::EscapeLocalScope scope(ecmaVm);
-                NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-                ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
-                Local<StringRef> moduleName(info->GetCallArgRef(0));
-                std::string errInfo = "";
-                Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
-                if (arkNativeEngine->isLimitedWorker_) {
-                    if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
-                        HILOG_ERROR("module %{public}s does not found in whitelist",
-                            moduleName->ToString(ecmaVm).c_str());
-                        return scope.Escape(exports);
-                    }
-                }
-                NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
-                    nullptr, false, errInfo, false, "");
-                MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm).c_str());
-                if (module != nullptr && arkNativeEngine) {
-                    if (module->registerCallback == nullptr) {
-                        if (module->name != nullptr) {
-                            HILOG_ERROR("requireInternal Init function is nullptr. module name: %{public}s",
-                                module->name);
-                        } else {
-                            HILOG_ERROR("requireInternal Init function is nullptr.");
-                        }
-                        return scope.Escape(exports);
-                    }
-
-                    auto it = arkNativeEngine->loadedModules_.find(module);
-                    if (it != arkNativeEngine->loadedModules_.end()) {
-                        return scope.Escape(it->second.ToLocal(ecmaVm));
-                    }
-                    std::string strModuleName = moduleName->ToString(ecmaVm);
-                    moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
-                    Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
-                    if (exportObj->IsObject(ecmaVm)) {
-                        arkNativeEngine->SetModuleName(exportObj, module->name);
-                        module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
-                                                 JsValueFromLocalValue(exportObj));
-                        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
-                        panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
-                        if (CheckArkApiAllowList(module, context, exportCopy)) {
-                            return scope.Escape(exportCopy);
-                        }
-                        exports = exportObj;
-                        arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
-                    } else {
-                        HILOG_ERROR("exportObject is nullptr");
-                        return scope.Escape(exports);
-                    }
-                }
-                return scope.Escape(exports);
-            },
-            nullptr,
-            requireData);
-
+    // init common requireNapi and requireInternal
+    void* requireData = static_cast<void*>(this);
     Local<ObjectRef> global = JSNApi::GetGlobalObject(vm);
-#if !defined(PREVIEW)
-    Local<StringRef> requireName = StringRef::NewFromUtf8(vm, "requireNapi");
-    global->Set(vm, requireName, requireNapi);
-#else
-    Local<StringRef> requireNapiPreview = StringRef::NewFromUtf8(vm, "requireNapiPreview");
-    global->Set(vm, requireNapiPreview, requireNapi);
-#endif
-    global->Set(vm, requireInternalName, requireInternal);
+    global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_FUNCTION_NAME),
+                FunctionRef::New(vm, RequireNapi, nullptr, requireData));
+
+    global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_INTERNAL_NAME),
+                FunctionRef::New(vm, RequireInternal, nullptr, requireData));
+
     JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
     // need to call init of base class.
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
@@ -588,19 +426,74 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     isMainEnvContext_ = true;
 }
 
+/**
+ * Constructor for Ark Context Engine
+ * 1. Must be created from the root engine.
+ * 2. Does not directly provide UV capabilities (i.e., libuv-related functionality).
+ * 3. Async capabilities are provided by the parent engine.
+ */
+ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context)
+    : NativeEngine(parent),
+      vm_(vm),
+      topScope_(vm),
+      context_(vm, context),
+      parentEngine_(reinterpret_cast<ArkNativeEngine*>(parent)),
+      containerScopeEnable_(parent->IsContainerScopeEnabled())
+{
+    HILOG_INFO("ArkContextEngine is created, id %{public}" PRIu64, GetId());
+
+    // The sub-context environment must be deleted before the uv_loop is destroyed.
+    // In this case, we cannot delay the destruction of the context environment
+    // until all napi_ref callbacks are completed.
+    parent->AddCleanupHook(EnvironmentCleanup, this);
+
+    LocalScope scope(vm);
+
+    // enable napi profiler
+    EnableNapiProfiler();
+
+    // Cache of ark runtime cross thread check option.
+    crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm);
+
+    options_ = new NapiOptions();
+#if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    int napiProperties = OHOS::system::GetIntParameter<int>("persist.ark.napi.properties", -1);
+    if (options_ != nullptr) {
+        options_->SetProperties(napiProperties);
+    }
+#endif
+
+    // init common requireNapi and requireInternal
+    void* requireData = static_cast<void*>(this);
+    Local<ObjectRef> global = JSNApi::GetGlobalObject(vm);
+    global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_FUNCTION_NAME),
+                FunctionRef::New(vm, RequireNapiForCtxEnv, nullptr, requireData));
+    global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_INTERNAL_NAME),
+                FunctionRef::New(vm, RequireInternal, nullptr, requireData));
+
+    // The VM scope callback is initialized during the construction of the root engine and is ignored in this context.
+}
+
 ArkNativeEngine::~ArkNativeEngine()
 {
-    HILOG_DEBUG("ArkNativeEngine::~ArkNativeEngine");
-    // unregister worker env for idle GC
-    ArkIdleMonitor::GetInstance()->UnregisterEnv(this);
+    HILOG_INFO("%{public}s %{public}" PRIu64 " is deconstructed",
+               isMainEnvContext_ ? "ArkNativeEngine" : "ArkContextEngine", GetId());
 
-    JSNApi::SetTimerTaskCallback(vm_, nullptr);
-    JSNApi::SetCancelTimerCallback(vm_, nullptr);
-    NativeTimerCallbackInfo::ReleaseTimerList(this);
-    // destroy looper resource on the ark native engine
-    Deinit();
-    if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
-        ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
+    engineState_ = ArkNativeEngineState::RELEASING;
+
+    if (isMainEnvContext_) {
+        // unregister worker env for idle GC
+        ArkIdleMonitor::GetInstance()->UnregisterEnv(this);
+        JSNApi::SetTimerTaskCallback(vm_, nullptr);
+        JSNApi::SetCancelTimerCallback(vm_, nullptr);
+        NativeTimerCallbackInfo::ReleaseTimerList(this);
+        // destroy looper resource on the ark native engine
+        Deinit();
+        if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
+            ArkIdleMonitor::GetInstance()->SetMainThreadEcmaVM(nullptr);
+        }
+    } else {
+        DeconstructCtxEnv();
     }
     // Free cached module objects
     for (auto&& [module, exportObj] : loadedModules_) {
@@ -617,6 +510,398 @@ ArkNativeEngine::~ArkNativeEngine()
         delete options_;
         options_ = nullptr;
     }
+}
+
+ArkNativeEngine *ArkNativeEngine::New(NativeEngine* engine, EcmaVM* vm, const Local<JSValueRef>& context)
+{
+    if (engine == nullptr) {
+        HILOG_FATAL("Invalid arguments, parameter engine cannot be nullptr");
+    }
+    if (vm == nullptr) {
+        HILOG_FATAL("Invalid arguments, parameter vm cannot be nullptr");
+    }
+    if (!engine->IsMainEnvContext()) {
+        HILOG_FATAL("Invalid arguments, parameter engine cannot be Ark Context Engine");
+    }
+    if (!context->IsJsGlobalEnv(vm)) {
+        HILOG_FATAL("Invalid arguments, parameter context must be JsGlobalEnv");
+    }
+    return new ArkNativeEngine(engine, vm, context);
+}
+
+bool ArkNativeEngine::IsReadyToDelete()
+{
+    // Fast-path optimization: main contexts are not deletable and common case.
+    // Also ensure the environment is only deleted once (not during destruction).
+    return !isMainEnvContext_ && // Check whether current engine is context engine.
+        engineState_ == ArkNativeEngineState::STOPPED && // Check whether `DestroyContext` is invoked,
+                                                         // and engine is not deconstructing.
+        !HasRuntimeOwnedRef(); // Check whether runtime owned ref is released.
+}
+
+void ArkNativeEngine::Delete()
+{
+    context_.FreeGlobalHandleAddr();
+    delete this;
+}
+
+
+/**
+ * Replacement of NativeEngine::Deinit
+ * The Ark Context Engine does not maintain its own uv_loop.
+ * Any related resource lists will be checked and cleaned up when the context is destroyed.
+ *
+ * Cleanup Steps:
+ * 1. Cleanup hooks will be invoked to handle any necessary cleanup logic.
+ * 2. Owned napi_async_work and napi_threadsafe_function must either
+ *    complete execution or be released before the context is destroyed.
+ *    - ERROR: uv_run is not supported when loop is running.
+ *    - Check `tsfn` and incomplete `async_work` counts, abort if not equal to 0.
+ * 3. Trigger all managed reference finalize callbacks.
+ * 4. Mark the engine as dead (this is particularly important for preventing conflicts
+ *    with any future engine instances that may be created at the same memory address).
+ * 5. Recheck async work and tsfn counts to ensure no task leaks after finalize callbacks.
+ */
+void ArkNativeEngine::DeconstructCtxEnv()
+{
+    // To avoid blocking the thread, do not wait for any incomplete asynchronous tasks here.
+    RunCleanupHooks(false);
+
+    parentEngine_->RemoveCleanupHook(EnvironmentCleanup, this);
+
+    if (HasWaitingRequest()) {
+        HILOG_FATAL("Do not release Ark Context Engine until all async work done");
+    }
+
+    // An active TSFN blocks uv_run, indirectly keeping the engine alive in Node.js (unless unrefed).
+    // Context doesn't have its own uv_loop, so abort if still exists.
+    if (HasActiveTsfn()) {
+        HILOG_FATAL("Failed to release Ark Context Engine: active napi_threadsafe_function still exists.");
+    }
+    if (referenceManager_ != nullptr) {
+        delete referenceManager_;
+        referenceManager_ = nullptr;
+    }
+    SetDead();
+    // twice check after wrap/finalizer callbacks
+    if (HasWaitingRequest()) {
+        HILOG_FATAL("Do not release Ark Context Engine env until all async work done");
+    }
+    if (HasActiveTsfn()) {
+        HILOG_FATAL("Failed to release Ark Context Engine: active napi_threadsafe_function still exists.");
+    }
+
+    if (HasNonCallbackRef()) {
+        HILOG_ERROR("Non-callback napi_ref is leak after context env teardown, counts: %{public}" PRIu64,
+            GetNonCallbackRefCount());
+    }
+    if (HasCallbackbleRef()) {
+        HILOG_ERROR("Callbackble napi_ref is leak after context env teardown, counts: %{public}" PRIu64,
+            GetCallbackbleRefCount());
+    }
+    parentEngine_ = nullptr;
+}
+
+void ArkNativeEngine::EnvironmentCleanup(void* arg)
+{
+    reinterpret_cast<ArkNativeEngine*>(arg)->Delete();
+}
+
+Local<JSValueRef> ArkNativeEngine::GetContext() const
+{
+    return context_.ToLocal();
+}
+
+const ArkNativeEngine* ArkNativeEngine::GetParent() const
+{
+    return parentEngine_;
+}
+
+int ArkNativeEngine::CheckAndGetModule(
+    JsiRuntimeCallInfo *info,
+    NativeModuleManager* moduleManager,
+    bool &isAppModule,
+    Local<panda::StringRef> &moduleName,
+    NativeModule *&module,
+    Local<JSValueRef> exports,
+    std::string &errInfo)
+{
+#ifdef IOS_PLATFORM
+    if (isLimitedWorker_) {
+        if (!moduleManager->CheckModuleRestricted(moduleName->ToString(vm_).c_str())) {
+            HILOG_ERROR("module %{public}s does not found in whitelist",
+                moduleName->ToString(vm_).c_str());
+            return -1;
+        }
+    }
+    module = moduleManager->LoadNativeModule(
+        moduleName->ToString(vm_).c_str(), nullptr, false, errInfo, false, "");
+    return 0;
+#else
+    const uint32_t lengthMax = 2;
+    if (info->GetArgsNumber() >= lengthMax) {
+        Local<BooleanRef> ret(info->GetCallArgRef(1));
+        isAppModule = ret->Value();
+    }
+    isAppModule_ = isAppModule;
+    if (isLimitedWorker_ && !isAppModule) {
+        if (!moduleManager->CheckModuleRestricted(moduleName->ToString(vm_).c_str())) {
+            HILOG_ERROR("module %{public}s does not found in whitelist",
+                moduleName->ToString(vm_).c_str());
+            return -1;
+        }
+    }
+
+    if (info->GetArgsNumber() == 3) { // 3:Determine if the number of parameters is equal to 3
+        Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
+        if (UNLIKELY(IsCJModule(moduleName->ToString(vm_).c_str()))) {
+            exports = NapiValueToLocalValue(
+                LoadCJModule((napi_env)this, moduleName->ToString(vm_).c_str()));
+            return 1;
+        }
+        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
+            path->ToString(vm_).c_str(), isAppModule, errInfo, false, "");
+    } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
+        Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
+        Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
+        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(), nullptr, isAppModule,
+            errInfo, false, relativePath->ToString(vm_).c_str());
+    } else {
+        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
+            nullptr, isAppModule, errInfo, false, "");
+    }
+    return 0;
+#endif
+}
+
+Local<JSValueRef> ArkNativeEngine::LoadNativeModule(
+    NativeModuleManager* moduleManager,
+    Local<StringRef> &moduleName,
+    NativeModule* module,
+    Local<JSValueRef> exports,
+    std::string &errInfo)
+{
+    if (module == nullptr) {
+        return exports;
+    }
+    panda::EscapeLocalScope scope(vm_);
+    auto it = loadedModules_.find(module);
+    if (it != loadedModules_.end()) {
+        return scope.Escape(it->second.ToLocal(vm_));
+    }
+    std::string strModuleName = moduleName->ToString(vm_);
+    moduleManager->SetNativeEngine(strModuleName, this);
+    MoudleNameLocker nameLocker(strModuleName);
+
+    if (module->jsCode == nullptr && module->getABCCode != nullptr) {
+        module->getABCCode(&module->jsCode, &module->jsCodeLen);
+    }
+    if (module->jsABCCode != nullptr || module->jsCode != nullptr) {
+        char fileName[NAPI_PATH_MAX] = { 0 };
+        const char* name = module->name;
+        if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
+            HILOG_ERROR("sprintf_s file name failed");
+            return scope.Escape(exports);
+        }
+        HILOG_DEBUG("load js code from %{public}s", fileName);
+        const void *buffer = nullptr;
+        if (module->jsABCCode) {
+            buffer = static_cast<const void *>(module->jsABCCode);
+        } else {
+            buffer = static_cast<const void *>(module->jsCode);
+        }
+        auto exportObject = LoadArkModule(buffer,
+            module->jsCodeLen, fileName);
+        if (exportObject->IsUndefined()) {
+            HILOG_ERROR("load module failed");
+            return scope.Escape(exports);
+        } else {
+            exports = exportObject;
+            loadedModules_[module] = Global<JSValueRef>(vm_, exports);
+        }
+    } else if (module->registerCallback != nullptr) {
+        Local<ObjectRef> exportObj = ObjectRef::New(vm_);
+#ifdef ENABLE_HITRACE
+        StartTrace(HITRACE_TAG_ACE, "NAPI module init, name = " + std::string(module->name));
+#endif
+        SetModuleName(exportObj, module->name);
+        module->registerCallback(reinterpret_cast<napi_env>(this),
+                                 JsValueFromLocalValue(exportObj));
+#ifdef ENABLE_HITRACE
+        FinishTrace(HITRACE_TAG_ACE);
+#endif
+        panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(vm_);
+        panda::ecmascript::ApiCheckContext context{moduleManager, vm_, moduleName, exportObj, scope};
+        if (CheckArkApiAllowList(module, context, exportCopy)) {
+            return scope.Escape(exportCopy);
+        }
+        exports = exportObj;
+        loadedModules_[module] = Global<JSValueRef>(vm_, exports);
+    } else {
+        HILOG_ERROR("init module failed");
+        return scope.Escape(exports);
+    }
+
+    return scope.Escape(exports);
+}
+
+/** require napi module for Ark Native Engine (standard napi_env).
+ *
+ * TypeScript declaration
+ * - for iOS
+ *   function requireNapi(name: string): any;
+ * - other Platform
+ *   function requireNapi(
+ *       name: string,
+ *       appModule: boolean = false,
+ *       path?: string,
+ *       relativePath?: string): any;
+ */
+Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
+{
+    EcmaVM *ecmaVm = info->GetVM();
+    panda::EscapeLocalScope scope(ecmaVm);
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
+    Local<StringRef> moduleName(info->GetCallArgRef(0));
+    bool isAppModule = false;
+    std::string errInfo = "";
+    Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
+
+    NativeModule* module = nullptr;
+    // Returns the module exports or undefined
+    // if the module is fully loaded (code 1)
+    // or has failed to load (code -1).
+    if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
+        moduleName, module, exports, errInfo) != 0) {
+        return scope.Escape(exports);
+    }
+    // process loaded module
+    if (module) {
+        return scope.Escape(arkNativeEngine->LoadNativeModule(moduleManager, moduleName, module, exports, errInfo));
+    } else {
+        HILOG_INFO("%{public}s", errInfo.c_str());
+        return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
+    }
+}
+
+/** require napi module for Ark Context Engine.
+ *  1. The app module is not supported.
+ *  2. Whitelist verification will be performed during the callback provided by ArkUI.
+ *
+ * TypeScript declaration
+ * - for iOS
+ *   function requireNapi(name: string): any;
+ * - other Platform
+ *   function requireNapi(
+ *       name: string,
+ *       appModule: boolean = false,
+ *       path?: string,
+ *       relativePath?: string): any;
+ */
+Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info)
+{
+    EcmaVM *ecmaVm = info->GetVM();
+    panda::EscapeLocalScope scope(ecmaVm);
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
+    Local<StringRef> moduleName(info->GetCallArgRef(0));
+    Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
+
+    if (info->GetArgsNumber() < 1) {
+        return scope.Escape(exports);
+    }
+    std::string modNameCstr = moduleName->ToString(ecmaVm);
+    NapiModuleValidateCallback modCheckCb = moduleValidateCallback_.load();
+    if (modCheckCb == nullptr) {
+        HILOG_ERROR("Cannot load native modules: module validation callback is null.");
+        return scope.Escape(exports);
+    }
+    if (!modCheckCb(modNameCstr.c_str())) {
+        HILOG_ERROR("Module \"%{public}s\" is rejected by the module validation callback.", modNameCstr.c_str());
+        return scope.Escape(exports);
+    }
+
+    bool isAppModule = false;
+    std::string errInfo = "";
+    NativeModule* module = nullptr;
+    // Returns the module exports or undefined
+    // if the module is fully loaded (code 1)
+    // or has failed to load (code -1).
+    if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
+        moduleName, module, exports, errInfo) != 0) {
+        return scope.Escape(exports);
+    }
+    // process loaded module
+    if (module) {
+        return scope.Escape(arkNativeEngine->LoadNativeModule(moduleManager, moduleName, module, exports, errInfo));
+    } else {
+        HILOG_INFO("%{public}s", errInfo.c_str());
+        return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
+    }
+}
+ 
+/** Require native part for mixed module
+ *
+ * Only support in system mixed module, app module would not have AtkTS part.
+ *
+ * TypeScript declaration
+ * function requireInternal(moduleName: string, relativePath?: string): any;
+ */
+Local<JSValueRef> ArkNativeEngine::RequireInternal(JsiRuntimeCallInfo *info)
+{
+    EcmaVM *ecmaVm = info->GetVM();
+    panda::EscapeLocalScope scope(ecmaVm);
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
+    Local<StringRef> moduleName(info->GetCallArgRef(0));
+    std::string errInfo = "";
+    Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
+    if (arkNativeEngine->isLimitedWorker_) {
+        if (!moduleManager->CheckModuleRestricted(moduleName->ToString(ecmaVm).c_str())) {
+            HILOG_ERROR("module %{public}s does not found in whitelist",
+                moduleName->ToString(ecmaVm).c_str());
+            return scope.Escape(exports);
+        }
+    }
+    NativeModule* module = moduleManager->LoadNativeModule(moduleName->ToString(ecmaVm).c_str(),
+        nullptr, false, errInfo, false, "");
+    MoudleNameLocker nameLocker(moduleName->ToString(ecmaVm).c_str());
+    if (module != nullptr && arkNativeEngine) {
+        if (module->registerCallback == nullptr) {
+            if (module->name != nullptr) {
+                HILOG_ERROR("requireInternal Init function is nullptr. module name: %{public}s",
+                    module->name);
+            } else {
+                HILOG_ERROR("requireInternal Init function is nullptr.");
+            }
+            return scope.Escape(exports);
+        }
+
+        auto it = arkNativeEngine->loadedModules_.find(module);
+        if (it != arkNativeEngine->loadedModules_.end()) {
+            return scope.Escape(it->second.ToLocal(ecmaVm));
+        }
+        std::string strModuleName = moduleName->ToString(ecmaVm);
+        moduleManager->SetNativeEngine(strModuleName, arkNativeEngine);
+        Local<ObjectRef> exportObj = ObjectRef::New(ecmaVm);
+        if (exportObj->IsObject(ecmaVm)) {
+            arkNativeEngine->SetModuleName(exportObj, module->name);
+            module->registerCallback(reinterpret_cast<napi_env>(arkNativeEngine),
+                                     JsValueFromLocalValue(exportObj));
+            panda::Local<panda::ObjectRef> exportCopy = panda::ObjectRef::New(ecmaVm);
+            panda::ecmascript::ApiCheckContext context{moduleManager, ecmaVm, moduleName, exportObj, scope};
+            if (CheckArkApiAllowList(module, context, exportCopy)) {
+                return scope.Escape(exportCopy);
+            }
+            exports = exportObj;
+            arkNativeEngine->loadedModules_[module] = Global<JSValueRef>(ecmaVm, exports);
+        } else {
+            HILOG_ERROR("exportObject is nullptr");
+            return scope.Escape(exports);
+        }
+    }
+    return scope.Escape(exports);
 }
 
 #ifdef ENABLE_HITRACE
@@ -1660,7 +1945,6 @@ void ArkNativeEngine::PostFinalizeTasks()
     int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
         ArkFinalizersPack *finalizersPack = reinterpret_cast<ArkFinalizersPack*>(syncWork->data);
         RunCallbacks(finalizersPack);
-        HILOG_DEBUG("uv_queue_work running");
         delete syncWork;
         delete finalizersPack;
     }, uv_qos_t(napi_qos_background));
@@ -2586,7 +2870,7 @@ bool ArkNativeEngine::IsValidScriptBuffer(uint8_t* scriptBuffer, size_t bufferSi
     constexpr char pandaFileHeader[headerLen] = "PANDA";
     const uint64_t bytePandaHeader = *reinterpret_cast<const uint64_t*>(pandaFileHeader);
     char fileHeader[headerLen] = { 0 };
-    // Ensure destMax paramter is set correctly to avoid buffer overflows
+    // Ensure destMax parameter is set correctly to avoid buffer overflows
     if (memcpy_s(fileHeader, sizeof(fileHeader), scriptBuffer, sizeof(fileHeader)) != 0) {
         HILOG_ERROR("faild to read file header of buffer");
         return false;
@@ -2784,20 +3068,6 @@ void ArkNativeEngine::EnableNapiProfiler()
 #endif
 }
 
-napi_status ArkNativeEngine::SetContext(const Local<JSValueRef>& context)
-{
-    if (context.IsEmpty()) {
-        HILOG_ERROR("invalid argument");
-        return napi_generic_failure;
-    }
-    if (!context_.IsEmpty()) {
-        HILOG_ERROR("context cannot be set again");
-        return napi_generic_failure;
-    }
-    context_ = panda::Global<panda::JSValueRef>(vm_, context);
-    return napi_ok;
-}
-
 napi_status ArkNativeEngine::SwitchContext()
 {
     if (context_.IsEmpty()) {
@@ -2811,10 +3081,11 @@ napi_status ArkNativeEngine::SwitchContext()
 
 napi_status ArkNativeEngine::DestroyContext()
 {
-    if (context_.IsEmpty()) {
-        HILOG_ERROR("no env context exists");
-        return napi_generic_failure;
+    if (engineState_ != ArkNativeEngineState::RUNNING) {
+        HILOG_ERROR("Attempt to release an env that is already marked for deletion");
+        return napi_invalid_arg;
     }
+
     // the original context cannot be destroyed
     if (isMainEnvContext_) {
         HILOG_ERROR("main env context cannot be destroyed");
@@ -2828,6 +3099,10 @@ napi_status ArkNativeEngine::DestroyContext()
         return napi_invalid_arg;
     }
 
-    context_.FreeGlobalHandleAddr();
+    engineState_ = ArkNativeEngineState::STOPPED;
+    if (!HasRuntimeOwnedRef()) {
+        Delete();
+    }
+    // waiting all ref callbacks done.
     return napi_ok;
 }

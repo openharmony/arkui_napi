@@ -4392,13 +4392,18 @@ NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
         return napi_set_last_error(env, napi_invalid_arg);
     }
 
-    // create env will be implemented later
-    auto newNativeEngine = reinterpret_cast<NativeEngine*>(*newEnv);
     auto context = panda::JSNApi::CreateContext(vm);
-    napi_status status = newNativeEngine->SetContext(context);
-    if (status != napi_ok) {
-        return napi_set_last_error(env, status);
+    if (context.IsEmpty() || !context->IsJsGlobalEnv(vm)) {
+        HILOG_ERROR("Failed to create ark context");
+        return napi_set_last_error(env, napi_generic_failure);
     }
+    ArkNativeEngine* newEngine = ArkNativeEngine::New(nativeEngine, const_cast<EcmaVM *>(vm), context);
+    if (newEngine == nullptr) {
+        HILOG_ERROR("Failed to create ark context engine");
+        return napi_set_last_error(env, napi_generic_failure);
+    }
+    *newEnv = reinterpret_cast<napi_env>(newEngine);
+
     return GET_RETURN_STATUS(env);
 }
 
@@ -4432,6 +4437,14 @@ NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
     if (status != napi_ok) {
         return napi_set_last_error(env, status);
     }
-    delete nativeEngine;
     return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_callback check_callback)
+{
+    CHECK_ENV(check_callback);
+
+    ArkNativeEngine::SetModuleValidateCallback(check_callback);
+
+    return napi_ok;
 }

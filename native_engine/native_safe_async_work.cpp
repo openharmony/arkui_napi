@@ -124,6 +124,8 @@ NativeSafeAsyncWork::~NativeSafeAsyncWork()
         delete ref_;
         ref_ = nullptr;
     }
+
+    engine_->DecreaseActiveTsfnCounter();
 }
 
 bool NativeSafeAsyncWork::Init()
@@ -141,6 +143,9 @@ bool NativeSafeAsyncWork::Init()
         HILOG_ERROR("uv async send failed in Init ret = %{public}d", ret);
         return false;
     }
+
+    // only uv_async init successd will leak to uv_loop
+    engine_->IncreaseActiveTsfnCounter();
 
     status_ = SafeAsyncStatus::SAFE_ASYNC_STATUS_INTE;
     return true;

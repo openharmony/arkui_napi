@@ -132,9 +132,35 @@ using NapiAllPromiseRejectCallback = std::function<void(napi_value* args)>;
 using NapiHasOnErrorCallback = std::function<bool()>;
 using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
 
+// Define method to load counter values of different types
+#define NAPI_COUNTER_ATOMIC_LOAD(storage) (storage).load()
+#define NAPI_COUNTER_INT32_LOAD(storage) (storage)
+
+// Counter macro template: used to uniformly declare and process multiple counters.
+// Usage: pass a macro XX(type, name, storage, LOAD_MACRO), which will be applied to each counter entry.
+#define NAPI_COUNTER_METHOD(XX)                                                     \
+    /* Thread-safe counters (using std::atomic<int>) */                             \
+    /* Note: async_work queue operations are NOT thread-safe, */                    \
+    /* but these counters themselves are atomic */                                  \
+    XX(std::atomic<int>, WaitingRequest, requestWaiting_, NAPI_COUNTER_ATOMIC_LOAD) \
+    XX(std::atomic<int>, Listening, listeningCounter_, NAPI_COUNTER_ATOMIC_LOAD)    \
+    /* Sub Native Engine related counters */                                        \
+    XX(std::atomic<int>, SubEnv, subEnvCounter_, NAPI_COUNTER_ATOMIC_LOAD)          \
+                                                                                    \
+    /* Non-thread-safe counters (must access/modify in the env-running thread) */   \
+    /* Thread-Safe Function (TSFN): creation is not thread-safe, */                 \
+    /* release will be done via uv_async */                                         \
+    XX(int32_t, ActiveTsfn, activeTsfnCounter_, NAPI_COUNTER_INT32_LOAD)            \
+    /* Count of Sub Context Engine instances */                                     \
+    XX(int32_t, SubContextEnv, subContextEnvCounter_, NAPI_COUNTER_INT32_LOAD)      \
+    XX(int64_t, CallbackbleRef, callbackbleRefCounter_, NAPI_COUNTER_INT32_LOAD)    \
+    XX(int64_t, NonCallbackRef, nonCallbackRefCounter_, NAPI_COUNTER_INT32_LOAD)    \
+    XX(int64_t, RuntimeOwnedRef, runtimeOwnedRefCounter_, NAPI_COUNTER_INT32_LOAD)
+
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
+    explicit NativeEngine(NativeEngine* parent);
     virtual ~NativeEngine();
 
     virtual NativeModuleManager* GetModuleManager();
@@ -170,6 +196,8 @@ public:
     };
 
     virtual const EcmaVM* GetEcmaVm() const = 0;
+    virtual const NativeEngine* GetParent() const = 0;
+    
     virtual bool NapiNewTypedArray(NativeTypedArrayType typedArrayType,
                                    panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
                                    size_t length, napi_value* result) = 0;
@@ -322,19 +350,14 @@ public:
         return workerVersion_.load() == target;
     }
 
-    void IncreaseSubEnvCounter()
-    {
-        subEnvCounter_++;
-    }
-    void DecreaseSubEnvCounter()
-    {
-        subEnvCounter_--;
-    }
-    bool HasSubEnv()
-    {
-        return subEnvCounter_.load() != 0;
-    }
-
+#define DCL_COUNTER_METHOD(_type, name, _storage, _LOAD) \
+    void Increase##name##Counter();                      \
+    void Decrease##name##Counter();                      \
+    bool Has##name();
+    NAPI_COUNTER_METHOD(DCL_COUNTER_METHOD);
+#undef DCL_COUNTER_METHOD
+    // alias for HasListening
+    bool HasListeningCounter();
     void SetCleanEnv(CleanEnv cleanEnv)
     {
         cleanEnv_ = cleanEnv;
@@ -381,15 +404,9 @@ public:
     virtual napi_status RemoveCleanupHook(CleanupCallback fun, void* arg);
     virtual napi_status AddCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
     virtual napi_status RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
+    void RunCleanupHooks(bool waitTasks = false);
 
     void CleanupHandles();
-    void IncreaseWaitingRequestCounter();
-    void DecreaseWaitingRequestCounter();
-    bool HasWaitingRequest();
-
-    void IncreaseListeningCounter();
-    void DecreaseListeningCounter();
-    bool HasListeningCounter();
 
     inline static bool IsAlive(NativeEngine* env)
     {
@@ -529,9 +546,7 @@ public:
     napi_status StopEventLoop();
 
     virtual bool IsCrossThreadCheckEnabled() const = 0;
-#ifdef ENABLE_CONTAINER_SCOPE
     virtual bool IsContainerScopeEnabled() const = 0;
-#endif
 
     bool IsInDestructor() const
     {
@@ -571,8 +586,6 @@ public:
 
     virtual panda::Local<panda::JSValueRef> GetContext() const = 0;
 
-    virtual napi_status SetContext(const panda::Local<panda::JSValueRef>& context) = 0;
-
     virtual napi_status SwitchContext() = 0;
 
     virtual napi_status DestroyContext() = 0;
@@ -584,7 +597,17 @@ private:
 
     virtual void EnableNapiProfiler() = 0;
 
-    inline void SetUnalived()
+protected:
+    virtual bool IsLimitWorker() const = 0;
+    uint64_t GetNonCallbackRefCount();
+    uint64_t GetCallbackbleRefCount();
+
+    void *jsEngine_ = nullptr;
+
+    void Init();
+    void Deinit();
+
+    inline void SetDead()
     {
         std::lock_guard<std::mutex> alivedEngLock(g_alivedEngineMutex_);
         g_alivedEngine_.erase(this);
@@ -592,15 +615,9 @@ private:
     }
 
     // should only call once in life cycle of ArkNativeEngine(NativeEngine)
-    inline void SetAlived();
+    inline void SetAlive();
 
     virtual void RunInstanceFinalizer();
-
-protected:
-    void *jsEngine_ = nullptr;
-
-    void Init();
-    void Deinit();
 
     NativeModuleManager* moduleManager_ = nullptr;
     NativeReferenceManager* referenceManager_ = nullptr;
@@ -662,9 +679,11 @@ private:
     uint64_t cleanupHookCounter_ = 0;
     std::unordered_map<void*, std::pair<CleanupFinalizerCallBack, uint64_t>> instanceFinalizer_;
     uint64_t instanceFinalizerCounter_ = 0;
-    std::atomic_int requestWaiting_ { 0 };
-    std::atomic_int listeningCounter_ { 0 };
-    std::atomic_int subEnvCounter_ { 0 };
+
+#define DCL_STORAGE_COUNTER(type, _name, storage, _LOAD) type (storage) { 0 };
+    NAPI_COUNTER_METHOD(DCL_STORAGE_COUNTER)
+#undef DCL_STORAGE_COUNTER
+
     std::atomic_bool isStopping_ { false };
 
     std::mutex loopRunningMutex_;

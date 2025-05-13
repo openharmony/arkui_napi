@@ -53,13 +53,24 @@ public:
         napi_open_handle_scope(reinterpret_cast<napi_env>(engine_), &scope_);
     }
 
+    NativeEngineProxy(NativeEngine* engine) : isContextEngine_(true)
+    {
+        napi_create_ark_context(reinterpret_cast<napi_env>(engine), reinterpret_cast<napi_env*>(&engine_));
+        vm_ = const_cast<EcmaVM*>(engine->GetEcmaVm());
+        napi_open_handle_scope(reinterpret_cast<napi_env>(engine_), &scope_);
+    }
+
     ~NativeEngineProxy()
     {
         napi_close_handle_scope(reinterpret_cast<napi_env>(engine_), scope_);
         scope_ = nullptr;
-        delete engine_;
+        if (!isContextEngine_) {
+            delete engine_;
+            panda::JSNApi::DestroyJSVM(vm_);
+        } else {
+            engine_->DestroyContext();
+        }
         engine_ = nullptr;
-        panda::JSNApi::DestroyJSVM(vm_);
         vm_ = nullptr;
     }
 
@@ -77,5 +88,6 @@ private:
     EcmaVM* vm_ {nullptr};
     ArkNativeEngine* engine_ {nullptr};
     napi_handle_scope scope_ = nullptr;
+    const bool isContextEngine_ {false};
 };
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
