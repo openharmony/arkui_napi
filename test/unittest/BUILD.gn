@@ -28,6 +28,7 @@ ohos_unittest("test_ark_unittest_base") {
     "engine/test_ark.cpp",
     "test_napi.cpp",
     "test_sendable_napi.cpp",
+    "test_napi_context.cpp",
   ]
 
   defines = [ "NAPI_TEST" ]
