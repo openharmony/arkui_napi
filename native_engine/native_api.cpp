@@ -3467,6 +3467,25 @@ NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, na
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_serialize_inner_with_error(napi_env env, napi_value object, napi_value transfer_list,
+                                                        napi_value clone_list, bool defaultTransfer,
+                                                        bool defaultCloneSendable, void** result, std::string& error)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, transfer_list);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(object);
+    auto transferList = LocalValueFromJsValue(transfer_list);
+    auto cloneList = LocalValueFromJsValue(clone_list);
+    *result = panda::JSNApi::SerializeValueWithError(vm, nativeValue, transferList, cloneList, error, defaultTransfer,
+                                                     defaultCloneSendable);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value* object)
 {
     CHECK_ENV(env);

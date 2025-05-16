@@ -2877,6 +2877,51 @@ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest008, testing::ext::TestSize.Leve
 }
 
 /**
+ * @tc.name: SerializeDeSerializeTest009
+ * @tc.desc: Test serialize & deserialize.
+ * @tc.type: FUNC
+ */
+ HWTEST_F(NapiBasicTest, SerializeDeSerializeTest009, testing::ext::TestSize.Level1)
+ {
+    napi_env env = (napi_env)engine_;
+
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value num = nullptr;
+    uint32_t value = 1000;
+    napi_create_uint32(env, value, &num);
+    napi_set_named_property(env, object, "numKey", num);
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    napi_set_named_property(env, object, "objKey", obj);
+
+    napi_value undefined = nullptr;
+    napi_get_undefined(env, &undefined);
+    void* data = nullptr;
+    std::string err = "";
+    napi_serialize_inner_with_error(env, object, undefined, undefined, false, true, &data, err);
+    ASSERT_NE(data, nullptr);
+
+    napi_value result1 = nullptr;
+    napi_deserialize(env, data, &result1);
+    ASSERT_CHECK_VALUE_TYPE(env, result1, napi_object);
+    napi_value obj1 = nullptr;
+    napi_get_named_property(env, result1, "objKey", &obj1);
+    ASSERT_CHECK_VALUE_TYPE(env, obj1, napi_object);
+
+    napi_value result2 = nullptr;
+    napi_deserialize(env, data, &result2);
+    ASSERT_CHECK_VALUE_TYPE(env, result2, napi_object);
+    napi_value num1 = nullptr;
+    napi_get_named_property(env, result2, "numKey", &num1);
+    uint32_t value1 = 0;
+    napi_get_value_uint32(env, num1, &value1);
+    ASSERT_EQ(value1, 1000);
+
+    napi_delete_serialization_data(env, data);
+ }
+
+/**
  * @tc.name: IsCallableTest001
  * @tc.desc: Test is callable.
  * @tc.type: FUNC
