@@ -450,8 +450,8 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
         && sumDuration < DELAY_OVER_TIME) {
         NotifyMainThreadTryCompressGCByBackground();
     } else {
-        HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}lld",
-            idlePercentage, cpuUsage, sumDuration);
+        HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}s",
+            idlePercentage, cpuUsage, std::to_string(sumDuration).c_str());
     }
     StopIdleMonitorTimerTaskAndPostSleepTask();
     ClearIdleStats();
