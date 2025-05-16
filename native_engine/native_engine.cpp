@@ -21,6 +21,9 @@
 #ifdef IOS_PLATFORM
 #include <sys/event.h>
 #endif
+#ifdef ENABLE_HITRACE
+#include "hitrace_meter.h"
+#endif
 
 #include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
@@ -112,6 +115,7 @@ NativeEngine::~NativeEngine()
     }
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
+    RunInstanceFinalizer();
 }
 
 void NativeEngine::Init()
@@ -697,6 +701,73 @@ int32_t NativeEngine::GetRealApiVersion()
 bool NativeEngine::IsApplicationApiVersionAPI11Plus()
 {
     return apiVersion_ > API11;
+}
+
+napi_status NativeEngine::AddCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg)
+{
+    auto insertion_info = instanceFinalizer_.emplace(arg,
+        std::pair<CleanupFinalizerCallBack, uint64_t>(fun, instanceFinalizerCounter_++));
+    if (insertion_info.second) {
+        return napi_ok;
+    }
+
+    HILOG_ERROR("AddCleanupFinalizer Failed, This may cause memory leaks or unexpected behavior.");
+
+    return napi_generic_failure;
+}
+
+napi_status NativeEngine::RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg)
+{
+    auto cleanupHook = instanceFinalizer_.find(arg);
+    if (cleanupHook != instanceFinalizer_.end() && cleanupHook->second.first == fun) {
+        instanceFinalizer_.erase(arg);
+        return napi_ok;
+    }
+
+    const char *failedReason = cleanupHook == instanceFinalizer_.end() ?
+        "data is not registered or already unregistered" : "callback not equals to last registered";
+    
+    HILOG_ERROR("RemoveCleanupHook Failed, %{public}s, "
+                "This may cause memory leaks or unexpected behavior.", failedReason);
+
+    return napi_generic_failure;
+}
+
+void NativeEngine::RunInstanceFinalizer()
+{
+    HILOG_DEBUG("%{public}s, start.", __func__);
+
+    while (!instanceFinalizer_.empty()) {
+#ifdef ENABLE_HITRACE
+        StartTrace(HITRACE_TAG_ACE,
+                   "NativeEngine::RunInstanceFinalizer callbacks size: " +
+                   std::to_string(instanceFinalizer_.size()));
+#endif
+        using CleanupDataCallbackPair = std::pair<void*, std::pair<CleanupFinalizerCallBack, uint64_t>>;
+        std::vector<CleanupDataCallbackPair> callbacks(instanceFinalizer_.begin(), instanceFinalizer_.end());
+        std::sort(callbacks.begin(), callbacks.end(), [](const CleanupDataCallbackPair& a,
+                                                         const CleanupDataCallbackPair& b) {
+            // Sort in descending order so that the most recently inserted callbacks are run first.
+            return a.second.second > b.second.second;
+        });
+        HILOG_DEBUG(
+            "NativeEngine::RunInstanceFinalizer callbacks size:%{public}d", (int32_t)callbacks.size());
+        for (const CleanupDataCallbackPair& cb : callbacks) {
+            void* data = cb.first;
+            if (instanceFinalizer_.find(data) == instanceFinalizer_.end()) {
+                continue;
+            }
+            
+            CleanupFinalizerCallBack fun = cb.second.first;
+            if (fun != nullptr) {
+                fun(data);
+            }
+            instanceFinalizer_.erase(data);
+        }
+#ifdef ENABLE_HITRACE
+        FinishTrace(HITRACE_TAG_ACE);
+#endif
+    }
 }
 
 napi_status NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)

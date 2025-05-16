@@ -4259,3 +4259,27 @@ NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* 
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, fun);
+    CROSS_THREAD_CHECK(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->AddCleanupFinalizer(fun, arg);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, fun);
+    CROSS_THREAD_CHECK(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->RemoveCleanupFinalizer(fun, arg);
+
+    return napi_clear_last_error(env);
+}

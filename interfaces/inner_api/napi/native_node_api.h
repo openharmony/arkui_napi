@@ -166,4 +166,6 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
                                                           size_t* byte_length);
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result);
 NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* result);
+NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg);
+NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
