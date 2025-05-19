@@ -181,13 +181,14 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
     CHECK_ARG(env, loop);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    if (!engine->IsMainEnvContext()) {
-        HILOG_ERROR("multi-context does not support obtain uv looper");
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
     if (!NativeEngine::IsAlive(engine)) {
         HILOG_ERROR("napi_env has been destroyed!");
         return napi_status::napi_generic_failure;
+    }
+
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support obtain uv looper");
+        return napi_set_last_error(env, napi_invalid_arg);
     }
     *loop = engine->GetUVLoop();
 
