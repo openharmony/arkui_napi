@@ -2514,42 +2514,6 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
     return false;
 }
 
-
-void ArkNativeEngine::PostLooperTriggerIdleGCTask()
-{
-#if defined(ENABLE_EVENT_HANDLER)
-    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
-        OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
-    if (mainThreadRunner.get() == nullptr) {
-        HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
-        return;
-    }
-    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = ArkIdleMonitor::GetInstance();
-    auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
-        const OHOS::AppExecFwk::StageInfo* info) -> int {
-        auto arkIdleMonitor = weakArkIdleMonitor.lock();
-        if (nullptr == arkIdleMonitor) {
-            HILOG_ERROR("ArkIdleMonitor has been destructed.");
-            return 0;
-        }
-        switch (stage) {
-            case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
-                arkIdleMonitor->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
-                break;
-            case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
-                arkIdleMonitor->NotifyLooperIdleEnd(info->timestamp);
-                break;
-            default:
-                HILOG_ERROR("this branch is unreachable");
-        }
-        return 0;
-    };
-    uint32_t stage = (static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING) |
-        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
-    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
-#endif
-}
-
 void ArkNativeEngine::RegisterAppStateCallback(NapiAppStateCallback callback)
 {
     interopAppState_.SetCallback(callback);
