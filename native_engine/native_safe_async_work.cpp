@@ -436,7 +436,10 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
 napi_status NativeSafeAsyncWork::SendEvent(const std::function<void()> &cb, napi_event_priority priority)
 {
 #ifdef ENABLE_EVENT_HANDLER
-    if (eventHandler_) {
+    if (runner_) {
+        if (UNLIKELY(eventHandler_ == nullptr)) {
+            eventHandler_ = std::make_shared<EventHandler>(runner_);
+        }
         auto task = [eng = engine_, cb]() {
             auto vm = eng->GetEcmaVm();
             panda::LocalScope scope(vm);
