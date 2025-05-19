@@ -195,6 +195,13 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
 NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result);
 NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result);
 // ======================================== sendable api end ======================================== //
+
+// ======================================== multiple-context ======================================== //
+NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv);
+
+NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env);
+
+NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env);
 #ifdef __cplusplus
 }
 #endif

@@ -567,6 +567,16 @@ public:
         return workerThreadState_;
     }
 
+    virtual bool IsMainEnvContext() const = 0;
+
+    virtual panda::Local<panda::JSValueRef> GetContext() const = 0;
+
+    virtual napi_status SetContext(const panda::Local<panda::JSValueRef>& context) = 0;
+
+    virtual napi_status SwitchContext() = 0;
+
+    virtual napi_status DestroyContext() = 0;
+
 private:
     void InitUvField();
 
