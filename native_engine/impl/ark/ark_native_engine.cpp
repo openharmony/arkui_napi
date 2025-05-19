@@ -1468,7 +1468,7 @@ napi_value ArkNativeEngine::NapiLoadModule(const char* path)
     return JsValueFromLocalValue(scope.Escape(exportObj));
 }
 
-napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char* module_info)
+napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid)
 {
     if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
@@ -1481,7 +1481,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
     std::string modulePath;
     if (module_info != nullptr) {
         modulePath = module_info;
-        exportObj = JSNApi::GetModuleNameSpaceWithModuleInfo(vm_, inputPath, modulePath);
+        exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfo(vm_, inputPath, modulePath, isHybrid);
     } else {
         exportObj = NapiLoadNativeModule(inputPath);
     }
@@ -1552,6 +1552,13 @@ NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t ini
     bool flag, NapiNativeFinalize callback, void* data, void* hint, size_t nativeBindingSize)
 {
     return new ArkNativeReference(this, value, initialRefcount, flag, callback, data, hint, false, nativeBindingSize);
+}
+
+NativeReference* ArkNativeEngine::CreateXRefReference(napi_value value, uint32_t initialRefcount,
+    bool flag, NapiNativeFinalize callback, void* data)
+{
+    ArkNativeReferenceConfig config(initialRefcount, true, flag, callback, data);
+    return new ArkNativeReference(this, value, config);
 }
 
 NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_t initialRefcount,
@@ -2198,6 +2205,7 @@ void ArkNativeEngine::NotifyApplicationState(bool inBackground)
 {
     DFXJSNApi::NotifyApplicationState(vm_, inBackground);
     ArkIdleMonitor::GetInstance()->NotifyChangeBackgroundState(inBackground);
+    interopAppState_.Notify(inBackground ? NAPI_APP_STATE_BACKGROUND : NAPI_APP_STATE_FOREGROUND);
 }
 
 void ArkNativeEngine::NotifyIdleStatusControl(std::function<void(bool)> callback)
@@ -2235,12 +2243,15 @@ void ArkNativeEngine::NotifyForceExpandState(int32_t value)
     switch (ForceExpandState(value)) {
         case ForceExpandState::FINISH_COLD_START:
             DFXJSNApi::NotifyFinishColdStart(vm_, true);
+            interopAppState_.Notify(NAPI_APP_STATE_COLD_START_FINISHED);
             break;
         case ForceExpandState::START_HIGH_SENSITIVE:
             DFXJSNApi::NotifyHighSensitive(vm_, true);
+            interopAppState_.Notify(NAPI_APP_STATE_SENSITIVE_START);
             break;
         case ForceExpandState::FINISH_HIGH_SENSITIVE:
             DFXJSNApi::NotifyHighSensitive(vm_, false);
+            interopAppState_.Notify(NAPI_APP_STATE_SENSITIVE_END);
             break;
         default:
             HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
@@ -2501,6 +2512,47 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
     return true;
 #endif
     return false;
+}
+
+
+void ArkNativeEngine::PostLooperTriggerIdleGCTask()
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> mainThreadRunner =
+        OHOS::AppExecFwk::EventRunner::GetMainEventRunner();
+    if (mainThreadRunner.get() == nullptr) {
+        HILOG_FATAL("ArkNativeEngine:: the mainEventRunner is nullptr");
+        return;
+    }
+    std::weak_ptr<ArkIdleMonitor> weakArkIdleMonitor = ArkIdleMonitor::GetInstance();
+    auto callback = [weakArkIdleMonitor](OHOS::AppExecFwk::EventRunnerStage stage,
+        const OHOS::AppExecFwk::StageInfo* info) -> int {
+        auto arkIdleMonitor = weakArkIdleMonitor.lock();
+        if (nullptr == arkIdleMonitor) {
+            HILOG_ERROR("ArkIdleMonitor has been destructed.");
+            return 0;
+        }
+        switch (stage) {
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING:
+                arkIdleMonitor->NotifyLooperIdleStart(info->timestamp, info->sleepTime);
+                break;
+            case OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING:
+                arkIdleMonitor->NotifyLooperIdleEnd(info->timestamp);
+                break;
+            default:
+                HILOG_ERROR("this branch is unreachable");
+        }
+        return 0;
+    };
+    uint32_t stage = (static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_BEFORE_WAITING) |
+        static_cast<uint32_t>(OHOS::AppExecFwk::EventRunnerStage::STAGE_AFTER_WAITING));
+    mainThreadRunner->GetEventQueue()->AddObserver(OHOS::AppExecFwk::Observer::ARKTS_GC, stage, callback);
+#endif
+}
+
+void ArkNativeEngine::RegisterAppStateCallback(NapiAppStateCallback callback)
+{
+    interopAppState_.SetCallback(callback);
 }
 
 int32_t ArkNativeEngine::GetObjectHash(napi_env env, napi_value src)
