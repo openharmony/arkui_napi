@@ -102,52 +102,6 @@ private:
     napi_handle_scope scope_ = nullptr;
 };
 
-class NativeEngineProxy {
-public:
-    NativeEngineProxy()
-    {
-        // Setup
-        RuntimeOption option;
-        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
-        const int64_t poolSize = 0x1000000; // 16M
-        option.SetGcPoolSize(poolSize);
-        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
-        option.SetDebuggerLibraryPath("");
-        vm_ = panda::JSNApi::CreateJSVM(option);
-        if (vm_ == nullptr) {
-            return;
-        }
-
-        engine_ = new ArkNativeEngine(vm_, nullptr);
-        napi_open_handle_scope(reinterpret_cast<napi_env>(engine_), &scope_);
-    }
-
-    ~NativeEngineProxy()
-    {
-        napi_close_handle_scope(reinterpret_cast<napi_env>(engine_), scope_);
-        scope_ = nullptr;
-        delete engine_;
-        engine_ = nullptr;
-        panda::JSNApi::DestroyJSVM(vm_);
-        vm_ = nullptr;
-    }
-
-    inline ArkNativeEngine* operator->() const
-    {
-        return engine_;
-    }
-
-    inline operator napi_env() const
-    {
-        return reinterpret_cast<napi_env>(engine_);
-    }
-
-private:
-    EcmaVM* vm_ { nullptr };
-    ArkNativeEngine* engine_ { nullptr };
-    napi_handle_scope scope_ = nullptr;
-};
-
 struct LogInfo {
     LogType type;
     LogLevel level;
