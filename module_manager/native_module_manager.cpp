@@ -668,10 +668,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #endif
             g_isLoadingModule = false;
         }
-        if (nativeModule != nullptr && nativeModule->apiAllowListChecker == nullptr) {
-            MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
-        }
         (void)pthread_mutex_unlock(&mutex_);
+    }
+    if (nativeModule != nullptr && nativeModule->apiAllowListChecker == nullptr) {
+        MoveApiAllowListCheckerPtr(apiAllowListChecker, nativeModule);
     }
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
