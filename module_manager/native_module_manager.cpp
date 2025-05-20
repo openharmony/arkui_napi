@@ -840,11 +840,11 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
             std::string prefixStr = std::string(prefix);
             std::size_t pos = prefixStr.find(':');
             if (pos != std::string::npos) {
-                sprintfResult = sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s",
+                sprintfResult = sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s",
                     prefixStr.substr(0, pos).c_str(), dupModuleName, soPostfix);
                 libPath = prefixStr.substr(pos + 1);
             } else {
-                sprintfResult = sprintf_s(nativeModulePath[1], pathLength, "lib%s%s", dupModuleName, soPostfix);
+                sprintfResult = sprintf_s(nativeModulePath[0], pathLength, "lib%s%s", dupModuleName, soPostfix);
                 libPath = prefixStr;
             }
             if (sprintfResult == -1) {
@@ -856,9 +856,12 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
             }
 #endif
 #ifdef ANDROID_PLATFORM
-            if (sprintf_s(nativeModulePath[0], pathLength, "%s/lib%s%s", libPath.c_str(),
+            if (sprintf_s(nativeModulePath[1], pathLength, "%s/lib%s%s", libPath.c_str(),
                 dupModuleName, soPostfix) == -1) {
                 return false;
+            }
+            if (IsExistedPath(libPath.c_str())) {
+                std::swap(nativeModulePath[0], nativeModulePath[1]);
             }
             char* lastUnderScore = strrchr(dupModuleName, '_');
             const char* moduleNamePart = (lastUnderScore != nullptr) ? (lastUnderScore + 1) : dupModuleName;
