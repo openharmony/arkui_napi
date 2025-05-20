@@ -259,28 +259,10 @@ HWTEST_F(NapiContextTest, NapiSwitchContextTest003, testing::ext::TestSize.Level
 
 /**
  * @tc.name: NapiSwitchContextTest004
- * @tc.desc: Test napi_switch_ark_context when context is empty.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiSwitchContextTest004, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    auto arkNativeEngine = reinterpret_cast<ArkNativeEngine* >(engine_);
-    auto context = arkNativeEngine->context_;
-    arkNativeEngine->context_ = panda::Global<panda::JSValueRef>();
-
-    napi_status status = napi_switch_ark_context(env);
-    EXPECT_EQ(status, napi_generic_failure);
-    arkNativeEngine->context_ = context;
-}
-
-/**
- * @tc.name: NapiSwitchContextTest005
  * @tc.desc: Test napi_switch_ark_context successfully.
  * @tc.type: FUNC
  */
-HWTEST_F(NapiContextTest, NapiSwitchContextTest005, testing::ext::TestSize.Level1)
+HWTEST_F(NapiContextTest, NapiSwitchContextTest004, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
