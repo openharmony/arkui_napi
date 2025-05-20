@@ -464,8 +464,10 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     }
 #endif
 
+    ArkNativeEngine* engine = reinterpret_cast<ArkNativeEngine*>(env);
+    Local<JSValueRef> context = engine->GetContext();
     Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
-        vm, ArkNativeFunctionCallBack,
+        vm, context, ArkNativeFunctionCallBack,
         [](void* env, void* externalPointer, void* data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
             if (info != nullptr) {
