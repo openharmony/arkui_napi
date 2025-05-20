@@ -2197,10 +2197,16 @@ NAPI_EXTERN napi_status napi_create_external(
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
-    Local<panda::NativePointerRef> object = panda::NativePointerRef::New(vm, data, callback, finalize_hint, 0);
+    if (engine->IsMainEnvContext()) {
+        auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
+        Local<panda::NativePointerRef> object = panda::NativePointerRef::New(vm, data, callback, finalize_hint, 0);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::NativePointerRef> object = panda::NativePointerRef::New(vm, data, nullptr, nullptr, 0);
+        *result = JsValueFromLocalValue(object);
+        engine->CreateReference(*result, 0, true, finalize_cb, data, finalize_hint);
+    }
 
-    *result = JsValueFromLocalValue(object);
     return napi_clear_last_error(env);
 }
 
@@ -2216,11 +2222,16 @@ NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env,
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
-    Local<panda::NativePointerRef> object =
-        panda::NativePointerRef::New(vm, data, callback, finalize_hint, native_binding_size);
-
-    *result = JsValueFromLocalValue(object);
+    Local<panda::NativePointerRef> object;
+    if (engine->IsMainEnvContext()) {
+        auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
+        object = panda::NativePointerRef::New(vm, data, callback, finalize_hint, native_binding_size);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        object = panda::NativePointerRef::New(vm, data, nullptr, nullptr, native_binding_size);
+        *result = JsValueFromLocalValue(object);
+        engine->CreateReference(*result, 0, true, finalize_cb, data, finalize_hint, native_binding_size);
+    }
     return napi_clear_last_error(env);
 }
 
@@ -2585,10 +2596,16 @@ NAPI_EXTERN napi_status napi_create_external_arraybuffer(napi_env env,
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
-    Local<panda::ArrayBufferRef> object =
-        panda::ArrayBufferRef::New(vm, external_data, byte_length, callback, finalize_hint);
-    *result = JsValueFromLocalValue(object);
+    Local<panda::ArrayBufferRef> object;
+    if (engine->IsMainEnvContext()) {
+        auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
+        object = panda::ArrayBufferRef::New(vm, external_data, byte_length, callback, finalize_hint);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        object = panda::ArrayBufferRef::New(vm, external_data, byte_length, nullptr, nullptr);
+        *result = JsValueFromLocalValue(object);
+        engine->CreateReference(*result, 0, true, finalize_cb, external_data, finalize_hint, 0);
+    }
     return GET_RETURN_STATUS(env);
 }
 
@@ -2755,11 +2772,19 @@ NAPI_EXTERN napi_status napi_create_external_buffer(napi_env env,
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    Local<panda::BufferRef> object = panda::BufferRef::New(vm, data, length, callback, finalize_hint);
-    void* ptr = object->GetBuffer(vm);
-    CHECK_ARG(env, ptr);
-
-    *result = JsValueFromLocalValue(object);
+    Local<panda::BufferRef> object;
+    if (engine->IsMainEnvContext()) {
+        object = panda::BufferRef::New(vm, data, length, callback, finalize_hint);
+        void* ptr = object->GetBuffer(vm);
+        CHECK_ARG(env, ptr);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        object = panda::BufferRef::New(vm, data, length, nullptr, nullptr);
+        void* ptr = object->GetBuffer(vm);
+        CHECK_ARG(env, ptr);
+        *result = JsValueFromLocalValue(object);
+        engine->CreateReference(*result, 0, true, finalize_cb, data, finalize_hint);
+    }
     return GET_RETURN_STATUS(env);
 }
 
