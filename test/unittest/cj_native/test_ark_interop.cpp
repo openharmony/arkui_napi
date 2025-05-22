@@ -1100,6 +1100,43 @@ TEST_F(ArkInteropTest, ScopeMT)
         thread.join();
     }
 }
+
+TEST_F(ArkInteropTest, GlobalRelease)
+{
+    MockContext local(ARKTS_CreateEngineWithNewThread());
+    auto env = local.GetEnv();
+
+    bool isComplete = false;
+    int loops = 20;
+    std::condition_variable cv;
+    std::function <void()> callback;
+    callback = [&isComplete, &cv, &loops, env, &callback] {
+        if (loops == 0) {
+            isComplete = true;
+            cv.notify_one();
+            return;
+        }
+        auto scope = ARKTS_OpenScope(env);
+        for (int i = 0;i < 500000; ++i) {
+            auto object = ARKTS_CreateObject(env);
+            auto global = ARKTS_CreateGlobal(env, object);
+            ARKTS_DisposeGlobal(env, global);
+        }
+        ARKTS_CloseScope(env, scope);
+        --loops;
+        auto funcId = MockContext::GetInstance()->StoreAsyncFunc(callback);
+        ARKTS_CreateAsyncTask(env, funcId);
+    };
+    auto funcId = local.StoreAsyncFunc(callback);
+    ARKTS_CreateAsyncTask(env, funcId);
+    std::mutex mutex;
+    std::unique_lock lock(mutex);
+    int waitTimes = 200;
+    while (!isComplete && waitTimes--) {
+        cv.wait_for(lock, std::chrono::milliseconds(100));
+    }
+    EXPECT_TRUE(isComplete);
+}
 } // namespace
 
 int main(int argc, char** argv)

@@ -80,6 +80,7 @@ void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
 
     for (auto handle : toDispose) {
         auto global = P_CAST(handle, Global<JSValueRef>*);
+        global->FreeGlobalHandleAddr();
         delete global;
     }
 }
