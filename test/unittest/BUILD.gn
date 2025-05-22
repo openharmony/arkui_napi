@@ -27,8 +27,8 @@ ohos_unittest("test_ark_unittest_base") {
   sources = [
     "engine/test_ark.cpp",
     "test_napi.cpp",
-    "test_sendable_napi.cpp",
     "test_napi_context.cpp",
+    "test_sendable_napi.cpp",
   ]
 
   defines = [ "NAPI_TEST" ]
@@ -174,49 +174,5 @@ group("unittest") {
   ]
   if (target_cpu == "arm64" || target_cpu == "x86_64") {
     deps += [ "cj_native:cj_native_unittest" ]
-  }
-}
-
-if (!ohos_indep_compiler_enable) {
-  #jerry tdd test for phone running
-  group("jerry_tdd_test_run") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_test" ]
-  }
-
-  #jerry es2015 test for phone running
-  group("jerry_jstest_es2015") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es2015" ]
-  }
-
-  #jerry es2015 test for host running
-  group("jerry_host_jstest_es2015") {
-    testonly = true
-    deps = [
-      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es2015",
-      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
-    ]
-  }
-
-  #jerry es5.1 test for phone running
-  group("jerry_jstest_es5.1") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/jerry:jerry_js_test_es5.1" ]
-  }
-
-  #jerry es5.1 test for host running
-  group("jerry_host_jstest_es5.1") {
-    testonly = true
-    deps = [
-      "//third_party/jerryscript/tests/jerry:jerry_host_js_test_es5.1",
-      "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test",
-    ]
-  }
-
-  #jerry tdd test for host running
-  group("jerry_tdd_host_test_run") {
-    testonly = true
-    deps = [ "//third_party/jerryscript/tests/unit-core:jerry_tdd_host_test" ]
   }
 }
