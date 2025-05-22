@@ -407,6 +407,16 @@ public:
         return isMainEnvContext_;
     }
 
+    inline bool IsMultiContextEnabled() const override
+    {
+        return isMultiContextEnabled_;
+    }
+
+    inline void SetMultiContextEnabled(bool enabled) override
+    {
+        isMultiContextEnabled_ = enabled;
+    }
+
     Local<JSValueRef> GetContext() const override;
 
     napi_status SwitchContext() override;
@@ -501,6 +511,7 @@ private:
     bool containerScopeEnable_ { false };
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
     bool isMainEnvContext_ = false;
+    bool isMultiContextEnabled_ = false;
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

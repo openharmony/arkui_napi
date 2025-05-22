@@ -157,4 +157,17 @@ inline bool EnableContainerScope(napi_env env)
 }
 #endif
 
+#define SWITCH_CONTEXT(env)                                                         \
+    auto engine = reinterpret_cast<NativeEngine *>(env);                            \
+    if (UNLIKELY(engine->IsMultiContextEnabled())) {                                \
+        auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());                         \
+        panda::Local<panda::JSValueRef> envContext = engine->GetContext();          \
+        if (!(envContext == panda::JSNApi::GetCurrentContext(vm))) {                \
+            napi_status status = engine->SwitchContext();                           \
+            if (status != napi_ok) {                                                \
+                return napi_set_last_error(env, status);                            \
+            }                                                                       \
+        }                                                                           \
+    }
+
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_API_INTERNAL_H */

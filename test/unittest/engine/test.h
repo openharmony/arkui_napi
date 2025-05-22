@@ -29,6 +29,7 @@ public:
     static void *Run(void *args);
 protected:
     NativeEngine* engine_;
+    NativeEngine* multiContextEngine_;
     NativeEngine* moduleNameEngine_;
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 };
