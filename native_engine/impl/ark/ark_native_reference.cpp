@@ -45,8 +45,9 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        napi_value value,
-                                       ArkNativeReferenceConfig &config)
+                                       ArkNativeReferenceConfig& config)
     : engine_(engine),
+      ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       value_(),
       refCount_(config.initialRefcount),
       isProxyReference_(config.isProxyReference),
@@ -55,7 +56,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       data_(config.data)
 {
     value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
-    ArkNativeReferenceConstructor(config.initialRefcount, config.deleteSelf);
+    ArkNativeReferenceConstructor();
 }
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
