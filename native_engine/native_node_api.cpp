@@ -643,3 +643,17 @@ NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_c
     }
     return napi_generic_failure;
 }
+
+NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    Local<panda::JSValueRef> implementsValue = panda::JSNApi::GetImplements(vm, nativeValue);
+    *result = JsValueFromLocalValue(implementsValue);
+    return GET_RETURN_STATUS(env);
+}
