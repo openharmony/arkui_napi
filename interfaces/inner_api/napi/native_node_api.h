@@ -29,6 +29,7 @@ typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
 typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
 typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint); // hint: detach params
 typedef napi_value (*NapiAttachCallback)(napi_env env, void* nativeObject, void* hint); // hint: attach params
+typedef bool (*napi_module_validate_callback)(const char* moduleName);
 typedef struct napi_fast_native_scope__* napi_fast_native_scope;
 
 typedef struct napi_module_with_js {
@@ -171,4 +172,15 @@ NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* re
 NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg);
 NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg);
+/**
+ * Sets a callback to validate modules when they are loaded by the context engine.
+ *
+ * This function is thread-safe.
+ *
+ * @param check_callback The callback used to determine whether a module can be imported.
+ *                       The callback should return true if the module name is allowed.
+ *
+ * @return napi_status The status of the operation. Returns napi_ok if successful.
+ */
+NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_callback check_callback);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

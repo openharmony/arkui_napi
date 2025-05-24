@@ -34,6 +34,11 @@ enum class FinalizerState {
     COLLECTION,
 };
 
+enum class ReferenceOwnerShip : uint8_t {
+    RUNTIME,
+    USER,
+};
+
 class ArkNativeReference : public NativeReference {
 public:
     ArkNativeReference(ArkNativeEngine* engine,
@@ -70,24 +75,11 @@ public:
     void ResetFinalizer()  override;
 
 private:
-    inline void ArkNativeReferenceConstructor(uint32_t initialRefCount, bool deleteSelf)
-    {
-        if (initialRefCount == 0) {
-            value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
-        }
-
-        if (deleteSelf) {
-            NativeReferenceManager* referenceManager = engine_->GetReferenceManager();
-            if (referenceManager != nullptr) {
-                referenceManager->CreateHandler(this);
-            }
-        }
-
-        engineId_ = engine_->GetId();
-    }
+    void ArkNativeReferenceConstructor();
 
     ArkNativeEngine* engine_;
     uint64_t engineId_ {0};
+    const ReferenceOwnerShip ownership_;
 
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
@@ -105,6 +97,9 @@ private:
     NativeReference* next_ {nullptr};
 
     void FinalizeCallback(FinalizerState state);
+    void DispatchFinalizeCallback();
+    void EnqueueAsyncTask();
+    void EnqueueDeferredTask();
 
     static void FreeGlobalCallBack(void* ref);
     static void NativeFinalizeCallBack(void* ref);

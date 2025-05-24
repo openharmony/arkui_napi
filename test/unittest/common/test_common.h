@@ -50,4 +50,11 @@
         uv_stop(loop);                                           \
     } while (0)
 
+#define NAPI_THROW_ERROR(env, code, message)                            \
+    {                                                                   \
+        /* Update exception to engine after throw */                    \
+        TryCatch tryCatch((env));                                       \
+        EXPECT_EQ(napi_throw_error((env), (code), (message)), napi_ok); \
+    }
+
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_COMMON_H */

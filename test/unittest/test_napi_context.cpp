@@ -67,11 +67,7 @@ public:
     {
         auto arkNativeEngine = reinterpret_cast<ArkNativeEngine* >(engine_);
         arkNativeEngine->isMainEnvContext_ = isMainContext;
-        if (isMainContext) {
-            EXPECT_TRUE(arkNativeEngine->IsMainEnvContext());
-        } else {
-            EXPECT_FALSE(arkNativeEngine->IsMainEnvContext());
-        }
+        ASSERT_EQ(arkNativeEngine->IsMainEnvContext(), isMainContext);
     }
 
 private:
@@ -125,21 +121,13 @@ HWTEST_F(NapiContextTest, NapiCreateContextTest003, testing::ext::TestSize.Level
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     // mock exception
-    napi_status status = napi_throw_error(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE);
-    EXPECT_EQ(status, napi_ok);
+    NAPI_THROW_ERROR(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE);
 
-    NativeEngineProxy newEngine;
-    napi_env newEnv = napi_env(newEngine);
-
-    auto context = newEngine->context_;
-    (newEngine->context_).Empty();
-    status = napi_create_ark_context(env, &newEnv);
-    EXPECT_EQ(status, napi_pending_exception);
-    newEngine->context_ = context;
+    napi_env newEnv = nullptr;
+    EXPECT_EQ(napi_create_ark_context(env, &newEnv), napi_pending_exception);
     //clear exception
     napi_value error = nullptr;
-    status = napi_get_and_clear_last_exception(env, &error);
-    EXPECT_EQ(status, napi_ok);
+    EXPECT_EQ(napi_get_and_clear_last_exception(env, &error), napi_ok);
 }
 
 /**
@@ -174,11 +162,11 @@ HWTEST_F(NapiContextTest, NapiCreateContextTest005, testing::ext::TestSize.Level
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    NativeEngineProxy newEngine;
-    napi_env newEnv = napi_env(newEngine);
+    napi_env newEnv = nullptr;
 
     napi_status status = napi_create_ark_context(env, &newEnv);
-    EXPECT_EQ(status, napi_generic_failure);
+    EXPECT_EQ(status, napi_ok);
+    EXPECT_EQ(napi_destroy_ark_context(newEnv), napi_ok);
 }
 
 /**
@@ -244,17 +232,13 @@ HWTEST_F(NapiContextTest, NapiSwitchContextTest003, testing::ext::TestSize.Level
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    // mock exception
-    napi_status status = napi_throw_error(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE);
-    EXPECT_EQ(status, napi_ok);
+    NAPI_THROW_ERROR(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE);
 
-    status = napi_switch_ark_context(env);
-    EXPECT_EQ(status, napi_pending_exception);
+    EXPECT_EQ(napi_switch_ark_context(env), napi_pending_exception);
 
     //clear exception
     napi_value error = nullptr;
-    status = napi_get_and_clear_last_exception(env, &error);
-    EXPECT_EQ(status, napi_ok);
+    EXPECT_EQ(napi_get_and_clear_last_exception(env, &error), napi_ok);
 }
 
 /**
@@ -281,22 +265,20 @@ HWTEST_F(NapiContextTest, NapiDestroyContextTest001, testing::ext::TestSize.Leve
     EXPECT_EQ(status, napi_invalid_arg);
 }
 
+
 /**
  * @tc.name: NapiDestroyContextTest002
- * @tc.desc: Test napi_destroy_ark_context when context is empty.
+ * @tc.desc: Test napi_destroy_ark_context when current env is using.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiContextTest, NapiDestroyContextTest002, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(engine_, nullptr);
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-    auto arkNativeEngine = reinterpret_cast<ArkNativeEngine* >(engine_);
-    auto context = arkNativeEngine->context_;
-    arkNativeEngine->context_ = panda::Global<panda::JSValueRef>();
-
+    NativeEngineProxy engine(engine_);
+    napi_env env = napi_env(engine);
+    EXPECT_EQ(napi_switch_ark_context(env), napi_ok);
     napi_status status = napi_destroy_ark_context(env);
-    EXPECT_EQ(status, napi_generic_failure);
-    arkNativeEngine->context_ = context;
+    EXPECT_EQ(status, napi_invalid_arg);
+    EXPECT_EQ(napi_switch_ark_context(reinterpret_cast<napi_env>(engine_)), napi_ok);
 }
 
 /**
@@ -334,21 +316,6 @@ HWTEST_F(NapiContextTest, NapiDestroyContextTest004, testing::ext::TestSize.Leve
     EXPECT_TRUE(engine_->IsMainEnvContext());
     napi_status status = napi_destroy_ark_context(env);
     EXPECT_EQ(status, napi_invalid_arg);
-}
-
-/**
- * @tc.name: NapiDestroyContextTest005
- * @tc.desc: Test napi_destroy_ark_context when current env is using.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiDestroyContextTest005, testing::ext::TestSize.Level1)
-{
-    NativeEngineProxy engine;
-    napi_env env = napi_env(engine);
-    SetMainEnvContext(false);
-    napi_status status = napi_destroy_ark_context(env);
-    EXPECT_EQ(status, napi_invalid_arg);
-    SetMainEnvContext(true);
 }
 
 /**
