@@ -85,6 +85,11 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
                                                    const char* path,
                                                    const char* module_info,
                                                    napi_value* result);
+NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
+                                                          const char* path,
+                                                          const char* module_info,
+                                                          napi_value* result,
+                                                          bool isHybrid);
 NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
                                                            napi_value* result,
                                                            size_t property_count,
