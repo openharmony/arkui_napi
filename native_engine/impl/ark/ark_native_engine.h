@@ -523,7 +523,6 @@ private:
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
     bool isMainEnvContext_ = false;
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
-    panda::Global<panda::JSValueRef> context_;
     AppStateNotifier interopAppState_ {};
 
 #ifdef ENABLE_CONTAINER_SCOPE
