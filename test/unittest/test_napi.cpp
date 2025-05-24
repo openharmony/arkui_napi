@@ -8281,6 +8281,21 @@ HWTEST_F(NapiBasicTest, NapiMakeCallbackTest002, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
+/**
+ * @tc.name: NapiGetEtsImplementsTest
+ * @tc.desc: Test interface of napi_get_ets_implements
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetEtsImplementsTest, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_value result = nullptr;
+
+    napi_status status = napi_get_ets_implements(env, value, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
 HWTEST_F(NapiBasicTest, NapiAsyncDestroyTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
