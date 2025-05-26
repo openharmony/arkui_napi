@@ -340,7 +340,8 @@ void ArkNativeEngine::CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListCh
 ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorker) : NativeEngine(jsEngine),
                                                                                      vm_(vm),
                                                                                      topScope_(vm),
-                                                                                     isLimitedWorker_(isLimitedWorker)
+                                                                                     isLimitedWorker_(isLimitedWorker),
+                                                                                     isMainEnvContext_(true)
 {
     HILOG_INFO("ArkNativeEngine is created, id %{public}" PRIu64, GetId());
 
@@ -407,7 +408,6 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 
     // save the first context
     context_ = Global<JSValueRef>(vm, JSNApi::GetCurrentContext(vm));
-    isMainEnvContext_ = true;
 }
 
 /**
@@ -423,6 +423,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
       context_(vm, context),
       parentEngine_(reinterpret_cast<ArkNativeEngine*>(parent)),
       containerScopeEnable_(parent->IsContainerScopeEnabled()),
+      isMainEnvContext_(false),
       isMultiContextEnabled_(true)
 {
     HILOG_INFO("ArkContextEngine is created, id %{public}" PRIu64, GetId());

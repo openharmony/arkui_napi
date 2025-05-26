@@ -135,7 +135,13 @@ bool NativeSafeAsyncWork::Init()
 {
     HILOG_DEBUG("NativeSafeAsyncWork::Init called");
 
-    uv_loop_t* loop = engine_->GetUVLoop();
+    uv_loop_t* loop = nullptr;
+    if (engine_->IsMainEnvContext()) {
+        loop = engine_->GetUVLoop();
+    } else {
+        loop = engine_->GetParent()->GetUVLoop();
+    }
+
     if (loop == nullptr) {
         HILOG_ERROR("Get loop failed");
         return false;
