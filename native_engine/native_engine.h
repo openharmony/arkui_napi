@@ -404,7 +404,7 @@ public:
     virtual napi_status RemoveCleanupHook(CleanupCallback fun, void* arg);
     virtual napi_status AddCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
     virtual napi_status RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, void* arg);
-    void RunCleanupHooks(bool waitTasks = false);
+    void RunCleanupHooks(bool waitTasks);
 
     void CleanupHandles();
 

@@ -890,7 +890,7 @@ void NativeEngine::RunCleanup()
     HILOG_DEBUG("%{public}s, start.", __func__);
     CleanupHandles();
 
-    RunCleanupHooks();
+    RunCleanupHooks(true);
 
     // make sure tsfn relese by itself
     uv_run(loop_, UV_RUN_NOWAIT);
