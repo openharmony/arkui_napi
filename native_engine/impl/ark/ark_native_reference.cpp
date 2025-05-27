@@ -339,5 +339,4 @@ bool ArkNativeReference::IsValidHeapObject()
 {
     return value_.IsValidHeapObject();
 }
-
 #endif // PANDA_JS_ETS_HYBRID_MODE
