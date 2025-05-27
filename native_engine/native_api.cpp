@@ -71,7 +71,8 @@ private:
 
 class EscapableHandleScopeWrapper {
 public:
-    explicit EscapableHandleScopeWrapper(NativeEngine* engine) : scope_(engine->GetEcmaVm()), escapeCalled_(false) {}
+    explicit EscapableHandleScopeWrapper(NativeEngine* engine)
+        : scope_(engine->GetEcmaVm()), escapeCalled_(false) {}
 
     bool IsEscapeCalled() const
     {
@@ -202,15 +203,15 @@ NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
         char attrs[sizeof(PropertyAttribute) * panda::ObjectRef::MAX_PROPERTIES_ON_STACK];
         char keys[sizeof(Local<panda::JSValueRef>) * panda::ObjectRef::MAX_PROPERTIES_ON_STACK];
         object = NapiCreateObjectWithProperties(env, property_count, properties,
-                                                reinterpret_cast<Local<panda::JSValueRef>*>(keys),
-                                                reinterpret_cast<PropertyAttribute*>(attrs));
+                                                reinterpret_cast<Local<panda::JSValueRef> *>(keys),
+                                                reinterpret_cast<PropertyAttribute *>(attrs));
     } else {
-        void* attrs = malloc(sizeof(PropertyAttribute) * property_count);
-        void* keys = malloc(sizeof(Local<panda::JSValueRef>) * property_count);
+        void *attrs = malloc(sizeof(PropertyAttribute) * property_count);
+        void *keys = malloc(sizeof(Local<panda::JSValueRef>) * property_count);
         if (attrs != nullptr && keys != nullptr) {
             object = NapiCreateObjectWithProperties(env, property_count, properties,
-                                                    reinterpret_cast<Local<panda::JSValueRef>*>(keys),
-                                                    reinterpret_cast<PropertyAttribute*>(attrs));
+                                                    reinterpret_cast<Local<panda::JSValueRef> *>(keys),
+                                                    reinterpret_cast<PropertyAttribute *>(attrs));
         } else {
             auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
             object = panda::JSValueRef::Undefined(vm);
@@ -240,9 +241,8 @@ NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::ObjectRef> object =
-        panda::ObjectRef::NewWithNamedProperties(vm, property_count, keys,
-                                                 reinterpret_cast<const Local<JSValueRef>*>(values));
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWithNamedProperties(vm, property_count, keys,
+        reinterpret_cast<const Local<JSValueRef> *>(values));
     *result = JsValueFromLocalValue(object);
 
     return napi_clear_last_error(env);
@@ -361,13 +361,12 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     if (length < SMALL_STRING_SIZE) {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf8WithoutStringTable(vm, str,
-                                                            (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     } else {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf8(vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     }
 
@@ -382,20 +381,20 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     if (length < SMALL_STRING_SIZE) {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf8WithoutStringTable(vm, str,
-                                                            (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     } else {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf8(vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
     }
 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env, const char16_t* str, size_t length, napi_value* result)
+NAPI_EXTERN napi_status napi_create_string_utf16(
+    napi_env env, const char16_t* str, size_t length, napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, str);
@@ -405,17 +404,16 @@ NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env, const char16_t* s
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
     if (length != NAPI_AUTO_LENGTH && length != static_cast<size_t>(char16Length)) {
-        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d), result may be unexpected", length,
-                   char16Length);
+        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d), result may be unexpected",
+            length, char16Length);
     }
     if (length < SMALL_STRING_SIZE) {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf16WithoutStringTable(vm, str,
-                                                             (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
         *result = JsValueFromLocalValue(object);
     } else {
-        Local<panda::StringRef> object =
-            panda::StringRef::NewFromUtf16(vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
         *result = JsValueFromLocalValue(object);
     }
 
@@ -483,7 +481,8 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
                 delete info;
             }
         },
-        reinterpret_cast<void*>(funcInfo), true);
+        reinterpret_cast<void*>(funcInfo), true
+    );
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, utf8name != nullptr ? utf8name : name);
     fn->SetName(vm, fnName);
     *result = JsValueFromLocalValue(scope.Escape(fn));
@@ -684,8 +683,11 @@ NAPI_EXTERN napi_status napi_get_value_bool(napi_env env, napi_value value, bool
 }
 
 // Copies LATIN-1 encoded bytes from a string into a buffer.
-NAPI_EXTERN napi_status
-napi_get_value_string_latin1(napi_env env, napi_value value, char* buf, size_t bufsize, size_t* result)
+NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
+                                                     napi_value value,
+                                                     char* buf,
+                                                     size_t bufsize,
+                                                     size_t* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -713,8 +715,11 @@ napi_get_value_string_latin1(napi_env env, napi_value value, char* buf, size_t b
 }
 
 // Copies UTF-8 encoded bytes from a string into a buffer.
-NAPI_EXTERN napi_status
-napi_get_value_string_utf8(napi_env env, napi_value value, char* buf, size_t bufsize, size_t* result)
+NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
+                                                   napi_value value,
+                                                   char* buf,
+                                                   size_t bufsize,
+                                                   size_t* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -741,8 +746,11 @@ napi_get_value_string_utf8(napi_env env, napi_value value, char* buf, size_t buf
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status
-napi_get_value_string_utf16(napi_env env, napi_value value, char16_t* buf, size_t bufsize, size_t* result)
+NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
+                                                    napi_value value,
+                                                    char16_t* buf,
+                                                    size_t bufsize,
+                                                    size_t* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -888,8 +896,8 @@ NAPI_EXTERN napi_status napi_has_property(napi_env env, napi_value object, napi_
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    Local<panda::JSValueRef> hasResult =
-        JSNApi::NapiHasProperty(vm, reinterpret_cast<uintptr_t>(object), reinterpret_cast<uintptr_t>(key));
+    Local<panda::JSValueRef> hasResult = JSNApi::NapiHasProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                                 reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
     *result = hasResult->BooleaValue(vm);
 
@@ -905,8 +913,8 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    Local<panda::JSValueRef> value =
-        JSNApi::NapiGetProperty(vm, reinterpret_cast<uintptr_t>(object), reinterpret_cast<uintptr_t>(key));
+    Local<panda::JSValueRef> value = JSNApi::NapiGetProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                             reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
 #ifdef ENABLE_CONTAINER_SCOPE
     FunctionSetContainerId(env, value);
@@ -926,8 +934,8 @@ NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, na
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObject(vm) || nativeValue->IsFunction(vm), napi_object_expected);
-    auto deleteResult =
-        JSNApi::NapiDeleteProperty(vm, reinterpret_cast<uintptr_t>(object), reinterpret_cast<uintptr_t>(key));
+    auto deleteResult = JSNApi::NapiDeleteProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                   reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(deleteResult), napi_object_expected);
     if (result) {
         *result = deleteResult->BooleaValue(vm);
@@ -945,8 +953,8 @@ NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, n
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    auto hasResult =
-        JSNApi::NapiHasOwnProperty(vm, reinterpret_cast<uintptr_t>(object), reinterpret_cast<uintptr_t>(key));
+    auto hasResult = JSNApi::NapiHasOwnProperty(vm, reinterpret_cast<uintptr_t>(object),
+                                                reinterpret_cast<uintptr_t>(key));
     RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(hasResult), napi_object_expected);
     if (result) {
         *result = hasResult->BooleaValue(vm);
@@ -1119,7 +1127,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
         if (nativeProperties[i].utf8name == nullptr) {
             auto name = LocalValueFromJsValue(nativeProperties[i].name);
             RETURN_STATUS_IF_FALSE(env, !name.IsEmpty() && (name->IsString(vm) || name->IsSymbol(vm)),
-                                   napi_name_expected);
+                napi_name_expected);
         }
         NapiDefineProperty(env, nativeObject, nativeProperties[i]);
     }
@@ -1146,7 +1154,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     // Omit to use NAPI_PREAMBLE and CHECK_ARG directly for performance.
     CHECK_ENV(env);
     RETURN_STATUS_IF_FALSE(env, (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
-                           napi_pending_exception);
+        napi_pending_exception);
     napi_clear_last_error((env));
 
     // This interface will not throw JS exceptions actively.
@@ -1156,7 +1164,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     // check value and result
     if ((value == nullptr) || (result == nullptr)) {
         if (panda::JSNApi::HasPendingException(vm)) {
-            reinterpret_cast<NativeEngine*>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+            reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
         }
         return napi_set_last_error(env, napi_invalid_arg);
     }
@@ -1169,7 +1177,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
 
     if (!isArrayOrSharedArray) {
         if (isPendingException) {
-            reinterpret_cast<NativeEngine*>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+            reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
         }
         return napi_set_last_error(env, napi_array_expected);
     }
@@ -1177,7 +1185,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
     if (UNLIKELY(isPendingException)) {
         HILOG_ERROR("pending exception before napi_get_array_length called, print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
-        reinterpret_cast<NativeEngine*>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+        reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
         return napi_set_last_error(env, napi_pending_exception);
     }
     return napi_ok;
@@ -1230,19 +1238,19 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
 {
     CHECK_ENV((env));
     RETURN_STATUS_IF_FALSE((env), (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
-                           napi_pending_exception);
+        napi_pending_exception);
     napi_clear_last_error((env));
     CHECK_ARG(env, func);
     if (argc > 0) {
         CHECK_ARG(env, argv);
     }
 
-    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto vm = reinterpret_cast<NativeEngine *>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
 
-    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef*>(func)->IsFunction(vm), napi_function_expected);
-    panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef*>(recv);
-    panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef*>(func);
+    RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(vm), napi_function_expected);
+    panda::JSValueRef* thisObj = reinterpret_cast<panda::JSValueRef *>(recv);
+    panda::FunctionRef* function = reinterpret_cast<panda::FunctionRef *>(func);
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t scopeId = -1;
     bool enableContainerScope = EnableContainerScope(env);
@@ -1258,13 +1266,13 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     OHOS::Ace::ContainerScope containerScope(scopeId, enableContainerScope);
 #endif
     panda::JSValueRef* value =
-        function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef* const*>(argv), argc);
+        function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     // if pending exception, value will be a pointer to JSTaggedValue::Hole.
     if (UNLIKELY(!NapiStatusValidationCheck(value))) {
         HILOG_ERROR("pending exception when js function called, print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
         result = nullptr;
-        reinterpret_cast<NativeEngine*>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
+        reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
         return napi_set_last_error(env, napi_pending_exception);
     }
     if (result) {
@@ -1273,8 +1281,11 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status
-napi_new_instance(napi_env env, napi_value constructor, size_t argc, const napi_value* argv, napi_value* result)
+NAPI_EXTERN napi_status napi_new_instance(napi_env env,
+                                          napi_value constructor,
+                                          size_t argc,
+                                          const napi_value* argv,
+                                          napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, constructor);
@@ -1287,11 +1298,10 @@ napi_new_instance(napi_env env, napi_value constructor, size_t argc, const napi_
     panda::JsiFastNativeScope fastNativeScope(vm);
 
     RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef*>(constructor)->IsFunction(vm),
-                           napi_function_expected);
+        napi_function_expected);
     panda::FunctionRef* constructorVal = reinterpret_cast<panda::FunctionRef*>(constructor);
-    panda::JSValueRef* instance =
-        constructorVal->ConstructorOptimize(vm, reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)),
-                                            argc);
+    panda::JSValueRef* instance = constructorVal->ConstructorOptimize(vm,
+        reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)), argc);
     if (tryCatch.HasCaught()) {
         HILOG_ERROR("CreateInstance occur Exception");
         *result = nullptr;
@@ -1336,7 +1346,7 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
     auto info = reinterpret_cast<panda::JsiRuntimeCallInfo*>(cbinfo);
     if ((argc != nullptr) && (argv != nullptr)) {
 #ifdef ENABLE_CONTAINER_SCOPE
-        auto* vm = info->GetVM();
+        auto *vm = info->GetVM();
 #endif
         size_t i = 0;
         if (*argc > 0) {
@@ -1352,8 +1362,8 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
             i = static_cast<size_t>(info->GetArgsNumber());
         }
         if (i < *argc) {
-            napi_value undefined =
-                JsValueFromLocalValue(panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
+            napi_value undefined = JsValueFromLocalValue(
+                panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
             for (; i < *argc; i++) {
                 argv[i] = undefined;
             }
@@ -1449,7 +1459,8 @@ NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, utf8name);
-    RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX, napi_object_expected);
+    RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX,
+                           napi_object_expected);
     CHECK_ARG(env, constructor);
     if (property_count > 0) {
         CHECK_ARG(env, properties);
@@ -2261,8 +2272,8 @@ NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_ob
     return GET_RETURN_STATUS(env);
 }
 
-NAPI_EXTERN napi_status
-napi_create_external(napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
+NAPI_EXTERN napi_status napi_create_external(
+    napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
@@ -2631,10 +2642,8 @@ NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length
     return GET_RETURN_STATUS(env);
 }
 
-NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env,
-                                                         size_t byte_length,
-                                                         void** data,
-                                                         napi_value* result)
+NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t byte_length,
+                                                         void** data, napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, data);
@@ -2777,8 +2786,11 @@ NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** dat
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status
-napi_create_buffer_copy(napi_env env, size_t length, const void* data, void** result_data, napi_value* result)
+NAPI_EXTERN napi_status napi_create_buffer_copy(napi_env env,
+                                                size_t length,
+                                                const void* data,
+                                                void** result_data,
+                                                napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, data);
@@ -3027,8 +3039,11 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status
-napi_create_dataview(napi_env env, size_t length, napi_value arraybuffer, size_t byte_offset, napi_value* result)
+NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
+                                             size_t length,
+                                             napi_value arraybuffer,
+                                             size_t byte_offset,
+                                             napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, arraybuffer);
@@ -3040,9 +3055,11 @@ napi_create_dataview(napi_env env, size_t length, napi_value arraybuffer, size_t
     RETURN_STATUS_IF_FALSE(env, arrayBufferValue->IsArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::ArrayBufferRef> res(arrayBufferValue);
     if (length + byte_offset > static_cast<size_t>(res->ByteLength(vm))) {
-        napi_throw_range_error(env, "ERR_NAPI_INVALID_DATAVIEW_ARGS",
-                               "byte_offset + byte_length should be less than or "
-                               "equal to the size in bytes of the array passed in");
+        napi_throw_range_error(
+            env,
+            "ERR_NAPI_INVALID_DATAVIEW_ARGS",
+            "byte_offset + byte_length should be less than or "
+            "equal to the size in bytes of the array passed in");
         return napi_set_last_error(env, napi_pending_exception);
     }
 
@@ -3078,8 +3095,8 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
     auto nativeValue = LocalValueFromJsValue(dataview);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     bool isDataView = false;
-    nativeValue->GetDataViewInfo(vm, isDataView, bytelength, data, reinterpret_cast<panda::JSValueRef**>(arraybuffer),
-                                 byte_offset);
+    nativeValue->GetDataViewInfo(vm, isDataView, bytelength, data,
+        reinterpret_cast<panda::JSValueRef**>(arraybuffer), byte_offset);
     RETURN_STATUS_IF_FALSE(env, isDataView, napi_status::napi_invalid_arg);
 
     return napi_clear_last_error(env);
@@ -3189,7 +3206,10 @@ NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_va
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_run_actor(napi_env env, const char* path, char* entryPoint, napi_value* result)
+NAPI_EXTERN napi_status napi_run_actor(napi_env env,
+                                       const char* path,
+                                       char* entryPoint,
+                                       napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
@@ -3237,9 +3257,8 @@ NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
     return GET_RETURN_STATUS(env);
 }
 // Memory management
-NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(napi_env env,
-                                                          int64_t change_in_bytes,
-                                                          int64_t* adjusted_value)
+NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(
+    napi_env env, int64_t change_in_bytes, int64_t* adjusted_value)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, adjusted_value);
@@ -3527,8 +3546,11 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_ok;
 }
 
-NAPI_EXTERN napi_status
-napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_value clone_list, void** result)
+NAPI_EXTERN napi_status napi_serialize(napi_env env,
+                                       napi_value object,
+                                       napi_value transfer_list,
+                                       napi_value clone_list,
+                                       void** result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, object);
@@ -3547,12 +3569,8 @@ napi_serialize(napi_env env, napi_value object, napi_value transfer_list, napi_v
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_serialize_inner(napi_env env,
-                                             napi_value object,
-                                             napi_value transfer_list,
-                                             napi_value clone_list,
-                                             bool defaultTransfer,
-                                             bool defaultCloneSendable,
+NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, napi_value transfer_list,
+                                             napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
                                              void** result)
 {
     CHECK_ENV(env);
@@ -3637,7 +3655,8 @@ NAPI_EXTERN napi_status napi_create_bigint_uint64(napi_env env, uint64_t value, 
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_get_value_bigint_int64(napi_env env, napi_value value, int64_t* result, bool* lossless)
+NAPI_EXTERN napi_status napi_get_value_bigint_int64(
+    napi_env env, napi_value value, int64_t* result, bool* lossless)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -3654,7 +3673,8 @@ NAPI_EXTERN napi_status napi_get_value_bigint_int64(napi_env env, napi_value val
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_get_value_bigint_uint64(napi_env env, napi_value value, uint64_t* result, bool* lossless)
+NAPI_EXTERN napi_status napi_get_value_bigint_uint64(
+    napi_env env, napi_value value, uint64_t* result, bool* lossless)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -3705,12 +3725,9 @@ NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value ar
     }
 }
 
-NAPI_EXTERN napi_status napi_get_all_property_names(napi_env env,
-                                                    napi_value object,
-                                                    napi_key_collection_mode key_mode,
-                                                    napi_key_filter key_filter,
-                                                    napi_key_conversion key_conversion,
-                                                    napi_value* result)
+NAPI_EXTERN napi_status napi_get_all_property_names(
+    napi_env env, napi_value object, napi_key_collection_mode key_mode,
+    napi_key_filter key_filter, napi_key_conversion key_conversion, napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, object);
@@ -3810,8 +3827,8 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
             sign = true;
         }
         uint32_t size = (uint32_t)word_count;
-        Local<panda::JSValueRef> value =
-            panda::BigIntRef::CreateBigWords(vm, sign, size, reinterpret_cast<const uint64_t*>(typeTag));
+        Local<panda::JSValueRef> value = panda::BigIntRef::CreateBigWords(vm, sign, size,
+                                                                          reinterpret_cast<const uint64_t*>(typeTag));
         Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, name);
         result = obj->Set(vm, key, value);
     }
@@ -3823,11 +3840,8 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
     return napi_clear_last_error(env);
 }
 
-bool BigIntGetWordsArray(const EcmaVM* vm,
-                         Local<panda::BigIntRef>& value,
-                         int* signBit,
-                         size_t* wordCount,
-                         uint64_t* words)
+bool BigIntGetWordsArray(const EcmaVM* vm, Local<panda::BigIntRef> &value, int* signBit,
+                         size_t* wordCount, uint64_t* words)
 {
     if (wordCount == nullptr) {
         return false;
@@ -3952,8 +3966,11 @@ NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status
-napi_create_bigint_words(napi_env env, int sign_bit, size_t word_count, const uint64_t* words, napi_value* result)
+NAPI_EXTERN napi_status napi_create_bigint_words(napi_env env,
+                                                 int sign_bit,
+                                                 size_t word_count,
+                                                 const uint64_t* words,
+                                                 napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, words);
@@ -3977,8 +3994,11 @@ napi_create_bigint_words(napi_env env, int sign_bit, size_t word_count, const ui
     return GET_RETURN_STATUS(env);
 }
 
-NAPI_EXTERN napi_status
-napi_get_value_bigint_words(napi_env env, napi_value value, int* sign_bit, size_t* word_count, uint64_t* words)
+NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
+                                                    napi_value value,
+                                                    int* sign_bit,
+                                                    size_t* word_count,
+                                                    uint64_t* words)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, value);
@@ -4200,7 +4220,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     data->detachData = reinterpret_cast<void*>(detach_cb);
     data->hint = hint;
 
-    size_t nativeBindingSize = 7 * sizeof(void*); // 7 : params num
+    size_t nativeBindingSize = 7 * sizeof(void *); // 7 : params num
     Local<panda::NativePointerRef> value = panda::NativePointerRef::NewConcurrent(
         vm, data,
         [](void* env, void* data, void* info) {
@@ -4244,7 +4264,7 @@ NAPI_EXTERN napi_status napi_add_detached_finalizer(napi_env env,
         return napi_generic_failure;
     }
 
-    info->detachedFinalizer = reinterpret_cast<void*>(detach_finalize_cb);
+    info->detachedFinalizer = reinterpret_cast<void *>(detach_finalize_cb);
     info->detachedHint = finalize_hint;
 
     return napi_clear_last_error(env);
@@ -4350,7 +4370,7 @@ NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value val
 }
 
 NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threadsafe_function func,
-                                                                    void* data,
+                                                                    void *data,
                                                                     napi_task_priority priority,
                                                                     bool isTail)
 {
