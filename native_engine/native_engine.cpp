@@ -230,6 +230,7 @@ bool NativeEngine::ReinitUVLoop()
 
     tid_ = pthread_self();
     sysTid_ = GetCurSysTid();
+    UpdateCrossThreadCheckStatus();
 
     loop_ = new (std::nothrow)uv_loop_t;
     if (loop_ == nullptr) {
