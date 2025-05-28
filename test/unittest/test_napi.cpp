@@ -119,6 +119,7 @@ public:
         } else {
             LOG_SetCallback(Collect);
         }
+        prev_ = last_;
         last_ = this;
     }
 
@@ -145,18 +146,46 @@ public:
         return lastMessageInfo_;
     }
 
+    void Pause()
+    {
+        if (prev_) {
+            prev_->next_ = next_;
+        }
+        if (next_) {
+            next_->prev_ = prev_;
+        }
+        if (last_ == this) {
+            last_ = prev_;
+        }
+        prev_ = nullptr;
+        next_ = nullptr;
+    }
+
+    void Restart()
+    {
+        if (last_) {
+            last_->next_ = this;
+        }
+        prev_ = last_;
+        last_ = this;
+    }
+
     int IndexOf(const char *msg, int index = 0)
     {
         std::string str = stream_.str();
         if (index >= str.size()) {
             return -1;
         }
-        return str.find(msg, index);
+        auto pos = str.find(msg, index);
+        if (pos == std::string::npos) {
+            return -1;
+        }
+        return pos;
     }
 
     int Includes(const char *msg, int index = 0)
     {
-        return IndexOf(msg) > 0;
+        return IndexOf(msg) >= 0;
     }
 
     void Clear()
@@ -167,8 +196,7 @@ public:
     static void Collect(const LogType type, const LogLevel level,
         const unsigned int domain, const char *tag, const char *msg)
     {
-        auto collector = last_;
-        while (collector) {
+        for (auto collector = last_; collector; collector = collector->prev_) {
             if (collector->domain_ != 0 && collector->domain_ != domain) {
                 continue;
             }
@@ -181,7 +209,6 @@ public:
             collector->lastMessageInfo_.tag = tag;
             collector->lastMessageInfo_.msg = msg;
             collector->stream_ << msg;
-            collector = collector->prev_;
         }
     };
 
@@ -2480,6 +2507,75 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest003, testing::ext::TestSize.Level1)
     char* tmpTestStr1 = nullptr;
     napi_remove_wrap(env, instanceValue, (void**)&tmpTestStr1);
     ASSERT_STREQ(testStr, tmpTestStr1);
+}
+
+/**
+ * @tc.name: ObjectWrapperTest004
+ * @tc.desc: Test object wrapper.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectWrapperTest004, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap(engine, object, data0, finalizer, nullptr, nullptr), napi_ok);
+
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap(engine, object, data1, finalizer, nullptr, nullptr), napi_ok);
+    ASSERT_TRUE(collector.Includes("napi_wrap: current js_object has been wrapped."));
+}
+
+/**
+ * @tc.name: ObjectWrapperTest005
+ * @tc.desc: Test object wrapper.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectWrapperTest005, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
+
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
+    ASSERT_TRUE(collector.Includes("napi_wrap_async_finalizer: current js_object has been wrapped."));
+}
+
+/**
+ * @tc.name: ObjectWrapperTest006
+ * @tc.desc: Test object wrapper.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectWrapperTest006, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap_with_size(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
+
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap_with_size(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data1)), napi_ok);
+    ASSERT_TRUE(collector.Includes("napi_wrap_with_size: current js_object has been wrapped."));
 }
 
 /**
