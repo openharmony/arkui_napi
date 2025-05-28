@@ -473,7 +473,8 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
                 FunctionRef::New(vm, RequireNapiForCtxEnv, nullptr, requireData));
     global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_INTERNAL_NAME),
                 FunctionRef::New(vm, RequireInternal, nullptr, requireData));
-
+                
+    InitWithoutUV();
     // The VM scope callback is initialized during the construction of the root engine and is ignored in this context.
 }
 
@@ -569,6 +570,7 @@ void ArkNativeEngine::DeconstructCtxEnv()
 {
     // To avoid blocking the thread, do not wait for any incomplete asynchronous tasks here.
     RunCleanupHooks(false);
+    DeinitWithoutUV();
 
     parentEngine_->RemoveCleanupHook(EnvironmentCleanup, this);
 
@@ -580,10 +582,6 @@ void ArkNativeEngine::DeconstructCtxEnv()
     // Context doesn't have its own uv_loop, so abort if still exists.
     if (HasActiveTsfn()) {
         HILOG_FATAL("Failed to release Ark Context Engine: active napi_threadsafe_function still exists.");
-    }
-    if (referenceManager_ != nullptr) {
-        delete referenceManager_;
-        referenceManager_ = nullptr;
     }
     SetDead();
     // twice check after wrap/finalizer callbacks

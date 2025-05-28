@@ -131,11 +131,7 @@ NativeEngine::~NativeEngine()
 void NativeEngine::Init()
 {
     HILOG_DEBUG("NativeEngine::Init");
-    moduleManager_ = NativeModuleManager::GetInstance();
-    referenceManager_ = new NativeReferenceManager();
-    callbackScopeManager_ = new NativeCallbackScopeManager();
-    tid_ = pthread_self();
-    sysTid_ = GetCurSysTid();
+    InitWithoutUV();
 
     loop_ = new (std::nothrow)uv_loop_t;
     if (loop_ == nullptr) {
@@ -163,10 +159,7 @@ void NativeEngine::Deinit()
     }
 
     RunCleanup();
-    if (referenceManager_ != nullptr) {
-        delete referenceManager_;
-        referenceManager_ = nullptr;
-    }
+    DeinitWithoutUV();
 
     SetDead();
     SetStopping(true);
@@ -184,6 +177,28 @@ void NativeEngine::Deinit()
     };
     delete loop_;
     loop_ = nullptr;
+}
+
+void NativeEngine::InitWithoutUV()
+{
+    moduleManager_ = NativeModuleManager::GetInstance();
+    referenceManager_ = new NativeReferenceManager();
+    callbackScopeManager_ = new NativeCallbackScopeManager();
+    tid_ = pthread_self();
+    sysTid_ = GetCurSysTid();
+}
+
+void NativeEngine::DeinitWithoutUV()
+{
+    if (referenceManager_ != nullptr) {
+        delete referenceManager_;
+        referenceManager_ = nullptr;
+    }
+
+    if (callbackScopeManager_ != nullptr) {
+        delete callbackScopeManager_;
+        callbackScopeManager_ = nullptr;
+    }
 }
 
 NativeReferenceManager* NativeEngine::GetReferenceManager()

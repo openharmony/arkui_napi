@@ -1021,3 +1021,43 @@ HWTEST_F(NapiContextTest, CoerceToStringWithMultiContext001, testing::ext::TestS
     napi_value result;
     ASSERT_CHECK_CALL(napi_coerce_to_string(env, argument, &result));
 }
+
+/**
+ * @tc.name: NapiEnvReferenceManagerTest001
+ * @tc.desc: Test code of engine constructor
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiEnvReferenceManagerTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_->GetReferenceManager(), nullptr);
+}
+
+/**
+ * @tc.name: NapiEnvReferenceManagerTest002
+ * @tc.desc: Test code of engine constructor
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiEnvReferenceManagerTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_->GetReferenceManager(), nullptr);
+}
+
+/**
+ * @tc.name: NapiEnvCallbackScopeManagerTest001
+ * @tc.desc: Test code of engine constructor
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiEnvCallbackScopeManagerTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_->GetCallbackScopeManager(), nullptr);
+}
+
+/**
+ * @tc.name: NapiEnvCallbackScopeManagerTest002
+ * @tc.desc: Test code of engine constructor
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiEnvCallbackScopeManagerTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_->GetCallbackScopeManager(), nullptr);
+}

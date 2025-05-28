@@ -611,6 +611,9 @@ protected:
 
     void Init();
     void Deinit();
+    // For context env
+    void InitWithoutUV();
+    void DeinitWithoutUV();
 
     inline void SetDead()
     {
