@@ -249,11 +249,6 @@ NativeEvent::NativeEvent(NativeEngine* engine,
         func, asyncResource, asyncResourceName, maxQueueSize, threadCount,
         finalizeData, finalizeCallback, context, callJsCallback)
 {
-#if defined(ENABLE_EVENT_HANDLER)
-    if (runner_ != nullptr) {
-        eventHandler_ = std::make_shared<EventHandler>(runner_);
-    }
-#endif
 }
 
 bool NativeEvent::Init()
