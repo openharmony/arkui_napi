@@ -77,6 +77,9 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
     CHECK_ARG(env, result_env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_FATAL("multi-context does not support this interface");
+    }
 
     auto result = engine->CreateRuntime(true);
     *result_env = reinterpret_cast<napi_env>(result);
@@ -114,7 +117,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
     CHECK_ARG(env, complete);
     CHECK_ARG(env, result);
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
+    SWITCH_CONTEXT(env);
     auto ecmaVm = engine->GetEcmaVm();
     auto asyncResource = LocalValueFromJsValue(async_resource);
     auto asyncResourceName = LocalValueFromJsValue(async_resource_name);
@@ -366,7 +369,7 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
         CHECK_ARG(env, call_js_cb);
     }
 
-    auto engine = reinterpret_cast<NativeEngine*>(env);
+    SWITCH_CONTEXT(env);
     auto finalizeCallback = reinterpret_cast<NativeFinalize>(thread_finalize_cb);
     auto callJsCallback = reinterpret_cast<NativeThreadSafeFunctionCallJs>(call_js_cb);
     auto safeAsyncWork = engine->CreateSafeAsyncWork(func, async_resource, async_resource_name, max_queue_size,
@@ -493,6 +496,7 @@ NAPI_EXTERN napi_status napi_async_init(
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, result);
 
+    SWITCH_CONTEXT(env);
     auto ecmaVm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::Local<panda::ObjectRef> resource;
     bool isExternalResource;
@@ -604,7 +608,7 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
     if (argc > 0) {
         CHECK_ARG(env, argv);
     }
-    auto engine = reinterpret_cast<NativeEngine*>(env);
+    SWITCH_CONTEXT(env);
     auto vm = engine->GetEcmaVm();
     RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(recv)->IsObject(vm), napi_object_expected);
     RETURN_STATUS_IF_FALSE(env, reinterpret_cast<panda::JSValueRef *>(func)->IsFunction(vm), napi_function_expected);

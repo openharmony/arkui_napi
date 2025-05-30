@@ -585,6 +585,10 @@ public:
 
     virtual bool IsMainEnvContext() const = 0;
 
+    virtual bool IsMultiContextEnabled() const = 0;
+
+    virtual void SetMultiContextEnabled(bool enabled) = 0;
+
     virtual panda::Local<panda::JSValueRef> GetContext() const = 0;
 
     virtual napi_status SwitchContext() = 0;

@@ -438,7 +438,8 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
       topScope_(vm),
       context_(vm, context),
       parentEngine_(reinterpret_cast<ArkNativeEngine*>(parent)),
-      containerScopeEnable_(parent->IsContainerScopeEnabled())
+      containerScopeEnable_(parent->IsContainerScopeEnabled()),
+      isMultiContextEnabled_(true)
 {
     HILOG_INFO("ArkContextEngine is created, id %{public}" PRIu64, GetId());
 
@@ -446,6 +447,8 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
     // In this case, we cannot delay the destruction of the context environment
     // until all napi_ref callbacks are completed.
     parent->AddCleanupHook(EnvironmentCleanup, this);
+
+    parent->SetMultiContextEnabled(true);
 
     LocalScope scope(vm);
 
