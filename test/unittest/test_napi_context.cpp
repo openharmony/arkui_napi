@@ -189,6 +189,17 @@ HWTEST_F(NapiContextTest, NapiCreateContextTest006, testing::ext::TestSize.Level
 }
 
 /**
+ * @tc.name: NapiCreateContextTest007
+ * @tc.desc: Test napi_create_ark_context with nullptr out parameter.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCreateContextTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    ASSERT_EQ(napi_create_ark_context(reinterpret_cast<napi_env>(engine_), nullptr), napi_invalid_arg);
+}
+
+/**
  * @tc.name: NapiSwitchContextTest001
  * @tc.desc: Test napi_switch_ark_context when the input argument env is nullptr.
  * @tc.type: FUNC
