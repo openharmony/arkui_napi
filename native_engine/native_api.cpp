@@ -466,16 +466,8 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
 
     ArkNativeEngine* engine = reinterpret_cast<ArkNativeEngine*>(env);
     Local<JSValueRef> context = engine->GetContext();
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
-        vm, context, ArkNativeFunctionCallBack,
-        [](void* env, void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-            if (info != nullptr) {
-                delete info;
-            }
-        },
-        reinterpret_cast<void*>(funcInfo), true
-    );
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(vm, context, ArkNativeFunctionCallBack,
+        CommonDeleter, reinterpret_cast<void*>(funcInfo), true);
     Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, utf8name != nullptr ? utf8name : name);
     fn->SetName(vm, fnName);
     *result = JsValueFromLocalValue(scope.Escape(fn));
@@ -1432,7 +1424,7 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
     } else {
         auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
         panda::JsiFastNativeScope fastNativeScope(vm);
-        EscapeLocalScope scope(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm());
+        EscapeLocalScope scope(vm);
         auto resultValue = NapiDefineClass(env, newName, callback, data, nativeProperties, property_count);
         *result = JsValueFromLocalValue(scope.Escape(resultValue));
     }
