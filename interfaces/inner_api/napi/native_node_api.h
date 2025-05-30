@@ -238,5 +238,10 @@ NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* r
 NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
 NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result);
 NAPI_EXTERN napi_status napi_register_appstate_callback(napi_env env, NapiAppStateCallback callback);
+NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
+                                                          const char* path,
+                                                          const char* module_info,
+                                                          napi_value* result,
+                                                          bool isHybrid);
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
