@@ -446,6 +446,7 @@ public:
     virtual void NotifyMemoryPressure(bool inHighMemoryPressure = false) = 0;
     virtual void NotifyForceExpandState(int32_t value) = 0;
     virtual void NotifyForceExpandState(uint64_t tid, int32_t value) = 0;
+    virtual void RegisterAppStateCallback(NapiAppStateCallback callback) = 0;
     virtual void SetMockModuleList(const std::map<std::string, std::string> &list) = 0;
     virtual int32_t GetObjectHash(napi_env env, napi_value src) = 0;
 
@@ -520,7 +521,7 @@ public:
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
     virtual napi_value NapiLoadModule(const char* path) = 0;
-    virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) = 0;
+    virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid = false) = 0;
     virtual std::string GetPkgName(const std::string &moduleName) = 0;
 
     double NewAsyncId()

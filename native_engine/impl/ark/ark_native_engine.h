@@ -137,6 +137,24 @@ enum class ArkNativeEngineState : uint8_t {
     RELEASING,
 };
 
+class AppStateNotifier {
+public:
+    void SetCallback(NapiAppStateCallback callback)
+    {
+        callback_ = callback;
+    }
+
+    void Notify(NapiAppState state, int64_t timestamp = 0)
+    {
+        if (callback_ != nullptr) {
+            callback_(state, timestamp);
+        }
+    }
+
+private:
+    NapiAppStateCallback callback_ {nullptr};
+};
+
 class NAPI_EXPORT ArkNativeEngine : public NativeEngine {
 friend struct MoudleNameLocker;
 public:
@@ -204,6 +222,8 @@ public:
     NativeReference* CreateReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr,
         size_t nativeBindingSize = 0) override;
+    NativeReference* CreateXRefReference(napi_value value, uint32_t initialRefcount, bool flag = false,
+        NapiNativeFinalize callback = nullptr, void* data = nullptr);
     NativeReference* CreateAsyncReference(napi_value value, uint32_t initialRefcount, bool flag = false,
         NapiNativeFinalize callback = nullptr, void* data = nullptr, void* hint = nullptr) override;
     napi_value CreatePromise(NativeDeferred** deferred) override;
@@ -280,6 +300,7 @@ public:
     void NotifyMemoryPressure(bool inHighMemoryPressure = false) override;
     void NotifyForceExpandState(int32_t value) override;
     void NotifyForceExpandState(uint64_t tid, int32_t value) override;
+    void RegisterAppStateCallback(NapiAppStateCallback callback) override;
 
     void AllowCrossThreadExecution() const override;
     static void PromiseRejectCallback(void* values);
@@ -321,7 +342,7 @@ public:
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
     napi_value NapiLoadModule(const char* path) override;
-    napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) override;
+    napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid = false) override;
     std::string GetOhmurl(std::string str);
     Local<JSValueRef> NapiLoadNativeModule(std::string path);
     NativeReference* GetPromiseRejectCallBackRef()
@@ -517,5 +538,11 @@ private:
     bool isMainEnvContext_ = false;
     bool isMultiContextEnabled_ = false;
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
+    AppStateNotifier interopAppState_ {};
+
+#ifdef ENABLE_CONTAINER_SCOPE
+    bool containerScopeEnable_ { true };
+#endif
+    
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */

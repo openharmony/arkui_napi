@@ -44,6 +44,22 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
 }
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
+                                       napi_value value,
+                                       ArkNativeReferenceConfig& config)
+    : engine_(engine),
+      ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
+      value_(),
+      refCount_(config.initialRefcount),
+      isProxyReference_(config.isProxyReference),
+      deleteSelf_(config.deleteSelf),
+      napiCallback_(config.napiCallback),
+      data_(config.data)
+{
+    value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
+    ArkNativeReferenceConstructor();
+}
+
+ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        Local<JSValueRef> value,
                                        uint32_t initialRefcount,
                                        bool deleteSelf,
@@ -113,7 +129,11 @@ ArkNativeReference::~ArkNativeReference()
         return;
     }
     hasDelete_ = true;
-    value_.FreeGlobalHandleAddr();
+    if (isProxyReference_) {
+        value_.FreeXRefGlobalHandleAddr();
+    } else {
+        value_.FreeGlobalHandleAddr();
+    }
     FinalizeCallback(FinalizerState::DESTRUCTION);
 }
 
@@ -259,7 +279,11 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 void ArkNativeReference::FreeGlobalCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
-    that->value_.FreeGlobalHandleAddr();
+    if (that->isProxyReference_) {
+        that->value_.FreeXRefGlobalHandleAddr();
+    } else {
+        that->value_.FreeGlobalHandleAddr();
+    }
 }
 
 void ArkNativeReference::NativeFinalizeCallBack(void* ref)
@@ -299,3 +323,20 @@ void ArkNativeReference::ResetFinalizer()
     data_ = nullptr;
     hint_ = nullptr;
 }
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+void ArkNativeReference::MarkFromObject()
+{
+    value_.MarkFromObject();
+}
+
+bool ArkNativeReference::IsObjectAlive()
+{
+    return value_.IsObjectAlive();
+}
+
+bool ArkNativeReference::IsValidHeapObject()
+{
+    return value_.IsValidHeapObject();
+}
+#endif // PANDA_JS_ETS_HYBRID_MODE
