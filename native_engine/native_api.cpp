@@ -4462,6 +4462,8 @@ NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(
 NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
 {
     NAPI_PREAMBLE(env);
+    CHECK_ARG(env, newEnv);
+
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
     auto vm = nativeEngine->GetEcmaVm();
     // cannot to utilize a created env to generate a new env
