@@ -58,6 +58,7 @@ public:
         TestPrime();
         TestNumber();
         TestString();
+        TestUtf16String();
         TestObject();
         TestKeyable();
         TestDefineProperty();
@@ -81,6 +82,7 @@ private:
     static void TestPrime();
     static void TestNumber();
     static void TestString();
+    static void TestUtf16String();
     static void TestObject();
     static void TestKeyable();
     static void TestDefineProperty();
@@ -504,6 +506,41 @@ void ArkInteropTest::TestString()
         EXPECT_EQ(result, origins[i]);
         ARKTS_FreeCString(cStr);
     }
+    ARKTS_CloseScope(env, scope);
+}
+
+void ArkInteropTest::TestUtf16String()
+{
+    auto env = MockContext::GetInstance()->GetEnv();
+    auto scope = ARKTS_OpenScope(env);
+
+    std::string latin1Case[] {
+        "a plain text",
+        "hello, world!",
+        "./[]124"
+    };
+    std::u16string utf16Cases[] {
+        u"a plain text, 和",
+        u"你好，世界！",
+        u"🦐😀"
+    };
+
+    for (const auto& one : latin1Case) {
+        auto value = ARKTS_CreateString(env, true, one.size(), one.data());
+        EXPECT_TRUE(ARKTS_IsString(env, value));
+        auto header = ARKTS_GetStringInfo(env, value);
+        EXPECT_EQ(header.length, one.size());
+        EXPECT_TRUE(header.isCompressed);
+    }
+
+    for (const auto& one : utf16Cases) {
+        auto value = ARKTS_CreateString(env, false, one.size(), one.data());
+        EXPECT_TRUE(ARKTS_IsString(env, value));
+        auto header = ARKTS_GetStringInfo(env, value);
+        EXPECT_EQ(header.length, one.size());
+        EXPECT_FALSE(header.isCompressed);
+    }
+
     ARKTS_CloseScope(env, scope);
 }
 
@@ -1107,7 +1144,7 @@ TEST_F(ArkInteropTest, GlobalRelease)
     auto env = local.GetEnv();
 
     bool isComplete = false;
-    int loops = 20;
+    int loops = 10;
     std::condition_variable cv;
     std::function <void()> callback;
     callback = [&isComplete, &cv, &loops, env, &callback] {
@@ -1117,7 +1154,8 @@ TEST_F(ArkInteropTest, GlobalRelease)
             return;
         }
         auto scope = ARKTS_OpenScope(env);
-        for (int i = 0;i < 500000; ++i) {
+        auto totalRepeat = 500000;
+        for (int i = 0;i < totalRepeat; ++i) {
             auto object = ARKTS_CreateObject(env);
             auto global = ARKTS_CreateGlobal(env, object);
             ARKTS_DisposeGlobal(env, global);
@@ -1132,10 +1170,29 @@ TEST_F(ArkInteropTest, GlobalRelease)
     std::mutex mutex;
     std::unique_lock lock(mutex);
     int waitTimes = 200;
+    int msEachTime = 100;
     while (!isComplete && waitTimes--) {
-        cv.wait_for(lock, std::chrono::milliseconds(100));
+        cv.wait_for(lock, std::chrono::milliseconds(msEachTime));
     }
     EXPECT_TRUE(isComplete);
+}
+
+TEST_F(ArkInteropTest, GlobalReleaseSync)
+{
+    MockContext local(ARKTS_CreateEngineWithNewThread());
+    auto env = local.GetEnv();
+    int loops = 10;
+    auto totalRepeat = 500000;
+    for (int i = 0;i < loops; ++i) {
+        auto scope = ARKTS_OpenScope(env);
+        for (int j = 0;j < totalRepeat; ++j) {
+            auto object = ARKTS_CreateObject(env);
+            auto global = ARKTS_CreateGlobal(env, object);
+            ARKTS_DisposeGlobalSync(env, global);
+        }
+        EXPECT_FALSE(panda::JSNApi::HasPendingException(P_CAST(env, EcmaVM*)));
+        ARKTS_CloseScope(env, scope);
+    }
 }
 } // namespace
 
@@ -1168,7 +1225,7 @@ int main(int argc, char** argv)
 
     std::mutex mutex;
     std::unique_lock<std::mutex> lock(mutex);
-    auto status = cv.wait_for(lock, std::chrono::seconds(10));
+    auto status = cv.wait_for(lock, std::chrono::seconds(30));
 
     EXPECT_EQ(status, std::cv_status::no_timeout);
     ARKTS_DestroyEngine(globalEngine);

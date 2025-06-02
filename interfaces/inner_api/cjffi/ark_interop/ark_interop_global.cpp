@@ -141,3 +141,13 @@ void ARKTS_DisposeGlobal(ARKTS_Env env, ARKTS_Global global)
     ARKTS_ASSERT_V(global, "global is null");
     GlobalManager::Dispose(P_CAST(env, EcmaVM*), P_CAST(global, uintptr_t));
 }
+
+void ARKTS_DisposeGlobalSync(ARKTS_Env env, ARKTS_Global global)
+{
+    ARKTS_ASSERT_V(env, "env is null");
+    ARKTS_ASSERT_V(global, "handle is null");
+
+    auto ref = P_CAST(global, Global<JSValueRef>*);
+    ref->FreeGlobalHandleAddr();
+    delete ref;
+}

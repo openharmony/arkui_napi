@@ -85,6 +85,14 @@ EXPORT const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value);
 EXPORT void ARKTS_FreeCString(const char* src);
 EXPORT bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value);
 
+typedef struct {
+    bool isCompressed;
+    uint32_t length;
+} ARKTS_StringInfo;
+EXPORT ARKTS_StringInfo ARKTS_GetStringInfo(ARKTS_Env env, ARKTS_Value value);
+EXPORT void ARKTS_StringCopy(ARKTS_Env env, ARKTS_Value value, void* dst, uint32_t length);
+EXPORT ARKTS_Value ARKTS_CreateString(ARKTS_Env env, bool isCompressed, uint32_t length, const void* data);
+
 EXPORT ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId);
 /**
  * logically equals to typeof(value) == "function"
@@ -149,6 +157,7 @@ EXPORT bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value);
 EXPORT ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobal(ARKTS_Env env, ARKTS_Global global);
+EXPORT void ARKTS_DisposeGlobalSync(ARKTS_Env env, ARKTS_Global global);
 
 EXPORT ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data);
 EXPORT bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value);
