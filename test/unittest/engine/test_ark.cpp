@@ -18,6 +18,8 @@
 #include "native_engine/impl/ark/ark_native_engine.h"
 #include "utils/log.h"
 
+#include <unistd.h>
+
 using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
 using panda::RuntimeOption;
 
@@ -50,6 +52,107 @@ void *NativeEngineTest::Run(void *args)
     sleep(1);
     threadArgs->resumeState = engine->IsSuspended();
     return nullptr;
+}
+
+void DeathTest::Run()
+{
+    size_t stackSize = GetCurrentStackSize();
+    ASSERT_NE(pipe(coutPipe_), -1);
+    ASSERT_NE(pipe(cerrPipe_), -1);
+
+    // Malloc stack of child process
+    ASSERT_FALSE(stackSize < 0 || stackSize > MAX_ALLOWED_CHILD_PROCESS_STACK_SIZE);
+    char* childStack = new char[stackSize];
+    ASSERT_NE(childStack, nullptr);
+
+    pid_t childPid = clone(RunInChild,
+        childStack + stackSize,
+        SIGCHLD | CLONE_SETTLS | // reset thread local storage
+            CLONE_FILES,         // share opened fd
+        (void*)this);
+    if (childPid != -1) {
+        int status = 0;
+        ASSERT_EQ(waitpid(childPid, &status, 0), childPid);
+
+        isExit_ = WIFEXITED(status);
+        exitCode_ = WEXITSTATUS(status);
+        isSignal_ = WIFSIGNALED(status);
+        signal_ = WTERMSIG(status);
+
+        coutResult_ = ReadFd(coutPipe_[0]);
+        cerrResult_ = ReadFd(cerrPipe_[0]);
+        AssertResult();
+    }
+
+    close(coutPipe_[0]);
+    close(cerrPipe_[0]);
+
+    free(childStack);
+    ASSERT_NE(childPid, -1);
+}
+
+size_t DeathTest::GetCurrentStackSize()
+{
+    //  Get stack size of current thread
+    pthread_attr_t attr;
+    size_t stackSize = 0;
+    pthread_getattr_np(pthread_self(), &attr);
+    pthread_attr_getstacksize(&attr, &stackSize);
+    pthread_attr_destroy(&attr);
+    return stackSize;
+}
+
+int DeathTest::RunInChild(void* arg)
+{
+    // block to generate cppcrash log
+    if (signal(SIGABRT, SIG_IGN) == SIG_ERR) {
+        std::cerr << "Failed to register abort signal handler." << std::endl;
+    }
+
+    DeathTest* that = reinterpret_cast<DeathTest*>(arg);
+    // close unused write pipe port
+    close(that->coutPipe_[0]);
+    close(that->cerrPipe_[0]);
+    // redirect cout/cerr to pipe
+    dup2(that->coutPipe_[1], STDOUT_FILENO);
+    dup2(that->cerrPipe_[1], STDERR_FILENO);
+
+    // redirect hilog to stdout
+    LOG_SetCallback(RedirectHilog);
+
+    // execute test case.
+    that->TestBody();
+
+    // close read pipe port
+    close(that->coutPipe_[1]);
+    close(that->cerrPipe_[1]);
+    return 0;
+}
+
+void DeathTest::RedirectHilog(const LogType, const LogLevel level, const unsigned int, const char*, const char* msg)
+{
+    if (level >= LogLevel::LOG_WARN) {
+        std::cerr << msg << std::endl;
+    } else {
+        std::cout << msg << std::endl;
+    }
+}
+
+std::string DeathTest::ReadFd(int fd)
+{
+    std::string result;
+    // set pipe to non-block mode
+    if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == -1) {
+        std::cerr << "Failed to set fd to non-block mode" << std::endl;
+        return result;
+    }
+    constexpr int bufferSize = 64;
+    char buffer[bufferSize];
+    ssize_t readSize = 0;
+    while ((readSize = read(fd, buffer, sizeof(buffer))) > 0) {
+        result += std::string(buffer, readSize);
+    };
+    return result;
 }
 
 int main(int argc, char** argv)
