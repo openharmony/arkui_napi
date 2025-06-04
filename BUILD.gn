@@ -29,7 +29,7 @@ config("ace_napi_config") {
   ]
   defines = []
   cflags_cc = []
-  if (is_mingw || is_mac || is_linux) {
+  if (is_mingw || is_mac || is_linux || ark_standalone_build) {
     defines += [ "PREVIEW" ]
   }
 
@@ -71,7 +71,11 @@ config("ace_napi_config") {
     defines += [ "SIMULATOR" ]
   }
   if (is_ohos) {
-    defines += [ "OHOS_PLATFORM" ]
+    if (!ark_standalone_build) {
+      defines += [ "OHOS_PLATFORM" ]
+    } else {
+      defines += [ "LINUX_PLATFORM" ]
+    }
     if (use_musl && !is_asan) {
       defines += [ "HOOK_ENABLE" ]
     }
@@ -136,7 +140,7 @@ ohos_source_set("ace_napi_static") {
   if (current_cpu == "arm64") {
     defines += [ "_ARM64_" ]
   }
-  if (is_ohos && !is_arkui_x) {
+  if (is_ohos && !is_arkui_x && !ark_standalone_build) {
     external_deps += [ "faultloggerd:libunwinder" ]
   }
   if (is_arkui_x) {
@@ -196,13 +200,23 @@ ohos_source_set("ace_napi_static") {
       "icu:shared_icui18n",
       "icu:shared_icuuc",
       "libuv:uv",
-      "node:node_header_notice",
     ]
+    if (!ark_standalone_build) {
+      external_deps += [ "node:node_header_notice" ]
+    }
   }
 
   cflags_cc = [ "-Wno-missing-braces" ]
+  if (ark_standalone_build &&
+      (is_debug || (defined(is_fastverify) && is_fastverify))) {
+    cflags_cc += [
+      "-ggdb3",
+      "-gdwarf-4",
+      "-fno-omit-frame-pointer",
+    ]
+  }
 
-  if (is_ohos && is_clang && enhanced_opt) {
+  if (is_ohos && is_clang && defined(enhanced_opt) && enhanced_opt) {
     if (napi_feature_enable_pgo) {
       cflags_cc += [
         "-fprofile-use=" +
@@ -252,7 +266,7 @@ if (is_arkui_x) {
     innerapi_tags = [ "platformsdk" ]
     part_name = "napi"
 
-    if (is_ohos && is_clang && enhanced_opt) {
+    if (is_ohos && is_clang && defined(enhanced_opt) && enhanced_opt) {
       if (napi_feature_enable_pgo) {
         ldflags = [ "-Wl,-mllvm,-align-all-functions=4" ]
 
@@ -358,6 +372,10 @@ if (!ark_standalone_build) {
         "interfaces/inner_api/cjffi/ark_interop:ark_interop",
         "interfaces/inner_api/cjffi/ark_interop:cjLibLoader",
       ]
+    }
+
+    if (target_cpu == "arm64") {
+      deps += [ "jsvm:libjsvm" ]
     }
   }
 

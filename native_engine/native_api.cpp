@@ -16,10 +16,12 @@
 #define NAPI_EXPERIMENTAL
 #endif
 
-
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "core/common/container_scope.h"
 #endif
+
+#include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_reference.h"
 #include "native_engine/native_create_env.h"
@@ -27,19 +29,19 @@
 #include "native_engine/worker_manager.h"
 #include "securec.h"
 
-using panda::ArrayRef;
 using panda::ArrayBufferRef;
+using panda::ArrayRef;
 using panda::BigIntRef;
 using panda::BooleanRef;
 using panda::BufferRef;
-using panda::DateRef;
 using panda::DataViewRef;
+using panda::DateRef;
 using panda::EscapeLocalScope;
 using panda::FunctionRef;
 using panda::Global;
 using panda::IntegerRef;
-using panda::JSNApi;
 using panda::JsiRuntimeCallInfo;
+using panda::JSNApi;
 using panda::Local;
 using panda::LocalScope;
 using panda::NativePointerRef;
@@ -57,6 +59,7 @@ using panda::ecmascript::EcmaVM;
 static constexpr size_t MAX_BYTE_LENGTH = 2097152;
 static constexpr size_t ONEMIB_BYTE_SIZE = 1048576;
 static constexpr size_t SMALL_STRING_SIZE = 16;
+static constexpr char NAME_SPACE_TAG = '@';
 
 class HandleScopeWrapper {
 public:
@@ -194,7 +197,9 @@ NAPI_EXTERN napi_status napi_create_object(napi_env env, napi_value* result)
 
 // Create JSObject with initial properties given by descriptors, note that property key must be String, and
 // must can not convert to element_index, also all keys must not duplicate.
-NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env, napi_value* result, size_t property_count,
+NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
+                                                           napi_value* result,
+                                                           size_t property_count,
                                                            const napi_property_descriptor* properties)
 {
     CHECK_ENV(env);
@@ -234,8 +239,10 @@ NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env, napi_va
 
 // Create JSObject with initial properties given by keys and values, note that property key must be String, and
 // must can not convert to element_index, also all keys must not duplicate.
-NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env, napi_value* result,
-                                                                 size_t property_count, const char** keys,
+NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
+                                                                 napi_value* result,
+                                                                 size_t property_count,
+                                                                 const char** keys,
                                                                  const napi_value* values)
 {
     CHECK_ENV(env);
@@ -1973,6 +1980,58 @@ NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
     }
     object->SetNativePointerFieldCount(vm, 1);
     object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, native_binding_size);
+
+    PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
+                                       napi_value js_object,
+                                       void* native_object,
+                                       napi_finalize finalize_cb,
+                                       NapiXRefDirection ref_direction,
+                                       napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, finalize_cb);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    size_t nativeBindingSize = 0;
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+    NativeReference* ref = nullptr;
+    Local<panda::ObjectRef> object = JSValueRef::Undefined(vm);
+    switch (ref_direction) {
+        case NapiXRefDirection::NAPI_DIRECTION_DYNAMIC_TO_STATIC:
+            object = panda::ObjectRef::NewJSXRefObject(vm);
+            ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
+            break;
+        case NapiXRefDirection::NAPI_DIRECTION_STATIC_TO_DYNAMIC:
+            object = panda::ObjectRef::New(vm);
+            ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
+            break;
+        case NapiXRefDirection::NAPI_DIRECTION_HYBRID:
+            // Hybrid object may only exist in cross-language inherence case.
+            // To be aborted in the future according to the specification
+            HILOG_ERROR("[napi_xref_wrap] napi_direction_hybrid is not supported now!");
+            return napi_set_last_error(env, napi_invalid_arg);
+        default:
+            HILOG_ERROR("[napi_xref_wrap] invalid ref_direction!");
+            return napi_set_last_error(env, napi_invalid_arg);
+    }
+    if (reference != nullptr) {
+        *reference = ref;
+    }
+    object->SetNativePointerFieldCount(vm, 1);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
     PropertyAttribute attr(object, true, false, true);
     nativeObject->DefineProperty(vm, key, attr);
     return GET_RETURN_STATUS(env);
@@ -2071,6 +2130,28 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     panda::JsiFastNativeScope fastNativeScope(vm);
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
+    *result = nullptr;
+    if (val->IsObject(vm)) {
+        Local<panda::ObjectRef> ext(val);
+        auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(vm, 0));
+        *result = ref != nullptr ? ref->GetData() : nullptr;
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_xref_unwrap(napi_env env, napi_value js_object, void** result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
     if (val->IsObject(vm)) {
@@ -2714,7 +2795,7 @@ NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** dat
     CHECK_ARG(env, result);
     RETURN_STATUS_IF_FALSE(env, size > 0, napi_invalid_arg);
 
-    uint8_t** value =  reinterpret_cast<uint8_t**>(data);
+    uint8_t** value = reinterpret_cast<uint8_t**>(data);
     if (!value) {
         HILOG_ERROR("value is empty");
         return napi_set_last_error(env, napi_invalid_arg);
@@ -3205,6 +3286,19 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
     if (*result != nullptr) {
         RETURN_STATUS_IF_FALSE(env, !LocalValueFromJsValue(*result)->IsUndefined(), napi_generic_failure);
     }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
+                                                          const char* path,
+                                                          const char* module_info,
+                                                          napi_value* result,
+                                                          bool isHybrid)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, result);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    *result = engine->NapiLoadModuleWithInfo(path, module_info, isHybrid);
     return GET_RETURN_STATUS(env);
 }
 // Memory management
@@ -4114,7 +4208,7 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_
 
 static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
 {
-    if (detachData == nullptr || (engine == nullptr || object ==nullptr)) {
+    if (detachData == nullptr || (engine == nullptr || object == nullptr)) {
         HILOG_ERROR("DetachFuncCallback params has nullptr");
         return nullptr;
     }
@@ -4181,11 +4275,13 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
     data->hint = hint;
 
     size_t nativeBindingSize = 7 * sizeof(void *); // 7 : params num
-    Local<panda::NativePointerRef> value = panda::NativePointerRef::NewConcurrent(vm, data,
+    Local<panda::NativePointerRef> value = panda::NativePointerRef::NewConcurrent(
+        vm, data,
         [](void* env, void* data, void* info) {
             auto externalInfo = reinterpret_cast<panda::JSNApi::NativeBindingInfo*>(data);
             delete externalInfo;
-        }, nullptr, nativeBindingSize);
+        },
+        nullptr, nativeBindingSize);
 
     bool res = obj->ConvertToNativeBindingObject(vm, value);
     if (res) {
@@ -4447,6 +4543,84 @@ NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(voi
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, napi_stack_info* napi_info)
+{
+    CHECK_ARG(env, napi_info);
+    ASSERT(napi_info != nullptr);
+    panda::StackInfo info { napi_info->stack_start, napi_info->stack_size };
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JSNApi::SetStackInfo(vm, info);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, napi_stack_info* result)
+{
+    CHECK_ARG(env, result);
+    ASSERT(result != nullptr);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto res = panda::JSNApi::GetStackInfo(vm);
+    result->stack_start = res.stackStart;
+    result->stack_size = res.stackSize;
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, error);
+
+    auto nativeValue = LocalValueFromJsValue(error);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+
+    panda::JSNApi::ThrowException(vm, nativeValue);
+    return napi_clear_last_error(env);
+}
+
+// This interface is always used for load module on host
+NAPI_EXTERN napi_status napi_load_module_with_path(napi_env env, const char* path, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, path);
+    CHECK_ARG(env, result);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto ret = panda::JSNApi::GetModuleNameSpaceWithPath(vm, path);
+    if (panda::JSNApi::HasPendingException(vm)) {
+        *result = nullptr;
+    } else {
+        *result = JsValueFromLocalValue(ret);
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const char* request_name, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, request_name);
+    CHECK_ARG(env, result);
+
+    if (request_name[0] == NAME_SPACE_TAG) {
+        // load module with OhmUrl
+        auto [path, module_info] = panda::JSNApi::ResolveOhmUrl(request_name);
+        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), result, true);
+    } else {
+        napi_load_module_with_path(env, request_name, result);
+    }
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_register_appstate_callback(napi_env env, NapiAppStateCallback callback)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, callback);
+
+    auto* engine = reinterpret_cast<NativeEngine*>(env);
+    engine->RegisterAppStateCallback(callback);
+
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg)
 {
     CHECK_ENV(env);
@@ -4534,3 +4708,110 @@ NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_c
 
     return napi_ok;
 }
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
+                                          [[maybe_unused]] void* inputIface,
+                                          [[maybe_unused]] void** outputIface)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, inputIface);
+    CHECK_ARG(env, outputIface);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::HandshakeHelper::DoHandshake(const_cast<EcmaVM*>(vm), inputIface, outputIface);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    reference->MarkFromObject();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    *result = reference->IsObjectAlive();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    *result = reference->IsValidHeapObject();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_xref(napi_env env, napi_value value, uint32_t initial_refcount, napi_ref* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto ref = engine->CreateXRefReference(value, initial_refcount, false, nullptr, nullptr);
+    *result = reinterpret_cast<napi_ref>(ref);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
+                                            napi_value js_object,
+                                            void* native_object,
+                                            napi_finalize finalize_cb,
+                                            napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, finalize_cb);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    size_t nativeBindingSize = 0;
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+    NativeReference* ref = nullptr;
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefObject(vm);
+    // Create strong reference now, will update to weak reference after interop support
+    ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
+    *reference = ref;
+    object->SetNativePointerFieldCount(vm, 1);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
+    PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result)
+{
+    *result = false;
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+
+    if (nativeObject->Has(vm, key)) {
+        *result = true;
+    }
+    return GET_RETURN_STATUS(env);
+}
+#endif // PANDA_JS_ETS_HYBRID_MODE
