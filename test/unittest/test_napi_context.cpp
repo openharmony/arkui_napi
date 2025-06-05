@@ -32,13 +32,36 @@ constexpr const char TEST_WRAP_STRING[] = "testWrapStr";
 constexpr const int32_t LENGTH = 1024;
 constexpr const char TEST_STR[] = "test";
 constexpr const char TEST_CHAR_ASYNCWORK[] = "AsyncWorkTest";
+constexpr const char TEST_KEY[] = "testKey";
+constexpr const char TEST_VALUE[] = "testValue";
+constexpr const char ENUMERABLE[] = "enumerable";
+constexpr const char WRITEABLE[] = "writable";
+constexpr const char CONFIGURABLE[] = "configurable";
+constexpr const char TEST_CLASS[] = "TestClass";
+constexpr const uint32_t REFERENCE_SIZE = 2;
+constexpr const char MESSAGE[] = "message";
+constexpr const char TEST_FUNC[] = "testFunc";
+constexpr const char CONTEXT_NEW_PROP[] = "contextNewProp";
+constexpr const char STR_ATTRIBUTE[] = "strAttribute";
+constexpr const char STR_MODULE_PATH[] = "@ohos:xxxx";
 
-static constexpr int32_t NAPI_BUFFER_SIZE = 64;
+constexpr size_t TEST_ARRAY_LENGTH = 10;
+
+static constexpr int32_t NAPI_BUFFER_SIZE = 5;
+static constexpr int32_t TYPE_TAGS_SIZE = 5;
 
 static napi_value SendableFunc(napi_env env, napi_callback_info info)
 {
     return nullptr;
 }
+
+static const napi_type_tag typeTags[TYPE_TAGS_SIZE] = { // 5:array element size is 5.
+    {0xdaf987b3cc62481a, 0xb745b0497f299531},
+    {0xbb7936c374084d9b, 0xa9548d0762eeedb9},
+    {0xa5ed9ce2e4c00c38, 0},
+    {0, 0},
+    {0xa5ed9ce2e4c00c34, 0xdaf987b3cc62481a},
+};
 
 class NapiContextTest : public NativeEngineTest {
 public:
@@ -84,6 +107,13 @@ public:
         auto arkNativeEngine = reinterpret_cast<ArkNativeEngine* >(engine_);
         arkNativeEngine->isMainEnvContext_ = isMainContext;
         ASSERT_EQ(arkNativeEngine->IsMainEnvContext(), isMainContext);
+    }
+
+    inline void CheckContextEnv()
+    {
+        ASSERT_NE(multiContextEngine_, nullptr);
+        bool isMainContextEnv = multiContextEngine_->IsMainEnvContext();
+        ASSERT_FALSE(isMainContextEnv);
     }
 
 private:
@@ -750,18 +780,15 @@ HWTEST_F(NapiContextTest, NapiCreateExternalArraybufferWithMultiContextTest001, 
  */
 HWTEST_F(NapiContextTest, NapiCreateExternalBufferWithMultiContextTest001, testing::ext::TestSize.Level1)
 {
-    static constexpr int32_t NAPI_BUFFER_SIZE = 64;
+    ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
 
     napi_value buffer = nullptr;
-    char testStr[] = "test";
-    void* bufferPtr = testStr;
-
     size_t bufferSize = NAPI_BUFFER_SIZE;
     napi_status status = napi_create_external_buffer(
-        env, bufferSize, bufferPtr, [](napi_env env, void* data, void* hint) {
+        env, bufferSize, (void*)TEST_STR, [](napi_env env, void* data, void* hint) {
             ASSERT_STREQ((const char*)data, (const char*)hint);
-        }, (void*)testStr, &buffer);
+        }, (void*)TEST_STR, &buffer);
     ASSERT_EQ(status, napi_ok);
     void* tmpBufferPtr = nullptr;
     size_t bufferLength = 0;
@@ -781,7 +808,7 @@ HWTEST_F(NapiContextTest, NapiCreateExternalBufferWithMultiContextTest001, testi
  */
 HWTEST_F(NapiContextTest, AsyncInitWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value name;
@@ -799,7 +826,7 @@ HWTEST_F(NapiContextTest, AsyncInitWithMultiContext001, testing::ext::TestSize.L
  */
 HWTEST_F(NapiContextTest, CreateBufferWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value buffer = nullptr;
@@ -816,14 +843,16 @@ HWTEST_F(NapiContextTest, CreateBufferWithMultiContext001, testing::ext::TestSiz
  */
 HWTEST_F(NapiContextTest, CreateExternalBufferWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     const unsigned int bufferSize = NAPI_BUFFER_SIZE;
     char* copyPtr = strdup(TEST_STR);
     napi_value result;
     ASSERT_CHECK_CALL(napi_create_external_buffer(env, bufferSize, copyPtr,
-        [](napi_env env, void* data, void* hint) { return; },
+        [](napi_env env, void* data, void* hint) {
+            free(reinterpret_cast<char*>(data));
+        },
         nullptr, &result));
 }
 
@@ -835,7 +864,7 @@ HWTEST_F(NapiContextTest, CreateExternalBufferWithMultiContext001, testing::ext:
  */
 HWTEST_F(NapiContextTest, CreateBufferCopyWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value Buffer = nullptr;
@@ -852,7 +881,7 @@ HWTEST_F(NapiContextTest, CreateBufferCopyWithMultiContext001, testing::ext::Tes
  */
 HWTEST_F(NapiContextTest, CreateAsyncWorkWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     struct AsyncWorkContext {
@@ -876,27 +905,24 @@ HWTEST_F(NapiContextTest, CreateAsyncWorkWithMultiContext001, testing::ext::Test
  */
 HWTEST_F(NapiContextTest, GetGlobalWithMultiContext001, testing::ext::TestSize.Level1)
 {
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
     ASSERT_NE(engine_, nullptr);
-
-    NativeEngineProxy envProxy;
-    napi_env env = napi_env(envProxy);
-    napi_env newEnv = nullptr;
-    napi_status status = napi_create_ark_context(env, &newEnv);
-    EXPECT_EQ(status, napi_ok);
+    napi_env oldEnv = reinterpret_cast<napi_env>(engine_);
 
     napi_value global = nullptr;
     napi_value undefined = nullptr;
-    ASSERT_CHECK_CALL(napi_get_global(newEnv, &global));
-    ASSERT_CHECK_CALL(napi_get_undefined(newEnv, &undefined));
-    ASSERT_CHECK_CALL(napi_set_named_property(newEnv, global, "contextNewProp", undefined));
+    ASSERT_CHECK_CALL(napi_get_global(env, &global));
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefined));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, global, CONTEXT_NEW_PROP, undefined));
     bool hasProp = false;
-    ASSERT_CHECK_CALL(napi_has_named_property(newEnv, global, "contextNewProp", &hasProp));
+    ASSERT_CHECK_CALL(napi_has_named_property(env, global, CONTEXT_NEW_PROP, &hasProp));
     ASSERT_EQ(hasProp, true);
 
     hasProp = false;
     napi_value globalOld = nullptr;
-    ASSERT_CHECK_CALL(napi_get_global(env, &globalOld));
-    ASSERT_CHECK_CALL(napi_has_named_property(env, globalOld, "contextNewProp", &hasProp));
+    ASSERT_CHECK_CALL(napi_get_global(oldEnv, &globalOld));
+    ASSERT_CHECK_CALL(napi_has_named_property(oldEnv, globalOld, CONTEXT_NEW_PROP, &hasProp));
     ASSERT_EQ(hasProp, false);
 }
 
@@ -908,7 +934,7 @@ HWTEST_F(NapiContextTest, GetGlobalWithMultiContext001, testing::ext::TestSize.L
  */
 HWTEST_F(NapiContextTest, CreateFunctionWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     auto func = [](napi_env env, napi_callback_info info) -> napi_value {
@@ -927,7 +953,7 @@ HWTEST_F(NapiContextTest, CreateFunctionWithMultiContext001, testing::ext::TestS
  */
 HWTEST_F(NapiContextTest, CreateErrorWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value code = nullptr;
@@ -947,7 +973,7 @@ HWTEST_F(NapiContextTest, CreateErrorWithMultiContext001, testing::ext::TestSize
  */
 HWTEST_F(NapiContextTest, CreateTypeErrorWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value code = nullptr;
@@ -967,7 +993,7 @@ HWTEST_F(NapiContextTest, CreateTypeErrorWithMultiContext001, testing::ext::Test
  */
 HWTEST_F(NapiContextTest, CreateRangeErrorWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value code = nullptr;
@@ -987,7 +1013,7 @@ HWTEST_F(NapiContextTest, CreateRangeErrorWithMultiContext001, testing::ext::Tes
  */
 HWTEST_F(NapiContextTest, CoerceToNumberWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value value;
@@ -1004,7 +1030,7 @@ HWTEST_F(NapiContextTest, CoerceToNumberWithMultiContext001, testing::ext::TestS
  */
 HWTEST_F(NapiContextTest, CoerceToObjectWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value value;
@@ -1022,7 +1048,7 @@ HWTEST_F(NapiContextTest, CoerceToObjectWithMultiContext001, testing::ext::TestS
  */
 HWTEST_F(NapiContextTest, CoerceToStringWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    ASSERT_NE(multiContextEngine_, nullptr);
+    CheckContextEnv();
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value argument;
@@ -1071,4 +1097,1188 @@ HWTEST_F(NapiContextTest, NapiEnvCallbackScopeManagerTest001, testing::ext::Test
 HWTEST_F(NapiContextTest, NapiEnvCallbackScopeManagerTest002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_->GetCallbackScopeManager(), nullptr);
+}
+
+/**
+ * @tc.name: NapiHasOwnPropertyTest001
+ * @tc.desc: Test napi_has_own_property when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiHasOwnPropertyTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &key));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, 1, &value));
+
+    ASSERT_CHECK_CALL(napi_set_property(env, obj, key, value));
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_has_own_property(env, obj, key, &result));
+    ASSERT_TRUE(result);
+}
+
+/**
+ * @tc.name: NapiSetNamedPropertyTest001
+ * @tc.desc: Test napi_set_named_property when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiSetNamedPropertyTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_KEY, NAPI_AUTO_LENGTH, &key));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_VALUE, NAPI_AUTO_LENGTH, &value));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj, TEST_KEY, value));
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_has_own_property(env, obj, key, &result));
+    ASSERT_TRUE(result);
+}
+
+/**
+ * @tc.name: NapiHasNamedPropertyTest001
+ * @tc.desc: Test napi_has_named_property when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiHasNamedPropertyTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value obj;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_VALUE, NAPI_AUTO_LENGTH, &value));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj, TEST_KEY, value));
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, obj, TEST_KEY, &result));
+    ASSERT_TRUE(result);
+}
+
+/**
+ * @tc.name: NapiGetNamedPropertyTest001
+ * @tc.desc: Test napi_get_named_property when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiGetNamedPropertyTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value obj;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_VALUE, NAPI_AUTO_LENGTH, &value));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj, TEST_KEY, value));
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj, TEST_KEY, &result));
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, static_cast<size_t>(0));
+    buffer = new char[bufferSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STREQ(TEST_VALUE, buffer);
+    ASSERT_EQ(strlen(TEST_VALUE), strLength);
+    delete []buffer;
+}
+
+/**
+ * @tc.name: NapiObjectElementTest001
+ * @tc.desc: Test object element setting and getting capability when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiObjectElementTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value array = nullptr;
+    ASSERT_CHECK_CALL(napi_create_array(env, &array));
+    ASSERT_NE(array, nullptr);
+    bool isArray = false;
+    ASSERT_CHECK_CALL(napi_is_array(env, array, &isArray));
+    ASSERT_TRUE(isArray);
+
+    for (size_t i = 0; i < TEST_ARRAY_LENGTH; i++) {
+        napi_value num = nullptr;
+        ASSERT_CHECK_CALL(napi_create_uint32(env, i, &num));
+        ASSERT_CHECK_CALL(napi_set_element(env, array, i, num));
+    }
+
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, array, &arrayLength));
+    ASSERT_EQ(arrayLength, static_cast<uint32_t>(TEST_ARRAY_LENGTH));
+
+    for (size_t i = 0; i < arrayLength; i++) {
+        bool hasIndex = false;
+        ASSERT_CHECK_CALL(napi_has_element(env, array, i, &hasIndex));
+        ASSERT_TRUE(hasIndex);
+        napi_value value = nullptr;
+        ASSERT_CHECK_CALL(napi_get_element(env, array, i, &value));
+        uint32_t number = 0;
+        napi_get_value_uint32(env, value, &number);
+        ASSERT_EQ(number, i);
+    }
+
+    for (size_t i = 0; i < arrayLength; i++) {
+        bool isDelete = false;
+        napi_delete_element(env, array, i, &isDelete);
+        ASSERT_TRUE(isDelete);
+    }
+}
+
+/**
+ * @tc.name: NapiDefinePropertiesTest001
+ * @tc.desc: Test napi_define_properties when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiDefinePropertiesTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value result = nullptr;
+    // Create napi_values for 123, 456 and 789
+    napi_value enumerable = nullptr;
+    napi_value writAble = nullptr;
+    napi_value configurAble = nullptr;
+    napi_create_int32(env, 123, &enumerable);
+    napi_create_int32(env, 456, &writAble);
+    napi_create_int32(env, 789, &configurAble);
+
+    napi_property_descriptor descriptors[] = {
+        {ENUMERABLE, nullptr, nullptr, nullptr, nullptr, enumerable, napi_default_method, nullptr},
+        {WRITEABLE, nullptr, nullptr, nullptr, nullptr, writAble,
+            static_cast<napi_property_attributes>(napi_enumerable | napi_writable), nullptr},
+        {CONFIGURABLE, nullptr, nullptr, nullptr, nullptr, configurAble,
+            static_cast<napi_property_attributes>(napi_enumerable | napi_configurable), nullptr}
+    };
+
+    ASSERT_CHECK_CALL(napi_create_object(env, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+    ASSERT_CHECK_CALL(napi_define_properties(env, result, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+
+    bool ret = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, result, ENUMERABLE, &ret));
+    ASSERT_TRUE(ret);
+
+    ret = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, result, WRITEABLE, &ret));
+    ASSERT_TRUE(ret);
+
+    ret = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, result, CONFIGURABLE, &ret));
+    ASSERT_TRUE(ret);
+}
+
+/**
+ * @tc.name: NapiIsArrayTest001
+ * @tc.desc: Test array when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiIsArrayTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value array = nullptr;
+    ASSERT_CHECK_CALL(napi_create_array(env, &array));
+    ASSERT_NE(array, nullptr);
+    bool isArray = false;
+    ASSERT_CHECK_CALL(napi_is_array(env, array, &isArray));
+    ASSERT_TRUE(isArray);
+}
+
+/**
+ * @tc.name: NapiGetArrayLengthTest001
+ * @tc.desc: Test napi_get_array_length when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiGetArrayLengthTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    napi_value array = nullptr;
+    ASSERT_CHECK_CALL(napi_create_array(env, &array));
+    ASSERT_NE(array, nullptr);
+
+    uint32_t arrayLength = 0;
+    ASSERT_CHECK_CALL(napi_get_array_length(env, array, &arrayLength));
+    ASSERT_EQ(arrayLength, 0);
+}
+
+/**
+ * @tc.name: NapiStrictEqualsTest001
+ * @tc.desc: Test napi_strict_equals when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiStrictEqualsTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value testString = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_STR, NAPI_AUTO_LENGTH, &testString));
+    bool isStrictEquals = false;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, testString, testString, &isStrictEquals));
+    ASSERT_TRUE(isStrictEquals);
+}
+
+/**
+ * @tc.name: NapiCallFunctionTest001
+ * @tc.desc: Test napi_call_function when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCallFunctionTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar;
+        napi_value* argv = nullptr;
+        size_t argc = 0;
+        void* innerData = nullptr;
+
+        napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
+        if (argc > 0) {
+            argv = new napi_value[argc];
+        }
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, &innerData);
+        napi_value result = nullptr;
+        if (argv) {
+            result = argv[0];
+            delete[] argv;
+        }
+        return result;
+    };
+
+    napi_value fn = nullptr;
+    napi_value funcResultValue = nullptr;
+    napi_value recv = nullptr;
+    napi_value jsNumber = nullptr;
+    napi_status status = napi_create_function(env, nullptr, 0, func, (void*)TEST_STR, &fn);
+    ASSERT_EQ(napi_ok, status);
+
+    const int32_t testNumber = 1;
+    napi_create_int32(env, testNumber, &jsNumber);
+    napi_value argv[] = { jsNumber };
+    napi_get_undefined(env, &recv);
+    status = napi_call_function(env, recv, fn, 1, argv, &funcResultValue);
+    ASSERT_EQ(status, napi_ok);
+
+    int32_t cNumber;
+    napi_get_value_int32(env, funcResultValue, &cNumber);
+    ASSERT_EQ(cNumber, testNumber);
+}
+
+/**
+ * @tc.name: NapiNewInstanceTest001
+ * @tc.desc: Test napi_new_instance when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiNewInstanceTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value testClass = nullptr;
+    napi_define_class(env, TEST_CLASS, NAPI_AUTO_LENGTH,
+       [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        }, nullptr, 0, nullptr, &testClass);
+
+    napi_value instanceValue = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, testClass, 0, nullptr, &instanceValue));
+}
+
+/**
+ * @tc.name: NapiGetNewTargetTest001
+ * @tc.desc: Test napi_new_instance when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiGetNewTargetTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value testClass = nullptr;
+    napi_define_class(env, TEST_CLASS, NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            napi_value constructor = nullptr;
+            napi_get_new_target(env, info, &constructor);
+            if (constructor == nullptr) {
+                napi_throw_error(env, nullptr, "is not new instance");
+            }
+            return thisVar;
+        }, nullptr, 0, nullptr, &testClass);
+
+    napi_value instanceValue = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, testClass, 0, nullptr, &instanceValue));
+    bool isInstanceOf = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, instanceValue, testClass, &isInstanceOf));
+    ASSERT_TRUE(isInstanceOf);
+}
+
+/**
+ * @tc.name: NapiWrapTest001
+ * @tc.desc: Test napi_wrap when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiWrapTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_CHECK_CALL(napi_wrap(env, object, data0, finalizer, nullptr, nullptr));
+}
+
+/**
+ * @tc.name: NapiUnwrapTest001
+ * @tc.desc: Test napi_unwrap when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiUnwrapTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<char*>(data);
+    };
+
+    char *str = strdup(TEST_STR);
+    ASSERT_CHECK_CALL(napi_wrap(env, object, (void*)str, finalizer, nullptr, nullptr));
+    void* result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_unwrap(env, object, &result));
+    ASSERT_STREQ(reinterpret_cast<char*>(result), str);
+}
+
+/**
+ * @tc.name: NapiRemoveWrapTest001
+ * @tc.desc: Test napi_remove_wrap when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiRemoveWrapTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    auto finalizer = [](napi_env, void* data, void* hint) {
+        (void) data;
+    };
+    ASSERT_CHECK_CALL(napi_wrap(env, object, (void*)TEST_STR, finalizer, nullptr, nullptr));
+    void* result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_remove_wrap(env, object, &result));
+    ASSERT_STREQ(reinterpret_cast<char*>(result), TEST_STR);
+}
+
+/**
+ * @tc.name: NapiCreateExternalTest001
+ * @tc.desc: Test napi_create_external when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCreateExternalTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value external = nullptr;
+    ASSERT_CHECK_CALL(napi_create_external(env, (void*)TEST_STR,
+        [](napi_env env, void* data, void* hint) {
+            ASSERT_STREQ((const char*)data, (const char*)hint);
+        }, (void*)TEST_STR, &external));
+
+    ASSERT_CHECK_VALUE_TYPE(env, external, napi_external);
+    void* tmpExternal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_value_external(env, external, &tmpExternal));
+    ASSERT_TRUE(tmpExternal);
+    ASSERT_EQ(tmpExternal, TEST_STR);
+}
+
+/**
+ * @tc.name: NapiCreateReferenceTest001
+ * @tc.desc: Test napi_create_reference when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCreateReferenceTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &result));
+
+    napi_ref resultRef = nullptr;
+    ASSERT_CHECK_CALL(napi_create_reference(env, result, 1, &resultRef));
+
+    uint32_t resultRefCount = 0;
+
+    ASSERT_CHECK_CALL(napi_reference_ref(env, resultRef, &resultRefCount));
+    ASSERT_EQ(resultRefCount, REFERENCE_SIZE);
+
+    ASSERT_CHECK_CALL(napi_reference_unref(env, resultRef, &resultRefCount));
+    ASSERT_EQ(resultRefCount, 1);
+
+    napi_value refValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_reference_value(env, resultRef, &refValue));
+    ASSERT_NE(refValue, nullptr);
+    bool isStrictEquals = false;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, result, refValue, &isStrictEquals));
+    ASSERT_TRUE(isStrictEquals);
+    ASSERT_CHECK_CALL(napi_delete_reference(env, resultRef));
+}
+
+/**
+ * @tc.name: NapiScopeTest001
+ * @tc.desc: Test napi scope when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiScopeTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        napi_value thisVar;
+        napi_value* argv = nullptr;
+        size_t argc = 0;
+        void* data = nullptr;
+        napi_get_cb_info(env, info, &argc, nullptr, nullptr, nullptr);
+        if (argc > 0) {
+            argv = new napi_value[argc];
+        }
+        napi_get_cb_info(env, info, &argc, argv, &thisVar, &data);
+        napi_value result = nullptr;
+        napi_create_object(env, &result);
+        napi_value messageKey = nullptr;
+        napi_create_string_latin1(env, MESSAGE, NAPI_AUTO_LENGTH, &messageKey);
+        napi_value messageValue = nullptr;
+        napi_create_string_latin1(env, MESSAGE, NAPI_AUTO_LENGTH, &messageValue);
+        napi_set_property(env, result, messageKey, messageValue);
+        if (argv != nullptr) {
+            delete []argv;
+        }
+        return result;
+    };
+
+    napi_value recv = nullptr;
+    napi_value funcValue = nullptr;
+    napi_get_undefined(env, &recv);
+    ASSERT_NE(recv, nullptr);
+
+    ASSERT_CHECK_CALL(napi_create_function(env, TEST_FUNC, NAPI_AUTO_LENGTH, func, nullptr, &funcValue));
+    ASSERT_NE(funcValue, nullptr);
+
+    napi_handle_scope parentScope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &parentScope));
+    ASSERT_NE(parentScope, nullptr);
+
+    napi_escapable_handle_scope childScope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_escapable_handle_scope(env, &childScope));
+    ASSERT_NE(childScope, nullptr);
+
+    napi_value funcResultValue = nullptr;
+    napi_value newFuncResultValue = nullptr;
+    ASSERT_CHECK_CALL(napi_call_function(env, recv, funcValue, 0, nullptr, &funcResultValue));
+    ASSERT_NE(funcResultValue, nullptr);
+
+    ASSERT_CHECK_CALL(napi_escape_handle(env, childScope, funcResultValue, &newFuncResultValue));
+    ASSERT_CHECK_CALL(napi_close_escapable_handle_scope(env, childScope));
+    ASSERT_TRUE(newFuncResultValue != nullptr);
+    ASSERT_CHECK_VALUE_TYPE(env, newFuncResultValue, napi_object);
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, parentScope));
+}
+
+/**
+ * @tc.name: NapiThrowTest001
+ * @tc.desc: Test napi_throw when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiThrowTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value code = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_ERROR_CODE, NAPI_AUTO_LENGTH, &code));
+
+    napi_value message = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_ERROR_MESSAGE, NAPI_AUTO_LENGTH, &message));
+
+    napi_value error = nullptr;
+    ASSERT_CHECK_CALL(napi_create_error(env, code, message, &error));
+    ASSERT_TRUE(error != nullptr);
+
+    bool isError = false;
+    ASSERT_CHECK_CALL(napi_is_error(env, error, &isError));
+    ASSERT_TRUE(isError);
+    ASSERT_CHECK_CALL(napi_throw(env, error));
+
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
+
+    napi_value exception = nullptr;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &exception));
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_FALSE(isExceptionPending);
+}
+
+/**
+ * @tc.name: NapiThrowErrorTest001
+ * @tc.desc: Test napi_throw_error when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiThrowErrorTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    ASSERT_CHECK_CALL(napi_throw_error(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE));
+
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
+}
+
+/**
+ * @tc.name: NapiThrowTypeErrorTest001
+ * @tc.desc: Test napi_throw_type_error when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiThrowTypeErrorTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    ASSERT_CHECK_CALL(napi_throw_type_error(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE));
+
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
+}
+
+/**
+ * @tc.name: NapiThrowRangeErrorTest001
+ * @tc.desc: Test napi_throw_range_error when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiThrowRangeErrorTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    ASSERT_CHECK_CALL(napi_throw_range_error(env, TEST_ERROR_CODE, TEST_ERROR_MESSAGE));
+
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
+}
+
+/**
+ * @tc.name: NapiThrowRangeErrorTest001
+ * @tc.desc: Test napi_throw_range_error when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiArrayBufferTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    ASSERT_CHECK_CALL(napi_create_arraybuffer(env, LENGTH, &arrayBufferPtr, &arrayBuffer));
+    ASSERT_NE(arrayBuffer, nullptr);
+    ASSERT_NE(arrayBufferPtr, nullptr);
+    bool isArrayBuffer = false;
+    ASSERT_CHECK_CALL(napi_is_arraybuffer(env, arrayBuffer, &isArrayBuffer));
+    ASSERT_TRUE(isArrayBuffer);
+
+    void* tmpArrayBufferPtr = nullptr;
+    size_t arrayBufferLength = 0;
+    ASSERT_CHECK_CALL(napi_get_arraybuffer_info(env, arrayBuffer, &tmpArrayBufferPtr, &arrayBufferLength));
+
+    ASSERT_EQ(arrayBufferPtr, tmpArrayBufferPtr);
+    ASSERT_EQ(LENGTH, arrayBufferLength);
+}
+
+/**
+ * @tc.name: NapiCreateExternalArrayBufferTest001
+ * @tc.desc: Test napi_create_external_arraybuffer when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCreateExternalArrayBufferTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value external = nullptr;
+    auto res = napi_create_external_arraybuffer(
+        env, (void*)TEST_STR, strlen(TEST_STR),
+        [](napi_env env, void* data, void* hint) { ASSERT_STREQ((const char*)data, (const char*)hint); },
+        (void*)TEST_STR, &external);
+    ASSERT_EQ(res, napi_ok);
+
+    void* tmpArrayBufferPtr = nullptr;
+    size_t arrayBufferLength = 0;
+    ASSERT_CHECK_CALL(napi_get_arraybuffer_info(env, external, &tmpArrayBufferPtr, &arrayBufferLength));
+    ASSERT_EQ(TEST_STR, reinterpret_cast<char*>(tmpArrayBufferPtr));
+    ASSERT_EQ(arrayBufferLength, strlen(TEST_STR));
+}
+
+/**
+ * @tc.name: NapiTypedArrayTest001
+ * @tc.desc: Test napi_create_typedarray when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiTypedArrayTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    // create arraybuffer
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    ASSERT_CHECK_CALL(napi_create_arraybuffer(env, LENGTH, &arrayBufferPtr, &arrayBuffer));
+    ASSERT_NE(arrayBuffer, nullptr);
+    ASSERT_NE(arrayBufferPtr, nullptr);
+
+    // using arraybuffer to generate typedArray
+    napi_value typedArray = nullptr;
+    size_t byteOffsetCreate = 0;
+    ASSERT_CHECK_CALL(napi_create_typedarray(env, napi_int8_array, LENGTH, arrayBuffer, byteOffsetCreate,
+        &typedArray));
+    ASSERT_NE(typedArray, nullptr);
+
+    bool isTypedArray = false;
+    ASSERT_CHECK_CALL(napi_is_typedarray(env, typedArray, &isTypedArray));
+    ASSERT_TRUE(isTypedArray);
+
+    napi_typedarray_type typedarrayType;
+    size_t typedarrayLength = 0;
+    void* typedarrayBufferPtr = nullptr;
+    napi_value tmpArrayBuffer = nullptr;
+    size_t byteOffset = 0;
+
+    ASSERT_CHECK_CALL(napi_get_typedarray_info(env, typedArray, &typedarrayType, &typedarrayLength,
+        &typedarrayBufferPtr, &tmpArrayBuffer, &byteOffset));
+
+    ASSERT_EQ(typedarrayType, napi_int8_array);
+    ASSERT_EQ(typedarrayBufferPtr, arrayBufferPtr);
+    ASSERT_EQ(LENGTH, typedarrayLength);
+    ASSERT_EQ(byteOffset, byteOffsetCreate);
+}
+
+/**
+ * @tc.name: NapiDataViewTest001
+ * @tc.desc: Test napi_create_dataview when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiDataViewTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    ASSERT_CHECK_CALL(napi_create_arraybuffer(env, LENGTH, &arrayBufferPtr, &arrayBuffer));
+    ASSERT_NE(arrayBuffer, nullptr);
+    ASSERT_NE(arrayBufferPtr, nullptr);
+    bool isArrayBuffer = false;
+    napi_is_arraybuffer(env, arrayBuffer, &isArrayBuffer);
+    ASSERT_TRUE(isArrayBuffer);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_dataview(env, LENGTH, arrayBuffer, 0, &result));
+
+    bool isDataView = false;
+    ASSERT_CHECK_CALL(napi_is_dataview(env, result, &isDataView));
+
+    napi_value retArrayBuffer = nullptr;
+    void* data = nullptr;
+    size_t byteLength = 0;
+    size_t byteOffset = 0;
+    ASSERT_CHECK_CALL(napi_get_dataview_info(env, result, &byteLength, &data, &retArrayBuffer, &byteOffset));
+
+    bool retIsArrayBuffer = false;
+    ASSERT_CHECK_CALL(napi_is_arraybuffer(env, retArrayBuffer, &retIsArrayBuffer));
+    ASSERT_TRUE(retIsArrayBuffer);
+    ASSERT_EQ(arrayBufferPtr, data);
+    ASSERT_EQ(LENGTH, byteLength);
+    ASSERT_EQ(static_cast<size_t>(0), byteOffset);
+}
+
+/**
+ * @tc.name: NapiGetVersionTest001
+ * @tc.desc: Test napi_get_version when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiGetVersionTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    uint32_t result = 0;
+    napi_status status = napi_get_version(env, &result);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiContextTest, NapiPromiseTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+        ASSERT_NE(deferred, nullptr);
+        ASSERT_NE(promise, nullptr);
+
+        bool isPromise = false;
+        ASSERT_CHECK_CALL(napi_is_promise(env, promise, &isPromise));
+        ASSERT_TRUE(isPromise);
+
+        napi_value undefined = nullptr;
+        napi_get_undefined(env, &undefined);
+        ASSERT_CHECK_CALL(napi_resolve_deferred(env, deferred, undefined));
+    }
+    {
+        napi_deferred deferred = nullptr;
+        napi_value promise = nullptr;
+        ASSERT_CHECK_CALL(napi_create_promise(env, &deferred, &promise));
+        ASSERT_NE(deferred, nullptr);
+        ASSERT_NE(promise, nullptr);
+
+        bool isPromise = false;
+        ASSERT_CHECK_CALL(napi_is_promise(env, promise, &isPromise));
+        ASSERT_TRUE(isPromise);
+
+        napi_value undefined = nullptr;
+        napi_get_undefined(env, &undefined);
+        ASSERT_CHECK_CALL(napi_reject_deferred(env, deferred, undefined));
+    }
+}
+
+/**
+ * @tc.name: NapiRunScriptTest001
+ * @tc.desc: Test napi_run_script when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiRunScriptTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value script = nullptr;
+    napi_value res = nullptr;
+    napi_status status = napi_run_script(env, script, &res);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDateTest001
+ * @tc.desc: Test napi_create_date when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiDateTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    const double time = 202110181203150;
+    napi_value date;
+    napi_status status = napi_create_date(env, time, &date);
+    ASSERT_EQ(status, napi_ok);
+
+    bool isDate = false;
+    napi_is_date(env, date, &isDate);
+    ASSERT_TRUE(isDate);
+
+    double result;
+    status = napi_get_date_value(env, date, &result);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(time, result);
+}
+
+/**
+ * @tc.name: NapiAddFinalizerTest001
+ * @tc.desc: Test napi_add_finalizer when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiAddFinalizerTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object;
+    NAPI_CALL_RETURN_VOID(env, napi_create_object(env, &object));
+
+    static bool testValue = false;
+    napi_ref ref = nullptr;
+    napi_add_finalizer(
+        env, object, (void*)TEST_STR, [](napi_env env, void* data, void* hint) {
+            testValue = true;
+        }, nullptr, &ref);
+
+    napi_delete_reference(env, ref);
+    ASSERT_TRUE(testValue);
+}
+
+/**
+ * @tc.name: NapiBigIntTest001
+ * @tc.desc: Test napi bigint when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiBigIntTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    // int64
+    {
+        int64_t testValue = INT64_MAX;
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_bigint_int64(env, testValue, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_bigint);
+
+        int64_t resultValue = 0;
+        bool flag = false;
+        ASSERT_CHECK_CALL(napi_get_value_bigint_int64(env, result, &resultValue, &flag));
+        ASSERT_EQ(resultValue, INT64_MAX);
+        ASSERT_TRUE(flag);
+    }
+
+    // uint64
+    {
+        uint64_t testValue = UINT64_MAX;
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_bigint_uint64(env, testValue, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_bigint);
+
+        bool flag = false;
+        uint64_t resultValue = 0;
+        ASSERT_CHECK_CALL(napi_get_value_bigint_uint64(env, result, &resultValue, &flag));
+        ASSERT_EQ(resultValue, UINT64_MAX);
+        ASSERT_TRUE(flag);
+    }
+
+    // word
+    {
+        int signBit = 0;
+        size_t wordCount = 4;
+        uint64_t words[] = { 0xFFFFFFFFFFFFFFFF, 34ULL, 56ULL, 0xFFFFFFFFFFFFFFFF };
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_bigint_words(env, signBit, wordCount, words, &result));
+
+        uint64_t wordsOut[] = { 0ULL, 0ULL, 0ULL, 0ULL };
+        ASSERT_CHECK_CALL(napi_get_value_bigint_words(env, result, &signBit, &wordCount, wordsOut));
+
+        ASSERT_EQ(signBit, 0);
+        ASSERT_EQ(wordCount, 4);
+        for (auto index = 0; index < wordCount; ++index)
+        {
+            ASSERT_EQ(words[index], wordsOut[index]);
+        }
+    }
+}
+
+/**
+ * @tc.name: NapiGetAllPropertyNamesTest001
+ * @tc.desc: Test napi_get_all_property_names when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiGetAllPropertyNamesTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_key_collection_mode keyMode = napi_key_own_only;
+    napi_key_filter keyFilter = napi_key_all_properties;
+    napi_key_conversion keyConversion = napi_key_keep_numbers;
+    napi_value result = nullptr;
+    napi_value propNames = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_object(env, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_object);
+
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, TEST_STR, NAPI_AUTO_LENGTH, &strAttribute);
+    napi_set_named_property(env, result, STR_ATTRIBUTE, strAttribute);
+
+    int32_t testNumber = 1;
+    napi_value numberAttribute = nullptr;
+    napi_create_int32(env, testNumber, &numberAttribute);
+    napi_set_named_property(env, result, STR_ATTRIBUTE, numberAttribute);
+
+    ASSERT_CHECK_CALL(napi_get_all_property_names(env, result, keyMode, keyFilter, keyConversion, &propNames));
+
+    ASSERT_CHECK_VALUE_TYPE(env, propNames, napi_object);
+    bool isArray = false;
+    ASSERT_CHECK_CALL(napi_is_array(env, propNames, &isArray));
+    ASSERT_TRUE(isArray);
+}
+
+typedef struct {
+    size_t value;
+    bool print;
+    napi_ref jsCallback;
+} AddonData;
+
+static void DeleteAddonData(napi_env env, void* rawData, void* hint)
+{
+    AddonData* data = (AddonData*)rawData;
+    if (data->print) {
+        printf("deleting addon data\n");
+    }
+    if (data->jsCallback != NULL) {
+        NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->jsCallback));
+    }
+    delete data;
+}
+
+static napi_value SetPrintOnDelete(napi_env env, napi_callback_info info)
+{
+    AddonData* data;
+    NAPI_CALL(env, napi_get_instance_data(env, (void**)&data));
+    data->print = true;
+    return NULL;
+}
+
+static void TestFinalizer(napi_env env, void* rawData, void* hint)
+{
+    (void)rawData;
+    (void)hint;
+
+    AddonData* data;
+    napi_value jsResult;
+    NAPI_CALL_RETURN_VOID(env, napi_get_instance_data(env, (void**)&data));
+    napi_value js_cb = nullptr;
+    napi_value undefined = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, data->jsCallback, &js_cb));
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &undefined));
+    NAPI_CALL_RETURN_VOID(env, napi_call_function(env, undefined, js_cb, 0, NULL, &jsResult));
+
+    NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->jsCallback));
+    data->jsCallback = NULL;
+}
+
+static napi_value ObjectWithFinalizer(napi_env env, napi_callback_info info)
+{
+    AddonData* data;
+
+    napi_value value;
+    napi_value jsCb;
+    size_t argc = 1;
+
+    auto func = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &jsCb);
+
+    NAPI_CALL(env, napi_get_instance_data(env, (void**)&data));
+    NAPI_ASSERT(env, data->jsCallback == nullptr, "reference must be nullptr");
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &jsCb, nullptr, nullptr));
+    NAPI_CALL(env, napi_create_object(env, &value));
+    NAPI_CALL(env, napi_add_finalizer(env, value, nullptr, TestFinalizer, nullptr, nullptr));
+    NAPI_CALL(env, napi_create_reference(env, jsCb, 1, &data->jsCallback));
+    return nullptr;
+}
+
+/**
+ * @tc.name: NapiInstanceDataTest001
+ * @tc.desc: Test instance data when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiInstanceDataTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    // Set instance data
+    AddonData* data = new AddonData();
+    data->value = 41;
+    data->print = false;
+    data->jsCallback = NULL;
+    ASSERT_CHECK_CALL(napi_set_instance_data(env, data, DeleteAddonData, NULL));
+
+    // Test get instance data
+    AddonData* addonData = nullptr;
+    ASSERT_CHECK_CALL(napi_get_instance_data(env, (void**)&addonData));
+    ++addonData->value;
+    const size_t expectValue = 42;
+    ASSERT_EQ(addonData->value, expectValue);
+
+    // Test finalizer
+    SetPrintOnDelete(env, nullptr);
+    ObjectWithFinalizer(env, nullptr);
+}
+
+/**
+ * @tc.name: NapiDetachArrayBufferTest001
+ * @tc.desc: Test napi_is_detached_arraybuffer when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiDetachArrayBufferTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    static constexpr size_t arrayBufferSize = 1024;
+    napi_value arrayBuffer = nullptr;
+    void* arrayBufferPtr = nullptr;
+    napi_create_arraybuffer(env, arrayBufferSize, &arrayBufferPtr, &arrayBuffer);
+
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_is_detached_arraybuffer(env, arrayBuffer, &result));
+    ASSERT_FALSE(result);
+
+    napi_status status = napi_detach_arraybuffer(env, arrayBuffer);
+    if (status == napi_ok) {
+        arrayBufferPtr = nullptr;
+    }
+    ASSERT_EQ(status, napi_ok);
+
+    result = false;
+    ASSERT_CHECK_CALL(napi_is_detached_arraybuffer(env, arrayBuffer, &result));
+    ASSERT_TRUE(result);
+}
+
+/**
+ * @tc.name: NapiTypeTagObjectTest001
+ * @tc.desc: Test napi_check_object_type_tag when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiTypeTagObjectTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value instance = nullptr;
+    bool result;
+    for (size_t i = 0; i < TYPE_TAGS_SIZE; i++) {
+        napi_create_object(env, &instance);
+        napi_type_tag_object(env, instance, &typeTags[i]);
+        napi_check_object_type_tag(env, instance, &typeTags[i], &result);
+        ASSERT_TRUE(result);
+    }
+}
+
+/**
+ * @tc.name: NapiObjectFreezeTest001
+ * @tc.desc: Test napi_object_freeze when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiObjectFreezeTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &object));
+    int32_t testNumber = 0;
+    napi_value numberAttribute = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, testNumber, &numberAttribute));
+
+    ASSERT_CHECK_CALL(napi_object_freeze(env, object));
+    // Set property after freezed will throw 'Cannot add property in prevent extensions'.
+    napi_status status = napi_set_named_property(env, object, TEST_STR, numberAttribute);
+    ASSERT_EQ(status, napi_pending_exception);
+}
+
+/**
+ * @tc.name: NapiObjectSealTest001
+ * @tc.desc: Test napi_object_seal when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiObjectSealTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value object = nullptr;
+    napi_create_object(env, &object);
+    napi_value strAttribute = nullptr;
+    napi_create_string_utf8(env, TEST_VALUE, strlen(TEST_VALUE), &strAttribute);
+    napi_set_named_property(env, object, TEST_KEY, strAttribute);
+
+    ASSERT_CHECK_CALL(napi_object_seal(env, object));
+
+    bool testDeleted = false;
+    napi_value key = nullptr;
+    napi_create_string_utf8(env, TEST_KEY, NAPI_AUTO_LENGTH, &key);
+    ASSERT_CHECK_CALL(napi_delete_property(env, object, key, &testDeleted));
+    ASSERT_FALSE(testDeleted);
+}
+
+/**
+ * @tc.name: NapiObjectSealTest001
+ * @tc.desc: Test napi_object_seal when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiRunScriptPathTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value result = nullptr;
+    auto res = napi_run_script_path(env, TEST_STR, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiLoadModuleTest001
+ * @tc.desc: Test napi_load_module when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiLoadModuleTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module(env, nullptr, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoTest001
+ * @tc.desc: Test napi_load_module_with_info when env is a context env.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiLoadModuleWithInfoTest001, testing::ext::TestSize.Level1)
+{
+    CheckContextEnv();
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value result = nullptr;
+    napi_status res = napi_load_module_with_info(env, STR_MODULE_PATH, nullptr, &result);
+    ASSERT_EQ(res, napi_generic_failure);
+    const napi_extended_error_info* result2;
+    napi_get_last_error_info(env, &result2);
+    ASSERT_EQ(result2->error_code, napi_generic_failure);
 }
