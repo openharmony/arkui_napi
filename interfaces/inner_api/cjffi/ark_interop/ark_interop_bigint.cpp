@@ -25,7 +25,7 @@ ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value)
     
     auto vm = P_CAST(env, panda::EcmaVM*);
     auto result = panda::BigIntRef::New(vm, value);
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 static bool ReverseBytes(uint8_t dst[], size_t size)
@@ -75,7 +75,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
     }
 
     auto result = panda::BigIntRef::CreateBigWords(vm, isNegative, totalCnt, u64v.data());
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)

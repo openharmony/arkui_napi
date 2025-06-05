@@ -405,7 +405,7 @@ ARKTS_Value ARKTS_CreateArray(ARKTS_Env env, uint32_t size)
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayRef::New(vm, size);
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value* data)
@@ -418,7 +418,7 @@ ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value*
         ArrayRef::SetValueAt(vm, result, i, ARKTS_ToHandle<JSValueRef>(data[i]));
     }
 
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array)
@@ -570,7 +570,7 @@ ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = NativePointerRef::New(vm, data, ARKTSInner_CJExternalDeleter, env);
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
@@ -613,7 +613,7 @@ ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise prom)
     auto promise = *P_CAST(prom, Global<PromiseCapabilityRef>*);
     auto result = (*promise)->GetPromise(vm);
 
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 void ARKTS_PromiseCapabilityResolve(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Value result)

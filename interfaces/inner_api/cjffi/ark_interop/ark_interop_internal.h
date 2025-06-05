@@ -87,7 +87,9 @@ ARKTS_INLINE ARKTS_Value ARKTS_FromHandle(panda::Local<T>& value)
     if (value.IsNull()) {
         return ARKTS_CreateUndefined();
     } else if (value->IsHeapObject()) {
-        return BIT_CAST(value, ARKTS_Value);
+        constexpr uint64_t addrMask = 0xFFFF'FFFF'FFFF;
+        auto addr = BIT_CAST(value, uint64_t) & addrMask;
+        return P_CAST(addr, ARKTS_Value);
     } else {
         return *BIT_CAST(value, ARKTS_Value*);
     }
