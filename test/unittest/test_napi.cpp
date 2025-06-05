@@ -4811,7 +4811,6 @@ static void CleanupCopy(void* arg)
  */
 HWTEST_F(NapiBasicTest, AddEnvCleanupHook001, testing::ext::TestSize.Level1)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(2));
     napi_env testEnv = reinterpret_cast<napi_env>(engine_);
     g_hookTag = INT_ZERO;
     ExpectCheckCall(napi_add_env_cleanup_hook(testEnv, Cleanup, &g_hookArgOne));
@@ -14091,4 +14090,52 @@ HWTEST_F(NapiBasicTest, RunInstanceFinalizer002, testing::ext::TestSize.Level1)
     engine->RunInstanceFinalizer();
     EXPECT_FALSE(checker->called());
     delete checker;
+}
+
+/**
+ * @tc.name: NapiEnvCleanupTest001
+ * @tc.desc: Test code of cleanup
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiEnvCleanupTest001, testing::ext::TestSize.Level1)
+{
+    NativeEngineProxy engine;
+    static bool workDone = false;
+    // make sure async work is done after cleanup hook
+    ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
+        engine,
+        [](void* data) {
+            NativeEngineProxy* proxy = reinterpret_cast<NativeEngineProxy*>(data);
+            napi_env env = *proxy;
+            napi_value taskName = nullptr;
+            ASSERT_CHECK_CALL(napi_create_string_utf8(env, __FUNCTION__, NAPI_AUTO_LENGTH, &taskName));
+            napi_async_work* work = new napi_async_work;
+            static std::mutex cleanupMutex;
+            static std::condition_variable cond;
+            ASSERT_CHECK_CALL(napi_create_async_work(
+                env, nullptr, taskName,
+                [](napi_env, void*) {
+                    std::unique_lock<std::mutex> lock(cleanupMutex);
+                    cond.notify_one();
+                },
+                [](napi_env env, napi_status, void* data) {
+                    napi_async_work* work = reinterpret_cast<napi_async_work*>(data);
+                    ASSERT_CHECK_CALL(napi_delete_async_work(env, *work));
+                    delete work;
+                    workDone = true;
+                },
+                work, work));
+            std::unique_lock<std::mutex> lock(cleanupMutex);
+            ASSERT_CHECK_CALL(napi_queue_async_work(env, *work));
+            cond.wait(lock);
+        },
+        &engine));
+    LoggerCollector collector(LogLevel::LOG_DEBUG);
+    engine->RunCleanup();
+    int cleanupRan = collector.IndexOf("NativeEngine::RunCleanup cleanupHooks_ is not empty");
+    ASSERT_NE(cleanupRan, -1);
+    int asyncRan = collector.IndexOf("CleanupHandles, request waiting:");
+    ASSERT_NE(asyncRan, -1);
+    ASSERT_TRUE(asyncRan > cleanupRan);
+    ASSERT_TRUE(workDone);
 }
