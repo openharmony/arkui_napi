@@ -24,9 +24,11 @@
 
 #include "gtest/gtest.h"
 #include "hilog/log.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "napi/native_common.h"
 #include "napi/native_node_api.h"
 #include "native_create_env.h"
+#include "native_utils.h"
 #include "securec.h"
 #include "test.h"
 
@@ -7574,6 +7576,126 @@ HWTEST_F(NapiBasicTest, NapiDefineClassTest004, testing::ext::TestSize.Level1)
         },
         nullptr, 1, nullptr, &result);
     ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineClassTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value result;
+    napi_status status = napi_define_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &result);
+
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+    Local<panda::FunctionRef> classFunc = LocalValueFromJsValue(result);
+    Local<panda::StringRef> className = classFunc->GetName(vm);
+    ASSERT_EQ(className->ToString(vm), "TestClass");
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineClassTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_property_descriptor properties[10];
+    const std::string keyNames[10] = { "key0", "key1", "key2", "key3", "key4", "key5", "key6", "key7", "key8", "key9" };
+    const int expectedVals[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    int defaultAttributes = napi_default | napi_writable | napi_configurable;
+    for (size_t i = 0; i < 10; ++i) {
+        properties[i].utf8name = keyNames[i].c_str();
+        properties[i].name = nullptr;
+        properties[i].method = nullptr;
+        properties[i].getter = nullptr;
+        properties[i].setter = nullptr;
+        if (i <= 5) {
+            properties[i].attributes = static_cast<napi_property_attributes>(defaultAttributes | napi_static);
+        } else {
+            properties[i].attributes = static_cast<napi_property_attributes>(defaultAttributes);
+        }
+        napi_create_int32(env, expectedVals[i], &(properties[i].value));
+    }
+
+    napi_value result;
+    napi_status status = napi_define_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, 10, &properties[0], &result);
+
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+    Local<panda::FunctionRef> classFunc = LocalValueFromJsValue(result);
+    Local<panda::ObjectRef> clsFuncProto = classFunc->GetFunctionPrototype(vm);
+    for (size_t i = 0; i < 10; ++i) {
+        Local<panda::JSValueRef> curProp;
+        if (i <= 5) {
+            curProp = classFunc->Get(vm, properties[i].utf8name);
+        } else {
+            curProp = clsFuncProto->Get(vm, properties[i].utf8name);
+        }
+        bool tmpBool = true;
+        ASSERT_EQ(curProp->GetValueInt32(tmpBool), expectedVals[i]);
+    }
+    ASSERT_EQ(status, napi_ok);
+}
+
+static napi_value NativeCallBackForTest(napi_env env, napi_callback_info info)
+{
+    return nullptr;
+}
+
+HWTEST_F(NapiBasicTest, NapiDefineClassTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_property_descriptor properties[panda::ObjectRef::MAX_PROPERTIES_ON_STACK + 1];
+    const std::string keyNames[10] = { "key0", "key1", "key2", "key3", "key4", "key5", "key6", "key7", "key8", "key9" };
+    const std::string lastKeys[4] = { "lastKey0", "lastKey1", "lastKey2", "lastKey3" };
+    int expectedVals[panda::ObjectRef::MAX_PROPERTIES_ON_STACK + 1];
+    for (size_t i = 0; i < panda::ObjectRef::MAX_PROPERTIES_ON_STACK + 1; ++i) {
+        expectedVals[i] = i;
+    }
+    int defaultAttributes = napi_default | napi_writable | napi_configurable | napi_static;
+    for (size_t i = 0; i < panda::ObjectRef::MAX_PROPERTIES_ON_STACK + 1; ++i) {
+        if (i >= panda::ObjectRef::MAX_PROPERTIES_ON_STACK - 3) {
+            properties[i].utf8name = lastKeys[i - (panda::ObjectRef::MAX_PROPERTIES_ON_STACK - 3)].c_str();
+        } else {
+            properties[i].utf8name = keyNames[i % 10].c_str();
+        }
+        properties[i].name = nullptr;
+        properties[i].method = nullptr;
+        properties[i].getter = nullptr;
+        properties[i].setter = nullptr;
+        properties[i].attributes = static_cast<napi_property_attributes>(defaultAttributes);
+        napi_create_int32(env, expectedVals[i], &(properties[i].value));
+    }
+    properties[panda::ObjectRef::MAX_PROPERTIES_ON_STACK - 1].getter = NativeCallBackForTest;
+    properties[panda::ObjectRef::MAX_PROPERTIES_ON_STACK - 2].setter = NativeCallBackForTest;
+    properties[panda::ObjectRef::MAX_PROPERTIES_ON_STACK - 3].method = NativeCallBackForTest;
+
+    napi_value result;
+    napi_status status = napi_define_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+            return thisVar;
+        },
+        nullptr, panda::ObjectRef::MAX_PROPERTIES_ON_STACK + 1, &properties[0], &result);
+
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+    Local<panda::FunctionRef> classFunc = LocalValueFromJsValue(result);
+    Local<panda::JSValueRef> curProp =
+        classFunc->Get(vm, properties[panda::ObjectRef::MAX_PROPERTIES_ON_STACK].utf8name);
+    bool tmpBool = true;
+    ASSERT_EQ(curProp->GetValueInt32(tmpBool), expectedVals[panda::ObjectRef::MAX_PROPERTIES_ON_STACK]);
+
+    ASSERT_EQ(status, napi_ok);
 }
 
 HWTEST_F(NapiBasicTest, NapiWrapTest001, testing::ext::TestSize.Level1)
