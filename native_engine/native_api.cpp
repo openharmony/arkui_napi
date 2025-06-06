@@ -1953,7 +1953,7 @@ NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
 
     auto nativeValue = LocalValueFromJsValue(js_object);
     auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
+    SWITCH_CONTEXT(env);
     auto vm = engine->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
