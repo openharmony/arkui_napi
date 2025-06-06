@@ -33,7 +33,7 @@ ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t l
         object = panda::StringRef::NewFromUtf8(vm, description, length);
     }
     auto symbol = panda::SymbolRef::New(vm, object);
-    return BIT_CAST(symbol, ARKTS_Value);
+    return ARKTS_FromHandle(symbol);
 }
 
 bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)

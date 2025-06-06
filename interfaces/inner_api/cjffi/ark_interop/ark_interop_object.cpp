@@ -41,7 +41,7 @@ ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ObjectRef::New(vm);
 
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 bool ARKTS_IsHeapObject(ARKTS_Value value)
@@ -83,7 +83,7 @@ ARKTS_Value ARKTS_EnumOwnProperties(ARKTS_Env env, ARKTS_Value jobj)
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
     auto result = object->GetOwnEnumerablePropertyNames(vm);
 
-    return BIT_CAST(result, ARKTS_Value);
+    return ARKTS_FromHandle(result);
 }
 
 void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Value jvalue,
