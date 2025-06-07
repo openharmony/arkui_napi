@@ -29,6 +29,7 @@ struct ThreadArgs {
 };
 
 static NativeEngine* g_nativeEngine = nullptr;
+LoggerCollector* LoggerCollector::last_ = nullptr;
 
 NativeEngineTest::NativeEngineTest()
 {

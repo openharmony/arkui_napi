@@ -32,22 +32,30 @@
         } while (0);                                                \
     }
 
-#define RUN_EVENT_LOOP_WITH_MODE(env, mode)                      \
-    do {                                                         \
-        uv_loop_t* loop = nullptr;                               \
-        ASSERT_CHECK_CALL(napi_get_uv_event_loop((env), &loop)); \
-        ASSERT_NE(loop, nullptr);                                \
-        uv_run(loop, (mode));                                    \
+#define GET_UV_EVENT_LOOP(loop, env)                           \
+    uv_loop_t*(loop) = nullptr;                                \
+    {                                                          \
+        auto* engine = reinterpret_cast<NativeEngine*>((env)); \
+        if (engine->IsMainEnvContext()) {                      \
+            (loop) = engine->GetUVLoop();                      \
+        } else {                                               \
+            (loop) = engine->GetParent()->GetUVLoop();         \
+        }                                                      \
+        ASSERT_NE((loop), nullptr);                            \
+    }
+
+#define RUN_EVENT_LOOP_WITH_MODE(env, mode) \
+    do {                                    \
+        GET_UV_EVENT_LOOP(loop, env);       \
+        uv_run(loop, (mode));               \
     } while (0)
 
 #define RUN_EVENT_LOOP(env) RUN_EVENT_LOOP_WITH_MODE((env), UV_RUN_DEFAULT)
 
-#define STOP_EVENT_LOOP(env)                                     \
-    do {                                                         \
-        uv_loop_t* loop = nullptr;                               \
-        ASSERT_CHECK_CALL(napi_get_uv_event_loop((env), &loop)); \
-        ASSERT_NE(loop, nullptr);                                \
-        uv_stop(loop);                                           \
+#define STOP_EVENT_LOOP(env)          \
+    do {                              \
+        GET_UV_EVENT_LOOP(loop, env); \
+        uv_stop(loop);                \
     } while (0)
 
 #define NAPI_THROW_ERROR(env, code, message)                            \
@@ -56,5 +64,17 @@
         TryCatch tryCatch((env));                                       \
         EXPECT_EQ(napi_throw_error((env), (code), (message)), napi_ok); \
     }
+
+inline const char* GetTestCaseName()
+{
+    return testing::UnitTest::GetInstance()->current_test_info()->name();
+}
+
+inline napi_value GetNapiTCName(napi_env env)
+{
+    napi_value value = nullptr;
+    napi_create_string_utf8(env, GetTestCaseName(), NAPI_AUTO_LENGTH, &value);
+    return value;
+}
 
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_COMMON_H */

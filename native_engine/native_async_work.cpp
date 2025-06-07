@@ -96,7 +96,13 @@ bool NativeAsyncWork::Queue(NativeEngine* engine)
 {
     VALID_ENGINE_CHECK(engine, engine_, engineId_);
 
-    uv_loop_t* loop = engine_->GetUVLoop();
+    uv_loop_t* loop = nullptr;
+    if (engine_->IsMainEnvContext()) {
+        loop = engine_->GetUVLoop();
+    } else {
+        loop = engine_->GetParent()->GetUVLoop();
+    }
+
     if (loop == nullptr) {
         HILOG_ERROR("Get loop failed");
         return false;
@@ -125,7 +131,13 @@ bool NativeAsyncWork::QueueWithQos(NativeEngine* engine, napi_qos_t qos)
 {
     VALID_ENGINE_CHECK(engine, engine_, engineId_);
 
-    uv_loop_t* loop = engine_->GetUVLoop();
+    uv_loop_t* loop = nullptr;
+    if (engine_->IsMainEnvContext()) {
+        loop = engine_->GetUVLoop();
+    } else {
+        loop = engine_->GetParent()->GetUVLoop();
+    }
+
     if (loop == nullptr) {
         HILOG_ERROR("Get loop failed");
         return false;
