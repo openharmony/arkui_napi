@@ -453,7 +453,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
 
     // init common requireNapi and requireInternal
     void* requireData = static_cast<void*>(this);
-    Local<ObjectRef> global = JSNApi::GetGlobalObject(vm);
+    Local<ObjectRef> global = JSNApi::GetGlobalObject(vm, context);
     global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_FUNCTION_NAME),
                 FunctionRef::New(vm, RequireNapiForCtxEnv, nullptr, requireData));
     global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_INTERNAL_NAME),
