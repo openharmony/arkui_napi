@@ -93,6 +93,8 @@ panda::Local<panda::ObjectRef> NapiCreateObjectWithProperties(napi_env env, size
                                                               Local<panda::JSValueRef> *keys,
                                                               panda::PropertyAttribute *attrs);
 
+void CommonDeleter(void *env, void *externalPointer, void *data);
+
 enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,
     START_HIGH_SENSITIVE,

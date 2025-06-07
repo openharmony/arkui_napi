@@ -121,15 +121,8 @@ Local<JSValueRef> NativeSendable::NapiNativeCreateSendableFunction(napi_env env,
     funcInfo->data = value;
     funcInfo->isSendable = true;
 
-    Local<FunctionRef> fn = FunctionRef::NewSendable(
-        vm, ArkNativeFunctionCallBack,
-        [](void* env, void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-            if (info != nullptr) {
-                delete info;
-            }
-        },
-        reinterpret_cast<void*>(funcInfo), true);
+    Local<FunctionRef> fn = FunctionRef::NewSendable(vm, ArkNativeFunctionCallBack, CommonDeleter,
+                                                     reinterpret_cast<void*>(funcInfo), true);
     return fn;
 }
 

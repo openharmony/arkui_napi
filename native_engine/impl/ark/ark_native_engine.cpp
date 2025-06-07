@@ -205,24 +205,15 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
     }
 #endif
     Local<JSValueRef> context = engine->GetContext();
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrentClassFunction(vm, context,
-        ArkNativeFunctionCallBack,
-        [](void* env, void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-                if (info != nullptr) {
-                    delete info;
-                }
-            }, reinterpret_cast<void*>(funcInfo), true);
-
-    Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, className.c_str());
-    fn->SetName(vm, fnName);
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrentClassFunctionWithName(vm, context,
+        ArkNativeFunctionCallBack, CommonDeleter, className.c_str(), reinterpret_cast<void*>(funcInfo), true);
 
     if (length == 0) {
         return fn;
     }
     Local<panda::ObjectRef> classPrototype = fn->GetFunctionPrototype(vm);
-    Local<panda::ObjectRef> fnObj = fn->ToObject(vm);
-    for (size_t i = 0; i < length; i++) {
+    Local<panda::ObjectRef> fnObj = Local<panda::ObjectRef>(fn);
+    for (size_t i = 0; i < length; ++i) {
         if (properties[i].attributes & NATIVE_STATIC) {
             NapiDefineProperty(env, fnObj, properties[i]);
         } else {
@@ -267,15 +258,8 @@ panda::Local<panda::JSValueRef> NapiDefineSendableClass(napi_env env,
     }
 
     auto infos = NativeSendable::CreateSendablePropertiesInfos(env, properties, propertiesLength);
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewSendableClassFunction(
-        vm, ArkNativeFunctionCallBack,
-        [](void* env, void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-            if (info != nullptr) {
-                delete info;
-            }
-        },
-        reinterpret_cast<void*>(funcInfo), fnName, infos, localParent, true);
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewSendableClassFunction(vm, ArkNativeFunctionCallBack,
+        CommonDeleter, reinterpret_cast<void*>(funcInfo), fnName, infos, localParent, true);
 
     return fn;
 }
@@ -1117,18 +1101,9 @@ static Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const cha
 #endif
 
     Local<JSValueRef> context = engine->GetContext();
-    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(
-        vm, context, ArkNativeFunctionCallBack,
-        [](void* env, void* externalPointer, void* data) {
-            auto info = reinterpret_cast<NapiFunctionInfo*>(data);
-            if (info != nullptr) {
-                delete info;
-            }
-        },
-        reinterpret_cast<void*>(funcInfo), true
-    );
-    Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm, name);
-    fn->SetName(vm, fnName);
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrentWithName(vm, context, ArkNativeFunctionCallBack,
+                                                                             CommonDeleter, name,
+                                                                             reinterpret_cast<void*>(funcInfo), true);
     return fn;
 }
 
@@ -1314,6 +1289,14 @@ panda::Local<panda::ObjectRef> NapiCreateSObjectWithProperties(napi_env env,
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::NewSWithProperties(vm, info);
     return scope.Escape(object);
+}
+
+void CommonDeleter(void *env, void *externalPointer, void *data)
+{
+    auto info = reinterpret_cast<NapiFunctionInfo *>(data);
+    if (info != nullptr) {
+        delete info;
+    }
 }
 
 panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
