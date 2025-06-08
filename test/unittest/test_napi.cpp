@@ -157,6 +157,41 @@ napi_value TestAbort(napi_env env, napi_callback_info info)
 }
 
 /**
+ * @tc.name: IsolateRequireMethodTest001
+ * @tc.desc: Test globalThis.requireNapi and globalThis.requireInternal method.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, IsolateRequireMethodTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char requireNapiName[] = "requireNapi";
+    const char requireInternalName[] = "requireInternal";
+    napi_value requireNapi = nullptr;
+    napi_value requireInternal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, requireNapiName, NAPI_AUTO_LENGTH, &requireNapi));
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, requireInternalName, NAPI_AUTO_LENGTH, &requireInternal));
+
+    napi_value originGlobal = nullptr;
+    napi_value originRequire[] = { nullptr, nullptr };
+    ASSERT_CHECK_CALL(napi_get_global(env, &originGlobal));
+    ASSERT_CHECK_CALL(napi_get_property(env, originGlobal, requireNapi, &originRequire[0]));
+    ASSERT_CHECK_CALL(napi_get_property(env, originGlobal, requireInternal, &originRequire[1]));
+
+    napi_value newGlobal = nullptr;
+    napi_value newRequire[] = { nullptr, nullptr };
+    NativeEngineProxy ctxEnv(engine_);
+    ASSERT_CHECK_CALL(napi_get_global(ctxEnv, &newGlobal));
+    ASSERT_CHECK_CALL(napi_get_property(ctxEnv, newGlobal, requireNapi, &newRequire[0]));
+    ASSERT_CHECK_CALL(napi_get_property(ctxEnv, newGlobal, requireInternal, &newRequire[1]));
+
+    bool isStrictEqual = false;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, originRequire[0], newRequire[0], &isStrictEqual));
+    ASSERT_FALSE(isStrictEqual);
+    ASSERT_CHECK_CALL(napi_strict_equals(env, originRequire[1], newRequire[1], &isStrictEqual));
+    ASSERT_FALSE(isStrictEqual);
+}
+
+/**
  * @tc.name: ToNativeBindingObjectTest001
  * @tc.desc: Test nativeBinding object type.
  * @tc.type: FUNC
