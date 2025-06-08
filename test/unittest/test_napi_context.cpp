@@ -61,6 +61,10 @@ static constexpr int32_t NAPI_BUFFER_SIZE = 5;
 static constexpr int32_t TYPE_TAGS_SIZE = 5;
 static constexpr size_t ARRAYBUFFER_SIZE = 1024;
 
+static int g_hookTag = 0;
+static int g_hookArgOne = 1;
+static int g_hookArgTwo = 2;
+
 static napi_value SendableFunc(napi_env env, napi_callback_info info)
 {
     return nullptr;
@@ -2749,6 +2753,46 @@ HWTEST_F(NapiContextTest, FatalExceptionWithMultiContext001, testing::ext::TestS
     ASSERT_EQ(TestFatalException(env, nullptr), nullptr);
 }
 
+static void Cleanup(void* arg)
+{
+    g_hookTag += INT_ONE;
+    if (arg != nullptr) {
+    }
+}
+/**
+ * @tc.name: AddEnvCleanupHookWithMultiContext001
+ * @tc.desc: Test napi_add_env_cleanup_hook when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, AddEnvCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    {
+        NativeEngineProxy contextEngine(engine_);
+        g_hookTag = INT_ZERO;
+        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, nullptr));
+    }
+    ASSERT_EQ(g_hookTag, INT_ONE);
+}
+
+/**
+ * @tc.name: RemoveEnvCleanupHookWithMultiContext001
+ * @tc.desc: Test napi_remove_env_cleanup_hook when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, RemoveEnvCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    {
+        NativeEngineProxy contextEngine(engine_);
+        g_hookTag = 0;
+        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgOne));
+        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgTwo));
+        ASSERT_CHECK_CALL(napi_remove_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgTwo));
+    }
+    ASSERT_EQ(g_hookTag, INT_ONE);
+}
+
 /**
  * @tc.name: OpenCallbackScopeWithMultiContext001
  * @tc.desc: Test napi_open_callback_scope when context is sub context.
@@ -2769,6 +2813,169 @@ HWTEST_F(NapiContextTest, OpenCallbackScopeWithMultiContext001, testing::ext::Te
     napi_callback_scope result = nullptr;
     ASSERT_CHECK_CALL(napi_open_callback_scope(env, obj, context, &result));
     EXPECT_NE(result, nullptr);
+}
+
+/**
+ * @tc.name: CloseCallbackScopeWithMultiContext001
+ * @tc.desc: Test napi_close_callback_scope when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, CloseCallbackScopeWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value obj = nullptr;
+    napi_async_context context = nullptr;
+    napi_value name;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_STR, NAPI_AUTO_LENGTH, &name));
+    ASSERT_CHECK_CALL(napi_async_init(env, nullptr, name, &context));
+    EXPECT_NE(context, nullptr);
+    napi_callback_scope result = nullptr;
+    ASSERT_CHECK_CALL(napi_open_callback_scope(env, obj, context, &result));
+    ASSERT_CHECK_CALL(napi_close_callback_scope(env, result));
+}
+
+/**
+ * @tc.name: GetThreadsafeFunctionContextWithMultiContext001
+ * @tc.desc: Test napi_get_threadsafe_function_context when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, GetThreadsafeFunctionContextWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value resourceName;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    napi_threadsafe_function tsfn;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+        [](napi_env env, void* context, void*) {}, nullptr,
+        [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
+    void* context = nullptr;
+    ASSERT_CHECK_CALL(napi_get_threadsafe_function_context(tsfn, &context));
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_release));
+}
+
+/**
+ * @tc.name: AcquireThreadsafeFunctionWithMultiContext001
+ * @tc.desc: Test napi_acquire_threadsafe_function when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, AcquireThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value resourceName;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    napi_threadsafe_function tsfn;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+        [](napi_env env, void* context, void*) {}, nullptr,
+        [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
+    ASSERT_CHECK_CALL(napi_acquire_threadsafe_function(tsfn));
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+}
+
+/**
+ * @tc.name: ReleaseThreadsafeFunctionWithMultiContext001
+ * @tc.desc: Test napi_release_threadsafe_function when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, ReleaseThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value resourceName;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    napi_threadsafe_function tsfn;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+        [](napi_env env, void* context, void*) {}, nullptr,
+        [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+}
+
+/**
+ * @tc.name: UnrefThreadsafeFunctionWithMultiContext001
+ * @tc.desc: Test napi_unref_threadsafe_function when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, UnrefThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value resourceName;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    napi_threadsafe_function tsfn;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+        [](napi_env env, void* context, void*) {}, nullptr,
+        [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
+    ASSERT_CHECK_CALL(napi_unref_threadsafe_function(env, tsfn));
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+}
+
+/**
+ * @tc.name: RefThreadsafeFunctionWithMultiContext001
+ * @tc.desc: Test napi_ref_threadsafe_function when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, RefThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_value resourceName;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    napi_threadsafe_function tsfn;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
+        [](napi_env env, void* context, void*) {}, nullptr,
+        [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
+    ASSERT_CHECK_CALL(napi_ref_threadsafe_function(env, tsfn));
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+}
+
+/**
+ * @tc.name: AddAsyncCleanupHookWithMultiContext001
+ * @tc.desc: Test napi_add_async_cleanup_hook when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, AddAsyncCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_async_cleanup_hook_handle handle;
+    napi_status res = napi_add_async_cleanup_hook(env, [](napi_async_cleanup_hook_handle handle, void* arg) {},
+        nullptr, &handle);
+    EXPECT_EQ(res, napi_ok);
+    ASSERT_CHECK_CALL(napi_remove_async_cleanup_hook(handle));
+}
+
+/**
+ * @tc.name: RemoveAsyncCleanupHookWithMultiContext001
+ * @tc.desc: Test napi_add_async_cleanup_hook when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, RemoveAsyncCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_async_cleanup_hook_handle handle;
+    napi_status res = napi_add_async_cleanup_hook(env, [](napi_async_cleanup_hook_handle handle, void* arg) {},
+        nullptr, &handle);
+    EXPECT_EQ(res, napi_ok);
+    ASSERT_CHECK_CALL(napi_remove_async_cleanup_hook(handle));
 }
 
 /**
