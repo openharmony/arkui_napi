@@ -238,7 +238,9 @@ void ArkNativeReference::EnqueueDeferredTask()
             std::make_tuple(engine_, new NapiSecondCallback { napiCallback_, data_, ownership_ }, hint_);
         RefFinalizer finalizer = std::make_pair(NapiSecondCallback::SecondFinalizeCallback, tuple);
         // callbackble ref counter will decrease until callback is invoked
-        engine_->GetArkFinalizersPack().AddFinalizer(finalizer, nativeBindingSize_);
+        const_cast<ArkNativeEngine*>(engine_->GetParent())
+            ->GetArkFinalizersPack()
+            .AddFinalizer(finalizer, nativeBindingSize_);
     }
 }
 
