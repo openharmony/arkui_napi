@@ -49,4 +49,9 @@
 - [ ] 无相关crash产生
 - [ ] 不涉及，无需验证
 
+#### 修改Build.gn时，检查是否需要对预览器进行隔离，进行开机测试（非Test代码需要，参考[验证Previewer预览器](https://gitee.com/YuliCheng998244353/arkui_napi/wikis/%E8%93%9D%E5%8C%BA%E9%AA%8C%E8%AF%81Previewer%E9%A2%84%E8%A7%88%E5%99%A8?sort_id=14385376)）
+
+- [ ] 已检查，可开机
+- [ ] 不涉及，无需验证
+
 ### 将上述测试的截图贴到下面
