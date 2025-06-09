@@ -44,7 +44,8 @@ static napi_value CreateDateFun(napi_env env, napi_callback_info info)
 static napi_value IsDateFun(napi_env env, napi_callback_info info)
 {
     HILOG_INFO("%{public}s,called", __func__);
-    napi_value date = nullptr, result = nullptr;
+    napi_value date = nullptr;
+    napi_value result = nullptr;
     size_t argc = 1;
     bool is_date = false;
 
@@ -58,7 +59,8 @@ static napi_value IsDateFun(napi_env env, napi_callback_info info)
 static napi_value GetDateValueFun(napi_env env, napi_callback_info info)
 {
     HILOG_INFO("%{public}s,called", __func__);
-    napi_value date = nullptr, result = nullptr;
+    napi_value date = nullptr;
+    napi_value result = nullptr;
     size_t argc = 1;
     double value = 0;
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &date, nullptr, nullptr));
@@ -71,7 +73,7 @@ static napi_value GetDateValueFun(napi_env env, napi_callback_info info)
 napi_value JsDateInit(napi_env env, napi_value exports)
 {
     HILOG_INFO("%{public}s,called", __func__);
-    
+
     napi_property_descriptor descriptors[] = {
         DECLARE_NAPI_FUNCTION("testCreateDateFun", CreateDateFun),
         DECLARE_NAPI_FUNCTION("testIsDateFun", IsDateFun),

@@ -599,7 +599,7 @@ HWTEST_F(NapiExtTest, AddFinalizerTest001, testing::ext::TestSize.Level1)
 typedef struct {
     size_t value;
     bool print;
-    napi_ref js_cb_ref;
+    napi_ref jsCallbackRef;
 } AddonData;
 
 static void DeleteAddonData(napi_env env, void* raw_data, void* hint)
@@ -608,8 +608,8 @@ static void DeleteAddonData(napi_env env, void* raw_data, void* hint)
     if (data->print) {
         printf("deleting addon data\n");
     }
-    if (data->js_cb_ref != NULL) {
-        NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->js_cb_ref));
+    if (data->jsCallbackRef != NULL) {
+        NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->jsCallbackRef));
     }
     free(data);
 }
@@ -630,13 +630,14 @@ static void TestFinalizer(napi_env env, void* raw_data, void* hint)
     AddonData* data;
     napi_value jsResult;
     NAPI_CALL_RETURN_VOID(env, napi_get_instance_data(env, (void**)&data));
-    napi_value js_cb, undefined;
-    NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, data->js_cb_ref, &js_cb));
+    napi_value jsCallback;
+    napi_value undefined;
+    NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, data->jsCallbackRef, &jsCallback));
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &undefined));
-    NAPI_CALL_RETURN_VOID(env, napi_call_function(env, undefined, js_cb, 0, NULL, &jsResult));
+    NAPI_CALL_RETURN_VOID(env, napi_call_function(env, undefined, jsCallback, 0, NULL, &jsResult));
 
-    NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->js_cb_ref));
-    data->js_cb_ref = NULL;
+    NAPI_CALL_RETURN_VOID(env, napi_delete_reference(env, data->jsCallbackRef));
+    data->jsCallbackRef = NULL;
 }
 
 static napi_value ObjectWithFinalizer(napi_env env, napi_callback_info info)
@@ -644,7 +645,8 @@ static napi_value ObjectWithFinalizer(napi_env env, napi_callback_info info)
     HILOG_INFO("%{public}s", "start.");
     AddonData* data;
 
-    napi_value result, js_cb;
+    napi_value result;
+    napi_value jsCallback;
     size_t argc = 1;
 
     auto func = [](napi_env env, napi_callback_info info) -> napi_value {
@@ -652,14 +654,14 @@ static napi_value ObjectWithFinalizer(napi_env env, napi_callback_info info)
         return nullptr;
     };
 
-    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &js_cb);
+    napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, func, nullptr, &jsCallback);
 
     NAPI_CALL(env, napi_get_instance_data(env, (void**)&data));
-    NAPI_ASSERT(env, data->js_cb_ref == NULL, "reference must be NULL");
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &js_cb, NULL, NULL));
+    NAPI_ASSERT(env, data->jsCallbackRef == NULL, "reference must be NULL");
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &jsCallback, NULL, NULL));
     NAPI_CALL(env, napi_create_object(env, &result));
     NAPI_CALL(env, napi_add_finalizer(env, result, NULL, TestFinalizer, NULL, NULL));
-    NAPI_CALL(env, napi_create_reference(env, js_cb, 1, &data->js_cb_ref));
+    NAPI_CALL(env, napi_create_reference(env, jsCallback, 1, &data->jsCallbackRef));
     HILOG_INFO("%{public}s", "end.");
     return nullptr;
 }
@@ -671,7 +673,7 @@ HWTEST_F(NapiExtTest, InstanceDataTest_001, testing::ext::TestSize.Level1)
     AddonData* data = (AddonData*)malloc(sizeof(*data));
     data->value = 41;
     data->print = false;
-    data->js_cb_ref = NULL;
+    data->jsCallbackRef = NULL;
     ASSERT_CHECK_CALL(napi_set_instance_data(env, data, DeleteAddonData, NULL));
 
     // Test get instance data

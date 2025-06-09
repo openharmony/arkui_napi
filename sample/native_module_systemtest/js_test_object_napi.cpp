@@ -22,6 +22,7 @@
 namespace ACE {
 namespace NAPI {
 namespace SYSTEM_TEST_NAPI {
+static constexpr int ARG_TWO = 2;
 static const napi_type_tag typeTags[2] = {
     { 0xdaf987b3daf987b3, 0xb745b049b745b049 },
     { 0xbb7936c3bb7936c6, 0xa9548d07a9548d07 }
@@ -32,7 +33,8 @@ static napi_value ObjectTypeTaggedInstance(napi_env env, napi_callback_info info
     HILOG_INFO("%{public}s,called", __func__);
     size_t argc = 1;
     uint32_t typeIndex = 0;
-    napi_value instance = nullptr, whichType = nullptr;
+    napi_value instance = nullptr;
+    napi_value whichType = nullptr;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, &whichType, NULL, NULL));
     NAPI_CALL(env, napi_get_value_uint32(env, whichType, &typeIndex));
@@ -46,20 +48,21 @@ static napi_value ObjectTypeTaggedInstance(napi_env env, napi_callback_info info
 static napi_value ObjectCheckTypeTag(napi_env env, napi_callback_info info)
 {
     HILOG_INFO("%{public}s,called", __func__);
-    size_t argc = 2;
+    size_t argc = ARG_TWO;
     bool result = false;
-    napi_value argv[2] = { nullptr }, js_result = nullptr;
+    napi_value argv[ARG_TWO] = { nullptr };
+    napi_value jsResult = nullptr;
     uint32_t typeIndex = 0;
 
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, NULL, NULL));
     NAPI_CALL(env, napi_get_value_uint32(env, argv[0], &typeIndex));
     NAPI_CALL(env, napi_check_object_type_tag(env, argv[1], &typeTags[typeIndex], &result));
-    NAPI_CALL(env, napi_get_boolean(env, result, &js_result));
+    NAPI_CALL(env, napi_get_boolean(env, result, &jsResult));
 
     HILOG_INFO("%{public}s,called typeIndex=%{public}d, result=%{public}s", __func__, typeIndex,
         result ? "true" : "false");
 
-    return js_result;
+    return jsResult;
 }
 
 static napi_value ObjectFreeze(napi_env env, napi_callback_info info)
@@ -113,7 +116,7 @@ void AddLastStatus(napi_env env, const char* key, napi_value returnValue)
 
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, (pLastError->error_message == nullptr ?
         "Invalid argument" : pLastError->error_message), NAPI_AUTO_LENGTH, &prop_value));
-    
+
     NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, returnValue, key, prop_value));
 }
 
@@ -121,7 +124,8 @@ static napi_value ObjectGetAllPropertyNames(napi_env env, napi_callback_info inf
 {
     HILOG_INFO("%{public}s,called", __func__);
 
-    napi_value returnValue = nullptr, props = nullptr;
+    napi_value returnValue = nullptr;
+    napi_value props = nullptr;
     NAPI_CALL(env, napi_create_object(env, &returnValue));
     napi_status actual_status = napi_get_all_property_names(
         NULL, returnValue, napi_key_own_only, napi_key_writable, napi_key_keep_numbers, &props);
