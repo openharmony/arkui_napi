@@ -2802,7 +2802,8 @@ NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** dat
     }
     SWITCH_CONTEXT(env);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::BufferRef> obj = BufferRef::New(vm, size);
+    Local<JSValueRef> context = engine->GetContext();
+    Local<panda::BufferRef> obj = BufferRef::New(vm, context, size);
     *value = reinterpret_cast<uint8_t*>(obj->GetBuffer(vm));
 
     CHECK_ARG(env, *data);
@@ -2840,7 +2841,8 @@ NAPI_EXTERN napi_status napi_create_buffer_copy(napi_env env,
     }
     SWITCH_CONTEXT(env);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    Local<panda::BufferRef> obj = BufferRef::New(vm, length);
+    Local<JSValueRef> context = engine->GetContext();
+    Local<panda::BufferRef> obj = BufferRef::New(vm, context, length);
     if (obj->IsUndefined()) {
         HILOG_INFO("engine create buffer_copy failed!");
     }
@@ -2884,13 +2886,14 @@ NAPI_EXTERN napi_status napi_create_external_buffer(napi_env env,
     SWITCH_CONTEXT(env);
     auto vm = engine->GetEcmaVm();
     Local<panda::BufferRef> object;
+    Local<JSValueRef> context = engine->GetContext();
     if (engine->IsMainEnvContext()) {
-        object = panda::BufferRef::New(vm, data, length, callback, finalize_hint);
+        object = panda::BufferRef::New(vm, context, data, length, callback, finalize_hint);
         void* ptr = object->GetBuffer(vm);
         CHECK_ARG(env, ptr);
         *result = JsValueFromLocalValue(object);
     } else {
-        object = panda::BufferRef::New(vm, data, length, nullptr, nullptr);
+        object = panda::BufferRef::New(vm, context, data, length, nullptr, nullptr);
         void* ptr = object->GetBuffer(vm);
         CHECK_ARG(env, ptr);
         *result = JsValueFromLocalValue(object);
