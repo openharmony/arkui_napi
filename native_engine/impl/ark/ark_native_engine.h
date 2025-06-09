@@ -465,7 +465,7 @@ private:
         bool &isAppModule,
         Local<panda::StringRef> &moduleName,
         NativeModule *&module,
-        Local<JSValueRef> exports,
+        Local<JSValueRef> &exports,
         std::string &errInfo
     );
     Local<JSValueRef> LoadNativeModule(
