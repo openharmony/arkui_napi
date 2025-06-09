@@ -64,9 +64,10 @@ static void DataSourceThread(void* data)
     napi_env env = gCallEnv;
     napi_threadsafe_function tsfun = static_cast<napi_threadsafe_function>(data);
     void* hint = nullptr;
-    bool queueWasFull = false, queueWasClosing = false;
+    bool queueWasFull = false;
+    bool queueWasClosing = false;
     NAPI_CALL_RETURN_VOID(env, napi_get_threadsafe_function_context(tsfun, &hint));
-    
+
     TsFnHint* tsFnInfo = static_cast<TsFnHint*>(hint);
     if (tsFnInfo != &tsinfo) {
         napi_fatal_error("DataSourceThread", NAPI_AUTO_LENGTH,
@@ -119,7 +120,9 @@ static void CallJsFuntion(napi_env env, napi_value cb, void* hint, void* data)
 
         for (int i = ARRAY_LENGTH - 1; i >= 0; i--) {
             if (testCallbackRef[i]) {
-                napi_value callback = 0, undefined = nullptr, result = nullptr;
+                napi_value callback = 0;
+                napi_value undefined = nullptr;
+                napi_value result = nullptr;
                 napi_get_undefined(env, &undefined);
                 napi_get_reference_value(env, testCallbackRef[i], &callback);
                 napi_call_function(env, undefined, callback, 1, &argv, &result);
@@ -164,7 +167,9 @@ static void FinalizeCallBack(napi_env env, void* data, void* hint)
     HILOG_INFO("%{public}s,called", __func__);
 
     TsFnHint* theHint = static_cast<TsFnHint*>(hint);
-    napi_value jsCallback = nullptr, undefined = nullptr, result = nullptr;
+    napi_value jsCallback = nullptr;
+    napi_value undefined = nullptr;
+    napi_value result = nullptr;
 
     NAPI_CALL_RETURN_VOID(env, napi_get_reference_value(env, theHint->jsFinalizeCallBackRef, &jsCallback));
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &undefined));
@@ -236,7 +241,8 @@ napi_value ThreadSafeInit(napi_env env, napi_value exports)
     for (size_t index = 0; index < ARRAY_LENGTH; index++) {
         transmitData[index] = index;
     }
-    napi_value jsArrayLength = 0, jsMaxQueueSize = 0;
+    napi_value jsArrayLength = 0;
+    napi_value jsMaxQueueSize = 0;
     napi_create_uint32(env, ARRAY_LENGTH, &jsArrayLength);
     napi_create_uint32(env, MAX_QUEUE_SIZE, &jsMaxQueueSize);
 

@@ -458,7 +458,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
                 FunctionRef::New(vm, RequireNapiForCtxEnv, nullptr, requireData));
     global->Set(vm, StringRef::NewFromUtf8(vm, REQUIRE_NAPI_INTERNAL_NAME),
                 FunctionRef::New(vm, RequireInternal, nullptr, requireData));
-                
+
     InitWithoutUV();
     // The VM scope callback is initialized during the construction of the root engine and is ignored in this context.
 }
@@ -826,7 +826,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
         return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
     }
 }
- 
+
 /** Require native part for mixed module
  *
  * Only support in system mixed module, app module would not have AtkTS part.
@@ -1315,7 +1315,8 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::GetModuleFromName(
         Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
         napi_value paramValue = JsValueFromLocalValue(paramStr);
         Local<ObjectRef> exportObj = ObjectRef::New(vm_);
-        NapiPropertyDescriptor idProperty, paramProperty;
+        NapiPropertyDescriptor idProperty;
+        NapiPropertyDescriptor paramProperty;
         idProperty.utf8name = "id";
         idProperty.value = idValue;
         paramProperty.utf8name = "param";
@@ -1365,7 +1366,8 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
         path.empty() ? nullptr : path.c_str(), isAppModule, errInfo);
     if (module != nullptr) {
         Local<ObjectRef> exportObj = ObjectRef::New(vm_);
-        NapiPropertyDescriptor paramProperty, instanceProperty;
+        NapiPropertyDescriptor instanceProperty;
+        NapiPropertyDescriptor paramProperty;
         Local<StringRef> paramStr = StringRef::NewFromUtf8(vm_, param.c_str(), param.size());
         napi_value paramValue = JsValueFromLocalValue(paramStr);
         paramProperty.utf8name = "param";
