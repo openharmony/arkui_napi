@@ -35,8 +35,64 @@ protected:
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> eventHandler_ = nullptr;
 };
 
+class DeathTest {
+public:
+    DeathTest() {};
+    void Run();
+
+    virtual void TestBody() = 0;
+    virtual void AssertResult() = 0;
+
+    static constexpr size_t MAX_ALLOWED_CHILD_PROCESS_STACK_SIZE = 8 * (1 << 20); // 8MB for max stack size
+
+protected:
+    std::string coutResult_;
+    std::string cerrResult_;
+    bool isExit_ {false};
+    int exitCode_ {0};
+    bool isSignal_ {false};
+    int signal_ {0};
+
+private:
+    static size_t GetCurrentStackSize();
+    static int RunInChild(void* arg);
+    static void RedirectHilog(const LogType, const LogLevel level, const unsigned int, const char*, const char* msg);
+    static std::string ReadFd(int fd);
+
+    int cerrPipe_[2];
+    int coutPipe_[2];
+};
+
+class BasicDeathTest final : public DeathTest {
+public:
+    typedef void (*TestFunc)();
+    typedef void (*AssertFunc)(std::string log, std::string err);
+    BasicDeathTest(TestFunc testFunc, AssertFunc assertFunc) : test_(testFunc), assert_(assertFunc) {}
+    void TestBody() override
+    {
+        if (test_ != nullptr) {
+            test_();
+        }
+    }
+    void AssertResult() override
+    {
+        if (assert_ != nullptr) {
+            assert_(coutResult_, cerrResult_);
+        }
+    }
+
+private:
+    TestFunc test_ { nullptr };
+    AssertFunc assert_ { nullptr };
+};
+
 class NativeEngineProxy {
 public:
+    NativeEngineProxy(const NativeEngineProxy&) = delete;
+    NativeEngineProxy(NativeEngineProxy&&) noexcept = delete;
+    NativeEngineProxy& operator=(const NativeEngineProxy&) = delete;
+    NativeEngineProxy& operator=(NativeEngineProxy&&) noexcept = delete;
+
     NativeEngineProxy()
     {
         // Setup
@@ -84,6 +140,11 @@ public:
     }
 
     inline ArkNativeEngine* operator->() const
+    {
+        return engine_;
+    }
+
+    inline ArkNativeEngine* operator*() const
     {
         return engine_;
     }

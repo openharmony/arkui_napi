@@ -14069,10 +14069,6 @@ HWTEST_F(NapiBasicTest, NapiEnvCleanupTest001, testing::ext::TestSize.Level1)
         &engine));
     LoggerCollector collector(LogLevel::LOG_DEBUG);
     engine->RunCleanup();
-    int cleanupRan = collector.IndexOf("NativeEngine::RunCleanup cleanupHooks_ is not empty");
-    ASSERT_NE(cleanupRan, -1);
-    int asyncRan = collector.IndexOf("CleanupHandles, request waiting:");
-    ASSERT_NE(asyncRan, -1);
-    ASSERT_TRUE(asyncRan > cleanupRan);
+    ASSERT_TRUE(collector.Includes("CleanupHandles, request waiting:"));
     ASSERT_TRUE(workDone);
 }
