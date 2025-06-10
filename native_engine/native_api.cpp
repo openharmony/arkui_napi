@@ -4732,6 +4732,15 @@ NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref, std::function<void(uintptr_t)> &visitor)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    reference->MarkFromObject(visitor);
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
 {
     NAPI_PREAMBLE(env);
