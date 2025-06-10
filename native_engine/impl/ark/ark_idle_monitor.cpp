@@ -169,13 +169,13 @@ void ArkIdleMonitor::IntervalMonitor()
     int64_t intervalDuration = nowTimestamp - intervalTimestamp_;
     if (numberOfLowIdleNotifyCycles_ >= checkCounts &&
             numberOfHighIdleTimeRatio_ >= checkCounts &&
-            intervalDuration < DELAY_OVER_TIME) {
+            intervalDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
         NotifyMainThreadTryCompressGC();
         PostMonitorTask(SLEEP_MONITORING_INTERVAL);
         ClearIdleStats();
     } else if (numberOfLowIdleNotifyCycles_ >= workThreadCheckCounts &&
                     numberOfHighIdleTimeRatio_ >= workThreadCheckCounts &&
-                    intervalDuration < DELAY_OVER_TIME) {
+                    intervalDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
         NotifyOneWorkerThreadTryCompressGC();
         PostMonitorTask(IDLE_MONITORING_INTERVAL);
     } else {
@@ -446,8 +446,8 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
     int64_t sumIdleDuration = (GetTotalIdleDuration() - idleDuration) + (nowTimestamp - GetNotifyTimestamp());
     double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
     double cpuUsage = GetCpuUsage();
-    if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE
-        && sumDuration < DELAY_OVER_TIME) {
+    if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE &&
+        sumDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
         NotifyMainThreadTryCompressGCByBackground();
     } else {
         HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}s",
