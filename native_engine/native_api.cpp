@@ -4680,18 +4680,31 @@ NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
 
 NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
 {
-    NAPI_PREAMBLE(env);
+    CHECK_ENV(env);
+
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
+    const EcmaVM* vm = nativeEngine->GetEcmaVm();
+    // The destructor of `TryCatch` may update `engine->lastException_`.
+    // If the engine is released before the `TryCatch` object is destroyed,
+    // it can lead to a use-after-free (UAF) vulnerability.
+    // Use equivalent logic instead of `TryCatch` to avoid this memory safety issue.
+    if (!nativeEngine->lastException_.IsEmpty() || panda::JSNApi::HasPendingException(vm)) {
+        nativeEngine->lastException_ = panda::JSNApi::GetAndClearUncaughtException(vm);
+        return napi_set_last_error(env, napi_pending_exception);
+    }
+
     // worker and taskpool will support multi-context later
     if (!nativeEngine->IsMainThread()) {
         HILOG_FATAL("multi-context feature only support main thread");
         return napi_set_last_error(env, napi_invalid_arg);
     }
+
+    // Do not use `nativeEngine` or `env` after this if status is napi_ok
     napi_status status = nativeEngine->DestroyContext();
     if (status != napi_ok) {
         return napi_set_last_error(env, status);
     }
-    return GET_RETURN_STATUS(env);
+    return napi_ok;
 }
 
 NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_callback check_callback)
