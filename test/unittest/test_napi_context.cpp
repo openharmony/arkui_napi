@@ -18,6 +18,7 @@
 #include "napi/native_node_api.h"
 #include "native_utils.h"
 #define private public
+#define protected public
 #include "test.h"
 #undef private
 #include "test_common.h"
@@ -87,6 +88,7 @@ public:
 
     ~NapiContextTest() override
     {
+        napi_switch_ark_context(reinterpret_cast<napi_env>(engine_));
         if (multiContextEngine_ != nullptr) {
             napi_destroy_ark_context(reinterpret_cast<napi_env>(multiContextEngine_));
             multiContextEngine_ = nullptr;
@@ -2733,11 +2735,11 @@ static void Cleanup(void* arg)
  */
 HWTEST_F(NapiContextTest, AddEnvCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    {
-        NativeEngineProxy contextEngine(engine_);
-        g_hookTag = INT_ZERO;
-        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, nullptr));
-    }
+    napi_env newEnv = nullptr;
+    napi_create_ark_context(reinterpret_cast<napi_env>(engine_), &newEnv);
+    g_hookTag = INT_ZERO;
+    ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(newEnv, Cleanup, nullptr));
+    napi_destroy_ark_context(newEnv);
     ASSERT_EQ(g_hookTag, INT_ONE);
 }
 
@@ -2749,13 +2751,13 @@ HWTEST_F(NapiContextTest, AddEnvCleanupHookWithMultiContext001, testing::ext::Te
  */
 HWTEST_F(NapiContextTest, RemoveEnvCleanupHookWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    {
-        NativeEngineProxy contextEngine(engine_);
-        g_hookTag = 0;
-        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgOne));
-        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgTwo));
-        ASSERT_CHECK_CALL(napi_remove_env_cleanup_hook(contextEngine, Cleanup, &g_hookArgTwo));
-    }
+    napi_env newEnv = nullptr;
+    napi_create_ark_context(reinterpret_cast<napi_env>(engine_), &newEnv);
+    g_hookTag = INT_ZERO;
+    ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(newEnv, Cleanup, &g_hookArgOne));
+    ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(newEnv, Cleanup, &g_hookArgTwo));
+    ASSERT_CHECK_CALL(napi_remove_env_cleanup_hook(newEnv, Cleanup, &g_hookArgTwo));
+    napi_destroy_ark_context(newEnv);
     ASSERT_EQ(g_hookTag, INT_ONE);
 }
 
@@ -2800,6 +2802,7 @@ HWTEST_F(NapiContextTest, CloseCallbackScopeWithMultiContext001, testing::ext::T
     EXPECT_NE(context, nullptr);
     napi_callback_scope result = nullptr;
     ASSERT_CHECK_CALL(napi_open_callback_scope(env, obj, context, &result));
+    EXPECT_NE(result, nullptr);
     ASSERT_CHECK_CALL(napi_close_callback_scope(env, result));
 }
 
@@ -2812,17 +2815,21 @@ HWTEST_F(NapiContextTest, CloseCallbackScopeWithMultiContext001, testing::ext::T
 HWTEST_F(NapiContextTest, GetThreadsafeFunctionContextWithMultiContext001, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(multiContextEngine_, nullptr);
+    UVLoopRunner runner(multiContextEngine_);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value resourceName;
     ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
     napi_threadsafe_function tsfn;
-    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr,
-        [](napi_env env, void* context, void*) {}, nullptr,
+    int32_t data = INT_ONE;
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, &data,
+        [](napi_env env, void* context, void*) {}, &data,
         [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
     void* context = nullptr;
     ASSERT_CHECK_CALL(napi_get_threadsafe_function_context(tsfn, &context));
+    ASSERT_EQ(*reinterpret_cast<int32_t*>(context), INT_ONE);
     ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_release));
+    runner.Run();
 }
 
 /**
@@ -2834,6 +2841,7 @@ HWTEST_F(NapiContextTest, GetThreadsafeFunctionContextWithMultiContext001, testi
 HWTEST_F(NapiContextTest, AcquireThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(multiContextEngine_, nullptr);
+    UVLoopRunner runner(multiContextEngine_);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value resourceName;
@@ -2843,7 +2851,9 @@ HWTEST_F(NapiContextTest, AcquireThreadsafeFunctionWithMultiContext001, testing:
         [](napi_env env, void* context, void*) {}, nullptr,
         [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
     ASSERT_CHECK_CALL(napi_acquire_threadsafe_function(tsfn));
+    ASSERT_EQ(reinterpret_cast<NativeSafeAsyncWork*>(tsfn)->threadCount_, INT_TWO);
     ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+    runner.Run();
 }
 
 /**
@@ -2855,6 +2865,7 @@ HWTEST_F(NapiContextTest, AcquireThreadsafeFunctionWithMultiContext001, testing:
 HWTEST_F(NapiContextTest, ReleaseThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(multiContextEngine_, nullptr);
+    UVLoopRunner runner(multiContextEngine_);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value resourceName;
@@ -2864,6 +2875,7 @@ HWTEST_F(NapiContextTest, ReleaseThreadsafeFunctionWithMultiContext001, testing:
         [](napi_env env, void* context, void*) {}, nullptr,
         [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
     ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+    runner.Run();
 }
 
 /**
@@ -2875,6 +2887,7 @@ HWTEST_F(NapiContextTest, ReleaseThreadsafeFunctionWithMultiContext001, testing:
 HWTEST_F(NapiContextTest, UnrefThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(multiContextEngine_, nullptr);
+    UVLoopRunner runner(multiContextEngine_);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value resourceName;
@@ -2884,7 +2897,9 @@ HWTEST_F(NapiContextTest, UnrefThreadsafeFunctionWithMultiContext001, testing::e
         [](napi_env env, void* context, void*) {}, nullptr,
         [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
     ASSERT_CHECK_CALL(napi_unref_threadsafe_function(env, tsfn));
+    ASSERT_CHECK_CALL(napi_ref_threadsafe_function(env, tsfn));
     ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+    runner.Run();
 }
 
 /**
@@ -2896,6 +2911,7 @@ HWTEST_F(NapiContextTest, UnrefThreadsafeFunctionWithMultiContext001, testing::e
 HWTEST_F(NapiContextTest, RefThreadsafeFunctionWithMultiContext001, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(multiContextEngine_, nullptr);
+    UVLoopRunner runner(multiContextEngine_);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
     napi_value resourceName;
@@ -2906,6 +2922,7 @@ HWTEST_F(NapiContextTest, RefThreadsafeFunctionWithMultiContext001, testing::ext
         [](napi_env env, napi_value jsCb, void *context, void *data) {}, &tsfn));
     ASSERT_CHECK_CALL(napi_ref_threadsafe_function(env, tsfn));
     ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_abort));
+    runner.Run();
 }
 
 /**
@@ -2937,10 +2954,10 @@ HWTEST_F(NapiContextTest, RemoveAsyncCleanupHookWithMultiContext001, testing::ex
     ASSERT_NE(multiContextEngine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
 
-    napi_async_cleanup_hook_handle handle;
-    napi_status res = napi_add_async_cleanup_hook(env, [](napi_async_cleanup_hook_handle handle, void* arg) {},
-        nullptr, &handle);
-    EXPECT_EQ(res, napi_ok);
+    napi_async_cleanup_hook_handle handle = nullptr;
+    ASSERT_CHECK_CALL(napi_add_async_cleanup_hook(env, [](napi_async_cleanup_hook_handle handle, void* arg) {},
+        nullptr, &handle));
+    EXPECT_NE(handle, nullptr);
     ASSERT_CHECK_CALL(napi_remove_async_cleanup_hook(handle));
 }
 
