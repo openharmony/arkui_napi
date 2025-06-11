@@ -4710,15 +4710,6 @@ NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
     return napi_ok;
 }
 
-NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_callback check_callback)
-{
-    CHECK_ENV(check_callback);
-
-    ArkNativeEngine::SetModuleValidateCallback(check_callback);
-
-    return napi_ok;
-}
-
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
                                           [[maybe_unused]] void* inputIface,

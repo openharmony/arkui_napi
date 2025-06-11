@@ -112,7 +112,7 @@ public:
         napi_open_handle_scope(reinterpret_cast<napi_env>(engine_), &scope_);
     }
 
-    NativeEngineProxy(NativeEngine* engine) : isContextEngine_(true)
+    explicit NativeEngineProxy(NativeEngine* engine) : isContextEngine_(true)
     {
         napi_create_ark_context(reinterpret_cast<napi_env>(engine), reinterpret_cast<napi_env*>(&engine_));
         vm_ = const_cast<EcmaVM*>(engine->GetEcmaVm());
