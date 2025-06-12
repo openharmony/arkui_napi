@@ -225,6 +225,11 @@ void ArkNativeReference::ResetFinalizer()
 }
 
 #ifdef PANDA_JS_ETS_HYBRID_MODE
+void ArkNativeReference::MarkFromObject(std::function<void(uintptr_t)> &visitor)
+{
+    value_.MarkFromObject(visitor);
+}
+
 void ArkNativeReference::MarkFromObject()
 {
     value_.MarkFromObject();
