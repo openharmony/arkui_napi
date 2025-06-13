@@ -11825,8 +11825,8 @@ public:
         checker->data_ = arg;
     }
 
-    bool called() const { return called_; }
-    void* data() const { return data_; }
+    bool Called() const { return called_; }
+    void* Data() const { return data_; }
 
 private:
     bool called_;
@@ -11922,7 +11922,7 @@ HWTEST_F(NapiBasicTest, RunInstanceFinalizerTest001, testing::ext::TestSize.Leve
     EXPECT_EQ(addStatus, napi_ok);
 
     engine->RunInstanceFinalizer();
-    EXPECT_TRUE(checker->called());
+    EXPECT_TRUE(checker->Called());
     delete checker;
 }
 
@@ -11945,6 +11945,6 @@ HWTEST_F(NapiBasicTest, RunInstanceFinalizer002, testing::ext::TestSize.Level1)
     EXPECT_EQ(removeStatus, napi_ok);
 
     engine->RunInstanceFinalizer();
-    EXPECT_FALSE(checker->called());
+    EXPECT_FALSE(checker->Called());
     delete checker;
 }
