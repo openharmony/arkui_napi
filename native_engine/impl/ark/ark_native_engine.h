@@ -251,6 +251,9 @@ public:
     // Set Appfreeze Filter
     void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) override;
 
+    // Set RawHeap Trim Level
+    void SetRawHeapTrimLevel(uint32_t level) override;
+
     // Detect performance to obtain cpuprofiler file
     void StartCpuProfiler(const std::string& fileName = "") override;
     void StopCpuProfiler() override;
