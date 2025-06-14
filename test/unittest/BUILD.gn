@@ -142,6 +142,7 @@ ohos_unittest("test_ark_unittest_errorcode") {
   sources = [
     "engine/test_ark.cpp",
     "test_napi_errorcode.cpp",
+    "test_napi_pendingexception.cpp",
   ]
 
   defines = [ "NAPI_TEST" ]
