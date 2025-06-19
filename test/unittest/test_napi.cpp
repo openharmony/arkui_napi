@@ -22,6 +22,7 @@
 #include <chrono>
 #include <thread>
 
+#include "ark_native_reference.h"
 #include "gtest/gtest.h"
 #include "hilog/log.h"
 #include "ecmascript/napi/include/jsnapi_expo.h"
@@ -29,6 +30,7 @@
 #include "napi/native_node_api.h"
 #include "native_create_env.h"
 #include "native_utils.h"
+#include "reference_manager/native_reference_manager.h"
 #include "securec.h"
 #include "test.h"
 
@@ -14162,4 +14164,146 @@ HWTEST_F(NapiBasicTest, NapiEnvCleanupTest001, testing::ext::TestSize.Level1)
     engine->RunCleanup();
     ASSERT_TRUE(collector.Includes("CleanupHandles, request waiting:"));
     ASSERT_TRUE(workDone);
+}
+
+/**
+ * @tc.name: ArkNativeReferenceTest001
+ * @tc.desc: Test code of ArkNativeReference
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ArkNativeReferenceTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ArkNativeReference *ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_reference(env, value, 0, reinterpret_cast<napi_ref*>(&ref)));
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
+    ASSERT_CHECK_CALL(napi_delete_reference(env, reinterpret_cast<napi_ref>(ref)));
+}
+
+/**
+ * @tc.name: ArkNativeReferenceTest002
+ * @tc.desc: Test code of ArkNativeReference
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ArkNativeReferenceTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ArkNativeReference *ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_reference(env, value, 0, reinterpret_cast<napi_ref*>(&ref)));
+    ASSERT_CHECK_CALL(napi_delete_reference(env, reinterpret_cast<napi_ref>(ref)));
+    // Weak ref will mark to delete self instead delete directly
+    ASSERT_NE(ref->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+    ASSERT_EQ(ref->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
+}
+
+/**
+ * @tc.name: ArkNativeReferenceTest003
+ * @tc.desc: Test code of ArkNativeReference
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ArkNativeReferenceTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ArkNativeReference** ref = new ArkNativeReference* { nullptr };
+    ASSERT_CHECK_CALL(napi_add_finalizer(
+        env, value, ref,
+        // This callback is execution under deconstructor of ArkNativeReference
+        [](napi_env env, void* data, void*) {
+            ArkNativeReference** secondData = reinterpret_cast<ArkNativeReference**>(data);
+            ArkNativeReference* ref = *secondData;
+            ASSERT_EQ(ref->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+            ASSERT_EQ(ref->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+            ASSERT_NE(ref->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+            ASSERT_EQ(ref->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
+            delete secondData;
+        },
+        nullptr, reinterpret_cast<napi_ref*>(ref)));
+    ASSERT_EQ((*ref)->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+    ASSERT_EQ((*ref)->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+    ASSERT_EQ((*ref)->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+    ASSERT_EQ((*ref)->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
+    ASSERT_CHECK_CALL(napi_delete_reference(env, reinterpret_cast<napi_ref>(*ref)));
+}
+
+/**
+ * @tc.name: ArkNativeReferenceTest004
+ * @tc.desc: Test code of ArkNativeReference
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ArkNativeReferenceTest004, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ArkNativeReference** ref = new ArkNativeReference* { nullptr };
+    {
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value value = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &value));
+        ASSERT_CHECK_CALL(napi_add_finalizer(
+            env, value, ref,
+            // This callback is execution under deconstructor of ArkNativeReference
+            [](napi_env env, void* data, void*) {
+                ArkNativeReference** secondData = reinterpret_cast<ArkNativeReference**>(data);
+                ArkNativeReference* ref = *secondData;
+                ASSERT_NE(ref->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+                ASSERT_EQ(ref->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+                ASSERT_EQ(ref->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+                ASSERT_NE(ref->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
+                *secondData = nullptr;
+            },
+            nullptr, nullptr));
+        // Head is last reference which created above. 
+        *ref = reinterpret_cast<ArkNativeReference*>(engine_->GetReferenceManager()->references_);
+        ASSERT_NE((*ref)->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+    }
+    ASSERT_NE(ref, nullptr);
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    runner.Run();
+    ASSERT_EQ(*ref, nullptr);
+    delete ref;
+}
+
+/**
+ * @tc.name: ArkNativeReferenceTest005
+ * @tc.desc: Test code of ~ArkNativeReference in ~NativeEngine.
+ *           This test case would crash if tests failed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ArkNativeReferenceTest005, testing::ext::TestSize.Level1)
+{
+    struct RefTestData {
+        napi_env env_ { nullptr };
+        napi_ref ref_ { nullptr };
+    };
+
+    RefTestData* testData = new RefTestData;
+    {
+        NativeEngineProxy env;
+        testData->env_ = env;
+        napi_value val = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &val));
+        ASSERT_CHECK_CALL(napi_create_reference(env, val, 0, &testData->ref_));
+        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
+            env,
+            [](void* arg) {
+                RefTestData* data = reinterpret_cast<RefTestData*>(arg);
+                ASSERT_CHECK_CALL(napi_delete_reference(data->env_, data->ref_));
+                data->ref_ = nullptr;
+            },
+            testData));
+        }
+        testData->env_ = nullptr;
+    ASSERT_EQ(testData->ref_, nullptr);
+    delete testData;
 }
