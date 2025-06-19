@@ -13,12 +13,13 @@
  * limitations under the License.
  */
 
-#include "test.h"
 #include "napi/native_api.h"
+#include "test.h"
 
 constexpr const int32_t LENGTH = 1024;
 static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
+static constexpr int INT_FOUR = 4;
 static constexpr const char TEST_CHAR_STRING[] = "TestString";
 static constexpr const char TEST_CHAR_ERROR_MESSAGE[] = "Common error";
 
@@ -178,9 +179,9 @@ HWTEST_F(NapiPendingExceptionTest, NapiSetPropertyTest001, testing::ext::TestSiz
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value key;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value key = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &key));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
@@ -196,9 +197,9 @@ HWTEST_F(NapiPendingExceptionTest, NapiGetPropertyTest001, testing::ext::TestSiz
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value key;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value key = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &key));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
@@ -216,16 +217,16 @@ HWTEST_F(NapiPendingExceptionTest, NapiHasPropertyTest001, testing::ext::TestSiz
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value key;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value key = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &key));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
     ASSERT_CHECK_CALL(napi_set_property(env, obj, key, value));
 
     ConstructionException();
-    bool result;
+    bool result = false;
     napi_status res = napi_has_property(env, obj, key, &result);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -236,16 +237,16 @@ HWTEST_F(NapiPendingExceptionTest, NapiDeletePropertyTest001, testing::ext::Test
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value key;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value key = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &key));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
     ASSERT_CHECK_CALL(napi_set_property(env, obj, key, value));
 
     ConstructionException();
-    bool result;
+    bool result = false;
     napi_status res = napi_delete_property(env, obj, key, &result);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -256,16 +257,16 @@ HWTEST_F(NapiPendingExceptionTest, NapiHasOwnPropertyTest001, testing::ext::Test
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value key;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value key = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &key));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
     ASSERT_CHECK_CALL(napi_set_property(env, obj, key, value));
 
     ConstructionException();
-    bool result;
+    bool result = false;
     napi_status res = napi_has_own_property(env, obj, key, &result);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -276,8 +277,8 @@ HWTEST_F(NapiPendingExceptionTest, NapiSetNamedPropertyTest001, testing::ext::Te
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
-    napi_value value;
+    napi_value obj = nullptr;
+    napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
     ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &value));
 
@@ -292,11 +293,11 @@ HWTEST_F(NapiPendingExceptionTest, NapiGetNamedPropertyTest001, testing::ext::Te
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
+    napi_value obj = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
 
     ConstructionException();
-    napi_value value;
+    napi_value value = nullptr;
     napi_status res = napi_get_named_property(env, obj, TEST_CHAR_STRING, &value);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -307,11 +308,11 @@ HWTEST_F(NapiPendingExceptionTest, NapiHasNamedPropertyTest001, testing::ext::Te
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
+    napi_value obj = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
 
     ConstructionException();
-    bool value;
+    bool value = false;
     napi_status res = napi_has_named_property(env, obj, TEST_CHAR_STRING, &value);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -342,7 +343,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiGetElementTest001, testing::ext::TestSize
     ASSERT_CHECK_CALL(napi_create_array(env, &array));
 
     ConstructionException();
-    napi_value value;
+    napi_value value = nullptr;
     napi_status res = napi_get_element(env, array, 0, &value);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -357,7 +358,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiHasElementTest001, testing::ext::TestSize
     ASSERT_CHECK_CALL(napi_create_array(env, &array));
 
     ConstructionException();
-    bool value;
+    bool value = false;
     napi_status res = napi_has_element(env, array, 0, &value);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -372,7 +373,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiDeleteElementTest001, testing::ext::TestS
     ASSERT_CHECK_CALL(napi_create_array(env, &array));
 
     ConstructionException();
-    bool value;
+    bool value = false;
     napi_status res = napi_delete_element(env, array, 0, &value);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -386,7 +387,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiCreateFunctionTest001, testing::ext::Test
     auto func = [](napi_env env, napi_callback_info info) -> napi_value { return nullptr; };
 
     ConstructionException();
-    napi_value jsCallback;
+    napi_value jsCallback = nullptr;
     napi_status res = napi_create_function(env, TEST_CHAR_STRING, NAPI_AUTO_LENGTH, func, nullptr, &jsCallback);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -398,12 +399,19 @@ HWTEST_F(NapiPendingExceptionTest, NapiNewInstanceTest001, testing::ext::TestSiz
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     napi_value testClass = nullptr;
-    ASSERT_CHECK_CALL(napi_define_class(env, TEST_CHAR_STRING, NAPI_AUTO_LENGTH,
-       [](napi_env env, napi_callback_info info) -> napi_value {
+    ASSERT_CHECK_CALL(napi_define_class(
+        env,
+        TEST_CHAR_STRING,
+        NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
             napi_value thisVar = nullptr;
             napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
             return thisVar;
-        }, nullptr, 0, nullptr, &testClass));
+        },
+        nullptr,
+        0,
+        nullptr,
+        &testClass));
 
     ConstructionException();
     napi_value instanceValue = nullptr;
@@ -419,12 +427,19 @@ HWTEST_F(NapiPendingExceptionTest, NapiDefineClassTest001, testing::ext::TestSiz
 
     ConstructionException();
     napi_value testClass = nullptr;
-    napi_status res = napi_define_class(env, TEST_CHAR_STRING, NAPI_AUTO_LENGTH,
-       [](napi_env env, napi_callback_info info) -> napi_value {
+    napi_status res = napi_define_class(
+        env,
+        TEST_CHAR_STRING,
+        NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
             napi_value thisVar = nullptr;
             napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
             return thisVar;
-        }, nullptr, 0, nullptr, &testClass);
+        },
+        nullptr,
+        0,
+        nullptr,
+        &testClass);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
 }
@@ -436,10 +451,8 @@ HWTEST_F(NapiPendingExceptionTest, NapiWrapTest001, testing::ext::TestSize.Level
 
     napi_value object = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &object));
-    auto finalizer = [](napi_env, void* data, void*) {
-        delete reinterpret_cast<uint8_t*>(data);
-    };
-    uint8_t* data0 = new uint8_t;
+    auto finalizer = [](napi_env, void *data, void *) { delete reinterpret_cast<uint8_t *>(data); };
+    uint8_t *data0 = new uint8_t;
 
     ConstructionException();
     napi_status res = napi_wrap(env, object, data0, finalizer, nullptr, nullptr);
@@ -454,14 +467,12 @@ HWTEST_F(NapiPendingExceptionTest, NapiUnwrapTest001, testing::ext::TestSize.Lev
 
     napi_value object = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &object));
-    auto finalizer = [](napi_env, void* data, void*) {
-        delete reinterpret_cast<uint8_t*>(data);
-    };
-    uint8_t* data0 = new uint8_t;
+    auto finalizer = [](napi_env, void *data, void *) { delete reinterpret_cast<uint8_t *>(data); };
+    uint8_t *data0 = new uint8_t;
     ASSERT_CHECK_CALL(napi_wrap(env, object, data0, finalizer, nullptr, nullptr));
 
     ConstructionException();
-    void* result = nullptr;
+    void *result = nullptr;
     napi_status res = napi_unwrap(env, object, &result);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -474,14 +485,12 @@ HWTEST_F(NapiPendingExceptionTest, NapiRemoveWrapTest001, testing::ext::TestSize
 
     napi_value object = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &object));
-    auto finalizer = [](napi_env, void* data, void*) {
-        delete reinterpret_cast<uint8_t*>(data);
-    };
-    uint8_t* data0 = new uint8_t;
+    auto finalizer = [](napi_env, void *data, void *) { delete reinterpret_cast<uint8_t *>(data); };
+    uint8_t *data0 = new uint8_t;
     ASSERT_CHECK_CALL(napi_wrap(env, object, data0, finalizer, nullptr, nullptr));
 
     ConstructionException();
-    void* result = nullptr;
+    void *result = nullptr;
     napi_status res = napi_remove_wrap(env, object, &result);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
@@ -493,7 +502,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiCreateBigintWordsTest001, testing::ext::T
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     int signBit = 0;
-    size_t wordCount = 4;
+    size_t wordCount = INT_FOUR;
     uint64_t words[] = {12ULL, 34ULL, 56ULL, 78ULL};
 
     ConstructionException();
@@ -508,7 +517,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiObjectFreezeTest001, testing::ext::TestSi
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
+    napi_value obj = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
 
     ConstructionException();
@@ -522,7 +531,7 @@ HWTEST_F(NapiPendingExceptionTest, NapiObjectSealTest001, testing::ext::TestSize
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    napi_value obj;
+    napi_value obj = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &obj));
 
     ConstructionException();
