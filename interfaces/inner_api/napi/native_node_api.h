@@ -62,6 +62,7 @@ typedef enum {
     NAPI_APP_STATE_SENSITIVE_START = 2,
     NAPI_APP_STATE_SENSITIVE_END = 3,
     NAPI_APP_STATE_COLD_START_FINISHED = 4,
+    NAPI_APP_STATE_WARM_START = 5,
 } NapiAppState;
 
 using NapiAppStateCallback = void (*)(int state, int64_t timestamp);

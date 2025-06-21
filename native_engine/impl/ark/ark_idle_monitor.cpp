@@ -274,8 +274,12 @@ void ArkIdleMonitor::NotifyMainThreadTryCompressGCByBackground()
 void ArkIdleMonitor::SetStartTimerCallback()
 {
     JSNApi::SetStartIdleMonitorCallback([this]() {
-        this->IntervalMonitor();
-        started_ = true;
+        // prevents duplicate invok to avoid deadlocks
+        if (!started_) {
+            HILOG_INFO("Running idle monitor call back task");
+            this->IntervalMonitor();
+            started_ = true;
+        }
     });
 }
 
