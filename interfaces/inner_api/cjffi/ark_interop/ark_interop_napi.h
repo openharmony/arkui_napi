@@ -155,6 +155,7 @@ EXPORT ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t i
 EXPORT bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value);
+EXPORT bool ARKTS_GlobalIsAlive(ARKTS_Env env, ARKTS_Global global);
 EXPORT ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobal(ARKTS_Env env, ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobalSync(ARKTS_Env env, ARKTS_Global global);
@@ -233,6 +234,19 @@ EXPORT void ARKTS_InitEventHandle(ARKTS_Env env);
 EXPORT void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env);
 
 EXPORT void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, unsigned int opKind);
+
+EXPORT void ARKTS_GlobalSetWeak(ARKTS_Env env, ARKTS_Global global);
+EXPORT void ARKTS_GlobalClearWeak(ARKTS_Env env, ARKTS_Global global);
+EXPORT ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global);
+EXPORT ARKTS_Global ARKTS_GlobalFromValue(ARKTS_Env env, ARKTS_Value value);
+EXPORT ARKTS_Value ARKTS_CreateCycleFreeFunc(ARKTS_Env env, int64_t id);
+EXPORT ARKTS_Value ARKTS_CreateCycleFreeExtern(ARKTS_Env env, int64_t id);
+typedef struct {
+    ARKTS_Value (*funcInvoker)(ARKTS_CallInfo callInfo, int64_t id);
+    void (*refRelease)(int64_t id);
+} ARKTS_CycleFreeCallback;
+EXPORT void ARKTS_RegisterCycleFreeCallback(ARKTS_CycleFreeCallback callback);
+EXPORT ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env);
 
 DECL_END
 

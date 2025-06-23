@@ -15,6 +15,7 @@
 
 #include "ark_interop_internal.h"
 #include "ark_interop_napi.h"
+#include "ark_interop_log.h"
 
 #include <atomic>
 #include <unordered_map>
@@ -22,6 +23,64 @@
 
 using namespace panda;
 using namespace panda::ecmascript;
+
+struct ARKTS_Global_ {
+    ARKTS_Global_(EcmaVM *vm, const Local<JSValueRef>& value): ref(vm, value), isDisposed(false) {}
+
+    ~ARKTS_Global_()
+    {
+        if (!isDisposed) {
+            ref.FreeGlobalHandleAddr();
+        }
+    }
+
+    void SetWeak()
+    {
+        if (isDisposed) {
+            return;
+        }
+        if (ref.IsWeak()) {
+            return;
+        }
+        ref.SetWeakCallback(this, [](void* handle) {
+            auto global = P_CAST(handle, ARKTS_Global);
+            if (!global) {
+                return;
+            }
+            global->isDisposed = true;
+            global->ref.FreeGlobalHandleAddr();
+        }, [](void*) {});
+    }
+
+    void ClearWeak()
+    {
+        if (isDisposed) {
+            return;
+        }
+        if (ref.IsEmpty() || !ref.IsWeak()) {
+            return;
+        }
+        ref.ClearWeak();
+    }
+
+    ARKTS_Value GetValue() const
+    {
+        if (isDisposed) {
+            return ARKTS_CreateUndefined();
+        }
+        auto result = BIT_CAST(ref, const Local<JSValueRef>);
+        return ARKTS_FromHandle(result);
+    }
+
+    bool IsAlive() const
+    {
+        return !isDisposed && !ref.IsEmpty();
+    }
+
+private:
+    Global<JSValueRef> ref;
+    bool isDisposed;
+};
 
 namespace {
 class __attribute__((capability("mutex"))) SpinLock final {
@@ -69,7 +128,7 @@ GlobalManager::GlobalManager(EcmaVM* vm)
     vm_ = vm;
 }
 
-void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
+void GlobalManager::AsyncDisposer(ARKTS_Env /*env*/, void* data)
 {
     auto manager = (GlobalManager*)data;
     std::vector<uintptr_t> toDispose;
@@ -79,8 +138,7 @@ void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
     manager->handleMutex_.Release();
 
     for (auto handle : toDispose) {
-        auto global = P_CAST(handle, Global<JSValueRef>*);
-        global->FreeGlobalHandleAddr();
+        auto global = P_CAST(handle, ARKTS_Global);
         delete global;
     }
 }
@@ -112,23 +170,16 @@ ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value)
 
     auto vm = P_CAST(env, EcmaVM*);
     auto handle = BIT_CAST(value, Local<JSValueRef>);
-    auto result = new Global<JSValueRef>(vm, handle);
+    auto result = new ARKTS_Global_(vm, handle);
 
     return P_CAST(result, ARKTS_Global);
 }
 
-/**
- * no actual action about this convert, the data is in the same form with JSHandle,
- * it does not mean global is equal to local, the memory they are allocated are controlled by different system,
- * have no idea the consequence of NativeScope escape a global variable
- */
 ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global)
 {
     ARKTS_ASSERT_P(global, "global is null");
 
-    auto result = *P_CAST(global, Local<JSValueRef>*);
-
-    return ARKTS_FromHandle(result);
+    return global->GetValue();
 }
 
 /**
@@ -147,7 +198,53 @@ void ARKTS_DisposeGlobalSync(ARKTS_Env env, ARKTS_Global global)
     ARKTS_ASSERT_V(env, "env is null");
     ARKTS_ASSERT_V(global, "handle is null");
 
-    auto ref = P_CAST(global, Global<JSValueRef>*);
-    ref->FreeGlobalHandleAddr();
-    delete ref;
+    delete global;
+}
+
+void ARKTS_GlobalSetWeak(ARKTS_Env env, ARKTS_Global global)
+{
+    ARKTS_ASSERT_V(env, "env is null");
+    ARKTS_ASSERT_V(global, "global is null");
+    global->SetWeak();
+}
+
+void ARKTS_GlobalClearWeak(ARKTS_Env env, ARKTS_Global global)
+{
+    ARKTS_ASSERT_V(env, "env is null");
+    ARKTS_ASSERT_V(global, "global is null");
+    global->ClearWeak();
+}
+
+constexpr uint64_t GLOBAL_TAG = 0b11111ULL << 48;
+constexpr uint64_t GLOBAL_MASK = 0x0000'FFFF'FFFF'FFFF;
+
+ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(global, "global is null");
+
+    auto value = reinterpret_cast<uint64_t>(global) & GLOBAL_MASK;
+    value = value | GLOBAL_TAG;
+    auto dValue = static_cast<double>(value);
+    return ARKTS_CreateF64(dValue);
+}
+
+ARKTS_Global ARKTS_GlobalFromValue(ARKTS_Env env, ARKTS_Value value)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(ARKTS_IsNumber(value), "value is a number");
+
+    auto dValue = ARKTS_GetValueNumber(value);
+    auto iValue = static_cast<uint64_t>(dValue);
+    ARKTS_ASSERT_P((iValue & GLOBAL_TAG) == GLOBAL_TAG, "invalid tag value");
+    iValue = iValue & GLOBAL_MASK;
+    return BIT_CAST(iValue, ARKTS_Global);
+}
+
+bool ARKTS_GlobalIsAlive(ARKTS_Env env, ARKTS_Global global)
+{
+    ARKTS_ASSERT_F(env, "env is null");
+    ARKTS_ASSERT_F(global, "global is null");
+
+    return global->IsAlive();
 }
