@@ -49,6 +49,8 @@ void ModuleManagerTest::TearDown()
     MockResetModuleManagerState();
 }
 
+constexpr char MODULE_NS[] = "moduleNs_";
+
 /*
  * @tc.name: LoadNativeModuleTest_001
  * @tc.desc: test NativeModule's LoadNativeModule function
@@ -227,7 +229,13 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_008, TestSize.Level1)
 
     moduleManager->Register(nullptr);
     moduleManager->CreateSharedLibsSonames();
+    std::string nsName;
+    bool res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, false);
     moduleManager->CreateLdNamespace(moduleName, libPath, true);
+    res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, true);
+    EXPECT_STREQ(nsName.c_str(), (MODULE_NS + moduleName).c_str());
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_008 end";
 }
 
@@ -245,7 +253,13 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_009, TestSize.Level1)
     std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
     ASSERT_NE(nullptr, moduleManager);
 
+    std::string nsName;
+    bool res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, false);
     moduleManager->CreateLdNamespace(moduleName, libPath, false);
+    res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, true);
+    EXPECT_STREQ(nsName.c_str(), (MODULE_NS + moduleName).c_str());
     std::vector<std::string> appLibPath;
     moduleManager->SetAppLibPath(moduleName, appLibPath, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_009 end";
