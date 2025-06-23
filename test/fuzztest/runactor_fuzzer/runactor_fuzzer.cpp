@@ -36,7 +36,7 @@ public:
 
     void RunActor(uint8_t* buffer, size_t bufferSize, const char* descriptor, char* entryPoint)
     {
-        arkNativeEngine_->RunActor(buffer, bufferSize, descriptor, entryPoint, true);
+        arkNativeEngine_->RunActor(buffer, bufferSize, descriptor, entryPoint, true, nullptr);
     }
 
     ~Engine()
