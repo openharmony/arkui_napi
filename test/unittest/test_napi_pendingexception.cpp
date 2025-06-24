@@ -14,14 +14,19 @@
  */
 
 #include "napi/native_api.h"
+#include "native_utils.h"
 #include "test.h"
 
 constexpr const int32_t LENGTH = 1024;
 static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
 static constexpr int INT_FOUR = 4;
+static constexpr int BUFF_SIZE = 20;
 static constexpr const char TEST_CHAR_STRING[] = "TestString";
 static constexpr const char TEST_CHAR_ERROR_MESSAGE[] = "Common error";
+static constexpr const char TEST_CHAR_ERROR_CODE[] = "500";
+static constexpr const char TEST_CHAR_ERROR_CODE_KEY[] = "code";
+static constexpr const char TEST_CHAR_ERROR_MESSAGE_KEY[] = "message";
 
 class NapiPendingExceptionTest : public NativeEngineTest {
 public:
@@ -538,4 +543,63 @@ HWTEST_F(NapiPendingExceptionTest, NapiObjectSealTest001, testing::ext::TestSize
     napi_status res = napi_object_seal(env, obj);
     DestructionException();
     ASSERT_EQ(res, napi_pending_exception);
+}
+
+/**
+ * @tc.name: NapiGetAndClearLastException001
+ * @tc.desc: Test napi_get_and_clear_last_exception without exception.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiPendingExceptionTest, NapiGetAndClearLastException001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value exceptionObj = nullptr;
+    napi_status status = napi_get_and_clear_last_exception(env, &exceptionObj);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(exceptionObj, nullptr);
+}
+
+/**
+ * @tc.name: NapiGetAndClearLastException002
+ * @tc.desc: Test napi_get_and_clear_last_exception with exception.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiPendingExceptionTest, NapiGetAndClearLastException002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_status status = napi_throw_error(env, TEST_CHAR_ERROR_CODE, TEST_CHAR_ERROR_MESSAGE);
+    ASSERT_EQ(status, napi_ok);
+
+    napi_value exceptionObj = nullptr;
+    status = napi_get_and_clear_last_exception(env, &exceptionObj);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_NE(exceptionObj, nullptr);
+
+    bool hasProperty = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, exceptionObj, TEST_CHAR_ERROR_CODE_KEY, &hasProperty));
+    ASSERT_TRUE(hasProperty);
+    napi_value codeValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, exceptionObj, TEST_CHAR_ERROR_CODE_KEY, &codeValue));
+    char testCode[BUFF_SIZE] = {0};
+    size_t length = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, codeValue, testCode, BUFF_SIZE, &length));
+    ASSERT_EQ(length, strlen(TEST_CHAR_ERROR_CODE));
+    ASSERT_STREQ(TEST_CHAR_ERROR_CODE, testCode);
+
+    hasProperty = false;
+    ASSERT_CHECK_CALL(napi_has_named_property(env, exceptionObj, TEST_CHAR_ERROR_MESSAGE_KEY, &hasProperty));
+    ASSERT_TRUE(hasProperty);
+    napi_value messageValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, exceptionObj, TEST_CHAR_ERROR_MESSAGE_KEY, &messageValue));
+    char testMessage[BUFF_SIZE] = {0};
+    length = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, messageValue, testMessage, BUFF_SIZE, &length));
+    ASSERT_EQ(length, strlen(TEST_CHAR_ERROR_MESSAGE));
+    ASSERT_STREQ(TEST_CHAR_ERROR_MESSAGE, testMessage);
 }
