@@ -7768,7 +7768,7 @@ HWTEST_F(NapiBasicTest, NapiWrapTest006, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_object_expected);
 }
 
-#ifdef PANDA_JS_ETS_HYBRID_MODE
+#ifdef PANDA_JS_ETS_HYBRID_MODE_TEST
 HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -7970,7 +7970,7 @@ HWTEST_F(NapiBasicTest, NapiUnwrapTest006, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
-#ifdef PANDA_JS_ETS_HYBRID_MODE
+#ifdef PANDA_JS_ETS_HYBRID_MODE_TEST
 HWTEST_F(NapiBasicTest, NapiXrefUnwrapTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -9117,6 +9117,7 @@ HWTEST_F(NapiBasicTest, NapiGetValueBigintUint64Test004, testing::ext::TestSize.
     ASSERT_EQ(status, napi_bigint_expected);
 }
 
+#ifdef PANDA_JS_ETS_HYBRID_MODE_TEST
 HWTEST_F(NapiBasicTest, NapiIsAliveObjectTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -9157,6 +9158,7 @@ HWTEST_F(NapiBasicTest, NapiIsXrefTypeTest001, testing::ext::TestSize.Level1)
     napi_status status = napi_is_xref_type(env, obj, &res);
     ASSERT_EQ(status, napi_ok);
 }
+#endif
 
 HWTEST_F(NapiBasicTest, NapiGetValueBigintWordsTest001, testing::ext::TestSize.Level1)
 {
