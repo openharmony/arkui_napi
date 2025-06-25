@@ -36,9 +36,15 @@
 
 namespace panda::ecmascript {
 #if defined(ENABLE_EVENT_HANDLER)
+uint64_t ArkIdleMonitor::gIdleMonitoringInterval =
+    OHOS::system::GetIntParameter("const.arkui.idle_monitoring_interval", 1000); // ms
 bool ArkIdleMonitor::gEnableIdleGC =
     OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
+#else
+uint64_t ArkIdleMonitor::gIdleMonitoringInterval = 1000; // ms
 #endif
+// gDelayOverTime Detect whether there is any process freezing during the delay process of the delay task
+uint64_t ArkIdleMonitor::gDelayOverTime = gIdleMonitoringInterval + 100; // ms
 
 void ArkIdleMonitor::NotifyLooperIdleStart(int64_t timestamp, [[maybe_unused]] int idleTime)
 {
@@ -169,17 +175,17 @@ void ArkIdleMonitor::IntervalMonitor()
     int64_t intervalDuration = nowTimestamp - intervalTimestamp_;
     if (numberOfLowIdleNotifyCycles_ >= checkCounts &&
             numberOfHighIdleTimeRatio_ >= checkCounts &&
-            intervalDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
+            intervalDuration < static_cast<int64_t>(gDelayOverTime)) {
         NotifyMainThreadTryCompressGC();
         PostMonitorTask(SLEEP_MONITORING_INTERVAL);
         ClearIdleStats();
     } else if (numberOfLowIdleNotifyCycles_ >= workThreadCheckCounts &&
                     numberOfHighIdleTimeRatio_ >= workThreadCheckCounts &&
-                    intervalDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
+                    intervalDuration < static_cast<int64_t>(gDelayOverTime)) {
         NotifyOneWorkerThreadTryCompressGC();
-        PostMonitorTask(IDLE_MONITORING_INTERVAL);
+        PostMonitorTask(gIdleMonitoringInterval);
     } else {
-        PostMonitorTask(IDLE_MONITORING_INTERVAL);
+        PostMonitorTask(gIdleMonitoringInterval);
     }
     intervalTimestamp_ = nowTimestamp;
     timerMutex_.unlock();
@@ -447,7 +453,7 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
     double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
     double cpuUsage = GetCpuUsage();
     if (idlePercentage > BACKGROUND_IDLE_RATIO && cpuUsage <= IDLE_BACKGROUND_CPU_USAGE &&
-        sumDuration < static_cast<int64_t>(DELAY_OVER_TIME)) {
+        sumDuration < static_cast<int64_t>(gDelayOverTime)) {
         NotifyMainThreadTryCompressGCByBackground();
     } else {
         HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}s",
@@ -476,7 +482,7 @@ void ArkIdleMonitor::PostSwitchBackgroundGCTask()
         std::get<0>(*tuple)->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
         delete tuple;
     };
-    switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, IDLE_MONITORING_INTERVAL,
+    switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, gIdleMonitoringInterval,
         reinterpret_cast<void*>(data), task, false);
 #endif
 }
