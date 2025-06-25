@@ -5351,7 +5351,6 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest002, testing::ext::TestSize.Level1)
         },
         asyncWorkContext, &asyncWorkContext->work);
     napi_queue_async_work(env, asyncWorkContext->work);
-    napi_cancel_async_work(env, asyncWorkContext->work);
     RUN_EVENT_LOOP(env);
 }
 

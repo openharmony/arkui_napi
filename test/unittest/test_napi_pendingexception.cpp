@@ -61,6 +61,7 @@ public:
         ASSERT_CHECK_CALL(napi_throw_error(env, nullptr, TEST_CHAR_ERROR_MESSAGE));
         ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
         ASSERT_TRUE(isExceptionPending);
+        engine_->lastException_ = panda::JSNApi::GetUncaughtException(engine_->GetEcmaVm());
     }
 
     inline void DestructionException()
