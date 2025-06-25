@@ -111,7 +111,7 @@ using InitWorkerFunc = std::function<void(NativeEngine* engine)>;
 using GetAssetFunc = std::function<void(const std::string& uri, uint8_t **buff, size_t *buffSize,
     std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, void** mapper, bool isRestricted)>;
 using OffWorkerFunc = std::function<void(NativeEngine* engine)>;
-using ReleaseWorkerSafeMemFunc = std::function<void(void* mapper)>;
+using ReleaseWorkerSafeMemFunc = std::function<void(void* fileMapper)>;
 using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
@@ -230,7 +230,7 @@ public:
     virtual bool RunScriptBuffer(const std::string &path, uint8_t* buffer, size_t size, bool isBundle) = 0;
     virtual napi_value RunBufferScript(std::vector<uint8_t>& buffer) = 0;
     virtual napi_value RunActor(uint8_t* buffer, size_t bufferSize,
-        const char* descriptor, char* entryPoint = nullptr, bool checkPath = false) = 0;
+        const char* descriptor, char* entryPoint = nullptr, bool checkPath = false, void* fileMapper = nullptr) = 0;
 
     virtual napi_value CreateInstance(napi_value constructor, napi_value const *argv, size_t argc) = 0;
 
@@ -378,7 +378,6 @@ public:
     virtual bool CallGetAssetFunc(const std::string& uri, uint8_t **buff, size_t *buffSize,
         std::vector<uint8_t>& content, std::string& ami, bool &useSecureMem, void** mapper, bool isRestricted);
     virtual bool CallOffWorkerFunc(NativeEngine* engine);
-    virtual bool CallReleaseWorkerSafeMemFunc(void* mapper);
 
     // adapt worker to ace container
     virtual void SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func);

@@ -3065,26 +3065,26 @@ napi_value ArkNativeEngine::RunBufferScript(std::vector<uint8_t>& buffer)
     // LCOV_EXCL_STOP
 }
 
-#define EXECUTE_BUFFER(functionName)                                                                 \
-    if (JSNApi::IsBundle(vm_)) {                                                              \
-        /* FA doesn't enable securemem */                                                            \
-        ret = JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);            \
-    } else if (bufferSize != 0) {                                                                    \
-        if (entryPoint == nullptr) {                                                                 \
-            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule"); \
-            /* this path for bundle and abc compiled by single module js */                          \
-            ret = JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);   \
-        } else {                                                                                     \
-            /* this path for mergeabc with specific entryPoint */                                    \
-            ret = JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc);            \
-        }                                                                                            \
-    } else {                                                                                         \
-        /* this path for worker */                                                                   \
-        ret = JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                \
+#define EXECUTE_BUFFER(functionName)                                                                      \
+    if (JSNApi::IsBundle(vm_)) {                                                                          \
+        /* FA doesn't enable securemem */                                                                 \
+        ret = JSNApi::Execute(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc);                        \
+    } else if (bufferSize != 0) {                                                                         \
+        if (entryPoint == nullptr) {                                                                      \
+            HILOG_DEBUG("Input entryPoint is nullptr, please input entryPoint for merged ESModule");      \
+            /* this path for bundle and abc compiled by single module js */                               \
+            ret = JSNApi::functionName(vm_, buffer, bufferSize, PANDA_MAIN_FUNCTION, desc, false, fileMapper);    \
+        } else {                                                                                          \
+            /* this path for mergeabc with specific entryPoint */                                         \
+            ret = JSNApi::functionName(vm_, buffer, bufferSize, entryPoint, desc, false, fileMapper);     \
+        }                                                                                                 \
+    } else {                                                                                              \
+        /* this path for worker */                                                                        \
+        ret = JSNApi::Execute(vm_, desc, PANDA_MAIN_FUNCTION);                                            \
     }
 
 napi_value ArkNativeEngine::RunActor(uint8_t* buffer, size_t bufferSize,
-    const char* descriptor, char* entryPoint, bool checkPath)
+    const char* descriptor, char* entryPoint, bool checkPath, void* fileMapper)
 {
     if (buffer == nullptr && descriptor == nullptr) {
         HILOG_ERROR("invalid param, both buffer and descriptor are nullptr");

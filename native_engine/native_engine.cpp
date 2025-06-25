@@ -594,10 +594,13 @@ OffWorkerFunc NativeEngine::GetOffWorkerFunc() const
 {
     return offWorkerFunc_;
 }
+
 void NativeEngine::SetReleaseWorkerSafeMemFunc(ReleaseWorkerSafeMemFunc func)
 {
     releaseWorkerSafeMemFunc_ = func;
+    panda::JSNApi::SetReleaseSecureMemCallback(const_cast<EcmaVM*>(GetEcmaVm()), func);
 }
+
 ReleaseWorkerSafeMemFunc NativeEngine::GetReleaseWorkerSafeMemFunc() const
 {
     return releaseWorkerSafeMemFunc_;
@@ -627,18 +630,6 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 {
     if (offWorkerFunc_ != nullptr) {
         offWorkerFunc_(engine);
-        return true;
-    }
-    return false;
-}
-
-bool NativeEngine::CallReleaseWorkerSafeMemFunc(void* mapper)
-{
-    if (mapper == nullptr) {
-        return true;
-    }
-    if (releaseWorkerSafeMemFunc_ != nullptr) {
-        releaseWorkerSafeMemFunc_(mapper);
         return true;
     }
     return false;
@@ -1014,10 +1005,7 @@ napi_value NativeEngine::RunScript(const char* path, char* entryPoint)
         HILOG_ERROR("RunScript: buffer size is empty, please check abc path");
         return nullptr;
     }
-    napi_value result = RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint, false);
-    if (!CallReleaseWorkerSafeMemFunc(mapper)) {
-        HILOG_ERROR("RunScript: CallReleaseWorkerSafeMemFunc error");
-    }
+    napi_value result = RunActor(scriptContent, scriptContentSize, ami.c_str(), entryPoint, false, mapper);
     return result;
 }
 
@@ -1055,10 +1043,7 @@ napi_value NativeEngine::GetAbcBufferAndRunActor(std::string pathStr, char *entr
         HILOG_ERROR("GetAbcBufferAndRunActor: GetAbcBuffer error");
         return nullptr;
     }
-    napi_value result = RunActor(scriptContent, scriptContentSize, workerAmi.c_str(), entryPoint, false);
-    if (!CallReleaseWorkerSafeMemFunc(mapper)) {
-        HILOG_ERROR("GetAbcBufferAndRunActor: CallReleaseWorkerSafeMemFunc error");
-    }
+    napi_value result = RunActor(scriptContent, scriptContentSize, workerAmi.c_str(), entryPoint, false, mapper);
     return result;
 }
 
