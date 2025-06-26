@@ -179,7 +179,7 @@ public:
 
     void NotifyLooperIdleStart(int64_t timestamp, int idleTime);
     void NotifyLooperIdleEnd(int64_t timestamp);
-    void PostMonitorTask(uint64_t delayMs = IDLE_MONITORING_INTERVAL);
+    void PostMonitorTask(uint64_t delayMs);
     void SetStartTimerCallback();
     void PostLooperTriggerIdleGCTask();
     void EnableIdleGC(NativeEngine *engine);
@@ -215,10 +215,7 @@ private:
     static constexpr int IDLE_CHECK_INTERVAL_LENGTH = 4;
     static constexpr int MIN_TRIGGER_FULLGC_INTERVAL = 90;
     static constexpr int LOW_IDLE_NOTIFY_THRESHOLD = 10;
-    static constexpr uint64_t IDLE_MONITORING_INTERVAL = 1 * 1000; // ms
     static constexpr uint64_t SLEEP_MONITORING_INTERVAL = 90 * 1000; // ms
-    // DELAY_OVER_TIME Detect whether there is any process freezing during the delay process of the delay task
-    static constexpr uint64_t DELAY_OVER_TIME = IDLE_MONITORING_INTERVAL + 100; //ms
     static constexpr int64_t MIN_TRIGGER_GC_IDLE_INTERVAL = 10; // ms
     static constexpr int64_t MAX_TRIGGER_GC_RUNNING_INTERVAL = 1; //ms
     static constexpr double IDLE_RATIO = 0.985f;
@@ -254,6 +251,8 @@ private:
     std::mutex timerMutex_;
     std::mutex queueMutex_;
     std::queue<napi_env> workerEnvQueue_;
+    static uint64_t gIdleMonitoringInterval;
+    static uint64_t gDelayOverTime;
 #if defined(ENABLE_EVENT_HANDLER)
     std::shared_ptr<OHOS::AppExecFwk::EventHandler> mainThreadHandler_ {};
     static bool gEnableIdleGC;
