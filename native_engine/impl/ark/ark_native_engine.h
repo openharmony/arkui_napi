@@ -177,7 +177,7 @@ public:
 
     void Loop(LoopMode mode, bool needSync = false) override;
     void SetPromiseRejectCallback(NativeReference* rejectCallbackRef, NativeReference* checkCallbackRef) override;
-    static void SetModuleValidateCallback(NapiModuleValidateCallback validateCallback);
+    static bool SetModuleValidateCallback(NapiModuleValidateCallback validateCallback);
     // For concurrent
     bool InitTaskPoolThread(NativeEngine* engine, NapiConcurrentCallback callback) override;
     bool InitTaskPoolThread(napi_env env, NapiConcurrentCallback callback) override;
@@ -461,7 +461,7 @@ private:
     int CheckAndGetModule(
         JsiRuntimeCallInfo *info,
         NativeModuleManager* moduleManager,
-        bool &isAppModule,
+        bool isAppModule,
         Local<panda::StringRef> &moduleName,
         NativeModule *&module,
         Local<JSValueRef> &exports,

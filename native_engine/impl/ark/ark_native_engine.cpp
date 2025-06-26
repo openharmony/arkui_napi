@@ -418,13 +418,18 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
     return cb;
 }
 
-void ArkNativeEngine::SetModuleValidateCallback(NapiModuleValidateCallback validateCallback)
+bool ArkNativeEngine::SetModuleValidateCallback(NapiModuleValidateCallback validateCallback)
 {
+    if (validateCallback == nullptr) {
+        HILOG_WARN("Module Validate Callback nullptr. Please check input.");
+        return false;
+    }
     if (moduleValidateCallback_.load()) {
-        HILOG_ERROR("Module Validate Callback is already set, do not set more than once.");
-        return;
+        HILOG_ERROR("Module Validate Callback is already set by another module or thread.");
+        return false;
     }
     moduleValidateCallback_ = validateCallback;
+    return true;
 }
 
 bool ArkNativeEngine::CheckArkApiAllowList(
@@ -738,7 +743,7 @@ const ArkNativeEngine* ArkNativeEngine::GetParent() const
 int ArkNativeEngine::CheckAndGetModule(
     JsiRuntimeCallInfo *info,
     NativeModuleManager* moduleManager,
-    bool &isAppModule,
+    bool isAppModule,
     Local<panda::StringRef> &moduleName,
     NativeModule *&module,
     Local<JSValueRef> &exports,
@@ -756,11 +761,6 @@ int ArkNativeEngine::CheckAndGetModule(
         moduleName->ToString(vm_).c_str(), nullptr, false, errInfo, false, "");
     return 0;
 #else
-    const uint32_t lengthMax = 2;
-    if (info->GetArgsNumber() >= lengthMax) {
-        Local<BooleanRef> ret(info->GetCallArgRef(1));
-        isAppModule = ret->Value();
-    }
     isAppModule_ = isAppModule;
     if (isLimitedWorker_ && !isAppModule) {
         if (!moduleManager->CheckModuleRestricted(moduleName->ToString(vm_).c_str())) {
@@ -881,10 +881,18 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
     panda::EscapeLocalScope scope(ecmaVm);
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
-    Local<StringRef> moduleName(info->GetCallArgRef(0));
-    bool isAppModule = false;
     std::string errInfo = "";
     Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
+    if (info->GetArgsNumber() == 0) {
+        return scope.Escape(exports);
+    }
+    Local<StringRef> moduleName(info->GetCallArgRef(0));
+
+    bool isAppModule = false;
+    if (info->GetArgsNumber() > 1) { // 1: index of arguments, isAppModule
+        Local<BooleanRef> ret(info->GetCallArgRef(1));
+        isAppModule = ret->Value();
+    }
 
     NativeModule* module = nullptr;
     // Returns the module exports or undefined
@@ -921,14 +929,21 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
 {
     EcmaVM *ecmaVm = info->GetVM();
     panda::EscapeLocalScope scope(ecmaVm);
-    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
-    Local<StringRef> moduleName(info->GetCallArgRef(0));
     Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
-
-    if (info->GetArgsNumber() < 1) {
+    if (info->GetArgsNumber() == 0) {
         return scope.Escape(exports);
     }
+    Local<StringRef> moduleName(info->GetCallArgRef(0));
+
+    bool isAppModule = false;
+    if (info->GetArgsNumber() > 1) { // 1: index of arguments, isAppModule
+        Local<BooleanRef> ret(info->GetCallArgRef(1));
+        isAppModule = ret->Value();
+    }
+    if (isAppModule) {
+        HILOG_FATAL("AppModule is not supported in Context Engine.");
+    }
+
     std::string modNameCstr = moduleName->ToString(ecmaVm);
     NapiModuleValidateCallback modCheckCb = moduleValidateCallback_.load();
     if (modCheckCb == nullptr) {
@@ -940,7 +955,8 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
         return scope.Escape(exports);
     }
 
-    bool isAppModule = false;
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
     std::string errInfo = "";
     NativeModule* module = nullptr;
     // Returns the module exports or undefined

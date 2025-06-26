@@ -65,11 +65,7 @@ void DeathTest::Run()
     char* childStack = new char[stackSize];
     ASSERT_NE(childStack, nullptr);
 
-    pid_t childPid = clone(RunInChild,
-        childStack + stackSize,
-        SIGCHLD | CLONE_SETTLS | // reset thread local storage
-            CLONE_FILES,         // share opened fd
-        (void*)this);
+    pid_t childPid = clone(RunInChild, childStack + stackSize, SIGCHLD, (void*)this);
     if (childPid != -1) {
         int status = 0;
         ASSERT_EQ(waitpid(childPid, &status, 0), childPid);

@@ -16,6 +16,7 @@
 #include "native_api_internal.h"
 #include "native_engine/native_async_hook_context.h"
 #include "native_engine/native_utils.h"
+#include "native_engine/impl/ark/ark_native_engine.h"
 
 using panda::Local;
 using panda::StringRef;
@@ -632,4 +633,14 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
         *result = reinterpret_cast<napi_value>(callBackRst);
     }
     return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_callback check_callback)
+{
+    CHECK_ENV(check_callback);
+
+    if (ArkNativeEngine::SetModuleValidateCallback(check_callback)) {
+        return napi_ok;
+    }
+    return napi_generic_failure;
 }
