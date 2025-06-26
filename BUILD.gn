@@ -373,10 +373,6 @@ if (!ark_standalone_build) {
         "interfaces/inner_api/cjffi/ark_interop:cjLibLoader",
       ]
     }
-
-    if (target_cpu == "arm64") {
-      deps += [ "jsvm:libjsvm" ]
-    }
   }
 
   group("napi_packages_test") {
