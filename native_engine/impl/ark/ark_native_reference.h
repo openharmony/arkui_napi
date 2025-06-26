@@ -102,20 +102,28 @@ public:
 #endif // PANDA_JS_ETS_HYBRID_MODE
 
 private:
+    enum ReferencePropertiesMask : uint8_t {
+        DELETE_SELF_MASK = 1,
+        IS_ASYNC_CALL_MASK = DELETE_SELF_MASK << 1,
+        HAS_DELETE_MASK = IS_ASYNC_CALL_MASK << 1,
+        FINAL_RAN_MASK = HAS_DELETE_MASK << 1,
+    };
+
     void ArkNativeReferenceConstructor();
+    void InitProperties(bool deleteSelf = false, bool isAsyncCall = false);
 
     ArkNativeEngine* engine_;
     uint64_t engineId_ {0};
-    const ReferenceOwnerShip ownership_;
 
     Global<JSValueRef> value_;
     uint32_t refCount_ {0};
-    bool isProxyReference_{false};
-    bool deleteSelf_ {false};
-    bool isAsyncCall_ {false};
 
-    bool hasDelete_ {false};
-    bool finalRun_ {false};
+    const ReferenceOwnerShip ownership_;
+    // Bit-packed flags: saves memory and speeds up object creation vs. multiple bools.
+    // std::bitset will use more memory than uint8_t number.
+    uint8_t properties_ {0};
+    bool isProxyReference_{false};
+
     NapiNativeFinalize napiCallback_ {nullptr};
     void* data_ {nullptr};
     void* hint_ {nullptr};
@@ -124,10 +132,18 @@ private:
     NativeReference* prev_ {nullptr};
     NativeReference* next_ {nullptr};
 
+    bool IsAsyncCall() const;
+    bool HasDelete() const;
+    void SetHasDelete();
+    void SetFinalRan();
+
     void FinalizeCallback(FinalizerState state);
     void DispatchFinalizeCallback();
     void EnqueueAsyncTask();
     void EnqueueDeferredTask();
+
+    void IncreaseCounter();
+    void DecreaseCounter();
 
     static void FreeGlobalCallBack(void* ref);
     static void NativeFinalizeCallBack(void* ref);

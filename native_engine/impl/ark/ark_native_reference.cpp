@@ -30,16 +30,15 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        bool isAsyncCall,
                                        size_t nativeBindingSize)
     : engine_(engine),
-      ownership_(deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       value_(engine->GetEcmaVm(), LocalValueFromJsValue(value)),
       refCount_(initialRefcount),
-      deleteSelf_(deleteSelf),
-      isAsyncCall_(isAsyncCall),
+      ownership_(deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint),
       nativeBindingSize_(nativeBindingSize)
 {
+    InitProperties(deleteSelf, isAsyncCall);
     ArkNativeReferenceConstructor();
 }
 
@@ -47,14 +46,14 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        napi_value value,
                                        ArkNativeReferenceConfig& config)
     : engine_(engine),
-      ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       value_(),
       refCount_(config.initialRefcount),
+      ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       isProxyReference_(config.isProxyReference),
-      deleteSelf_(config.deleteSelf),
       napiCallback_(config.napiCallback),
       data_(config.data)
 {
+    InitProperties(config.deleteSelf, false);
     value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
     ArkNativeReferenceConstructor();
 }
@@ -69,16 +68,15 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
                                        bool isAsyncCall,
                                        size_t nativeBindingSize)
     : engine_(engine),
-      ownership_(deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       value_(engine->GetEcmaVm(), value),
       refCount_(initialRefcount),
-      deleteSelf_(deleteSelf),
-      isAsyncCall_(isAsyncCall),
+      ownership_(deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
       napiCallback_(napiCallback),
       data_(data),
       hint_(hint),
       nativeBindingSize_(nativeBindingSize)
 {
+    InitProperties(deleteSelf, isAsyncCall);
     ArkNativeReferenceConstructor();
 }
 
@@ -86,7 +84,7 @@ void ArkNativeReference::ArkNativeReferenceConstructor()
 {
     if (napiCallback_ != nullptr) {
         // Async callback will redirect to root engine, no monitoring needed.
-        if (!isAsyncCall_) {
+        if (!IsAsyncCall()) {
             engine_->IncreaseCallbackbleRefCounter();
             // Non-callback runtime owned napi_ref will free when env teardown.
             if (ownership_ == ReferenceOwnerShip::RUNTIME && !engine_->IsMainEnvContext()) {
@@ -111,6 +109,19 @@ void ArkNativeReference::ArkNativeReferenceConstructor()
     engineId_ = engine_->GetId();
 }
 
+inline void ArkNativeReference::InitProperties(bool deleteSelf, bool isAsyncCall)
+{
+    if (deleteSelf) {
+        SetDeleteSelf();
+    }
+    if (isAsyncCall) {
+        properties_ |= ReferencePropertiesMask::IS_ASYNC_CALL_MASK;
+    }
+}
+
+// Do not use pure virtual function of NativeEngine,
+// it may cause crash if ArkNativeEngine is deconstructed.
+// Which would occur when EcmaVM is destroying in CleanEnv.
 ArkNativeReference::~ArkNativeReference()
 {
     VALID_ENGINE_CHECK(engine_, engine_, engineId_);
@@ -128,7 +139,7 @@ ArkNativeReference::~ArkNativeReference()
     if (value_.IsEmpty()) {
         return;
     }
-    hasDelete_ = true;
+    SetHasDelete();
     if (isProxyReference_) {
         value_.FreeXRefGlobalHandleAddr();
     } else {
@@ -246,7 +257,7 @@ void ArkNativeReference::EnqueueDeferredTask()
 
 void ArkNativeReference::DispatchFinalizeCallback()
 {
-    if (isAsyncCall_) {
+    if (IsAsyncCall()) {
         EnqueueAsyncTask();
     } else {
         EnqueueDeferredTask();
@@ -256,11 +267,11 @@ void ArkNativeReference::DispatchFinalizeCallback()
 void ArkNativeReference::FinalizeCallback(FinalizerState state)
 {
     // Invoke the callback only if it is callbackble and has not already been invoked.
-    if (!finalRun_ && napiCallback_ && !engine_->IsInDestructor()) {
+    if (!GetFinalRun() && napiCallback_ && !engine_->IsInDestructor()) {
         if (state == FinalizerState::COLLECTION) {
             DispatchFinalizeCallback();
         } else {
-            if (!isAsyncCall_) {
+            if (!IsAsyncCall()) {
                 engine_->DecreaseCallbackbleRefCounter();
             }
             if (ownership_ == ReferenceOwnerShip::RUNTIME) {
@@ -271,9 +282,9 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
     }
     data_ = nullptr;
     hint_ = nullptr;
-    finalRun_ = true;
+    SetFinalRan();
 
-    if (deleteSelf_ && !hasDelete_) {
+    if (GetDeleteSelf() && !HasDelete()) {
         delete this;
     }
 }
@@ -296,12 +307,12 @@ void ArkNativeReference::NativeFinalizeCallBack(void* ref)
 
 void ArkNativeReference::SetDeleteSelf()
 {
-    deleteSelf_ = true;
+    properties_ |= ReferencePropertiesMask::DELETE_SELF_MASK;
 }
 
 bool ArkNativeReference::GetDeleteSelf() const
 {
-    return deleteSelf_;
+    return (properties_ & ReferencePropertiesMask::DELETE_SELF_MASK) != 0;
 }
 
 uint32_t ArkNativeReference::GetRefCount()
@@ -311,7 +322,7 @@ uint32_t ArkNativeReference::GetRefCount()
 
 bool ArkNativeReference::GetFinalRun()
 {
-    return finalRun_;
+    return (properties_ & ReferencePropertiesMask::FINAL_RAN_MASK) != 0;
 }
 
 napi_value ArkNativeReference::GetNapiValue()
@@ -324,6 +335,26 @@ void ArkNativeReference::ResetFinalizer()
     napiCallback_ = nullptr;
     data_ = nullptr;
     hint_ = nullptr;
+}
+
+inline bool ArkNativeReference::IsAsyncCall() const
+{
+    return (properties_ & ReferencePropertiesMask::IS_ASYNC_CALL_MASK) != 0;
+}
+
+inline bool ArkNativeReference::HasDelete() const
+{
+    return (properties_ & ReferencePropertiesMask::HAS_DELETE_MASK) != 0;
+}
+
+inline void ArkNativeReference::SetHasDelete()
+{
+    properties_ |= ReferencePropertiesMask::HAS_DELETE_MASK;
+}
+
+inline void ArkNativeReference::SetFinalRan()
+{
+    properties_ |= ReferencePropertiesMask::FINAL_RAN_MASK;
 }
 
 #ifdef PANDA_JS_ETS_HYBRID_MODE
