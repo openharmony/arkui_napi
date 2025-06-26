@@ -540,10 +540,5 @@ private:
     bool isMultiContextEnabled_ = false;
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
     AppStateNotifier interopAppState_ {};
-
-#ifdef ENABLE_CONTAINER_SCOPE
-    bool containerScopeEnable_ { true };
-#endif
-    
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
