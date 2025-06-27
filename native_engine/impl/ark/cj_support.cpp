@@ -144,7 +144,6 @@ bool IsCJModule(const char* moduleName)
     const char* soPath = absolutePath.c_str();
     int fd = open(soPath, O_RDONLY);
     if (fd == -1) {
-        HILOG_ERROR("Failed to open file %{public}s", soPath);
         return false;
     }
 
