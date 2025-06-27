@@ -597,13 +597,10 @@ OffWorkerFunc NativeEngine::GetOffWorkerFunc() const
 
 void NativeEngine::SetReleaseWorkerSafeMemFunc(ReleaseWorkerSafeMemFunc func)
 {
-    releaseWorkerSafeMemFunc_ = func;
-    panda::JSNApi::SetReleaseSecureMemCallback(const_cast<EcmaVM*>(GetEcmaVm()), func);
-}
-
-ReleaseWorkerSafeMemFunc NativeEngine::GetReleaseWorkerSafeMemFunc() const
-{
-    return releaseWorkerSafeMemFunc_;
+    if (func == nullptr) {
+        return;
+    }
+    panda::JSNApi::SetReleaseSecureMemCallback(func);
 }
 
 // call init worker func
@@ -953,7 +950,6 @@ void NativeEngine::RegisterWorkerFunction(const NativeEngine* engine)
     SetInitWorkerFunc(engine->GetInitWorkerFunc());
     SetGetAssetFunc(engine->GetGetAssetFunc());
     SetOffWorkerFunc(engine->GetOffWorkerFunc());
-    SetReleaseWorkerSafeMemFunc(engine->GetReleaseWorkerSafeMemFunc());
 }
 
 // this interface for restrictedWorker with entryPoint to execute mergeabc
