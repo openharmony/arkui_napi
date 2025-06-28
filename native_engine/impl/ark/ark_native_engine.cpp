@@ -2209,6 +2209,12 @@ void ArkNativeEngine::SetAppFreezeFilterCallback(AppFreezeFilterCallback callbac
     DFXJSNApi::SetAppFreezeFilterCallback(vm_, callback);
 }
 
+void ArkNativeEngine::SetRawHeapTrimLevel(uint32_t level)
+{
+    DFXJSNApi::SetJsRawHeapCropLevel(static_cast<panda::CropLevel>(level));
+    return;
+}
+
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));

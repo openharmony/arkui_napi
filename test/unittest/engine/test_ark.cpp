@@ -408,3 +408,19 @@ HWTEST_F(NativeEngineTest, RegisterWorkerEnvTest001, testing::ext::TestSize.Leve
     delete workerEngine1;
     delete workerEngine2;
 }
+
+/**
+ * @tc.name: SetRawHeapTrimLevel
+ * @tc.desc: Test interface of SetRawHeapTrimLevel
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, SetRawHeapTrimLevelTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetRawHeapTrimLevel(vm);
+
+    engine_->SetRawHeapTrimLevel(1); // test value
+}
