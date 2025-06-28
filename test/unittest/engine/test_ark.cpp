@@ -420,7 +420,7 @@ HWTEST_F(NativeEngineTest, SetRawHeapTrimLevelTest001, testing::ext::TestSize.Le
     EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
 
     auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
-    arkIdleMonitor->SetRawHeapTrimLevel(vm);
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
 
     engine_->SetRawHeapTrimLevel(1); // test value
 }
