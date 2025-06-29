@@ -98,6 +98,7 @@ enum class ForceExpandState : int32_t {
     FINISH_COLD_START = 0,
     START_HIGH_SENSITIVE,
     FINISH_HIGH_SENSITIVE,
+    WARM_START,
 };
 
 enum class ModuleTypes : uint8_t {
