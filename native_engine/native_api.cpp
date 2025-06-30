@@ -3135,12 +3135,13 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
 NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
-                                                          napi_value* result)
+                                                          napi_value* result,
+                                                          bool isHybrid)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->NapiLoadModuleWithInfoForHybridApp(path, module_info);
+    *result = engine->NapiLoadModuleWithInfo(path, module_info, isHybrid);
     return GET_RETURN_STATUS(env);
 }
 // Memory management
@@ -4392,7 +4393,7 @@ NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const
     if (request_name[0] == NAME_SPACE_TAG) {
         // load module with OhmUrl
         auto [path, module_info] = panda::JSNApi::ResolveOhmUrl(request_name);
-        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), result);
+        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), result, true);
     } else {
         napi_load_module_with_path(env, request_name, result);
     }
