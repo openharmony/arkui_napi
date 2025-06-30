@@ -647,7 +647,6 @@ protected:
     NativeEngine* hostEngine_ {nullptr};
     bool isAppModule_ = false;
     WorkerThreadState* workerThreadState_;
-    ReleaseWorkerSafeMemFunc releaseWorkerSafeMemFunc_ {nullptr};
     static std::unordered_set<NativeEngine*> g_alivedEngine_;
 public:
     uint64_t openHandleScopes_ = 0;
