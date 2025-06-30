@@ -66,6 +66,10 @@ typedef enum {
 
 using NapiAppStateCallback = void (*)(int state, int64_t timestamp);
 
+NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
+                                                          const char* path,
+                                                          const char* module_info,
+                                                          napi_value* result);
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result);
