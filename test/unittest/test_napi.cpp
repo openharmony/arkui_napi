@@ -13660,6 +13660,46 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Le
 }
 
 /**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, &result);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
  * @tc.name: NapiSerializeTest
  * @tc.desc: Test interface of napi_serialize
  * @tc.type: FUNC

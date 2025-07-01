@@ -242,7 +242,6 @@ NAPI_EXTERN napi_status napi_register_appstate_callback(napi_env env, NapiAppSta
 NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
-                                                          napi_value* result,
-                                                          bool isHybrid);
+                                                          napi_value* result);
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
