@@ -249,9 +249,9 @@ if (is_arkui_x) {
       ":ace_napi_config",
       ":module_manager_config",
     ]
-    public_external_deps = [ "ets_runtime:libark_jsruntime" ]
     if (!ark_standalone_build) {
-      public_external_deps += [
+      public_external_deps = [
+        "ets_runtime:libark_jsruntime",
         "libuv:uv",
         "node:node_header_notice",
       ]
