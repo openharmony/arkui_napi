@@ -791,3 +791,92 @@ void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, uns
     auto vm = reinterpret_cast<panda::EcmaVM*>(vmAddress);
     panda::JSNApi::UpdateStackInfo(vm, subStackInfo, opKind);
 }
+
+namespace {
+ARKTS_CycleFreeCallback* g_cycleFreeCallback = nullptr;
+}
+
+void ARKTS_RegisterCycleFreeCallback(ARKTS_CycleFreeCallback callback)
+{
+    if (g_cycleFreeCallback) {
+        LOGE("register cycle free callback failed, already registered.");
+        return;
+    }
+    g_cycleFreeCallback = new ARKTS_CycleFreeCallback(callback);
+}
+
+static Local<JSValueRef> CycleFreeFuncInvoker(JsiRuntimeCallInfo *callInfo)
+{
+    Local<JSValueRef> result;
+    auto vm = callInfo->GetVM();
+    if (!vm) {
+        LOGE("failed to invoke cycleFree func, vm is null");
+        return result;
+    }
+    result = JSValueRef::Undefined(vm);
+    auto data = reinterpret_cast<LambdaData*>(callInfo->GetData());
+    if (!data) {
+        LOGE("failed to invoke cycleFree func, LambdaData is null");
+        return result;
+    }
+    if (!g_cycleFreeCallback) {
+        LOGE("failed to invoke cycleFree func, cycleFreeCallback is null");
+        return result;
+    }
+    auto value = g_cycleFreeCallback->funcInvoker(P_CAST(callInfo, ARKTS_CallInfo), data->lambdaId);
+    auto res = ARKTS_ToResult(vm, value);
+    result = BIT_CAST(res, Local<JSValueRef>);
+    return result;
+}
+
+static void CycleFreeFuncReleaser(void* /*env*/, void* /*data*/, void* hint)
+{
+    auto data = reinterpret_cast<LambdaData*>(hint);
+    if (!data) {
+        return;
+    }
+    if (!g_cycleFreeCallback) {
+        delete data;
+        return;
+    }
+    g_cycleFreeCallback->refRelease(data->lambdaId);
+    delete data;
+}
+
+ARKTS_Value ARKTS_CreateCycleFreeFunc(ARKTS_Env env, int64_t id)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    auto data = new LambdaData {env, id};
+    if (!data) {
+        return ARKTS_CreateUndefined();
+    }
+    auto result = FunctionRef::New(vm, CycleFreeFuncInvoker, CycleFreeFuncReleaser, data);
+    return ARKTS_FromHandle(result);
+}
+
+static void CycleFreeObjectReleaser(void* /*env*/, void* nativePointer, void* /*hint*/)
+{
+    if (!g_cycleFreeCallback) {
+        return;
+    }
+    auto id = static_cast<int64_t>(reinterpret_cast<uintptr_t>(nativePointer));
+    g_cycleFreeCallback->refRelease(id);
+}
+
+ARKTS_Value ARKTS_CreateCycleFreeExtern(ARKTS_Env env, int64_t id)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    auto data = reinterpret_cast<void*>(static_cast<uintptr_t>(id));
+    auto result = NativePointerRef::New(vm, data, CycleFreeObjectReleaser, nullptr);
+    return ARKTS_FromHandle(result);
+}
+
+ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    auto exception = JSNApi::GetAndClearUncaughtException(vm);
+    return ARKTS_FromHandle(exception);
+}

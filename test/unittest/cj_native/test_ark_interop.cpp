@@ -118,15 +118,25 @@ public:
             result = items_.size();
             items_.push_back({std::move(item), -1});
         }
+        ++length;
         return result;
     }
 
     void Del(int64_t id)
     {
         auto& removing = items_[id];
+        if (!removing.data.has_value()) {
+            return;
+        }
         removing.data = std::nullopt;
         removing.prev = last_;
         last_ = id;
+        --length;
+    }
+
+    size_t Size() const
+    {
+        return length;
     }
 
     T& Get(int64_t id)
@@ -145,6 +155,7 @@ private:
     };
     std::vector<Item> items_ {};
     int64_t last_ = -1;
+    size_t length = 0;
 };
 
 class MockContext {
@@ -298,6 +309,15 @@ protected:
     {
     }
 
+    virtual ARKTS_Value InvokeCycleFreeFunc(ARKTS_CallInfo callInfo, uint32_t id)
+    {
+        return ARKTS_CreateUndefined();
+    }
+
+    virtual void ReleaseCycleFreeExt(uint32_t id)
+    {
+    }
+
     int64_t ToId(int64_t index) const
     {
         return GetPrefixMask() | index;
@@ -368,6 +388,20 @@ void MockContext::Init()
         }
     };
     ARKTS_SetCJModuleCallback(&callbacks);
+    static ARKTS_CycleFreeCallback cycleFreeCallback {
+        .funcInvoker = [](ARKTS_CallInfo callInfo, int64_t id) {
+            if (instance_) {
+                return instance_->InvokeCycleFreeFunc(callInfo, id);
+            }
+            return ARKTS_CreateUndefined();
+        },
+        .refRelease = [](int64_t id) {
+            if (instance_) {
+                instance_->ReleaseCycleFreeExt(id);
+            }
+        }
+    };
+    ARKTS_RegisterCycleFreeCallback(cycleFreeCallback);
 }
 
 MockContext* MockContext::instance_ = nullptr;
@@ -375,6 +409,8 @@ MockContext* MockContext::instance_ = nullptr;
 class ErrorCaptureContext : public MockContext {
 public:
     ErrorCaptureContext() = default;
+    explicit ErrorCaptureContext(ARKTS_Engine engine, bool needDestroyEngine = true)
+        : MockContext(engine, needDestroyEngine) {}
     ~ErrorCaptureContext()
     {
         if (hasJSError_ || hasNativeError_) {
@@ -422,6 +458,45 @@ private:
     bool hasJSError_ = false;
     bool hasNativeError_ = false;
 };
+
+class CycleFreeContext : public ErrorCaptureContext {
+public:
+    CycleFreeContext() = default;
+    explicit CycleFreeContext(ARKTS_Engine engine, bool needDestroyEngine = true)
+        : ErrorCaptureContext(engine, needDestroyEngine) {}
+    uint32_t StoreCycleFreeFunc(std::function<ARKTS_Value(ARKTS_CallInfo)> callback)
+    {
+        std::lock_guard lock(callbackMutex_);
+        return callbacks_.Add(std::move(callback));
+    }
+
+    size_t GetCycleFreeFuncCount() const
+    {
+        return callbacks_.Size();
+    }
+
+protected:
+    ARKTS_Value InvokeCycleFreeFunc(ARKTS_CallInfo callInfo, uint32_t id) override
+    {
+        std::lock_guard lock(callbackMutex_);
+        auto callback = callbacks_.Get(id);
+        if (!callback) {
+            return ARKTS_CreateUndefined();
+        }
+        return callback(callInfo);
+    }
+
+    void ReleaseCycleFreeExt(uint32_t id) override
+    {
+        callbacks_.Del(id);
+    }
+private:
+    static Slab<std::function<ARKTS_Value(ARKTS_CallInfo)>> callbacks_;
+    static std::mutex callbackMutex_;
+};
+
+Slab<std::function<ARKTS_Value(ARKTS_CallInfo)>> CycleFreeContext::callbacks_;
+std::mutex CycleFreeContext::callbackMutex_;
 
 void ArkInteropTest::TestPrime()
 {
@@ -1086,6 +1161,155 @@ TEST_F(ArkInteropTest, PromiseThen)
     }
     // EXPECT no core dump, no timeout
     EXPECT_TRUE(waitTimes > 0);
+}
+
+TEST_F(ArkInteropTest, CycleFreeFunc)
+{
+    CycleFreeContext local;
+    auto env = local.GetEnv();
+    auto funcCount = local.GetCycleFreeFuncCount();
+    auto scope = ARKTS_OpenScope(env);
+    auto isCalled = false;
+    auto id = local.StoreCycleFreeFunc([&isCalled](ARKTS_CallInfo callInfo) {
+        isCalled = true;
+        return ARKTS_CreateUndefined();
+    });
+    EXPECT_EQ(local.GetCycleFreeFuncCount(), funcCount + 1);
+    auto func = ARKTS_CreateCycleFreeFunc(local.GetEnv(), id);
+    EXPECT_TRUE(ARKTS_IsCallable(env, func));
+    ARKTS_Call(env, func, ARKTS_CreateUndefined(), 0, nullptr);
+    EXPECT_TRUE(isCalled);
+    ARKTS_CloseScope(env, scope);
+}
+
+TEST_F(ArkInteropTest, CycleFreeExtern)
+{
+    CycleFreeContext local;
+    auto env = local.GetEnv();
+    auto funcCount = local.GetCycleFreeFuncCount();
+    {
+        auto scope = ARKTS_OpenScope(env);
+        auto id = local.StoreCycleFreeFunc(nullptr);
+        EXPECT_EQ(local.GetCycleFreeFuncCount(), funcCount + 1);
+        auto object = ARKTS_CreateCycleFreeExtern(local.GetEnv(), id);
+        EXPECT_TRUE(ARKTS_IsExternal(env, object));
+        auto handle = ARKTS_GetExternalData(env, object);
+        uint32_t resid = reinterpret_cast<uint64_t>(handle);
+        EXPECT_EQ(resid, id);
+
+        ARKTS_CloseScope(env, scope);
+    }
+}
+
+class GlobalWeakTest {
+public:
+    GlobalWeakTest(): local(ARKTS_CreateEngineWithNewThread()), status(CREATING)
+    {
+        ScheduleNext();
+    }
+
+    void WaitForComplete()
+    {
+        std::mutex mutex;
+        std::unique_lock lock(mutex);
+        while (status != COMPLETE) {
+            cv.wait(lock);
+        }
+    }
+
+private:
+    static constexpr int objectCnt = 1000;
+
+    void CreateWeakObjects()
+    {
+        auto env = local.GetEnv();
+        auto scope = ARKTS_OpenScope(env);
+        for (auto i = 0; i < objectCnt; i++) {
+            auto object = ARKTS_CreateObject(env);
+            auto global = ARKTS_CreateGlobal(env, object);
+            ARKTS_GlobalSetWeak(env, global);
+            globals.push_back(global);
+        }
+        ARKTS_CloseScope(env, scope);
+        panda::JSNApi::TriggerGC(P_CAST(env, EcmaVM*), panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    }
+
+    void DoAssertion()
+    {
+        for (auto one : globals) {
+            EXPECT_TRUE(!ARKTS_GlobalIsAlive(local.GetEnv(), one));
+        }
+    }
+
+    void ReleaseGlobals()
+    {
+        for (auto one : globals) {
+            ARKTS_DisposeGlobalSync(local.GetEnv(), one);
+        }
+    }
+
+    enum Status {
+        CREATING,
+        ASSERTION,
+        DISPOSE,
+        COMPLETE
+    };
+
+    void ScheduleNext()
+    {
+        auto id = local.StoreAsyncFunc([this] {
+            DoNext();
+        });
+        ARKTS_CreateAsyncTask(local.GetEnv(), id);
+    }
+
+    void DoNext()
+    {
+        switch (status) {
+            case CREATING:
+                CreateWeakObjects();
+                status = ASSERTION;
+                break;
+            case ASSERTION:
+                DoAssertion();
+                status = DISPOSE;
+                break;
+            case DISPOSE:
+                ReleaseGlobals();
+                status = COMPLETE;
+                cv.notify_all();
+                return;
+            default: ;
+        }
+        ScheduleNext();
+    }
+
+    CycleFreeContext local;
+    Status status;
+    std::condition_variable cv;
+    std::vector<ARKTS_Global> globals;
+};
+
+TEST_F(ArkInteropTest, GlobalWeak)
+{
+    GlobalWeakTest weakTest;
+    weakTest.WaitForComplete();
+}
+
+TEST_F(ArkInteropTest, GlobalToValue)
+{
+    MockContext local;
+    auto env = local.GetEnv();
+    {
+        auto scope = ARKTS_OpenScope(env);
+        auto object = ARKTS_CreateObject(env);
+        auto global = ARKTS_CreateGlobal(env, object);
+        auto value = ARKTS_GlobalToValue(env, global);
+        auto received = ARKTS_GlobalFromValue(env, value);
+        EXPECT_EQ(received, global);
+        ARKTS_DisposeGlobalSync(env, global);
+        ARKTS_CloseScope(env, scope);
+    }
 }
 
 HWTEST_F(ArkInteropTest, ArkTSInteropNapiCreateEngineNew, TestSize.Level1)
