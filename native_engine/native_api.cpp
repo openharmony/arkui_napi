@@ -369,7 +369,7 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
-    if (length < SMALL_STRING_SIZE) {
+    if (LIKELY(length < SMALL_STRING_SIZE)) {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
             vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
         *result = JsValueFromLocalValue(object);
@@ -993,7 +993,7 @@ NAPI_EXTERN napi_status napi_set_named_property(napi_env env, napi_value object,
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsObjectWithoutSwitchState(vm) || nativeValue->IsFunction(vm),
         napi_object_expected);
     Local<panda::ObjectRef> obj(nativeValue);
-    obj->Set(vm, utf8name, propVal);
+    obj->SetWithoutSwitchState(vm, utf8name, propVal);
 
     return GET_RETURN_STATUS(env);
 }
@@ -3096,7 +3096,8 @@ NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
     panda::JsiFastNativeScope fastNativeScope(vm);
     RETURN_STATUS_IF_FALSE(env, arrayBufferValue->IsArrayBuffer(vm), napi_status::napi_arraybuffer_expected);
     Local<panda::ArrayBufferRef> res(arrayBufferValue);
-    if (length + byte_offset > static_cast<size_t>(res->ByteLength(vm))) {
+    Local<panda::DataViewRef> dataView = panda::DataViewRef::NewWithoutSwitchState(vm, res, byte_offset, length);
+    if (dataView->IsHole()) {
         napi_throw_range_error(
             env,
             "ERR_NAPI_INVALID_DATAVIEW_ARGS",
@@ -3105,7 +3106,6 @@ NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
         return napi_set_last_error(env, napi_pending_exception);
     }
 
-    Local<panda::DataViewRef> dataView = panda::DataViewRef::New(vm, res, byte_offset, length);
     *result = JsValueFromLocalValue(dataView);
     return GET_RETURN_STATUS(env);
 }
