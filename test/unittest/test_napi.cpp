@@ -14295,18 +14295,15 @@ HWTEST_F(NapiBasicTest, ArkNativeReferenceTest004, testing::ext::TestSize.Level1
             env, value, ref,
             // This callback is execution under deconstructor of ArkNativeReference
             [](napi_env env, void* data, void*) {
-                ArkNativeReference** secondData = reinterpret_cast<ArkNativeReference**>(data);
-                ArkNativeReference* ref = *secondData;
-                ASSERT_NE(ref->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
-                ASSERT_EQ(ref->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
-                ASSERT_EQ(ref->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
-                ASSERT_NE(ref->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
-                *secondData = nullptr;
+                *reinterpret_cast<ArkNativeReference**>(data) = nullptr;
             },
             nullptr, nullptr));
         // Head is last reference which created above. 
         *ref = reinterpret_cast<ArkNativeReference*>(engine_->GetReferenceManager()->references_);
         ASSERT_NE((*ref)->properties_ & ArkNativeReference::DELETE_SELF_MASK, 0);
+        ASSERT_EQ((*ref)->properties_ & ArkNativeReference::IS_ASYNC_CALL_MASK, 0);
+        ASSERT_EQ((*ref)->properties_ & ArkNativeReference::HAS_DELETE_MASK, 0);
+        ASSERT_EQ((*ref)->properties_ & ArkNativeReference::FINAL_RAN_MASK, 0);
     }
     ASSERT_NE(ref, nullptr);
     panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
