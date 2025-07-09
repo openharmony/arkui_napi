@@ -736,7 +736,7 @@ NAPI_EXTERN napi_status napi_mark_attach_with_xref(napi_env env,
             delete externalInfo;
         },
         reinterpret_cast<void*>(data), nativeBindingSize);
-    PropertyAttribute attr(object, true, false, true);
+    panda::PropertyAttribute attr(object, true, false, true);
     nativeObject->DefineProperty(vm, key, attr);
     return GET_RETURN_STATUS(env);
 }
