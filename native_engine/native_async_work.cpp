@@ -37,6 +37,7 @@ constexpr size_t TRACE_BUFFER_SIZE = 120;
 constexpr size_t TRACEID_PARAM_SIZE = 10;
 const std::string TRACE_POINT_QUEUE = "napi::NativeAsyncWork::Queue";
 const std::string TRACE_POINT_QUEUE_WITH_QOS = "napi::NativeAsyncWork::QueueWithQos";
+const std::string TRACE_POINT_QUEUE_ORDERED = "napi::NativeAsyncWork::QueueOrdered";
 const std::string TRACE_POINT_ASYNCWORKCALLBACK = "napi::NativeAsyncWork::AsyncWorkCallback";
 using namespace OHOS::HiviewDFX;
 #endif
@@ -159,6 +160,42 @@ bool NativeAsyncWork::QueueWithQos(NativeEngine* engine, napi_qos_t qos)
         return false;
     }
     HILOG_DEBUG("uv_queue_work_with_qos succeed");
+    return true;
+}
+
+bool NativeAsyncWork::QueueOrdered(NativeEngine* engine, napi_qos_t qos, uintptr_t queueId)
+{
+    VALID_ENGINE_CHECK(engine, engine_, engineId_);
+
+    uv_loop_t* loop = nullptr;
+    if (engine_->IsMainEnvContext()) {
+        loop = engine_->GetUVLoop();
+    } else {
+        loop = engine_->GetParent()->GetUVLoop();
+    }
+
+    if (loop == nullptr) {
+        HILOG_ERROR("Get loop failed");
+        return false;
+    }
+    engine_->IncreaseWaitingRequestCounter();
+#ifdef ENABLE_HITRACE
+    StartTrace(HITRACE_TAG_ACE, "Native async work queueOrdered, " + this->GetTraceDescription());
+    HiTraceId taskId = taskTraceId_;
+    HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE_ORDERED.c_str());
+#endif
+    int status = uv_queue_work_ordered(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback,
+        uv_qos_t(qos), *(reinterpret_cast<uint64_t*>(queueId)));
+#ifdef ENABLE_HITRACE
+    HiTraceChain::Tracepoint(HITRACE_TP_CR, taskId, "%s", TRACE_POINT_QUEUE_ORDERED.c_str());
+    FinishTrace(HITRACE_TAG_ACE);
+#endif
+    if (status != 0) {
+        HILOG_ERROR("uv_queue_work_ordered failed");
+        engine_->DecreaseWaitingRequestCounter();
+        return false;
+    }
+    HILOG_DEBUG("uv_queue_work_ordered succeed");
     return true;
 }
 
