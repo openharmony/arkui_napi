@@ -657,3 +657,13 @@ NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, 
     *result = JsValueFromLocalValue(implementsValue);
     return GET_RETURN_STATUS(env);
 }
+
+NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env)
+{
+    NAPI_PREAMBLE(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JSNApi::InitHybridVMEnv(vm);
+    return GET_RETURN_STATUS(env);
+}
