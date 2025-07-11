@@ -30,6 +30,7 @@ typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
 typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint); // hint: detach params
 typedef napi_value (*NapiAttachCallback)(napi_env env, void* nativeObject, void* hint); // hint: attach params
 typedef bool (*napi_module_validate_callback)(const char* moduleName);
+typedef napi_value (*proxy_object_attach_cb)(napi_env env, void* data);
 typedef struct napi_fast_native_scope__* napi_fast_native_scope;
 
 typedef struct napi_module_with_js {
@@ -67,6 +68,10 @@ typedef enum {
 
 using NapiAppStateCallback = void (*)(int state, int64_t timestamp);
 
+NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
+                                                          const char* path,
+                                                          const char* module_info,
+                                                          napi_value* result);
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env);
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result);
@@ -224,16 +229,33 @@ NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
                                        napi_ref* result);
 NAPI_EXTERN napi_status napi_xref_unwrap(napi_env env, napi_value js_object, void** result);
 
+NAPI_EXTERN napi_status napi_mark_from_object_for_cmc(napi_env env, napi_ref ref,
+                                                      std::function<void(uintptr_t)> &visitor);
 NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref);
 NAPI_EXTERN napi_status napi_create_xref(napi_env env,
                                          napi_value value,
                                          uint32_t initial_refcount,
                                          napi_ref* result);
+NAPI_EXTERN napi_status napi_mark_attach_with_xref(napi_env env,
+                                                   napi_value js_object,
+                                                   void *attach_data,
+                                                   proxy_object_attach_cb attach_cb);
 NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
                                             napi_value js_object,
                                             void* native_object,
                                             napi_finalize finalize_cb,
+                                            proxy_object_attach_cb proxy_cb,
                                             napi_ref* result);
+NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
+NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
+NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result);
+NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result);
+NAPI_EXTERN napi_status napi_serialize_hybrid(napi_env env,
+                                              napi_value object,
+                                              napi_value transfer_list,
+                                              napi_value clone_list,
+                                              void** result);
+NAPI_EXTERN napi_status napi_deserialize_hybrid(napi_env env, void* buffer, napi_value* object);
 #endif  // PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
 NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);

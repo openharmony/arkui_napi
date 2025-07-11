@@ -7778,7 +7778,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest001, testing::ext::TestSize.Level1)
 
     napi_create_object(env, &obj);
     napi_status status = napi_wrap_with_xref(
-        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
     ASSERT_EQ(status, napi_ok);
 }
 
@@ -7790,7 +7790,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest002, testing::ext::TestSize.Level1)
 
     napi_create_object(env, &obj);
     napi_status status = napi_wrap_with_xref(
-        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
     ASSERT_EQ(status, napi_ok);
 }
 
@@ -7801,7 +7801,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest003, testing::ext::TestSize.Level1)
     napi_ref result;
 
     napi_status status = napi_wrap_with_xref(
-        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
@@ -7813,7 +7813,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest004, testing::ext::TestSize.Level1)
 
     napi_create_object(env, &obj);
     napi_status status = napi_wrap_with_xref(
-        env, obj, nullptr, [](napi_env, void* data, void* hint) {}, &result);
+        env, obj, nullptr, [](napi_env, void* data, void* hint) {}, nullptr, &result);
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
@@ -7824,7 +7824,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest005, testing::ext::TestSize.Level1)
     napi_ref result;
 
     napi_create_object(env, &obj);
-    napi_status status = napi_wrap_with_xref(env, obj, (void*)TEST_STRING, nullptr, &result);
+    napi_status status = napi_wrap_with_xref(env, obj, (void*)TEST_STRING, nullptr, nullptr, &result);
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
@@ -7835,7 +7835,7 @@ HWTEST_F(NapiBasicTest, NapiWrapWithXRefTest006, testing::ext::TestSize.Level1)
     napi_ref result;
 
     napi_create_object(env, &obj);
-    napi_status status = napi_wrap_with_xref(env, obj, (void*)TEST_STRING, nullptr, &result);
+    napi_status status = napi_wrap_with_xref(env, obj, (void*)TEST_STRING, nullptr, nullptr, &result);
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
@@ -7847,7 +7847,7 @@ HWTEST_F(NapiBasicTest, NapiMarkFromObjectTest001, testing::ext::TestSize.Level1
 
     napi_create_object(env, &obj);
     napi_status status = napi_wrap_with_xref(
-        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+        env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
     ASSERT_EQ(status, napi_ok);
     status = napi_mark_from_object(env, result);
     ASSERT_EQ(status, napi_ok);
@@ -7885,6 +7885,33 @@ HWTEST_F(NapiBasicTest, NapiCreateXRefTest003, testing::ext::TestSize.Level1)
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     auto res = napi_create_xref(env, nullptr, 1, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateXRefTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_serialize_hybrid(env, nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateXRefTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_deserialize_hybrid(env, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+HWTEST_F(NapiBasicTest, NapiCreateXRefTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_mark_attach_with_xref(env, nullptr, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
 #endif
@@ -8278,6 +8305,21 @@ HWTEST_F(NapiBasicTest, NapiMakeCallbackTest002, testing::ext::TestSize.Level1)
 
     napi_create_double(env, TEST_DOUBLE, &recv);
     napi_status status = napi_make_callback(env, context, recv, func, argc, args, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetEtsImplementsTest
+ * @tc.desc: Test interface of napi_get_ets_implements
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetEtsImplementsTest, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_value result = nullptr;
+
+    napi_status status = napi_get_ets_implements(env, value, &result);
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
@@ -9053,6 +9095,47 @@ HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test004, testing::ext::TestSize.L
 
     napi_status status = napi_get_value_bigint_int64(env, value, &result, &lossless);
     ASSERT_EQ(status, napi_bigint_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsAliveObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result = nullptr;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status =
+        napi_wrap_with_xref(env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_is_alive_object(env, result, &res);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsValidHeapObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result = nullptr;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status =
+        napi_wrap_with_xref(env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, nullptr, &result);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_is_contain_object(env, result, &res);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsXrefTypeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status = napi_is_xref_type(env, obj, &res);
+    ASSERT_EQ(status, napi_ok);
 }
 
 HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test005, testing::ext::TestSize.Level1)
@@ -13657,6 +13740,46 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Le
     const napi_extended_error_info* result2;
     napi_get_last_error_info(env, &result2);
     ASSERT_EQ(result2->error_code, napi_generic_failure);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, &result);
+    ASSERT_EQ(res, napi_ok);
 }
 
 /**

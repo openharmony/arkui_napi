@@ -17,9 +17,15 @@
 #include "native_engine/native_async_hook_context.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+#include "ecmascript/napi/include/jsnapi.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
+#include "native_engine/impl/ark/ark_native_reference.h"
+#endif // PANDA_JS_ETS_HYBRID_MODE
 
 using panda::Local;
 using panda::StringRef;
+using panda::ObjectRef;
 
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 
@@ -644,3 +650,94 @@ NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_c
     }
     return napi_generic_failure;
 }
+NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    Local<panda::JSValueRef> implementsValue = panda::JSNApi::GetImplements(vm, nativeValue);
+    *result = JsValueFromLocalValue(implementsValue);
+    return GET_RETURN_STATUS(env);
+}
+
+#ifdef PANDA_JS_ETS_HYBRID_MODE
+NAPI_EXTERN napi_status napi_serialize_hybrid(napi_env env,
+                                              napi_value object,
+                                              napi_value transfer_list,
+                                              napi_value clone_list,
+                                              void** result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, transfer_list);
+    CHECK_ARG(env, clone_list);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(object);
+    auto transferList = LocalValueFromJsValue(transfer_list);
+    RETURN_STATUS_IF_FALSE(env, transferList->IsUndefined() || transferList->IsJSArray(vm), napi_invalid_arg);
+    auto cloneList = LocalValueFromJsValue(clone_list);
+    RETURN_STATUS_IF_FALSE(env, cloneList->IsUndefined() || cloneList->IsJSArray(vm), napi_invalid_arg);
+    *result = panda::JSNApi::InterOpSerializeValue(vm, nativeValue, transferList, cloneList, false, false);
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_deserialize_hybrid(napi_env env, void* buffer, napi_value* object)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, buffer);
+    CHECK_ARG(env, object);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    Local<panda::JSValueRef> res = panda::JSNApi::InterOpDeserializeValue(vm, buffer, reinterpret_cast<void*>(engine));
+    *object = JsValueFromLocalValue(res);
+
+    return napi_clear_last_error(env);
+}
+
+
+NAPI_EXTERN napi_status napi_mark_attach_with_xref(napi_env env,
+                                                   napi_value js_object,
+                                                   void *attach_data,
+                                                   proxy_object_attach_cb attach_cb)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, attach_data);
+    CHECK_ARG(env, attach_cb);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    size_t nativeBindingSize = 0;
+    Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefObject(vm);
+    // Create strong reference now, will update to weak reference after interop support
+    panda::JSNApi::XRefBindingInfo* data = panda::JSNApi::XRefBindingInfo::CreateNewInstance();
+    if (data == nullptr) {
+        HILOG_ERROR("data is nullptr");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    data->attachXRefFunc = reinterpret_cast<void*>(attach_cb);
+    data->attachXRefData = attach_data;
+    object->SetNativePointerFieldCount(vm, 1);
+    object->SetNativePointerField(vm, 0, nullptr,
+        [](void* env, void* data, void* info) {
+            panda::JSNApi::XRefBindingInfo* externalInfo = reinterpret_cast<panda::JSNApi::XRefBindingInfo*>(info);
+            delete externalInfo;
+        },
+        reinterpret_cast<void*>(data), nativeBindingSize);
+    panda::PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+#endif // PANDA_JS_ETS_HYBRID_MODE

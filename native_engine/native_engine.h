@@ -521,7 +521,8 @@ public:
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
     virtual napi_value NapiLoadModule(const char* path) = 0;
-    virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info, bool isHybrid = false) = 0;
+    virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) = 0;
+    virtual napi_value NapiLoadModuleWithInfoForHybridApp(const char* path, const char* module_info) = 0;
     virtual std::string GetPkgName(const std::string &moduleName) = 0;
 
     double NewAsyncId()

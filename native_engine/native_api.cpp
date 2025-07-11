@@ -3295,13 +3295,12 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
 NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
-                                                          napi_value* result,
-                                                          bool isHybrid)
+                                                          napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->NapiLoadModuleWithInfo(path, module_info, isHybrid);
+    *result = engine->NapiLoadModuleWithInfoForHybridApp(path, module_info);
     return GET_RETURN_STATUS(env);
 }
 // Memory management
@@ -4604,7 +4603,7 @@ NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const
     if (request_name[0] == NAME_SPACE_TAG) {
         // load module with OhmUrl
         auto [path, module_info] = panda::JSNApi::ResolveOhmUrl(request_name);
-        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), result, true);
+        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), result);
     } else {
         napi_load_module_with_path(env, request_name, result);
     }
@@ -4732,6 +4731,16 @@ NAPI_EXTERN napi_status napi_vm_handshake(napi_env env,
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_mark_from_object_for_cmc(napi_env env, napi_ref ref,
+                                                      std::function<void(uintptr_t)> &visitor)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, ref);
+    ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
+    reference->MarkFromObject(visitor);
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_mark_from_object(napi_env env, napi_ref ref)
 {
     NAPI_PREAMBLE(env);
@@ -4775,6 +4784,7 @@ NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
                                             napi_value js_object,
                                             void* native_object,
                                             napi_finalize finalize_cb,
+                                            proxy_object_attach_cb proxy_cb,
                                             napi_ref* result)
 {
     NAPI_PREAMBLE(env);
@@ -4797,8 +4807,20 @@ NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
     // Create strong reference now, will update to weak reference after interop support
     ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
     *reference = ref;
+    panda::JSNApi::XRefBindingInfo* data = panda::JSNApi::XRefBindingInfo::CreateNewInstance();
+    if (data == nullptr) {
+        HILOG_ERROR("data is nullptr");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    data->attachXRefFunc = reinterpret_cast<void*>(proxy_cb);
+    data->attachXRefData = native_object;
     object->SetNativePointerFieldCount(vm, 1);
-    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
+    object->SetNativePointerField(vm, 0, ref,
+        [](void* env, void* data, void* info) {
+            panda::JSNApi::XRefBindingInfo* externalInfo = reinterpret_cast<panda::JSNApi::XRefBindingInfo*>(info);
+            delete externalInfo;
+        },
+        reinterpret_cast<void*>(data), nativeBindingSize);
     PropertyAttribute attr(object, true, false, true);
     nativeObject->DefineProperty(vm, key, attr);
     return GET_RETURN_STATUS(env);

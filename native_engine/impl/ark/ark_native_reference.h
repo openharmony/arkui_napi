@@ -96,6 +96,7 @@ public:
     napi_value GetNapiValue() override;
     void ResetFinalizer()  override;
 #ifdef PANDA_JS_ETS_HYBRID_MODE
+    void MarkFromObject(std::function<void(uintptr_t)> &visitor);
     void MarkFromObject();
     bool IsObjectAlive();
     bool IsValidHeapObject();

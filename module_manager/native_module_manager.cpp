@@ -502,6 +502,21 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
 #endif
 }
 
+bool NativeModuleManager::GetLdNamespaceName(const std::string &moduleName, std::string &nsName)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    if (nsMap_.find(moduleName) == nsMap_.end()) {
+        HILOG_ERROR("not found ns: %{public}s", moduleName.c_str());
+        return false;
+    }
+    nsName = "moduleNs_" + moduleName;
+    return true;
+#else
+    return false;
+#endif
+}
+
 void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                                         const bool& isSystemApp)
 {
