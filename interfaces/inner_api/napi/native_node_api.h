@@ -24,6 +24,7 @@
 #include "js_native_api.h"
 #include "node_api.h"
 #include "native_common.h"
+#include "napi/common.h"
 
 typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
 typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
@@ -243,5 +244,9 @@ NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
                                                           napi_value* result);
+NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
+                                                         napi_async_work work,
+                                                         napi_qos_t qos,
+                                                         uintptr_t taskId);
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
