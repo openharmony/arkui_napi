@@ -202,6 +202,11 @@ NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv);
 NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env);
 
 NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env);
+
+NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
+                                                         napi_async_work work,
+                                                         napi_qos_t qos,
+                                                         uintptr_t taskId);
 #ifdef __cplusplus
 }
 #endif
