@@ -171,19 +171,6 @@ NAPI_EXTERN napi_status napi_cancel_async_work(napi_env env, napi_async_work wor
     return napi_status::napi_ok;
 }
 
-NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
-                                                         napi_async_work work,
-                                                         napi_qos_t qos,
-                                                         uintptr_t taskId)
-{
-    CHECK_ENV(env);
-    CHECK_ARG(env, work);
-
-    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
-    asyncWork->QueueOrdered(reinterpret_cast<NativeEngine*>(env), qos, taskId);
-    return napi_status::napi_ok;
-}
-
 // Version management
 NAPI_EXTERN napi_status napi_get_node_version(napi_env env, const napi_node_version** version)
 {
