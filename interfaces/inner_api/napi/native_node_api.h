@@ -256,6 +256,7 @@ NAPI_EXTERN napi_status napi_serialize_hybrid(napi_env env,
                                               napi_value clone_list,
                                               void** result);
 NAPI_EXTERN napi_status napi_deserialize_hybrid(napi_env env, void* buffer, napi_value* object);
+NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env);
 #endif  // PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
 NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
