@@ -880,6 +880,10 @@ void NativeEngine::RunCleanup()
 
     RunCleanupHooks(true);
 
+    if (loop_ == nullptr) {
+        return;
+    }
+
     // make sure tsfn relese by itself
     uv_run(loop_, UV_RUN_NOWAIT);
 
@@ -898,6 +902,10 @@ void NativeEngine::RunCleanup()
 
 void NativeEngine::CleanupHandles()
 {
+    if (loop_ == nullptr) {
+        return;
+    }
+
     while (requestWaiting_.load() > 0) {
         HILOG_INFO("%{public}s, request waiting:%{public}d.", __func__,
             requestWaiting_.load(std::memory_order_relaxed));
