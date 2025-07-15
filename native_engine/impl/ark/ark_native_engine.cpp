@@ -2683,6 +2683,7 @@ void ArkNativeEngine::NotifyForceExpandState(int32_t value)
         case ForceExpandState::WARM_START:
             DFXJSNApi::NotifyWarmStart(vm_);
             interopAppState_.Notify(NAPI_APP_STATE_WARM_START);
+            break;
         default:
             HILOG_ERROR("Invalid Force Expand State: %{public}d.", value);
             break;
