@@ -1418,6 +1418,24 @@ TEST_F(ArkInteropTest, GlobalReleaseSync)
         ARKTS_CloseScope(env, scope);
     }
 }
+
+TEST_F(ArkInteropTest, PromiseRelease)
+{
+    MockContext local;
+    auto env = local.GetEnv();
+    int loops = 20;
+    auto totalRepeat = 50000;
+    auto undefined = ARKTS_CreateUndefined();
+    for (int i = 0;i < loops; ++i) {
+        auto scope = ARKTS_OpenScope(env);
+        for (int j = 0;j < totalRepeat; ++j) {
+            auto promiseCap = ARKTS_CreatePromiseCapability(env);
+            ARKTS_PromiseCapabilityResolve(env, promiseCap, undefined);
+        }
+        EXPECT_FALSE(panda::JSNApi::HasPendingException(P_CAST(env, EcmaVM*)));
+        ARKTS_CloseScope(env, scope);
+    }
+}
 } // namespace
 
 int main(int argc, char** argv)

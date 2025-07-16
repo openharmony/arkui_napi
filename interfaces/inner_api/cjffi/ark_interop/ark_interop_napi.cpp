@@ -624,6 +624,7 @@ void ARKTS_PromiseCapabilityResolve(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Val
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = P_CAST(prom, Global<PromiseCapabilityRef>*);
     (*promise)->Resolve(vm, ARKTS_ToHandle<JSValueRef>(result));
+    promise->FreeGlobalHandleAddr();
     delete promise;
 }
 
@@ -635,6 +636,7 @@ void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Valu
     auto vm = P_CAST(env, EcmaVM*);
     auto promise = P_CAST(prom, Global<PromiseCapabilityRef>*);
     (*promise)->Reject(vm, ARKTS_ToHandle<JSValueRef>(result));
+    promise->FreeGlobalHandleAddr();
     delete promise;
 }
 
