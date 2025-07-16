@@ -4207,6 +4207,24 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_
     return napi_status::napi_ok;
 }
 
+NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
+                                                         napi_async_work work,
+                                                         napi_qos_t qos,
+                                                         uintptr_t taskId)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, work);
+    RETURN_STATUS_IF_FALSE(env, taskId != 0, napi_invalid_arg);
+
+    auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
+    bool res = asyncWork->QueueOrdered(reinterpret_cast<NativeEngine*>(env), qos, taskId);
+    if (!res) {
+        HILOG_ERROR("QueueOrdered failed, taskId: %{public}p", (void*)taskId);
+        return napi_status::napi_generic_failure;
+    }
+    return napi_status::napi_ok;
+}
+
 static void* DetachFuncCallback(void* engine, void* object, void* hint, void* detachData)
 {
     if (detachData == nullptr || (engine == nullptr || object == nullptr)) {

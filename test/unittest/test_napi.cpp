@@ -14428,3 +14428,101 @@ HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest004, testing::ext::TestSi
 {
     TestQueueAsyncWorkWithQueue(engine_, napi_qos_user_initiated);
 }
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQueueTest005
+ * @tc.desc: Test napi_queue_async_work_with_queue when env is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName,
+            [](napi_env env, void *data) {},
+            [](napi_env env, napi_status status, void* data) {},
+            nullptr, &work));
+
+    auto res = napi_queue_async_work_with_queue(nullptr, work, napi_qos_default, reinterpret_cast<uintptr_t>(&TASKID));
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQueueTest006
+ * @tc.desc: Test napi_queue_async_work_with_queue when work is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_queue_async_work_with_queue(env, nullptr, napi_qos_default, reinterpret_cast<uintptr_t>(&TASKID));
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQueueTest007
+ * @tc.desc: Test napi_queue_async_work_with_queue when taskId is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName,
+            [](napi_env env, void *data) {},
+            [](napi_env env, napi_status status, void* data) {},
+            nullptr, &work));
+
+    auto res = napi_queue_async_work_with_queue(env, work, napi_qos_default, 0);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQueueTest008
+ * @tc.desc: Test napi_queue_async_work_with_queue when napi_qos_t is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest008, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName,
+            [](napi_env env, void *data) {},
+            [](napi_env env, napi_status status, void* data) {},
+            nullptr, &work));
+
+    auto res = napi_queue_async_work_with_queue(env, work, static_cast<napi_qos_t>(TEST_INT32_10), reinterpret_cast<uintptr_t>(&TASKID));
+    ASSERT_EQ(res, napi_generic_failure);
+}
+
+/**
+ * @tc.name: NapiQueueAsyncWorkWithQueueTest009
+ * @tc.desc: Test interface of napi_queue_async_work_with_queue
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest009, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_async_work work = nullptr;
+    napi_value resourceName = nullptr;
+    napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    ASSERT_CHECK_CALL(napi_create_async_work(env, nullptr, resourceName,
+            [](napi_env env, void *data) {},
+            [](napi_env env, napi_status status, void* data) {},
+            nullptr, &work));
+
+    auto res = napi_queue_async_work_with_queue(env, work, napi_qos_default, reinterpret_cast<uintptr_t>(&TASKID));
+    ASSERT_EQ(res, napi_ok);
+}
