@@ -205,8 +205,12 @@ HWTEST_F(NativeEngineTest, SuspendVM001, testing::ext::TestSize.Level0)
 
 HWTEST_F(NativeEngineTest, CreateRuntimeFunc001, testing::ext::TestSize.Level0)
 {
-    auto result = engine_->CreateRuntime(true);
-    ASSERT_TRUE(result);
+    std::thread t([this]() {
+        auto result = engine_->CreateRuntime(true);
+        ASSERT_TRUE(result);
+        delete reinterpret_cast<NativeEngine *>(result);
+    });
+    t.join();
 }
 
 HWTEST_F(NativeEngineTest, ExecuteTranslateBySourceMapFunc001, testing::ext::TestSize.Level0)
@@ -383,30 +387,33 @@ HWTEST_F(NativeEngineTest, RegisterWorkerEnvTest001, testing::ext::TestSize.Leve
     auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
     arkIdleMonitor->SetMainThreadEcmaVM(vm);
 
-    RuntimeOption option;
-    option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
-    const int64_t poolSize = 0x1000000;  // 16M
-    option.SetGcPoolSize(poolSize);
-    option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
-    option.SetDebuggerLibraryPath("");
-    auto workerVM1 = panda::JSNApi::CreateJSVM(option);
-    auto workerVM2 = panda::JSNApi::CreateJSVM(option);
-    ArkNativeEngine *workerEngine1 = new ArkNativeEngine(workerVM1, nullptr);
-    ArkNativeEngine *workerEngine2 = new ArkNativeEngine(workerVM2, nullptr);
-    napi_env wokerEnv1 = reinterpret_cast<napi_env>(workerEngine1);
-    napi_env wokerEnv2 = reinterpret_cast<napi_env>(workerEngine2);
+    std::thread t([&arkIdleMonitor]() {
+        RuntimeOption option;
+        option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+        const int64_t poolSize = 0x1000000;  // 16M
+        option.SetGcPoolSize(poolSize);
+        option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+        option.SetDebuggerLibraryPath("");
+        auto workerVM1 = panda::JSNApi::CreateJSVM(option);
+        auto workerVM2 = panda::JSNApi::CreateJSVM(option);
+        ArkNativeEngine *workerEngine1 = new ArkNativeEngine(workerVM1, nullptr);
+        ArkNativeEngine *workerEngine2 = new ArkNativeEngine(workerVM2, nullptr);
+        napi_env wokerEnv1 = reinterpret_cast<napi_env>(workerEngine1);
+        napi_env wokerEnv2 = reinterpret_cast<napi_env>(workerEngine2);
 
-    arkIdleMonitor->UnregisterWorkerEnv(wokerEnv1);
-    arkIdleMonitor->UnregisterWorkerEnv(wokerEnv2);
+        arkIdleMonitor->UnregisterWorkerEnv(wokerEnv1);
+        arkIdleMonitor->UnregisterWorkerEnv(wokerEnv2);
 
-    arkIdleMonitor->RegisterWorkerEnv(wokerEnv1);
-    arkIdleMonitor->RegisterWorkerEnv(wokerEnv2);
+        arkIdleMonitor->RegisterWorkerEnv(wokerEnv1);
+        arkIdleMonitor->RegisterWorkerEnv(wokerEnv2);
 
-    arkIdleMonitor->UnregisterWorkerEnv(wokerEnv1);
-    arkIdleMonitor->UnregisterWorkerEnv(wokerEnv2);
+        arkIdleMonitor->UnregisterWorkerEnv(wokerEnv1);
+        arkIdleMonitor->UnregisterWorkerEnv(wokerEnv2);
 
-    delete workerEngine1;
-    delete workerEngine2;
+        delete workerEngine1;
+        delete workerEngine2;
+    });
+    t.join();
 }
 
 /**
