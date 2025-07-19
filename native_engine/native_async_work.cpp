@@ -185,7 +185,7 @@ bool NativeAsyncWork::QueueOrdered(NativeEngine* engine, napi_qos_t qos, uintptr
     HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE_ORDERED.c_str());
 #endif
     int status = uv_queue_work_ordered(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback,
-        uv_qos_t(qos), static_cast<uint64_t>(queueId));
+        uv_qos_t(qos), queueId);
 #ifdef ENABLE_HITRACE
     HiTraceChain::Tracepoint(HITRACE_TP_CR, taskId, "%s", TRACE_POINT_QUEUE_ORDERED.c_str());
     FinishTrace(HITRACE_TAG_ACE);

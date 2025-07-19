@@ -4219,7 +4219,7 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
     bool res = asyncWork->QueueOrdered(reinterpret_cast<NativeEngine*>(env), qos, taskId);
     if (!res) {
-        HILOG_ERROR("QueueOrdered failed, taskId: %{public}p", (void*)taskId);
+        HILOG_ERROR("QueueOrdered failed");
         return napi_status::napi_generic_failure;
     }
     return napi_status::napi_ok;
