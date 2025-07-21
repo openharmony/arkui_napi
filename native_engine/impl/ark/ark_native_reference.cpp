@@ -39,23 +39,7 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       nativeBindingSize_(nativeBindingSize)
 {
     InitProperties(deleteSelf, isAsyncCall);
-    ArkNativeReferenceConstructor();
-}
-
-ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
-                                       napi_value value,
-                                       ArkNativeReferenceConfig& config)
-    : engine_(engine),
-      value_(),
-      refCount_(config.initialRefcount),
-      ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
-      isProxyReference_(config.isProxyReference),
-      napiCallback_(config.napiCallback),
-      data_(config.data)
-{
-    InitProperties(config.deleteSelf, false);
-    value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
-    ArkNativeReferenceConstructor();
+    ArkNativeReferenceConstructor(FreeGlobalCallBack);
 }
 
 ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
@@ -77,10 +61,10 @@ ArkNativeReference::ArkNativeReference(ArkNativeEngine* engine,
       nativeBindingSize_(nativeBindingSize)
 {
     InitProperties(deleteSelf, isAsyncCall);
-    ArkNativeReferenceConstructor();
+    ArkNativeReferenceConstructor(FreeGlobalCallBack);
 }
 
-void ArkNativeReference::ArkNativeReferenceConstructor()
+void ArkNativeReference::ArkNativeReferenceConstructor(WeakRefClearCallBack weakCallback)
 {
     if (napiCallback_ != nullptr) {
         // Async callback will redirect to root engine, no monitoring needed.
@@ -96,7 +80,7 @@ void ArkNativeReference::ArkNativeReferenceConstructor()
     }
 
     if (refCount_ == 0) {
-        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeGlobalCallBack, NativeFinalizeCallBack);
+        value_.SetWeakCallback(reinterpret_cast<void*>(this), weakCallback, NativeFinalizeCallBack);
     }
 
     if (ownership_ == ReferenceOwnerShip::RUNTIME) {
@@ -140,11 +124,7 @@ ArkNativeReference::~ArkNativeReference()
         return;
     }
     SetHasDelete();
-    if (isProxyReference_) {
-        value_.FreeXRefGlobalHandleAddr();
-    } else {
-        value_.FreeGlobalHandleAddr();
-    }
+    value_.FreeGlobalHandleAddr();
     FinalizeCallback(FinalizerState::DESTRUCTION);
 }
 
@@ -292,11 +272,7 @@ void ArkNativeReference::FinalizeCallback(FinalizerState state)
 void ArkNativeReference::FreeGlobalCallBack(void* ref)
 {
     auto that = reinterpret_cast<ArkNativeReference*>(ref);
-    if (that->isProxyReference_) {
-        that->value_.FreeXRefGlobalHandleAddr();
-    } else {
-        that->value_.FreeGlobalHandleAddr();
-    }
+    that->value_.FreeGlobalHandleAddr();
 }
 
 void ArkNativeReference::NativeFinalizeCallBack(void* ref)

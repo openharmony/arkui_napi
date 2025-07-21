@@ -22,6 +22,7 @@
 
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
+#include "ark_xref_native_reference.h"
 #include "ark_native_timer.h"
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
@@ -1979,8 +1980,8 @@ NativeReference* ArkNativeEngine::CreateReference(napi_value value, uint32_t ini
 NativeReference* ArkNativeEngine::CreateXRefReference(napi_value value, uint32_t initialRefcount,
     bool flag, NapiNativeFinalize callback, void* data)
 {
-    ArkNativeReferenceConfig config(initialRefcount, true, flag, callback, data);
-    return new ArkNativeReference(this, value, config);
+    ArkNativeReferenceConfig config(initialRefcount, flag, callback, data);
+    return new ArkXRefNativeReference(this, value, config);
 }
 
 NativeReference* ArkNativeEngine::CreateAsyncReference(napi_value value, uint32_t initialRefcount,
