@@ -1108,7 +1108,7 @@ static inline uint64_t StartNapiProfilerTrace(panda::JsiRuntimeCallInfo* runtime
         }
     }
     rawStack = ssRawStack.str();
-    OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", 0);
+    OHOS::HiviewDFX::HiTraceChain::Begin("ArkNativeFunctionCallBack", HITRACE_FLAG_NO_BE_INFO);
     OHOS::HiviewDFX::HiTraceId hitraceId = OHOS::HiviewDFX::HiTraceChain::GetId();
     // resolve nested calls to napi and ts
     if (hitraceId.IsValid()) {
