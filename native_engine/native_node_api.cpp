@@ -362,7 +362,6 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
 {
     CHECK_ENV(env);
     CHECK_ARG(env, async_resource_name);
-    RETURN_STATUS_IF_FALSE(env, max_queue_size >= 0, napi_invalid_arg);
     RETURN_STATUS_IF_FALSE(
         env, initial_thread_count > 0 && initial_thread_count <= MAX_THREAD_SAFE_COUNT, napi_invalid_arg);
     CHECK_ARG(env, result);

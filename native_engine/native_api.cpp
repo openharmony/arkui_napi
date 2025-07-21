@@ -370,8 +370,7 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     if (LIKELY(length < SMALL_STRING_SIZE)) {
-        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(vm, str, length);
         *result = JsValueFromLocalValue(object);
     } else {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
@@ -390,8 +389,7 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     if (length < SMALL_STRING_SIZE) {
-        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTable(vm, str, length);
         *result = JsValueFromLocalValue(object);
     } else {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf8(
@@ -408,7 +406,7 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
     CHECK_ENV(env);
     CHECK_ARG(env, str);
     CHECK_ARG(env, result);
-    RETURN_STATUS_IF_FALSE(env, (length == NAPI_AUTO_LENGTH) || (length <= INT_MAX && length >= 0), napi_invalid_arg);
+    RETURN_STATUS_IF_FALSE(env, (length == NAPI_AUTO_LENGTH) || (length <= INT_MAX), napi_invalid_arg);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
@@ -417,8 +415,7 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
             length, char16Length);
     }
     if (length < SMALL_STRING_SIZE) {
-        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(
-            vm, str, (length == NAPI_AUTO_LENGTH) ? char16Length : length);
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf16WithoutStringTable(vm, str, length);
         *result = JsValueFromLocalValue(object);
     } else {
         Local<panda::StringRef> object = panda::StringRef::NewFromUtf16(
@@ -3871,17 +3868,9 @@ NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object,
     Local<panda::StringRef> key = StringRef::NewFromUtf8(vm, name);
     hasPribate = obj->Has(vm, key);
     if (!hasPribate) {
-        constexpr int bigintMod = 2; // 2 : used for even number judgment
-        int sign_bit = 0;
-        size_t word_count = 2;
-        bool sign = false;
-        if ((sign_bit % bigintMod) == 1) {
-            sign = true;
-        }
-        uint32_t size = (uint32_t)word_count;
-        Local<panda::JSValueRef> value = panda::BigIntRef::CreateBigWords(vm, sign, size,
+        uint32_t size = 2; // 2 : size for type tag
+        Local<panda::JSValueRef> value = panda::BigIntRef::CreateBigWords(vm, false, size,
                                                                           reinterpret_cast<const uint64_t*>(typeTag));
-        Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, name);
         result = obj->Set(vm, key, value);
     }
     if (!result) {
@@ -3942,7 +3931,6 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
     Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, name);
     *result = obj->Has(vm, key);
     if (*result) {
-        Local<panda::StringRef> key = panda::StringRef::NewFromUtf8(vm, name);
         Local<panda::JSValueRef> object = obj->Get(vm, key);
         if (object->IsBigInt(vm)) {
             int sign;
@@ -4065,9 +4053,6 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
 
     RETURN_STATUS_IF_FALSE(env, nativeValue->IsBigInt(vm), napi_object_expected);
     auto BigintObj = nativeValue->ToBigInt(vm);
-    if (word_count == nullptr) {
-        return napi_set_last_error(env, napi_invalid_arg);
-    }
     size_t size = static_cast<size_t>(BigintObj->GetWordsArraySize(vm));
     if (sign_bit == nullptr && words == nullptr) {
         *word_count = size;
