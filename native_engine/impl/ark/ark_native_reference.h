@@ -46,17 +46,15 @@ struct ArkNativeReferenceConfig {
     void* data;
 
     explicit ArkNativeReferenceConfig(uint32_t initialRefcount,
-                             bool deleteSelf = false,
-                             NapiNativeFinalize napiCallback = nullptr,
-                             void* data = nullptr)
+                                      bool deleteSelf = false,
+                                      NapiNativeFinalize napiCallback = nullptr,
+                                      void* data = nullptr)
         : initialRefcount(initialRefcount),
           deleteSelf(deleteSelf),
           napiCallback(napiCallback),
           data(data)
     {}
 };
-
-using WeakRefClearCallBack = void (*)(void*);
 
 class ArkNativeReference : public NativeReference {
 public:
@@ -110,7 +108,7 @@ protected:
           data_(config.data)
     {}
 
-    void ArkNativeReferenceConstructor(WeakRefClearCallBack weakCallback);
+    virtual void ArkNativeReferenceConstructor();
 
     enum ReferencePropertiesMask : uint8_t {
         DELETE_SELF_MASK = 1,

@@ -44,7 +44,7 @@ napi_sources = [
 
 # supported for hybrid
 napi_sources += [
-  "native_engine/impl/ark/ark_xref_native_reference.cpp",
+  "native_engine/impl/ark/ark_hybrid_native_reference.cpp",
 ]
 
 if (is_mingw) {

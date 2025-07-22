@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "ark_xref_native_reference.h"
+#include "ark_hybrid_native_reference.h"
+
 #include <cinttypes>
 
 #include "native_engine/native_api_internal.h"
@@ -25,23 +26,17 @@ ArkXRefNativeReference::ArkXRefNativeReference(ArkNativeEngine* engine,
     : ArkNativeReference(engine, config)
 {
     value_.CreateXRefGloablReference(engine->GetEcmaVm(), LocalValueFromJsValue(value));
-    ArkNativeReferenceConstructor(FreeXRefGlobalCallBack);
+    ArkNativeReferenceConstructor();
 }
 
 ArkXRefNativeReference::~ArkXRefNativeReference()
 {
     VALID_ENGINE_CHECK(engine_, engine_, engineId_);
 
-    if (engine_->GetReferenceManager()) {
-        engine_->GetReferenceManager()->ReleaseHandler(this);
-        prev_ = nullptr;
-        next_ = nullptr;
-    }
     if (value_.IsEmpty()) {
         return;
     }
     value_.FreeXRefGlobalHandleAddr();
-    FinalizeCallback(FinalizerState::DESTRUCTION);
 }
 
 void ArkXRefNativeReference::FreeXRefGlobalCallBack(void* ref)
@@ -63,5 +58,34 @@ uint32_t ArkXRefNativeReference::Unref()
         value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeXRefGlobalCallBack, NativeFinalizeCallBack);
     }
     return refCount_;
+}
+
+void ArkXRefNativeReference::ArkNativeReferenceConstructor()
+{
+    if (napiCallback_ != nullptr) {
+        // Async callback will redirect to root engine, no monitoring needed.
+        if (!IsAsyncCall()) {
+            engine_->IncreaseCallbackbleRefCounter();
+            // Non-callback runtime owned napi_ref will free when env teardown.
+            if (ownership_ == ReferenceOwnerShip::RUNTIME && !engine_->IsMainEnvContext()) {
+                engine_->IncreaseRuntimeOwnedRefCounter();
+            }
+        }
+    } else {
+        engine_->IncreaseNonCallbackRefCounter();
+    }
+
+    if (refCount_ == 0) {
+        value_.SetWeakCallback(reinterpret_cast<void*>(this), FreeXRefGlobalCallBack, NativeFinalizeCallBack);
+    }
+
+    if (ownership_ == ReferenceOwnerShip::RUNTIME) {
+        NativeReferenceManager* referenceManager = engine_->GetReferenceManager();
+        if (referenceManager != nullptr) {
+            referenceManager->CreateHandler(this);
+        }
+    }
+
+    engineId_ = engine_->GetId();
 }
  
