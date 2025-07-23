@@ -8308,6 +8308,21 @@ HWTEST_F(NapiBasicTest, NapiMakeCallbackTest002, testing::ext::TestSize.Level1)
     ASSERT_EQ(status, napi_invalid_arg);
 }
 
+/**
+ * @tc.name: NapiGetEtsImplementsTest
+ * @tc.desc: Test interface of napi_get_ets_implements
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetEtsImplementsTest, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value value = nullptr;
+    napi_value result = nullptr;
+
+    napi_status status = napi_get_ets_implements(env, value, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
 HWTEST_F(NapiBasicTest, NapiAsyncDestroyTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = reinterpret_cast<napi_env>(engine_);
@@ -9080,6 +9095,47 @@ HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test004, testing::ext::TestSize.L
 
     napi_status status = napi_get_value_bigint_int64(env, value, &result, &lossless);
     ASSERT_EQ(status, napi_bigint_expected);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsAliveObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result = nullptr;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status =
+        napi_wrap_with_xref(env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_is_alive_object(env, result, &res);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsValidHeapObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    napi_ref result = nullptr;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status =
+        napi_wrap_with_xref(env, obj, (void*)TEST_STRING, [](napi_env, void* data, void* hint) {}, &result);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_is_contain_object(env, result, &res);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, NapiIsXrefTypeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj;
+    bool res = false;
+
+    napi_create_object(env, &obj);
+    napi_status status = napi_is_xref_type(env, obj, &res);
+    ASSERT_EQ(status, napi_ok);
 }
 
 HWTEST_F(NapiBasicTest, NapiGetValueBigintInt64Test005, testing::ext::TestSize.Level1)

@@ -234,6 +234,11 @@ NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
                                             void* native_object,
                                             napi_finalize finalize_cb,
                                             napi_ref* result);
+NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
+NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
+NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result);
+NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result);
+NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env);
 #endif  // PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
 NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
