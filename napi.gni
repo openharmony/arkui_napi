@@ -42,6 +42,11 @@ napi_sources = [
   "utils/log.cpp",
 ]
 
+# supported for hybrid
+napi_sources += [
+  "native_engine/impl/ark/ark_hybrid_native_reference.cpp",
+]
+
 if (is_mingw) {
   napi_sources += [ "utils/platform/windows/file.cpp" ]
 } else {

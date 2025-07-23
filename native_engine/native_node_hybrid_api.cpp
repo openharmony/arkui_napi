@@ -389,7 +389,7 @@ NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env)
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
-    panda::JSNApi::InitHybridVMEnv(vm);
+    panda::JSNApi::InitHybridVMEnv(const_cast<panda::ecmascript::EcmaVM*>(vm));
     return GET_RETURN_STATUS(env);
 }
 #endif // PANDA_JS_ETS_HYBRID_MODE
