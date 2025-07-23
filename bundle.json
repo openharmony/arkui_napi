@@ -71,7 +71,8 @@
                       "header_base": "//foundation/arkui/napi/interfaces/inner_api",
                       "header_files": [
                           "napi/native_common.h",
-                          "napi/native_node_api.h"
+                          "napi/native_node_api.h",
+                          "napi/native_node_hybrid_api.h"
                       ]
                     },
                     "name": "//foundation/arkui/napi:ace_napi"
