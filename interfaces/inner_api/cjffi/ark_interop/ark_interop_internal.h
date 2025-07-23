@@ -54,9 +54,10 @@ using ARKTS_Loop = void*;
 
 // @deprecated
 ARKTS_Loop ARKTS_GetOrCreateEventHandler(ARKTS_Env env);
-bool ARKTSInner_InitLoop(ARKTS_Env env, uv_loop_t* loop);
+bool ARKTSInner_InitLoop(napi_env env, ARKTS_Env vm, uv_loop_t* loop);
 void ARKTS_DisposeEventHandler(ARKTS_Env env);
 void ARKTS_DisposeJSContext(ARKTS_Env env);
+void ARKTS_RemoveGlobals(ARKTS_Env env);
 
 template<typename T>
 ARKTS_INLINE panda::Local<T> ARKTS_ToHandle(ARKTS_Value& value)

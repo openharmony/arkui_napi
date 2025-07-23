@@ -36,15 +36,15 @@ struct ARKTS_Loop_ {
         STOPPING,
         STOPPED,
     };
-    uv_loop_t* loop;
     uv_async_t asyncReq;
     Status status;
     std::vector<std::function<void ()>> callbacks;
     std::mutex mutex;
     std::condition_variable cv;
+    bool hasCleanupHook;
 
-    explicit ARKTS_Loop_(uv_loop_t* loop);
-    ~ARKTS_Loop_();
+    explicit ARKTS_Loop_(napi_env env, uv_loop_t* loop);
+    ~ARKTS_Loop_() = default;
 
     void PostTask(std::function<void ()> task);
     // only to be call by uv_queue_task
@@ -121,12 +121,7 @@ void ARKTS_DisposeEventHandler(ARKTS_Env env)
 #endif
     {
         std::lock_guard lock(g_uvLoopMutex_);
-        auto searchRet = g_uvLoops_.find(env);
-        if (searchRet != g_uvLoops_.end()) {
-            auto loop = searchRet->second;
-            g_uvLoops_.erase(searchRet);
-            delete loop;
-        }
+        g_uvLoops_.erase(env);
     }
 }
 
@@ -156,37 +151,27 @@ void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId)
     ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, reinterpret_cast<void*>(callbackId));
 }
 
-ARKTS_Loop_::ARKTS_Loop_(uv_loop_t* loop) : loop(loop), asyncReq(), status(IDLE)
+ARKTS_Loop_::ARKTS_Loop_(napi_env env, uv_loop_t* loop) : asyncReq(), status(IDLE)
 {
-    uv_async_init(loop, &asyncReq, [](uv_async_t* work) {
+    auto error = uv_async_init(loop, &asyncReq, [](uv_async_t* work) {
         auto loop = static_cast<ARKTS_Loop_*>(work->data);
         if (loop) {
             loop->DrainTasks();
         }
     });
+    if (error != 0) {
+        LOGE("uv_async_init failed, status: %{public}d", error);
+        hasCleanupHook = false;
+        return;
+    }
     asyncReq.data = this;
-}
-
-ARKTS_Loop_::~ARKTS_Loop_()
-{
-    {
-        std::lock_guard lock(mutex);
-        if (status == STOPPED) {
+    hasCleanupHook = napi_add_cleanup_finalizer(env, [](void* data) {
+        if (!data) {
             return;
         }
-        if (status == IDLE) {
-            status = STOPPED;
-            return;
-        }
-        status = STOPPING;
-    }
-    // should be STOPPING by now.
-    constexpr auto checkDuration = 10; // ms
-    std::mutex curMutex;
-    std::unique_lock lock(mutex);
-    while (status != STOPPED) {
-        cv.wait_for(lock, std::chrono::milliseconds(checkDuration));
-    }
+        auto loop = reinterpret_cast<ARKTS_Loop_*>(data);
+        delete loop;
+    }, this) == napi_ok;
 }
 
 void ARKTS_Loop_::PostTask(std::function<void()> task)
@@ -230,17 +215,52 @@ void ARKTS_Loop_::DrainTasks()
     }
 }
 
-bool ARKTSInner_InitLoop(ARKTS_Env env, uv_loop_t* loop)
+// napi_add_env_cleanup_hook(napi_env, callback, hint) holds a (non-milt) map of all 'callbacks' by keyof 'hint'
+// if others pass env as 'hint' may cause failure, so new CleanupTask as 'hint' to prevent collision.
+struct CleanupTask {
+    ARKTS_Env env;
+};
+
+bool ARKTSInner_InitLoop(napi_env env, ARKTS_Env vm, uv_loop_t* loop)
 {
     std::lock_guard lock(g_uvLoopMutex_);
-    if (g_uvLoops_.find(env) != g_uvLoops_.end()) {
+    if (g_uvLoops_.find(vm) != g_uvLoops_.end()) {
         return true;
     }
-    auto arktsLoop = new ARKTS_Loop_(loop);
+    auto arktsLoop = new (std::nothrow) ARKTS_Loop_(env, loop);
     if (!arktsLoop) {
         LOGE("new ARKTS_Loop_ failed.");
         return false;
     }
-    g_uvLoops_[env] = arktsLoop;
+    if (!arktsLoop->hasCleanupHook) {
+        LOGE("ARKTSLoop has no cleanup hook.");
+        delete arktsLoop;
+        return false;
+    }
+
+    auto cleanupTask = new (std::nothrow) CleanupTask {vm};
+    if (!cleanupTask) {
+        LOGE("new CleanupTask failed.");
+        delete arktsLoop;
+        return false;
+    }
+    auto status = napi_add_env_cleanup_hook(env, [](void* data) {
+        if (!data) {
+            return;
+        }
+        auto task = reinterpret_cast<CleanupTask*>(data);
+        ARKTS_DisposeJSContext(task->env);
+        ARKTS_DisposeEventHandler(task->env);
+        ARKTS_RemoveGlobals(task->env);
+        delete task;
+    }, cleanupTask);
+    if (status != napi_ok) {
+        LOGE("add env cleanup hook failed: %{public}d", status);
+        delete arktsLoop;
+        delete cleanupTask;
+        return false;
+    }
+
+    g_uvLoops_[vm] = arktsLoop;
     return true;
 }

@@ -77,6 +77,11 @@ struct ARKTS_Global_ {
         return !isDisposed && !ref.IsEmpty();
     }
 
+    void SetDisposed()
+    {
+        isDisposed = true;
+    }
+
 private:
     Global<JSValueRef> ref;
     bool isDisposed;
@@ -105,8 +110,10 @@ class GlobalManager {
 public:
     static void Dispose(EcmaVM* vm, uintptr_t handle);
     static void AsyncDisposer(ARKTS_Env env, void* data);
+    static void RemoveGlobals(ARKTS_Env env);
 
     explicit GlobalManager(EcmaVM* vm);
+    ~GlobalManager();
 
 private:
     static SpinLock managersMutex_;
@@ -158,6 +165,26 @@ void GlobalManager::Dispose(EcmaVM* vm, uintptr_t handle)
     manager->handleMutex_.Release();
     if (needSchedule) {
         ARKTSInner_CreateAsyncTask(P_CAST(vm, ARKTS_Env), AsyncDisposer, manager);
+    }
+}
+
+void GlobalManager::RemoveGlobals(ARKTS_Env env)
+{
+    auto vm = reinterpret_cast<EcmaVM*>(env);
+    managersMutex_.Acquire();
+    managers_.erase(vm);
+    managersMutex_.Release();
+}
+
+GlobalManager::~GlobalManager()
+{
+    std::vector<uintptr_t> toDispose;
+    handleMutex_.Acquire();
+    std::swap(toDispose, handlesToDispose_);
+    handleMutex_.Release();
+    for (auto p : toDispose) {
+        auto global = reinterpret_cast<ARKTS_Global_*>(p);
+        global->SetDisposed();
     }
 }
 }
@@ -247,4 +274,9 @@ bool ARKTS_GlobalIsAlive(ARKTS_Env env, ARKTS_Global global)
     ARKTS_ASSERT_F(global, "global is null");
 
     return global->IsAlive();
+}
+
+void ARKTS_RemoveGlobals(ARKTS_Env env)
+{
+    GlobalManager::RemoveGlobals(env);
 }

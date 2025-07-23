@@ -24,6 +24,8 @@
 #include <cmath>
 #include <thread>
 
+#include "napi/native_api.h"
+
 using namespace testing;
 using namespace testing::ext;
 
@@ -234,6 +236,11 @@ public:
         return data_.Get(index).data;
     }
 
+    void SetFinalizerCallback(std::function<void (ARKTS_Env)> callback)
+    {
+        finalizerCallback_ = std::move(callback);
+    }
+
 protected:
     virtual ARKTS_Value ExportModule(ARKTS_Env env, const char* dllName, ARKTS_Value exports)
     {
@@ -307,6 +314,9 @@ protected:
 
     virtual void DeleteJSContext(ARKTS_Env env)
     {
+        if (finalizerCallback_) {
+            finalizerCallback_(env);
+        }
     }
 
     virtual ARKTS_Value InvokeCycleFreeFunc(ARKTS_CallInfo callInfo, uint32_t id)
@@ -351,6 +361,7 @@ private:
         std::function<void (void*)> deleter;
     };
     Slab<AnyData> data_;
+    std::function<void (ARKTS_Env)> finalizerCallback_;
 };
 
 void MockContext::Init()
@@ -1435,6 +1446,18 @@ TEST_F(ArkInteropTest, PromiseRelease)
         EXPECT_FALSE(panda::JSNApi::HasPendingException(P_CAST(env, EcmaVM*)));
         ARKTS_CloseScope(env, scope);
     }
+}
+
+TEST_F(ArkInteropTest, CheckFreeContext)
+{
+    bool isDisposed = false;
+    {
+        MockContext local(ARKTS_CreateEngineWithNewThread());
+        local.SetFinalizerCallback([&isDisposed](ARKTS_Env) {
+            isDisposed = true;
+        });
+    }
+    EXPECT_TRUE(isDisposed);
 }
 } // namespace
 
