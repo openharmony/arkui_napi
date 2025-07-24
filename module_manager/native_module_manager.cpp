@@ -1125,7 +1125,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         if (strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
             HILOG_WARN("mismatch: moduleName is %{public}s, name is %{public}s",
                 tailNativeModule_->moduleName, tailNativeModule_->name);
-            HILOG_WARN("suggestion: keep .nm_modname the same as moduleName imported or required");
+            HILOG_DEBUG("suggestion: keep .nm_modname the same as moduleName imported or required");
         }
     }
 
