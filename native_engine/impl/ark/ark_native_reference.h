@@ -41,21 +41,19 @@ enum class ReferenceOwnerShip : uint8_t {
 
 struct ArkNativeReferenceConfig {
     uint32_t initialRefcount;
-    bool isProxyReference;
     bool deleteSelf;
     NapiNativeFinalize napiCallback;
     void* data;
 
-    ArkNativeReferenceConfig(uint32_t initialRefcount,
-                             bool isProxyReference,
-                             bool deleteSelf = false,
-                             NapiNativeFinalize napiCallback = nullptr,
-                             void* data = nullptr)
+    explicit ArkNativeReferenceConfig(uint32_t initialRefcount,
+                                      bool deleteSelf = false,
+                                      NapiNativeFinalize napiCallback = nullptr,
+                                      void* data = nullptr)
         : initialRefcount(initialRefcount),
-          isProxyReference(isProxyReference),
           deleteSelf(deleteSelf),
           napiCallback(napiCallback),
-          data(data) {}
+          data(data)
+    {}
 };
 
 class ArkNativeReference : public NativeReference {
@@ -69,9 +67,6 @@ public:
                        void* hint = nullptr,
                        bool isAsyncCall = false,
                        size_t nativeBindingSize = 0);
-    ArkNativeReference(ArkNativeEngine* engine,
-                       napi_value value,
-                       ArkNativeReferenceConfig &config);
     ArkNativeReference(ArkNativeEngine* engine,
                        Local<JSValueRef> value,
                        uint32_t initialRefcount,
@@ -101,7 +96,19 @@ public:
     bool IsValidHeapObject();
 #endif // PANDA_JS_ETS_HYBRID_MODE
 
-private:
+protected:
+    ArkNativeReference(ArkNativeEngine* engine,
+                       const ArkNativeReferenceConfig &config)
+        : engine_(engine),
+          value_(),
+          refCount_(config.initialRefcount),
+          ownership_(config.deleteSelf ? ReferenceOwnerShip::RUNTIME : ReferenceOwnerShip::USER),
+          napiCallback_(config.napiCallback),
+          data_(config.data)
+    {}
+
+    virtual void ArkNativeReferenceConstructor();
+
     enum ReferencePropertiesMask : uint8_t {
         DELETE_SELF_MASK = 1,
         IS_ASYNC_CALL_MASK = DELETE_SELF_MASK << 1,
@@ -109,7 +116,6 @@ private:
         FINAL_RAN_MASK = HAS_DELETE_MASK << 1,
     };
 
-    void ArkNativeReferenceConstructor();
     void InitProperties(bool deleteSelf = false, bool isAsyncCall = false);
 
     ArkNativeEngine* engine_;
@@ -122,7 +128,6 @@ private:
     // Bit-packed flags: saves memory and speeds up object creation vs. multiple bools.
     // std::bitset will use more memory than uint8_t number.
     uint8_t properties_ {0};
-    bool isProxyReference_{false};
 
     NapiNativeFinalize napiCallback_ {nullptr};
     void* data_ {nullptr};
@@ -145,8 +150,9 @@ private:
     void IncreaseCounter();
     void DecreaseCounter();
 
-    static void FreeGlobalCallBack(void* ref);
     static void NativeFinalizeCallBack(void* ref);
+private:
+    static void FreeGlobalCallBack(void* ref);
     friend class NativeReferenceManager;
 };
 

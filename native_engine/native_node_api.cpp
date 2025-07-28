@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -642,28 +642,4 @@ NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_c
         return napi_ok;
     }
     return napi_generic_failure;
-}
-
-NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result)
-{
-    NAPI_PREAMBLE(env);
-    CHECK_ARG(env, value);
-    CHECK_ARG(env, result);
-
-    auto nativeValue = LocalValueFromJsValue(value);
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    Local<panda::JSValueRef> implementsValue = panda::JSNApi::GetImplements(vm, nativeValue);
-    *result = JsValueFromLocalValue(implementsValue);
-    return GET_RETURN_STATUS(env);
-}
-
-NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env)
-{
-    NAPI_PREAMBLE(env);
-
-    auto engine = reinterpret_cast<NativeEngine*>(env);
-    auto vm = engine->GetEcmaVm();
-    panda::JSNApi::InitHybridVMEnv(vm);
-    return GET_RETURN_STATUS(env);
 }
