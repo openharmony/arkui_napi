@@ -94,6 +94,10 @@ HWTEST_F(NapiSendEventTest, SendEventTest004, testing::ext::TestSize.Level1)
     EXPECT_NE(eventHandler_, nullptr);
     auto status = napi_send_event(env, cb, napi_eprio_high);
     EXPECT_EQ(status, napi_status::napi_ok);
+
+    engine_->SetInstanceId(1000);
+    status = napi_send_event(env, cb, napi_eprio_high);
+    EXPECT_EQ(status, napi_status::napi_ok);
 }
 
 /**
