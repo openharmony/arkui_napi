@@ -265,24 +265,32 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
 {
     uint64_t eventId = GenerateUniqueID();
 #ifdef ENABLE_CONTAINER_SCOPE_SEND_EVENT
-    int32_t containerScopeId = ContainerScope::CurrentId();
-    if (containerScopeId == -1) {
-        containerScopeId = engine_->GetInstanceId();
+    int32_t containerScopeId = engine_->GetInstanceId();
+    if (__builtin_expect(containerScopeId != -1, 0)) {
+        std::function<void()> task = [eng = engine_, callback, data, eventId, containerScopeId]() {
+            ContainerScope containerScope(containerScopeId);
+            auto tcin = TraceLogClass("Cancelable Event callback:handleId:" + std::to_string(eventId));
+            auto vm = eng->GetEcmaVm();
+            panda::LocalScope scope(vm);
+            callback(data);
+        };
+        napi_status sentEventRes = SendEventByEventHandler(task, eventId, priority, name, handleId);
+        if (sentEventRes != napi_status::napi_invalid_arg) {
+            return sentEventRes;
+        }
+        return SendEventByUv(task, eventId, name, handleId);
     }
-    std::function<void()> task = [eng = engine_, callback, data, eventId, containerScopeId]() {
-        ContainerScope containerScope(containerScopeId);
-#else
-    std::function<void()> task = [eng = engine_, callback, data, eventId]() {
 #endif
+    std::function<void()> task = [eng = engine_, callback, data, eventId]() {
         auto tcin = TraceLogClass("Cancelable Event callback:handleId:" + std::to_string(eventId));
         auto vm = eng->GetEcmaVm();
         panda::LocalScope scope(vm);
         callback(data);
     };
 
-    napi_status sentEventRes = SendEventByEventHandler(task, eventId, priority, name, handleId);
-    if (sentEventRes != napi_status::napi_invalid_arg) {
-        return sentEventRes;
+    napi_status sentEventOut = SendEventByEventHandler(task, eventId, priority, name, handleId);
+    if (sentEventOut != napi_status::napi_invalid_arg) {
+        return sentEventOut;
     }
 
     return SendEventByUv(task, eventId, name, handleId);
