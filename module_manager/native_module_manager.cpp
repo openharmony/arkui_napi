@@ -931,7 +931,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
 {
     if (strlen(path) == 0) {
         errInfo += "load module " + moduleKey  + " failed. module path is empty";
-        HILOG_ERROR("%{public}s", errInfo.c_str());
+        HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
 
@@ -995,7 +995,7 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     const uint8_t* lib = nullptr;
     std::ifstream inFile(filePath, std::ios::ate | std::ios::binary);
     if (!inFile.is_open()) {
-        HILOG_ERROR("%{public}s is not existed.", filePath.c_str());
+        HILOG_WARN("%{public}s is not existed.", filePath.c_str());
         return lib;
     }
     len = static_cast<size_t>(inFile.tellg());
@@ -1103,7 +1103,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         abcBuffer = GetFileBuffer(loadPath, moduleKey, len);
         if (!abcBuffer) {
             errInfo += "\ntry to load abc file from " + std::string(loadPath) + " failed";
-            HILOG_ERROR("%{public}s", errInfo.c_str());
+            HILOG_WARN("%{public}s", errInfo.c_str());
             return nullptr;
         }
     }
