@@ -29,7 +29,6 @@ ohos_shared_library("netserver") {
     "bounds_checking_function:libsec_shared",
     "hilog:libhilog",
     "libuv:uv",
-    "node:node_header_notice",
   ]
 
   relative_install_dir = "module"

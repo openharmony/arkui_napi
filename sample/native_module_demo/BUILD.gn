@@ -23,11 +23,9 @@ ohos_shared_library("demo") {
 
   deps = [ "../..:ace_napi" ]
 
-  external_deps = [ "node:node_header_notice" ]
-
   if ("${current_os}_${current_cpu}" != "mingw_x86_64" &&
       "${current_os}_${current_cpu}" != "mac_x64") {
-    external_deps += [ "hilog:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
   }
 
   relative_install_dir = "module"
