@@ -29,8 +29,6 @@ ohos_shared_library("calc") {
     "../..:ace_napi",
   ]
 
-  external_deps = [ "node:node_header_notice" ]
-
   relative_install_dir = "module"
 
   subsystem_name = "arkui"
@@ -41,8 +39,6 @@ ohos_shared_library("number") {
   sources = [ "napi_number.cpp" ]
 
   deps = [ "../..:ace_napi" ]
-
-  external_deps = [ "node:node_header_notice" ]
 
   relative_install_dir = "module"
 
