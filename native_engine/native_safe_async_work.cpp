@@ -321,7 +321,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     }
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSING) {
-        HILOG_ERROR("thread is closing!");
+        HILOG_DEBUG("threadsafe function is closing!");
         CloseHandles();
         return;
     }
