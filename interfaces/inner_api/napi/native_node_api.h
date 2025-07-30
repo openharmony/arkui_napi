@@ -196,8 +196,4 @@ NAPI_EXTERN napi_status napi_load_module_with_path(napi_env env, const char* pat
                                                    napi_value* result);
 NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error);
 
-NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result);
-NAPI_EXTERN napi_status napi_is_contain_object(napi_env env, napi_ref ref, bool* result);
-NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bool* result);
-
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */
