@@ -103,10 +103,10 @@ static void ARKTSInner_DisposeEngine(ARKTS_Engine engine)
         engine->eventHandler->RemoveFileDescriptorListener(fd);
     }
 #endif
+    ARKTS_DisposeJSContext(reinterpret_cast<ARKTS_Env>(engine->vm));
     delete engine->engine;
     if (engine->vm) {
         auto env = P_CAST(engine->vm, ARKTS_Env);
-        ARKTS_DisposeJSContext(env);
         ARKTS_DisposeEventHandler(env);
         panda::JSNApi::DestroyJSVM(engine->vm);
     }
@@ -131,7 +131,7 @@ static bool ARKTSInner_InitEngineLoop(ARKTS_Engine result, ArkNativeEngine* engi
         loop = engine->GetUVLoop();
     }
     panda::JSNApi::SetLoop(vm, loop);
-    if (!ARKTSInner_InitLoop(reinterpret_cast<ARKTS_Env>(vm), loop)) {
+    if (!ARKTSInner_InitLoop(reinterpret_cast<napi_env>(engine), reinterpret_cast<ARKTS_Env>(vm), loop)) {
         LOGE("init async loop failed");
         return false;
     }

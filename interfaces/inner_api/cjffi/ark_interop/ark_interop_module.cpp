@@ -15,6 +15,8 @@
 
 #include <unordered_map>
 
+#include <node_api.h>
+
 #include "ark_interop_internal.h"
 #include "ark_interop_external.h"
 #include "ark_interop_log.h"
@@ -128,10 +130,11 @@ EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllNa
         LOGE("uvloop is null");
         return nullptr;
     }
-    if (!ARKTSInner_InitLoop(reinterpret_cast<ARKTS_Env>(vm), loop)) {
+    if (!ARKTSInner_InitLoop(reinterpret_cast<napi_env>(env), reinterpret_cast<ARKTS_Env>(vm), loop)) {
         LOGE("init loop failed");
         return nullptr;
     }
+
     return ARKTS_LoadModule(reinterpret_cast<ARKTS_Env>(vm), dllName);
 }
 
