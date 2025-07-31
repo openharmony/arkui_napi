@@ -28,8 +28,8 @@
 
 #include "callback_scope_manager/native_callback_scope_manager.h"
 #include "ecmascript/napi/include/jsnapi.h"
+#include "interfaces/inner_api/napi/native_node_hybrid_api.h"
 #include "module_manager/native_module_manager.h"
-#include "napi/native_node_hybrid_api.h"
 #include "native_engine/native_async_work.h"
 #include "native_engine/native_deferred.h"
 #include "native_engine/native_reference.h"
