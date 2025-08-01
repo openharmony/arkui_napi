@@ -43,6 +43,10 @@ enum ModuleLoadFailedReason : uint32_t {
     MODULE_LOAD_SUCCESS = 0,
     MODULE_NOT_EXIST    = 1,
 };
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+constexpr char MODULE_NS[] = "moduleNs_";
+#endif
 } // namespace
 
 NativeModuleManager* NativeModuleManager::instance_ = NULL;
@@ -454,7 +458,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     Dl_namespace ns;
 
     // Create module ns.
-    std::string nsName = "moduleNs_" + moduleName;
+    std::string nsName = MODULE_NS + moduleName;
     dlns_init(&ns, nsName.c_str());
     dlns_get(nullptr, &current_ns);
 
@@ -499,6 +503,21 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
     nsMap_[moduleName] = ns;
 
     HILOG_DEBUG("end. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
+#endif
+}
+
+bool NativeModuleManager::GetLdNamespaceName(const std::string &moduleName, std::string &nsName)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    if (nsMap_.find(moduleName) == nsMap_.end()) {
+        HILOG_ERROR("not found ns: %{public}s", moduleName.c_str());
+        return false;
+    }
+    nsName = MODULE_NS + moduleName;
+    return true;
+#else
+    return false;
 #endif
 }
 
