@@ -144,7 +144,16 @@ NAPI_EXTERN napi_status napi_xref_unwrap(napi_env env, napi_value js_object, voi
     panda::JsiFastNativeScope fastNativeScope(vm);
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
     Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
-    Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
+
+    Local<panda::JSValueRef> val = {};
+    if (UNLIKELY(nativeValue->IsProxy(vm))) {
+        val = nativeObject->Get(vm, key);
+    } else {
+        panda::PropertyAttribute property;
+        nativeObject->GetOwnProperty(vm, key, property);
+        val = property.GetValue(vm);
+    }
+
     *result = nullptr;
     if (val->IsObject(vm)) {
         Local<panda::ObjectRef> ext(val);
