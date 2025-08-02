@@ -598,6 +598,8 @@ public:
 
     virtual napi_status DestroyContext() = 0;
 
+    virtual void NotifyVMIgnoreFinalizeCallback() const = 0;
+
 private:
     void InitUvField();
 

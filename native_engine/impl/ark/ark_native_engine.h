@@ -454,6 +454,8 @@ public:
 
     napi_status DestroyContext() override;
 
+    void NotifyVMIgnoreFinalizeCallback() const override;
+
 private:
     // ArkNativeEngine constructor for multi-context
     ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context);

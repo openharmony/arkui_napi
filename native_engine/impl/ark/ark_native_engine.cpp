@@ -726,6 +726,11 @@ void ArkNativeEngine::DeconstructCtxEnv()
     parentEngine_ = nullptr;
 }
 
+void ArkNativeEngine::NotifyVMIgnoreFinalizeCallback() const
+{
+    JSNApi::IgnoreFinalizeCallback(vm_);
+}
+
 void ArkNativeEngine::EnvironmentCleanup(void* arg)
 {
     reinterpret_cast<ArkNativeEngine*>(arg)->Delete();
