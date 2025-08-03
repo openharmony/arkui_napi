@@ -159,6 +159,8 @@ void NativeEngine::Deinit()
     }
 
     RunCleanup();
+    // This should not call in `DeinitWithoutUV`, because one VM may have more than one env
+    NotifyVMIgnoreFinalizeCallback();
     DeinitWithoutUV();
 
     SetDead();
