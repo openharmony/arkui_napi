@@ -2996,7 +2996,6 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
             *byte_offset = byteOffset;
         }
     } else {
-        HILOG_ERROR("%{public}s invalid arg", __func__);
         return napi_set_last_error(env, napi_invalid_arg);
     }
 

@@ -727,7 +727,7 @@ napi_status NativeEngine::AddCleanupFinalizer(CleanupFinalizerCallBack fun, void
         return napi_ok;
     }
 
-    HILOG_ERROR("AddCleanupFinalizer Failed, This may cause memory leaks or unexpected behavior.");
+    HILOG_ERROR("AddCleanupFinalizer Failed, this may cause memory leaks or unexpected behavior.");
 
     return napi_generic_failure;
 }
@@ -744,7 +744,7 @@ napi_status NativeEngine::RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, v
         "data is not registered or already unregistered" : "callback not equals to last registered";
     
     HILOG_ERROR("RemoveCleanupHook Failed, %{public}s, "
-                "This may cause memory leaks or unexpected behavior.", failedReason);
+                "this may cause memory leaks or unexpected behavior.", failedReason);
 
     return napi_generic_failure;
 }
@@ -804,7 +804,7 @@ napi_status NativeEngine::AddCleanupHook(CleanupCallback fun, void* arg)
                 "backtrace failed or unsupported platform.");
         }
     } else {
-        HILOG_ERROR("AddCleanupHook Failed, data cannot register multiple times, "
+        HILOG_WARN("AddCleanupHook Failed, data cannot register multiple times, "
             "enable cross-thread check for more information.");
     }
 
@@ -831,7 +831,7 @@ napi_status NativeEngine::RemoveCleanupHook(CleanupCallback fun, void* arg)
                 "backtrace failed or unsupported platform.", failedReason);
         }
     } else {
-        HILOG_ERROR("RemoveCleanupHook Failed, %{public}s, "
+        HILOG_WARN("RemoveCleanupHook Failed, %{public}s, "
             "enable cross thread check for more information.", failedReason);
     }
 
