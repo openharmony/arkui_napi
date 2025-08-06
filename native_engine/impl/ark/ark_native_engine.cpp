@@ -824,7 +824,7 @@ Local<JSValueRef> ArkNativeEngine::LoadNativeModule(
         char fileName[NAPI_PATH_MAX] = { 0 };
         const char* name = module->name;
         if (sprintf_s(fileName, sizeof(fileName), "lib%s.z.so/%s.js", name, name) == -1) {
-            HILOG_ERROR("sprintf_s file name failed");
+            HILOG_ERROR("sprintf_s file name failed, name:%{public}s", name ? name : "nullptr");
             return scope.Escape(exports);
         }
         HILOG_DEBUG("load js code from %{public}s", fileName);
@@ -837,7 +837,7 @@ Local<JSValueRef> ArkNativeEngine::LoadNativeModule(
         auto exportObject = LoadArkModule(buffer,
             module->jsCodeLen, fileName);
         if (exportObject->IsUndefined()) {
-            HILOG_ERROR("load module failed");
+            HILOG_ERROR("load module failed, fileName:%{public}s", fileName);
             return scope.Escape(exports);
         } else {
             exports = exportObject;
@@ -862,7 +862,7 @@ Local<JSValueRef> ArkNativeEngine::LoadNativeModule(
         exports = exportObj;
         loadedModules_[module] = Global<JSValueRef>(vm_, exports);
     } else {
-        HILOG_ERROR("init module failed");
+        HILOG_ERROR("init module failed, moduleName:%{public}s", strModuleName.c_str());
         return scope.Escape(exports);
     }
 
