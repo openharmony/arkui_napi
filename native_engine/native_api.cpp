@@ -1290,7 +1290,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);
     // if pending exception, value will be a pointer to JSTaggedValue::Hole.
     if (UNLIKELY(!NapiStatusValidationCheck(value))) {
-        HILOG_ERROR("pending exception when js function called, print exception info: ");
+        HILOG_WARN("pending exception when js function called, print exception info: ");
         panda::JSNApi::PrintExceptionInfo(vm);
         result = nullptr;
         reinterpret_cast<NativeEngine *>(env)->lastException_ = panda::JSNApi::GetUncaughtException(vm);
@@ -1325,7 +1325,7 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
     panda::JSValueRef* instance = constructorVal->ConstructorOptimize(vm,
         reinterpret_cast<panda::JSValueRef**>(const_cast<napi_value*>(argv)), argc);
     if (tryCatch.HasCaught()) {
-        HILOG_ERROR("CreateInstance occur Exception");
+        HILOG_WARN("CreateInstance occur Exception");
         *result = nullptr;
     } else {
         *result = reinterpret_cast<napi_value>(instance);
