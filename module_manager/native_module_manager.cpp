@@ -589,7 +589,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
         !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
-        HILOG_ERROR("%{public}s", errInfo.c_str());
+        HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
     std::string prefixTmp;
