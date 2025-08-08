@@ -171,7 +171,7 @@ bool NativeSafeAsyncWork::IsMaxQueueSize()
 SafeAsyncCode NativeSafeAsyncWork::ValidEngineCheck()
 {
     if (!NativeEngine::IsAlive(engine_)) {
-        HILOG_ERROR("napi_env has been destoryed");
+        HILOG_WARN("napi_env has been destoryed");
         return SafeAsyncCode::SAFE_ASYNC_FAILED;
     } else if (engineId_ != engine_->GetId()) {
         LOG_IF_SPECIAL(engine_, UNLIKELY(engine_->IsCrossThreadCheckEnabled()),
