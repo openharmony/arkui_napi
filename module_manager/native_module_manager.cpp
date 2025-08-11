@@ -302,7 +302,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         tailNativeModule_->moduleLoaded = true;
         tailNativeModule_->systemFilePath = "";
         if (isAppModule_) {
-            HILOG_INFO("At tail register module name is '%{public}s'", tailNativeModule_->name);
+            HILOG_INFO("Tail module name is '%{public}s'", tailNativeModule_->name);
         }
         HILOG_DEBUG("At tail register module name is '%{public}s', isAppModule is %{public}d", tailNativeModule_->name,
             isAppModule_);
@@ -1223,7 +1223,7 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
     tailNativeModule_->jsCodeLen = static_cast<int32_t>(len);
     tailNativeModule_->next = nullptr;
 
-    HILOG_INFO("Register by buffer success. module name is '%{public}s'", tailNativeModule_->moduleName);
+    HILOG_INFO("Module name is '%{public}s'", tailNativeModule_->moduleName);
 }
 
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)

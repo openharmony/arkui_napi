@@ -410,7 +410,7 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     int char16Length = static_cast<int>(std::char_traits<char16_t>::length(str));
     if (length != NAPI_AUTO_LENGTH && length != static_cast<size_t>(char16Length)) {
-        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d), result may be unexpected",
+        HILOG_WARN("`length` (%{public}zu) not equals to strlen(`str`) (%{public}d)",
             length, char16Length);
     }
     if (length < SMALL_STRING_SIZE) {
