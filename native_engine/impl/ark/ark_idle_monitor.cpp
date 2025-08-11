@@ -36,8 +36,9 @@
 
 namespace panda::ecmascript {
 #if defined(ENABLE_EVENT_HANDLER)
-uint64_t ArkIdleMonitor::gIdleMonitoringInterval =
-    OHOS::system::GetIntParameter("const.arkui.idle_monitoring_interval", 1000); // ms
+static constexpr uint64_t IDLE_GC_TIME_MIN = 1000;
+static constexpr uint64_t IDLE_GC_TIME_MAX = 10000;
+uint64_t ArkIdleMonitor::gIdleMonitoringInterval = ArkIdleMonitor::GetIdleMonitoringInterval();
 bool ArkIdleMonitor::gEnableIdleGC =
     OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
 #else
@@ -346,6 +347,22 @@ void ArkIdleMonitor::UnregisterEnv(NativeEngine *engine)
     if (!gEnableIdleGC || !JSNApi::IsJSMainThreadOfEcmaVM(engine->GetEcmaVm())) {
         UnregisterWorkerEnv(reinterpret_cast<napi_env>(engine));
     }
+#endif
+}
+
+uint64_t ArkIdleMonitor::GetIdleMonitoringInterval()
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    uint64_t value = OHOS::system::GetIntParameter("const.arkui.idle_monitoring_interval", 1000); // ms
+    if (value < IDLE_GC_TIME_MIN) {
+        value = IDLE_GC_TIME_MIN;
+    }
+    if (value > IDLE_GC_TIME_MAX) {
+        value = IDLE_GC_TIME_MAX;
+    }
+    return value;
+#else
+    return gIdleMonitoringInterval;
 #endif
 }
 
