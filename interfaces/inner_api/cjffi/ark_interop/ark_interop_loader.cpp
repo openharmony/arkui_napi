@@ -157,7 +157,7 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
     constexpr size_t BUF_SIZE = 256;
     char nameBuf[BUF_SIZE];
     size_t realSize = BUF_SIZE;
-    void *arkInteropHandle = GetArkInteropLibHandle(env);
+    void *arkInteropHandle = nullptr;
     if (!ParseLoadParams(env, info, nameBuf, realSize)) {
         return result;
     }
@@ -178,6 +178,7 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
                 LOGE("start cjruntime failed");
                 return result;
             }
+            arkInteropHandle = GetArkInteropLibHandle(env);
             RegisterStackInfoCallbacks(arkInteropHandle);
             auto engine = reinterpret_cast<NativeEngine*>(env);
             auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
@@ -190,7 +191,9 @@ static napi_value LoadCJModule(napi_env env, napi_callback_info info)
             g_isInited = true;
         }
     }
-    
+    if (!arkInteropHandle) {
+        arkInteropHandle = GetArkInteropLibHandle(env);
+    }
     LoadArkCJModule(arkInteropHandle, env, nameBuf, &result);
     return result;
 }

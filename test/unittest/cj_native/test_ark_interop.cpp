@@ -1216,6 +1216,10 @@ class GlobalWeakTest {
 public:
     GlobalWeakTest(): local(ARKTS_CreateEngineWithNewThread()), status(CREATING)
     {
+    }
+
+    void Start()
+    {
         ScheduleNext();
     }
 
@@ -1226,6 +1230,21 @@ public:
         while (status != COMPLETE) {
             cv.wait(lock);
         }
+    }
+
+    bool IsComplete() const
+    {
+        return status == COMPLETE;
+    }
+
+    bool IsAllDisposed() const
+    {
+        for (auto one : globals) {
+            if (ARKTS_GlobalIsAlive(local.GetEnv(), one)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 private:
@@ -1304,7 +1323,10 @@ private:
 TEST_F(ArkInteropTest, GlobalWeak)
 {
     GlobalWeakTest weakTest;
+    weakTest.Start();
     weakTest.WaitForComplete();
+    EXPECT_TRUE(weakTest.IsComplete());
+    EXPECT_TRUE(weakTest.IsAllDisposed());
 }
 
 TEST_F(ArkInteropTest, GlobalToValue)

@@ -800,11 +800,11 @@ ARKTS_CycleFreeCallback* g_cycleFreeCallback = nullptr;
 
 void ARKTS_RegisterCycleFreeCallback(ARKTS_CycleFreeCallback callback)
 {
-    if (g_cycleFreeCallback) {
+    if (g_cycleFreeCallback == nullptr) {
+        g_cycleFreeCallback = new ARKTS_CycleFreeCallback(callback);
+    } else {
         LOGE("register cycle free callback failed, already registered.");
-        return;
     }
-    g_cycleFreeCallback = new ARKTS_CycleFreeCallback(callback);
 }
 
 static Local<JSValueRef> CycleFreeFuncInvoker(JsiRuntimeCallInfo *callInfo)
@@ -849,7 +849,7 @@ ARKTS_Value ARKTS_CreateCycleFreeFunc(ARKTS_Env env, int64_t id)
 {
     ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
-    auto data = new LambdaData {env, id};
+    auto data = new (std::nothrow) LambdaData {env, id};
     if (!data) {
         return ARKTS_CreateUndefined();
     }

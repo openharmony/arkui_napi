@@ -110,14 +110,15 @@ class GlobalManager {
 public:
     static void Dispose(EcmaVM* vm, uintptr_t handle);
     static void AsyncDisposer(ARKTS_Env env, void* data);
-    static void RemoveGlobals(ARKTS_Env env);
+    static void AddManager(ARKTS_Env env);
+    static void RemoveManager(ARKTS_Env env);
 
     explicit GlobalManager(EcmaVM* vm);
     ~GlobalManager();
 
 private:
     static SpinLock managersMutex_;
-    static std::unordered_map<EcmaVM*, GlobalManager> managers_ __attribute__((guarded_by(managersMutex_)));
+    static std::unordered_map<EcmaVM*, GlobalManager*> managers_ __attribute__((guarded_by(managersMutex_)));
 
 private:
     EcmaVM* vm_;
@@ -126,7 +127,7 @@ private:
     std::vector<uintptr_t> handlesToDispose_ __attribute__((guarded_by(handleMutex_))) {};
 };
 
-std::unordered_map<EcmaVM*, GlobalManager> GlobalManager::managers_;
+std::unordered_map<EcmaVM*, GlobalManager*> GlobalManager::managers_;
 SpinLock GlobalManager::managersMutex_;
 
 GlobalManager::GlobalManager(EcmaVM* vm)
@@ -135,8 +136,18 @@ GlobalManager::GlobalManager(EcmaVM* vm)
     vm_ = vm;
 }
 
-void GlobalManager::AsyncDisposer(ARKTS_Env /*env*/, void* data)
+void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
 {
+    GlobalManager* current = nullptr;
+    managersMutex_.Acquire();
+    auto exist = managers_.find(reinterpret_cast<EcmaVM*>(data));
+    if (exist != managers_.end()) {
+        current = exist->second;
+    }
+    managersMutex_.Release();
+    if (!current || data != current) {
+        return;
+    }
     auto manager = (GlobalManager*)data;
     std::vector<uintptr_t> toDispose;
     manager->handleMutex_.Acquire();
@@ -152,10 +163,21 @@ void GlobalManager::AsyncDisposer(ARKTS_Env /*env*/, void* data)
 
 void GlobalManager::Dispose(EcmaVM* vm, uintptr_t handle)
 {
-    GlobalManager* manager;
+    GlobalManager* manager = nullptr;
     managersMutex_.Acquire();
-    manager = &managers_.try_emplace(vm, vm).first->second;
+    auto itor = managers_.find(vm);
+    if (itor != managers_.end()) {
+        manager = itor->second;
+    }
     managersMutex_.Release();
+    if (!manager) {
+        // JSRuntime is disposed, still need to delete c++ object.
+        auto global = reinterpret_cast<ARKTS_Global_*>(handle);
+        // JSRuntime is disposed, can not FreeGlobal by now, set disposed to skip FreeGlobal.
+        global->SetDisposed();
+        delete global;
+        return;
+    }
     bool needSchedule = false;
     manager->handleMutex_.Acquire();
     manager->handlesToDispose_.push_back(handle);
@@ -168,12 +190,32 @@ void GlobalManager::Dispose(EcmaVM* vm, uintptr_t handle)
     }
 }
 
-void GlobalManager::RemoveGlobals(ARKTS_Env env)
+void GlobalManager::AddManager(ARKTS_Env env)
 {
     auto vm = reinterpret_cast<EcmaVM*>(env);
+    auto manager = new GlobalManager(vm);
     managersMutex_.Acquire();
-    managers_.erase(vm);
+    auto result = managers_.try_emplace(vm, manager);
     managersMutex_.Release();
+    if (!result.second) {
+        delete manager;
+    }
+}
+
+void GlobalManager::RemoveManager(ARKTS_Env env)
+{
+    auto vm = reinterpret_cast<EcmaVM*>(env);
+    GlobalManager* current = nullptr;
+    managersMutex_.Acquire();
+    auto itor = managers_.find(vm);
+    if (itor != managers_.end()) {
+        current = itor->second;
+        managers_.erase(itor);
+    }
+    managersMutex_.Release();
+    if (current) {
+        delete current;
+    }
 }
 
 GlobalManager::~GlobalManager()
@@ -276,7 +318,12 @@ bool ARKTS_GlobalIsAlive(ARKTS_Env env, ARKTS_Global global)
     return global->IsAlive();
 }
 
-void ARKTS_RemoveGlobals(ARKTS_Env env)
+void ARKTS_InitGlobalManager(ARKTS_Env env)
 {
-    GlobalManager::RemoveGlobals(env);
+    GlobalManager::AddManager(env);
+}
+
+void ARKTS_RemoveGlobalManager(ARKTS_Env env)
+{
+    GlobalManager::RemoveManager(env);
 }
