@@ -1732,15 +1732,6 @@ bool ArkNativeEngine::NapiNewSendableTypedArray(NativeTypedArrayType typedArrayT
         case NATIVE_UINT8_CLAMPED_ARRAY:
             typedArray = panda::SharedUint8ClampedArrayRef::New(vm_, arrayBuf, byte_offset, length);
             break;
-        case NATIVE_FLOAT64_ARRAY:
-            typedArray = panda::SharedFloat64ArrayRef::New(vm_, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_BIGINT64_ARRAY:
-            typedArray = panda::SharedBigInt64ArrayRef::New(vm_, arrayBuf, byte_offset, length);
-            break;
-        case NATIVE_BIGUINT64_ARRAY:
-            typedArray = panda::SharedBigUint64ArrayRef::New(vm_, arrayBuf, byte_offset, length);
-            break;
         default:
             *result = nullptr;
             return false;
@@ -1798,12 +1789,6 @@ NativeTypedArrayType ArkNativeEngine::GetSendableTypedArrayType(panda::Local<pan
         thisType = NATIVE_FLOAT32_ARRAY;
     } else if (typedArray->IsJSSharedUint8ClampedArray(vm_)) {
         thisType = NATIVE_UINT8_CLAMPED_ARRAY;
-    } else if (typedArray->IsJSSharedFloat64Array(vm_)) {
-        thisType = NATIVE_FLOAT64_ARRAY;
-    } else if (typedArray->IsJSSharedBigInt64Array(vm_)) {
-        thisType = NATIVE_BIGINT64_ARRAY;
-    } else if (typedArray->IsJSSharedBigUint64Array(vm_)) {
-        thisType = NATIVE_BIGUINT64_ARRAY;
     }
 
     return thisType;
