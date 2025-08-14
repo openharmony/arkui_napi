@@ -267,8 +267,8 @@ public:
 
     // isVmMode means the internal class in vm is visible.
     // isPrivate means the number and string is not visible.
-    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false, bool captureNumericValue = false) override;
+    void DumpHeapSnapshot(const std::string &path, bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
+        bool isPrivate = false, bool captureNumericValue = false, bool isJSLeakWatcher = false) override;
     void DumpHeapSnapshot(bool isFullGC, const std::string &path,
         const std::function<void(uint8_t)> &callback) override;
     void DumpCpuProfile() override;

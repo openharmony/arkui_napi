@@ -2438,7 +2438,7 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 }
 
 void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat,
-                                       bool isPrivate, bool captureNumericValue)
+                                       bool isPrivate, bool captureNumericValue, bool isJSLeakWatcher)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = isVmMode;
@@ -2452,6 +2452,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, D
     }
     if (dumpFormat == DumpFormat::BINARY) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
+        dumpOption.isJSLeakWatcher = isJSLeakWatcher;
         DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption);
         return;
     }
