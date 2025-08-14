@@ -89,6 +89,15 @@ ohos_shared_library("ark_interop") {
     external_deps += [ "hilog:libhilog" ]
   }
 
+  if (!is_mingw && !is_mac && !is_linux && !is_arkui_x && is_standard_system) {
+    external_deps += [ "c_utils:utils" ]
+
+    # macro in runtime_core in full repo will effect build napi
+    if (ohos_indep_compiler_enable) {
+      external_deps += [ "runtime_core:libarkbase_static" ]
+    }
+  }
+
   defines = [
     "DEBUG_JS",
     "ENABLE_PROFILE",
