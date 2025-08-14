@@ -2244,7 +2244,6 @@ void ArkNativeEngine::SetAppFreezeFilterCallback(AppFreezeFilterCallback callbac
 void ArkNativeEngine::SetRawHeapTrimLevel(uint32_t level)
 {
     DFXJSNApi::SetJsRawHeapCropLevel(static_cast<panda::CropLevel>(level));
-    return;
 }
 
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
