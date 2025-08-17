@@ -274,7 +274,8 @@ public:
     virtual void ResumeVMById(uint32_t tid) = 0;
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
-        DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false, bool captureNumericValue = false) = 0;
+        DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false,
+        bool captureNumericValue = false, bool isJSLeakWatcher = false) = 0;
     virtual void DumpHeapSnapshot(bool isFullGC, const std::string &path,
         const std::function<void(uint8_t)> &callback) = 0;
     virtual void DumpCpuProfile() = 0;
