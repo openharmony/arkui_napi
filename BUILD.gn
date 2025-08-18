@@ -258,7 +258,9 @@ if (is_arkui_x) {
         "libuv:uv",
         "node:node_header_notice",
       ]
-      external_deps += [ "hilog:libhilog" ]
+      if(current_toolchain != host_toolchain){
+        external_deps += [ "hilog:libhilog" ]
+      }
     } else {
       external_deps += [
         "libuv:uv",
