@@ -140,7 +140,7 @@ void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
 {
     GlobalManager* current = nullptr;
     managersMutex_.Acquire();
-    auto exist = managers_.find(reinterpret_cast<EcmaVM*>(data));
+    auto exist = managers_.find(reinterpret_cast<EcmaVM*>(env));
     if (exist != managers_.end()) {
         current = exist->second;
     }
@@ -227,6 +227,7 @@ GlobalManager::~GlobalManager()
     for (auto p : toDispose) {
         auto global = reinterpret_cast<ARKTS_Global_*>(p);
         global->SetDisposed();
+        delete global;
     }
 }
 }
@@ -235,9 +236,10 @@ GlobalManager::~GlobalManager()
 ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_P(ARKTS_IsHeapObject(value), "value is not heap object");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     auto result = new ARKTS_Global_(vm, handle);
 
@@ -292,7 +294,7 @@ ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(global, "global is null");
 
-    auto value = reinterpret_cast<uint64_t>(global) & GLOBAL_MASK;
+    auto value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(global)) & GLOBAL_MASK;
     value = value | GLOBAL_TAG;
     auto dValue = static_cast<double>(value);
     return ARKTS_CreateF64(dValue);
