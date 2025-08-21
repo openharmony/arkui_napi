@@ -87,7 +87,7 @@ static bool HasCJMetadata(int fd)
 
     if (shstrndx != SHN_UNDEF && shstrndx < shnum) {
         Elf64_Shdr shstrtabHdr;
-        const Elf64_Off shdrOffset = ehdr.e_shoff + shstrndx * ehdr.e_shentsize;
+        const Elf64_Off shdrOffset = ehdr.e_shoff + static_cast<Elf64_Off>(shstrndx) * ehdr.e_shentsize;
         if (pread(fd, &shstrtabHdr, sizeof(shstrtabHdr), shdrOffset) != sizeof(shstrtabHdr)) {
             return false;
         }
