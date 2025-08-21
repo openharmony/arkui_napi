@@ -350,9 +350,9 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
 #endif
     Local<panda::FunctionRef> fn = NapiCreateClassFunction(env, className, funcInfo, length, properties);
 
-    Local<panda::ObjectRef> excep = JSNApi::GetUncaughtException(vm);
-    if (!excep.IsNull()) {
-        HILOG_DEBUG("ArkNativeObject::NapiDefineClass occur Exception");
+    if (JSNApi::HasPendingException(vm)) {
+        HILOG_WARN("occur exception, className:%{public}s", className.c_str());
+        JSNApi::PrintExceptionInfo(vm);
         JSNApi::GetAndClearUncaughtException(vm);
     }
 #ifdef ENABLE_HITRACE
@@ -1345,9 +1345,9 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     } else {
         NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
     }
-    Local<panda::ObjectRef> excep = JSNApi::GetUncaughtException(vm);
-    if (!excep.IsNull()) {
-        HILOG_DEBUG("ArkNativeObject::DefineProperty occur Exception");
+    if (JSNApi::HasPendingException(vm)) {
+        HILOG_WARN("occur exception, propertyName:%{public}s", Local<StringRef>(propertyName)->ToString(vm).c_str());
+        JSNApi::PrintExceptionInfo(vm);
         JSNApi::GetAndClearUncaughtException(vm);
     }
     return result;
@@ -1899,7 +1899,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path,
     }
 
     if (JSNApi::HasPendingException(vm_)) {
-        HILOG_WARN("ArkNativeEngine:NapiLoadModuleWithInfo failed.");
+        HILOG_WARN("ArkNativeEngine:NapiLoadModuleWithInfoForHybridApp failed.");
         JSNApi::PrintExceptionInfo(vm_);
         JSNApi::GetAndClearUncaughtException(vm_); // clear exception here
         return JsValueFromLocalValue(scope.Escape(undefObj));
