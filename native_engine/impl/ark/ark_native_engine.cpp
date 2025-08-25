@@ -352,7 +352,9 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
 
     if (JSNApi::HasPendingException(vm)) {
         HILOG_WARN("occur exception, className:%{public}s", className.c_str());
-        JSNApi::PrintExceptionInfo(vm);
+        if (reinterpret_cast<NativeEngine*>(env)->IsCrossThreadCheckEnabled()) {
+            JSNApi::PrintExceptionInfo(vm);
+        }
         JSNApi::GetAndClearUncaughtException(vm);
     }
 #ifdef ENABLE_HITRACE
@@ -1347,7 +1349,9 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
     }
     if (JSNApi::HasPendingException(vm)) {
         HILOG_WARN("occur exception, propertyName:%{public}s", Local<StringRef>(propertyName)->ToString(vm).c_str());
-        JSNApi::PrintExceptionInfo(vm);
+        if (reinterpret_cast<NativeEngine*>(env)->IsCrossThreadCheckEnabled()) {
+            JSNApi::PrintExceptionInfo(vm);
+        }
         JSNApi::GetAndClearUncaughtException(vm);
     }
     return result;
