@@ -998,7 +998,7 @@ HWTEST_F(NapiSendableTest, CreateSendableArrayWithLength004, testing::ext::TestS
     napi_valuetype type = napi_undefined;
     res = napi_typeof(env, value, &type);
     ASSERT_EQ(res, napi_ok);
-    ASSERT_EQ(napi_undefined, napi_undefined);
+    ASSERT_EQ(type, napi_undefined);
 
     res = napi_set_element(env, result, LENGTH, boolTrue);
     ASSERT_EQ(res, napi_ok);
