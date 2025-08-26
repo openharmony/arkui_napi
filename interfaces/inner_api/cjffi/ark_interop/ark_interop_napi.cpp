@@ -84,6 +84,7 @@ void ARKTSInner_ReportNativeError(const char* format, ...)
 std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError)
 {
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     auto exception = BIT_CAST(jsError, Local<JSValueRef>);
     if (exception->IsString(vm)) {
         auto errorInsJs = *P_CAST(jsError, StringRef*);
@@ -179,9 +180,10 @@ bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b)
             return aValue == bValue;
         }
         default:
+            auto vm = P_CAST(env, EcmaVM*);
+            panda::JsiFastNativeScope fastNativeScope(vm);
             auto aTag = *P_CAST(a, JSValueRef*);
             auto bTag = BIT_CAST(b, Local<JSValueRef>);
-            auto vm = P_CAST(env, EcmaVM*);
             return aTag.IsStrictEquals(vm, bTag);
     }
 }
@@ -310,6 +312,7 @@ ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
                                                 new LambdaData {env, lambdaId}, true);
 
     if (ARKTS_IsClass(env, base)) {
+        panda::JsiFastNativeScope fastNativeScope(vm);
         auto baseClass = BIT_CAST(base, Local<FunctionRef>);
         result->Inherit(vm, baseClass);
     }
@@ -330,10 +333,11 @@ ARKTS_Value ARKTS_GetPrototype(ARKTS_Env env, ARKTS_Value value)
 bool ARKTS_InstanceOf(ARKTS_Env env, ARKTS_Value object, ARKTS_Value clazz)
 {
     ARKTS_ASSERT_F(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(object), "object is not heap object");
     ARKTS_ASSERT_F(ARKTS_IsClass(env, clazz), "clazz is not a class");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto targetObject = BIT_CAST(object, Local<JSValueRef>);
     auto targetClass = BIT_CAST(clazz, Local<FunctionRef>);
 
@@ -443,9 +447,10 @@ uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array)
 void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Value value)
 {
     ARKTS_ASSERT_V(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_V(ARKTS_IsArray(env, array), "array is not array");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto jArr = BIT_CAST(array, Local<ArrayRef>);
 
     ArrayRef::SetValueAt(vm, jArr, index, ARKTS_ToHandle<JSValueRef>(value));
@@ -455,8 +460,9 @@ void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Va
 ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index)
 {
     ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsArray(env, array), "array is not array");
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    ARKTS_ASSERT_P(ARKTS_IsArray(env, array), "array is not array");
     auto arr = BIT_CAST(array, Local<ArrayRef>);
     ARKTS_ASSERT_P(arr->Length(vm) > index, "out of index");
 
@@ -502,11 +508,12 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
 bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
     }
-    auto vm = P_CAST(env, EcmaVM*);
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     return handle->IsArrayBuffer(vm) || handle->IsTypedArray(vm) || handle->IsDataView(vm);
 }
@@ -514,9 +521,10 @@ bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
 int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_I(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     if (handle->IsArrayBuffer(vm)) {
         return BIT_CAST(value, Local<ArrayBufferRef>)->ByteLength(vm);
@@ -532,9 +540,10 @@ int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     if (handle->IsArrayBuffer(vm)) {
         return BIT_CAST(value, Local<ArrayBufferRef>)->GetBuffer(vm);
@@ -655,10 +664,11 @@ bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
 ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFulfilled, ARKTS_Value onRejected)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
     ARKTS_ASSERT_P(ARKTS_IsCallable(env, onFulfilled), "onFulfilled is not callable");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto promise = *BIT_CAST(prom, PromiseRef*);
     auto onFulfilledFunc = BIT_CAST(onFulfilled, Local<FunctionRef>);
     Local<PromiseRef> result;
@@ -675,10 +685,11 @@ ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFul
 ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
     ARKTS_ASSERT_P(ARKTS_IsCallable(env, callback), "callback is not callable");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto promise = BIT_CAST(prom, PromiseRef*);
     auto callbackFunc = BIT_CAST(callback, Local<FunctionRef>);
     auto result = promise->Catch(vm, callbackFunc);
@@ -733,6 +744,7 @@ void ARKTS_Throw(ARKTS_Env env, ARKTS_Value error)
 {
     ARKTS_ASSERT_V(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
 
     if (JSNApi::HasPendingException(vm)) {
         LOGE("ARKTS_Throw failed, vm has uncaught exception");

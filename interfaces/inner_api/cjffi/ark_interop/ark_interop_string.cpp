@@ -44,28 +44,31 @@ ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size)
 
 bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
 {
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     auto v = BIT_CAST(value, JSValueRef);
     if (v.IsHole() || !v.IsHeapObject()) {
         return false;
     }
     v = *P_CAST(value, JSValueRef*);
-    auto vm = P_CAST(env, EcmaVM*);
     return v.IsString(vm);
 }
 
 int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto v = BIT_CAST(value, Local<StringRef>);
     return v->Utf8Length(vm, true);
 }
 
 int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, char* buffer)
 {
-    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto v = BIT_CAST(value, Local<StringRef>);
     return v->WriteUtf8(vm, buffer, capacity, true);
 }
@@ -73,8 +76,9 @@ int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, c
 const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     auto v = BIT_CAST(value, Local<StringRef>);
     auto size = v->Utf8Length(vm, true);
     if (size <= 0) {
@@ -97,9 +101,10 @@ void ARKTS_FreeCString(const char* src)
 ARKTS_StringInfo ARKTS_GetStringInfo(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT(env, "env is null", {});
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT(ARKTS_IsString(env, value), "not a string", {});
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto string = BIT_CAST(value, Local<StringRef>);
 
     auto isCompressed = string->IsCompressed(vm);
@@ -111,10 +116,11 @@ ARKTS_StringInfo ARKTS_GetStringInfo(ARKTS_Env env, ARKTS_Value value)
 void ARKTS_StringCopy(ARKTS_Env env, ARKTS_Value value, void* dst, uint32_t length)
 {
     ARKTS_ASSERT_V(env, "env is null");
+    auto vm = P_CAST(env, EcmaVM*);
+    panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_V(ARKTS_IsString(env, value), "not a string");
     ARKTS_ASSERT_V(dst, "dst is null");
 
-    auto vm = P_CAST(env, EcmaVM*);
     auto string = BIT_CAST(value, Local<StringRef>);
     if (string->IsCompressed(vm)) {
         string->WriteLatin1(vm, reinterpret_cast<char*>(dst), length);
