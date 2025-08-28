@@ -455,7 +455,9 @@ public:
     napi_status DestroyContext() override;
 
     void NotifyVMIgnoreFinalizeCallback() const override;
-
+#if defined(PREVIEW)
+    static void SetCurrentPreviewenv(bool enableFileOperation);
+#endif
 private:
     // ArkNativeEngine constructor for multi-context
     ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context);
@@ -523,6 +525,9 @@ private:
     // for context env
     ArkNativeEngine* parentEngine_ { nullptr };
     static std::atomic<NapiModuleValidateCallback> moduleValidateCallback_;
+#if defined(PREVIEW)
+    static bool enableFileOperation_;
+    #endif
 
     NapiConcurrentCallback concurrentCallbackFunc_ { nullptr };
     NativeReference* promiseRejectCallbackRef_ { nullptr };
