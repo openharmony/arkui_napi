@@ -131,6 +131,9 @@ bool ArkNativeEngine::napiProfilerEnabled {false};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
 std::atomic<NapiModuleValidateCallback> ArkNativeEngine::moduleValidateCallback_ {nullptr};
+#if defined(PREVIEW)
+bool ArkNativeEngine::enableFileOperation_ {false};
+#endif
 
 // This interface is using by ace_engine
 napi_value LocalValueToLocalNapiValue(panda::Local<panda::JSValueRef> local)
@@ -871,6 +874,13 @@ Local<JSValueRef> ArkNativeEngine::LoadNativeModule(
     return scope.Escape(exports);
 }
 
+#if defined(PREVIEW)
+void ArkNativeEngine::SetCurrentPreviewenv(bool enableFileOperation)
+{
+    enableFileOperation_ = enableFileOperation;
+}
+#endif
+
 /** require napi module for Ark Native Engine (standard napi_env).
  *
  * TypeScript declaration
@@ -895,7 +905,11 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
         return scope.Escape(exports);
     }
     Local<StringRef> moduleName(info->GetCallArgRef(0));
-
+#if defined(PREVIEW)
+    if (!enableFileOperation_ && (moduleName->ToString(ecmaVm) == "file.fs")) {
+        return scope.Escape(JSValueRef::Undefined(ecmaVm));
+    }
+#endif
     bool isAppModule = false;
     if (info->GetArgsNumber() > 1) { // 1: index of arguments, isAppModule
         Local<BooleanRef> ret(info->GetCallArgRef(1));
