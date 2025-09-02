@@ -1212,6 +1212,148 @@ HWTEST_F(NapiContextTest, NapiEnvCallbackScopeManagerTest002, testing::ext::Test
     ASSERT_NE(engine_->GetCallbackScopeManager(), nullptr);
 }
 
+/**
+ * @tc.name: FinalizersCallbackTest001
+ * @tc.desc: Test finalize callback execution of napi_wrap
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, FinalizersCallbackTest001, testing::ext::TestSize.Level0)
+{
+    CheckContextEnv();
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+    const EcmaVM *vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+
+    const char *str = GetTestCaseName();
+    size_t size = 2 * ArkNativeEngine::FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD;
+    static bool finalizersCallbackDone[2] = {false, false};
+
+    for (int i = 0; i < 2; ++i) {
+        {
+            panda::LocalScope scope(vm);
+            napi_value object = nullptr;
+            napi_create_object(env, &object);
+            napi_wrap_with_size(env, object, (void*)str, [](napi_env env, void *data, void *hint) {
+                bool *result = reinterpret_cast<bool*>(hint);
+                ASSERT_FALSE(*result);
+                *result = true;
+            }, reinterpret_cast<void*>(&finalizersCallbackDone[i]), nullptr, size);
+        }
+        panda::JSNApi::TriggerGC(vm, panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+    }
+
+    ASSERT_FALSE(finalizersCallbackDone[0]);
+    ASSERT_TRUE(finalizersCallbackDone[1]);
+}
+
+class ContextAsyncWorkTestData final : public NapiAsyncWorkTestData {
+public:
+    ContextAsyncWorkTestData(napi_env env, const char* name) : NapiAsyncWorkTestData(env, name) {}
+    ~ContextAsyncWorkTestData() {};
+
+    void Execute(napi_env env) override
+    {
+        executeSucc_ = env == env_;
+    }
+    void Complete(napi_env env, napi_status status) override
+    {
+        completeSucc_ = env == env_;
+    }
+
+    bool executeSucc_ { false };
+    bool completeSucc_ { false };
+};
+
+/**
+ * @tc.name: NapiAsyncWorkWithContextEnv001
+ * @tc.desc: Test interface of napi_queue_async_work
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv001, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    NativeEngineProxy contextEngine(engine_);
+    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
+    ASSERT_CHECK_CALL(work->Queue());
+    runner.Run();
+    ASSERT_TRUE(work->executeSucc_);
+    ASSERT_TRUE(work->completeSucc_);
+    delete work;
+}
+
+/**
+ * @tc.name: NapiAsyncWorkWithContextEnv002
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv002, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    NativeEngineProxy contextEngine(engine_);
+    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
+    ASSERT_CHECK_CALL(work->Queue(napi_qos_background));
+    runner.Run();
+    ASSERT_TRUE(work->executeSucc_);
+    ASSERT_TRUE(work->completeSucc_);
+    delete work;
+}
+
+/**
+ * @tc.name: NapiAsyncWorkWithContextEnv003
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv003, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    NativeEngineProxy contextEngine(engine_);
+    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
+    ASSERT_CHECK_CALL(work->Queue(napi_qos_utility));
+    runner.Run();
+    ASSERT_TRUE(work->executeSucc_);
+    ASSERT_TRUE(work->completeSucc_);
+    delete work;
+}
+
+/**
+ * @tc.name: NapiAsyncWorkWithContextEnv004
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv004, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    NativeEngineProxy contextEngine(engine_);
+    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
+    ASSERT_CHECK_CALL(work->Queue(napi_qos_default));
+    runner.Run();
+    ASSERT_TRUE(work->executeSucc_);
+    ASSERT_TRUE(work->completeSucc_);
+    delete work;
+}
+
+/**
+ * @tc.name: NapiCreateTSFNWithContextEnv005
+ * @tc.desc: Test interface of napi_queue_async_work_with_qos
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, NapiCreateTSFNWithContextEnv005, testing::ext::TestSize.Level1)
+{
+    UVLoopRunner runner(engine_);
+    NativeEngineProxy contextEngine(engine_);
+    napi_threadsafe_function tsfn = nullptr;
+    bool* executed = new bool { false };
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(
+        contextEngine, nullptr, nullptr, GetNapiTCName(contextEngine), 0, 1, nullptr, nullptr, nullptr,
+        [](napi_env, napi_value, void*, void* data) { *reinterpret_cast<bool*>(data) = true; }, &tsfn));
+    ASSERT_CHECK_CALL(napi_call_threadsafe_function(tsfn, executed, napi_tsfn_nonblocking));
+    runner.Run(UV_RUN_ONCE);
+    ASSERT_TRUE(*executed);
+    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_release));
+    runner.Run(UV_RUN_ONCE);
+    delete executed;
+}
+
 napi_value EmptyNapiCallback(napi_env, napi_callback_info)
 {
     return nullptr;
@@ -4648,112 +4790,3 @@ HWTEST_F(NapiContextTest, CoerceToBoolWithMultiContext001, testing::ext::TestSiz
     napi_get_value_bool(env, result, &ret);
     ASSERT_EQ(ret, true);
 }
-
-class ContextAsyncWorkTestData final : public NapiAsyncWorkTestData {
-public:
-    ContextAsyncWorkTestData(napi_env env, const char* name) : NapiAsyncWorkTestData(env, name) {}
-    ~ContextAsyncWorkTestData() {};
-
-    void Execute(napi_env env) override
-    {
-        executeSucc_ = env == env_;
-    }
-    void Complete(napi_env env, napi_status status) override
-    {
-        completeSucc_ = env == env_;
-    }
-
-    bool executeSucc_ { false };
-    bool completeSucc_ { false };
-};
-
-/**
- * @tc.name: NapiAsyncWorkWithContextEnv001
- * @tc.desc: Test interface of napi_queue_async_work
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv001, testing::ext::TestSize.Level1)
-{
-    UVLoopRunner runner(engine_);
-    NativeEngineProxy contextEngine(engine_);
-    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
-    ASSERT_CHECK_CALL(work->Queue());
-    runner.Run();
-    ASSERT_TRUE(work->executeSucc_);
-    ASSERT_TRUE(work->completeSucc_);
-    delete work;
-}
-
-/**
- * @tc.name: NapiAsyncWorkWithContextEnv002
- * @tc.desc: Test interface of napi_queue_async_work_with_qos
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv002, testing::ext::TestSize.Level1)
-{
-    UVLoopRunner runner(engine_);
-    NativeEngineProxy contextEngine(engine_);
-    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
-    ASSERT_CHECK_CALL(work->Queue(napi_qos_background));
-    runner.Run();
-    ASSERT_TRUE(work->executeSucc_);
-    ASSERT_TRUE(work->completeSucc_);
-    delete work;
-}
-
-/**
- * @tc.name: NapiAsyncWorkWithContextEnv003
- * @tc.desc: Test interface of napi_queue_async_work_with_qos
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv003, testing::ext::TestSize.Level1)
-{
-    UVLoopRunner runner(engine_);
-    NativeEngineProxy contextEngine(engine_);
-    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
-    ASSERT_CHECK_CALL(work->Queue(napi_qos_utility));
-    runner.Run();
-    ASSERT_TRUE(work->executeSucc_);
-    ASSERT_TRUE(work->completeSucc_);
-    delete work;
-}
-
-/**
- * @tc.name: NapiAsyncWorkWithContextEnv004
- * @tc.desc: Test interface of napi_queue_async_work_with_qos
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiAsyncWorkWithContextEnv004, testing::ext::TestSize.Level1)
-{
-    UVLoopRunner runner(engine_);
-    NativeEngineProxy contextEngine(engine_);
-    ContextAsyncWorkTestData* work = new ContextAsyncWorkTestData(contextEngine, GetTestCaseName());
-    ASSERT_CHECK_CALL(work->Queue(napi_qos_default));
-    runner.Run();
-    ASSERT_TRUE(work->executeSucc_);
-    ASSERT_TRUE(work->completeSucc_);
-    delete work;
-}
-
-/**
- * @tc.name: NapiCreateTSFNWithContextEnv005
- * @tc.desc: Test interface of napi_queue_async_work_with_qos
- * @tc.type: FUNC
- */
-HWTEST_F(NapiContextTest, NapiCreateTSFNWithContextEnv005, testing::ext::TestSize.Level1)
-{
-    UVLoopRunner runner(engine_);
-    NativeEngineProxy contextEngine(engine_);
-    napi_threadsafe_function tsfn = nullptr;
-    bool* executed = new bool { false };
-    ASSERT_CHECK_CALL(napi_create_threadsafe_function(
-        contextEngine, nullptr, nullptr, GetNapiTCName(contextEngine), 0, 1, nullptr, nullptr, nullptr,
-        [](napi_env, napi_value, void*, void* data) { *reinterpret_cast<bool*>(data) = true; }, &tsfn));
-    ASSERT_CHECK_CALL(napi_call_threadsafe_function(tsfn, executed, napi_tsfn_nonblocking));
-    runner.Run(UV_RUN_ONCE);
-    ASSERT_TRUE(*executed);
-    ASSERT_CHECK_CALL(napi_release_threadsafe_function(tsfn, napi_tsfn_release));
-    runner.Run(UV_RUN_ONCE);
-    delete executed;
-}
-
