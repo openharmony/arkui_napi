@@ -102,8 +102,7 @@
                       "header_base": "//foundation/arkui/napi/interfaces/inner_api/cjffi/native",
                       "header_files": [
                           "cj_fn_invoker.h",
-                          "cj_lambda.h",
-                          "runtimetype.h"
+                          "cj_lambda.h"
                       ]
                     },
                     "name": "//foundation/arkui/napi:cj_bind_native"
