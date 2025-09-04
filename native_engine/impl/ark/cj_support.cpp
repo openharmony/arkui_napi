@@ -30,10 +30,25 @@
 #include "utils/log.h"
 
 #ifdef NAPI_TARGET_ARM64
+#define ElfOff Elf64_Off
+#define ElfHalf Elf64_Half
+#define ElfShdr Elf64_Shdr
+#define ElfEhdr Elf64_Ehdr
+#define ElfWord Elf64_Word
 #define LIBS_NAME "arm64"
 #elif defined(NAPI_TARGET_ARM32)
+#define ElfOff Elf32_Off
+#define ElfHalf Elf32_Half
+#define ElfShdr Elf32_Shdr
+#define ElfEhdr Elf32_Ehdr
+#define ElfWord Elf32_Word
 #define LIBS_NAME "arm"
 #elif defined(NAPI_TARGET_AMD64)
+#define ElfOff Elf64_Off
+#define ElfHalf Elf64_Half
+#define ElfShdr Elf64_Shdr
+#define ElfEhdr Elf64_Ehdr
+#define ElfWord Elf64_Word
 #define LIBS_NAME "x86_64"
 #else
 #error current platform not supported
@@ -46,10 +61,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static bool LoadExtendedInfo(int fd, Elf64_Off shoff, Elf64_Half* shnum, Elf64_Half* shstrndx)
+static bool LoadExtendedInfo(int fd, ElfOff shoff, ElfHalf* shnum, ElfHalf* shstrndx)
 {
-    Elf64_Shdr firstShdr;
-    if (pread(fd, &firstShdr, sizeof(Elf64_Shdr), shoff) != sizeof(Elf64_Shdr)) {
+    ElfShdr firstShdr;
+    if (pread(fd, &firstShdr, sizeof(ElfShdr), shoff) != sizeof(ElfShdr)) {
         return false;
     }
 
@@ -69,13 +84,13 @@ static bool LoadExtendedInfo(int fd, Elf64_Off shoff, Elf64_Half* shnum, Elf64_H
 static bool HasCJMetadata(int fd)
 {
     // Read ELF header
-    Elf64_Ehdr ehdr;
+    ElfEhdr ehdr;
     if (pread(fd, &ehdr, sizeof(ehdr), 0) != sizeof(ehdr)) {
         return false;
     }
 
-    Elf64_Half shnum = ehdr.e_shnum;
-    Elf64_Half shstrndx = ehdr.e_shstrndx;
+    ElfHalf shnum = ehdr.e_shnum;
+    ElfHalf shstrndx = ehdr.e_shstrndx;
     // Load extended info
     if ((shnum == 0 || shstrndx == SHN_XINDEX) && !LoadExtendedInfo(fd, ehdr.e_shoff, &shnum, &shstrndx)) {
         return false;
@@ -83,11 +98,11 @@ static bool HasCJMetadata(int fd)
 
     // Load section header string table
     char* shstrtab = nullptr;
-    Elf64_Word shstrtabSize = 0;
+    ElfWord shstrtabSize = 0;
 
     if (shstrndx != SHN_UNDEF && shstrndx < shnum) {
-        Elf64_Shdr shstrtabHdr;
-        const Elf64_Off shdrOffset = ehdr.e_shoff + static_cast<Elf64_Off>(shstrndx) * ehdr.e_shentsize;
+        ElfShdr shstrtabHdr;
+        const ElfOff shdrOffset = ehdr.e_shoff + static_cast<ElfOff>(shstrndx) * ehdr.e_shentsize;
         if (pread(fd, &shstrtabHdr, sizeof(shstrtabHdr), shdrOffset) != sizeof(shstrtabHdr)) {
             return false;
         }
@@ -106,9 +121,9 @@ static bool HasCJMetadata(int fd)
 
     // Iterate through section headers
     bool found = false;
-    for (Elf64_Half i = 0; i < shnum; ++i) {
-        const Elf64_Off shdrOffset = ehdr.e_shoff + i * ehdr.e_shentsize;
-        Elf64_Shdr shdr;
+    for (ElfHalf i = 0; i < shnum; ++i) {
+        const ElfOff shdrOffset = ehdr.e_shoff + i * ehdr.e_shentsize;
+        ElfShdr shdr;
         if (pread(fd, &shdr, sizeof(shdr), shdrOffset) != sizeof(shdr)) {
             break;
         }
@@ -152,11 +167,6 @@ bool IsCJModule(const char* moduleName)
     if (read(fd, eIdent, EI_NIDENT) != EI_NIDENT || eIdent[EI_MAG0] != ELFMAG0 || eIdent[EI_MAG1] != ELFMAG1 ||
         eIdent[EI_MAG2] != ELFMAG2 || eIdent[EI_MAG3] != ELFMAG3) {
         HILOG_ERROR("Invalid ELF file %{public}s", soPath);
-        close(fd);
-        return false;
-    }
-    int is64bit = (eIdent[EI_CLASS] == ELFCLASS64);
-    if (!is64bit) {
         close(fd);
         return false;
     }

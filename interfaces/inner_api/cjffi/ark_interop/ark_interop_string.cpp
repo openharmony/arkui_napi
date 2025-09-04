@@ -52,7 +52,7 @@ bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
     if (v.IsHole() || !v.IsHeapObject()) {
         return false;
     }
-    v = *P_CAST(value, JSValueRef*);
+    v = *P_CAST(value.pointer, JSValueRef*);
     return v.IsString(vm);
 }
 

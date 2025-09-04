@@ -109,7 +109,7 @@ private:
 class GlobalManager {
 public:
     static void Dispose(EcmaVM* vm, uintptr_t handle);
-    static void AsyncDisposer(ARKTS_Env env, void* data);
+    static void AsyncDisposer(ARKTS_Env env, int64_t data);
     static void AddManager(ARKTS_Env env);
     static void RemoveManager(ARKTS_Env env);
 
@@ -136,7 +136,7 @@ GlobalManager::GlobalManager(EcmaVM* vm)
     vm_ = vm;
 }
 
-void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
+void GlobalManager::AsyncDisposer(ARKTS_Env env, int64_t data)
 {
     GlobalManager* current = nullptr;
     managersMutex_.Acquire();
@@ -145,10 +145,10 @@ void GlobalManager::AsyncDisposer(ARKTS_Env env, void* data)
         current = exist->second;
     }
     managersMutex_.Release();
-    if (!current || data != current) {
+    if (!current || data != reinterpret_cast<uintptr_t>(current)) {
         return;
     }
-    auto manager = (GlobalManager*)data;
+    auto manager = reinterpret_cast<GlobalManager*>(data);
     std::vector<uintptr_t> toDispose;
     manager->handleMutex_.Acquire();
     manager->onSchedule_ = false;
@@ -186,7 +186,7 @@ void GlobalManager::Dispose(EcmaVM* vm, uintptr_t handle)
     }
     manager->handleMutex_.Release();
     if (needSchedule) {
-        ARKTSInner_CreateAsyncTask(P_CAST(vm, ARKTS_Env), AsyncDisposer, manager);
+        ARKTSInner_CreateAsyncTask(P_CAST(vm, ARKTS_Env), AsyncDisposer, reinterpret_cast<uintptr_t>(manager));
     }
 }
 
@@ -235,10 +235,10 @@ GlobalManager::~GlobalManager()
 // assume value is object
 ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_N(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsHeapObject(value), "value is not heap object");
+    ARKTS_ASSERT_N(ARKTS_IsHeapObject(value), "value is not heap object");
 
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     auto result = new ARKTS_Global_(vm, handle);
@@ -302,12 +302,12 @@ ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
 
 ARKTS_Global ARKTS_GlobalFromValue(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsNumber(value), "value is a number");
+    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_N(ARKTS_IsNumber(value), "value is a number");
 
     auto dValue = ARKTS_GetValueNumber(value);
     auto iValue = static_cast<uint64_t>(dValue);
-    ARKTS_ASSERT_P((iValue & GLOBAL_TAG) == GLOBAL_TAG, "invalid tag value");
+    ARKTS_ASSERT_N((iValue & GLOBAL_TAG) == GLOBAL_TAG, "invalid tag value");
     iValue = iValue & GLOBAL_MASK;
     return BIT_CAST(iValue, ARKTS_Global);
 }

@@ -183,7 +183,7 @@ ARKTS_Engine ARKTS_CreateEngine()
 
 void* ARKTS_GetNAPIEnv(ARKTS_Engine engine)
 {
-    ARKTS_ASSERT_P(engine, "engine is null");
+    ARKTS_ASSERT_N(engine, "engine is null");
     return engine->engine;
 }
 
@@ -217,7 +217,7 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
 
 ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine)
 {
-    ARKTS_ASSERT_P(engine, "engine is null");
+    ARKTS_ASSERT_N(engine, "engine is null");
     return P_CAST(engine->vm, ARKTS_Env);
 }
 

@@ -26,22 +26,26 @@
 using EcmaVM = panda::EcmaVM;
 
 // below interface shares internal, never export
-typedef void (*ARKTS_AsyncCallback)(ARKTS_Env env, void*);
+typedef void (*ARKTS_AsyncCallback)(ARKTS_Env env, int64_t);
 
 bool ARKTSInner_ReportJSErrors(ARKTS_Env env, bool abortIfUnhandled);
 void ARKTSInner_ReportNativeError(const char* format, ...) __attribute__((format(printf, 1, 2)));
 COV_EXPORT std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError);
 bool ARKTSInner_ThrowJSErrorToCJ(ARKTS_Env env, ARKTS_Value error);
 bool ARKTSInner_ThrowNativeErrorToCJ(const char* error);
-void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, void* data);
+void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, int64_t data);
 // cangjie callbacks
-void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* lambdaId);
+void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* hint);
 void ARKTSInner_CJExternalDeleter(void*, void* data, void* env);
 ARKTS_Result ARKTSInner_CJLambdaInvoker(ARKTS_CallInfo callInfo, int64_t lambdaId);
 void ARKTSInner_CJLambdaDeleter(ARKTS_Env env, int64_t lambdaId);
-COV_EXPORT void ARKTSInner_CJAsyncCallback(ARKTS_Env env, void* data);
+COV_EXPORT void ARKTSInner_CJAsyncCallback(ARKTS_Env env, int64_t data);
 
 panda::JSValueRef* ARKTSInner_Escape(ARKTS_Env env, ARKTS_Scope scope, ARKTS_Value ret);
+
+struct ARKTSInner_External {
+    int64_t data;
+};
 
 #ifdef __OHOS__
 #include <memory>
@@ -66,7 +70,7 @@ ARKTS_INLINE panda::Local<T> ARKTS_ToHandle(ARKTS_Value& value)
     auto v = BIT_CAST(value, panda::JSValueRef);
     void* addr;
     if (v.IsHeapObject()) {
-        addr = value;
+        addr = value.pointer;
     } else {
         addr = &value;
     }
@@ -83,6 +87,21 @@ ARKTS_INLINE panda::JSValueRef ARKTS_ToValue(ARKTS_Value value)
     }
 }
 
+ARKTS_INLINE bool operator==(ARKTS_Value lhs, ARKTS_Value rhs)
+{
+    return lhs.value == rhs.value;
+}
+
+ARKTS_INLINE bool operator!=(ARKTS_Value lhs, ARKTS_Value rhs)
+{
+    return lhs.value != rhs.value;
+}
+
+ARKTS_INLINE bool operator!(ARKTS_Value value)
+{
+    return value.value == 0;
+}
+
 template<typename T>
 ARKTS_INLINE ARKTS_Value ARKTS_FromHandle(panda::Local<T>& value)
 {
@@ -91,7 +110,7 @@ ARKTS_INLINE ARKTS_Value ARKTS_FromHandle(panda::Local<T>& value)
     } else if (value->IsHeapObject()) {
         constexpr uint64_t addrMask = 0xFFFF'FFFF'FFFF;
         auto addr = BIT_CAST(value, uint64_t) & addrMask;
-        return P_CAST(addr, ARKTS_Value);
+        return BIT_CAST(addr, ARKTS_Value);
     } else {
         return *BIT_CAST(value, ARKTS_Value*);
     }
@@ -114,7 +133,8 @@ ARKTS_INLINE ARKTS_Result ARKTS_ToResult(panda::EcmaVM* vm, ARKTS_Value value)
         NATIVE_ERROR(error);                                                        \
         return ret;                                                                 \
     }
-#define ARKTS_ASSERT_P(condition, error) ARKTS_ASSERT(condition, error, nullptr)
+#define ARKTS_ASSERT_P(condition, error) ARKTS_ASSERT(condition, error, ARKTS_CreateUndefined())
+#define ARKTS_ASSERT_N(condition, error) ARKTS_ASSERT(condition, error, nullptr)
 #define ARKTS_ASSERT_F(condition, error) ARKTS_ASSERT(condition, error, false)
 #define ARKTS_ASSERT_I(condition, error) ARKTS_ASSERT(condition, error, 0)
 #define ARKTS_ASSERT_V(condition, error) ARKTS_ASSERT(condition, error,)

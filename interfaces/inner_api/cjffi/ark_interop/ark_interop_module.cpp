@@ -138,14 +138,20 @@ EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllNa
     return ARKTS_LoadModule(reinterpret_cast<ARKTS_Env>(vm), dllName);
 }
 
-void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* lambdaId)
+void ARKTSInner_CJArrayBufferDeleter(void*, void* buffer, void* hint)
 {
     if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
-    g_cjModuleCallbacks->deleteArrayBufferRawData(buffer,
-        reinterpret_cast<int64_t>(lambdaId));
+    if constexpr (sizeof(void*) == 8) {
+        g_cjModuleCallbacks->deleteArrayBufferRawData(buffer,
+            reinterpret_cast<int64_t>(hint));
+    } else {
+        auto pointer = reinterpret_cast<ARKTSInner_External*>(hint);
+        g_cjModuleCallbacks->deleteArrayBufferRawData(buffer, pointer->data);
+        delete pointer;
+    }
 }
 
 void ARKTSInner_CJExternalDeleter(void*, void* data, void* env)
@@ -154,10 +160,19 @@ void ARKTSInner_CJExternalDeleter(void*, void* data, void* env)
         LOGE("native ark-interop library has no registered module");
         return;
     }
-    g_cjModuleCallbacks->deleteExternal(
-        reinterpret_cast<int64_t>(data),
-        reinterpret_cast<ARKTS_Env>(env)
-    );
+    if constexpr (sizeof(void*) == 8) {
+        g_cjModuleCallbacks->deleteExternal(
+            reinterpret_cast<int64_t>(data),
+            reinterpret_cast<ARKTS_Env>(env)
+        );
+    } else {
+        auto pointer = reinterpret_cast<ARKTSInner_External*>(data);
+        g_cjModuleCallbacks->deleteExternal(
+            pointer->data,
+            reinterpret_cast<ARKTS_Env>(env)
+        );
+        delete pointer;
+    }
 }
 
 ARKTS_Result ARKTSInner_CJLambdaInvoker(ARKTS_CallInfo callInfo, int64_t lambdaId)
@@ -184,14 +199,14 @@ void ARKTSInner_CJLambdaDeleter(ARKTS_Env env, int64_t lambdaId)
     g_cjModuleCallbacks->deleteLambda(env, lambdaId);
 }
 
-void ARKTSInner_CJAsyncCallback(ARKTS_Env env, void* data)
+void ARKTSInner_CJAsyncCallback(ARKTS_Env env, int64_t data)
 {
     if (!g_cjModuleCallbacks) {
         LOGE("native ark-interop library has no registered module");
         return;
     }
 
-    g_cjModuleCallbacks->invokeAsyncLambda(env, reinterpret_cast<int64_t>(data));
+    g_cjModuleCallbacks->invokeAsyncLambda(env, data);
 }
 
 void ARKTS_DisposeJSContext(ARKTS_Env env)
