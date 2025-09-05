@@ -596,10 +596,11 @@ public:
 
     virtual void NotifyVMIgnoreFinalizeCallback() const = 0;
 
-    virtual void SetInstanceId(int32_t id) {
+    inline void SetInstanceId(int32_t id) {
         instanceId_ = id;
     };
-    virtual int32_t GetInstanceId() {
+
+    inline int32_t GetInstanceId() {
         return instanceId_;
     };
 
