@@ -1910,7 +1910,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (nativeObject->Has(vm, key)) {
-        HILOG_WARN("napi_wrap: current js_object has been wrapped.");
+        HILOG_DEBUG("napi_wrap: current js_object has been wrapped.");
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
     NativeReference* ref = nullptr;
@@ -1998,7 +1998,7 @@ NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (nativeObject->Has(vm, key)) {
-        HILOG_WARN("napi_wrap_async_finalizer: current js_object has been wrapped.");
+        HILOG_DEBUG("napi_wrap_async_finalizer: current js_object has been wrapped.");
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
     NativeReference* ref = nullptr;
@@ -2037,7 +2037,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     if (nativeObject->Has(vm, key)) {
-        HILOG_WARN("napi_wrap_with_size: current js_object has been wrapped.");
+        HILOG_DEBUG("napi_wrap_with_size: current js_object has been wrapped.");
     }
     Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
     NativeReference* ref = nullptr;
