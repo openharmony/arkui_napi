@@ -20,6 +20,7 @@
 
 using panda::Local;
 using panda::StringRef;
+using panda::ObjectRef;
 
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 
