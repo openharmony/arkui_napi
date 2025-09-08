@@ -81,6 +81,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
 bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
+    ARKTS_ASSERT_F(value, "value is null");
     auto tag = BIT_CAST(value, panda::JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
