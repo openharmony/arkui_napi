@@ -46,6 +46,7 @@ ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
 
 bool ARKTS_IsHeapObject(ARKTS_Value value)
 {
+    ARKTS_ASSERT_F(value, "value is null");
     auto v = BIT_CAST(value, JSValueRef);
     return v.IsHeapObject();
 }
@@ -53,6 +54,7 @@ bool ARKTS_IsHeapObject(ARKTS_Value value)
 bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
+    ARKTS_ASSERT_F(value, "value is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     auto v = BIT_CAST(value, JSValueRef);
