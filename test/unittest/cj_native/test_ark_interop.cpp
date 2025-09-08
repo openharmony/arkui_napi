@@ -1436,7 +1436,7 @@ TEST_F(ArkInteropTest, GlobalRelease)
 
 TEST_F(ArkInteropTest, GlobalReleaseSync)
 {
-    MockContext local(ARKTS_CreateEngineWithNewThread());
+    MockContext local;
     auto env = local.GetEnv();
     int loops = 10;
     auto totalRepeat = 500000;

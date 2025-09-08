@@ -148,6 +148,7 @@ void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, voi
 
 void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId)
 {
+    ARKTS_ASSERT_V(env, "env is null");
     ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, reinterpret_cast<void*>(callbackId));
 }
 
