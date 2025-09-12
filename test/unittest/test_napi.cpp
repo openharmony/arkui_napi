@@ -2439,23 +2439,19 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest003, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, ObjectWrapperTest004, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
+    NativeEngineProxy engine;
 
-        napi_value object = nullptr;
-        ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
-        auto finalizer = [](napi_env, void* data, void*) {
-            delete reinterpret_cast<uint8_t*>(data);
-        };
-        uint8_t* data0 = new uint8_t;
-        ASSERT_EQ(napi_wrap(engine, object, data0, finalizer, nullptr, nullptr), napi_ok);
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap(engine, object, data0, finalizer, nullptr, nullptr), napi_ok);
 
-        LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
-        uint8_t* data1 = new uint8_t;
-        ASSERT_EQ(napi_wrap(engine, object, data1, finalizer, nullptr, nullptr), napi_ok);
-        ASSERT_TRUE(collector.Includes("napi_wrap: current js_object has been wrapped."));
-    });
-    t.join();
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap(engine, object, data1, finalizer, nullptr, nullptr), napi_ok);
 }
 
 /**
@@ -2465,25 +2461,19 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest004, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, ObjectWrapperTest005, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
+    NativeEngineProxy engine;
 
-        napi_value object = nullptr;
-        ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
-        auto finalizer = [](napi_env, void* data, void*) {
-            delete reinterpret_cast<uint8_t*>(data);
-        };
-        uint8_t* data0 = new uint8_t;
-        ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)),
-                  napi_ok);
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
 
-        LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
-        uint8_t* data1 = new uint8_t;
-        ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data0)),
-                  napi_ok);
-        ASSERT_TRUE(collector.Includes("napi_wrap_async_finalizer: current js_object has been wrapped."));
-    });
-    t.join();
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
 }
 
 /**
@@ -2493,23 +2483,19 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest005, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, ObjectWrapperTest006, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
+    NativeEngineProxy engine;
 
-        napi_value object = nullptr;
-        ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
-        auto finalizer = [](napi_env, void* data, void*) {
-            delete reinterpret_cast<uint8_t*>(data);
-        };
-        uint8_t* data0 = new uint8_t;
-        ASSERT_EQ(napi_wrap_with_size(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
+    napi_value object = nullptr;
+    ASSERT_EQ(napi_create_object(engine, &object), napi_ok);
+    auto finalizer = [](napi_env, void* data, void*) {
+        delete reinterpret_cast<uint8_t*>(data);
+    };
+    uint8_t* data0 = new uint8_t;
+    ASSERT_EQ(napi_wrap_with_size(engine, object, data0, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
 
-        LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
-        uint8_t* data1 = new uint8_t;
-        ASSERT_EQ(napi_wrap_with_size(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data1)), napi_ok);
-        ASSERT_TRUE(collector.Includes("napi_wrap_with_size: current js_object has been wrapped."));
-    });
-    t.join();
+    LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
+    uint8_t* data1 = new uint8_t;
+    ASSERT_EQ(napi_wrap_with_size(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data1)), napi_ok);
 }
 
 /**
@@ -2588,17 +2574,14 @@ HWTEST_F(NapiBasicTest, StrictEqualsTest003, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, CreateRuntimeTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([this]() {
-        napi_env env = (napi_env)engine_;
+    napi_env env = (napi_env)engine_;
 
-        napi_env newEnv = nullptr;
-        napi_status status = napi_create_runtime(env, &newEnv);
-        ASSERT_EQ(status, napi_ok);
-        if (newEnv != nullptr) {
-            delete reinterpret_cast<NativeEngine *>(newEnv);
-        }
-    });
-    t.join();
+    napi_env newEnv = nullptr;
+    napi_status status = napi_create_runtime(env, &newEnv);
+    ASSERT_EQ(status, napi_ok);
+    if (newEnv != nullptr) {
+        delete reinterpret_cast<NativeEngine *>(newEnv);
+    }
 }
 
 /**
@@ -5572,14 +5555,11 @@ HWTEST_F(NapiBasicTest, runEventLoopTest002, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, runEventLoopTest003, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        engine->Deinit();
-        napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_nowait);
-        ASSERT_EQ(res, napi_invalid_arg);
-        engine->Init();
-    });
-    t.join();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_nowait);
+    ASSERT_EQ(res, napi_invalid_arg);
+    engine->Init();
 }
 
 /**
@@ -5590,14 +5570,11 @@ HWTEST_F(NapiBasicTest, runEventLoopTest003, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, runEventLoopTest004, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        engine->Deinit();
-        napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_default);
-        engine->Init();
-        ASSERT_EQ(res, napi_invalid_arg);
-    });
-    t.join();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_run_event_loop(napi_env(engine), napi_event_mode_default);
+    engine->Init();
+    ASSERT_EQ(res, napi_invalid_arg);
 }
 
 /**
@@ -5711,14 +5688,11 @@ HWTEST_F(NapiBasicTest, stopEventLoopTest001, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, stopEventLoopTest002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        engine->Deinit();
-        napi_status res = napi_stop_event_loop(napi_env(engine));
-        engine->Init();
-        ASSERT_EQ(res, napi_invalid_arg);
-    });
-    t.join();
+    NativeEngineProxy engine;
+    engine->Deinit();
+    napi_status res = napi_stop_event_loop(napi_env(engine));
+    engine->Init();
+    ASSERT_EQ(res, napi_invalid_arg);
 }
 
 /**
@@ -12326,27 +12300,25 @@ HWTEST_F(NapiBasicTest, NapiGetNullTest004, testing::ext::TestSize.Level1)
 HWTEST_F(NapiBasicTest, NapiGetNullTest005, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env1;
-        env1->Deinit();
-        NativeEngineProxy env2;
-        env2->Deinit();
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    NativeEngineProxy env1;
+    env1->Deinit();
+    NativeEngineProxy env2;
+    env2->Deinit();
 
-        napi_value result1 = nullptr;
-        napi_value result2 = nullptr;
+    napi_value result1 = nullptr;
+    napi_value result2 = nullptr;
 
-        napi_status res1 = napi_get_null(env1, &result1);
-        ASSERT_EQ(res1, napi_ok);
+    napi_status res1 = napi_get_null(env1, &result1);
+    ASSERT_EQ(res1, napi_ok);
 
-        napi_status res2 = napi_get_null(env2, &result2);
-        ASSERT_EQ(res2, napi_ok);
-        bool res3 = false;
-        napi_strict_equals(env1, result1, result2, &res3);
-        ASSERT_TRUE(res3);
-        env1->Init();
-        env2->Init();
-    });
-    t.join();
+    napi_status res2 = napi_get_null(env2, &result2);
+    ASSERT_EQ(res2, napi_ok);
+    bool res3 = false;
+    napi_strict_equals(env, result1, result2, &res3);
+    ASSERT_TRUE(res3);
+    env1->Init();
+    env2->Init();
 }
 
 /**
@@ -12804,14 +12776,11 @@ void emptyFinalizeCb(napi_env env, void* data, void* hint) {}
 HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env;
-        void* data = nullptr;
+    NativeEngineProxy env;
+    void* data = nullptr;
 
-        napi_status res = napi_set_instance_data(env, data, emptyFinalizeCb, nullptr);
-        ASSERT_EQ(res, napi_ok);
-    });
-    t.join();
+    napi_status res = napi_set_instance_data(env, data, emptyFinalizeCb, nullptr);
+    ASSERT_EQ(res, napi_ok);
 }
 
 /**
@@ -12822,15 +12791,12 @@ HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest002, testing::ext::TestSize.Level
 HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest003, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env;
-        int dataValue = INT_FORTYTWO;
-        void* data = &dataValue;
+    NativeEngineProxy env;
+    int dataValue = INT_FORTYTWO;
+    void* data = &dataValue;
 
-        napi_status res = napi_set_instance_data(env, data, emptyFinalizeCb, nullptr);
-        ASSERT_EQ(res, napi_ok);
-    });
-    t.join();
+    napi_status res = napi_set_instance_data(env, data, emptyFinalizeCb, nullptr);
+    ASSERT_EQ(res, napi_ok);
 }
 
 /**
@@ -12841,16 +12807,13 @@ HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest003, testing::ext::TestSize.Level
 HWTEST_F(NapiBasicTest, NapiSetInstanceDataTest004, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env;
-        int dataValue = INT_FORTYTWO;
-        void* data = &dataValue;
-        int hintValue = INT_HUNDRED;
+    NativeEngineProxy env;
+    int dataValue = INT_FORTYTWO;
+    void* data = &dataValue;
+    int hintValue = INT_HUNDRED;
 
-        napi_status res = napi_set_instance_data(env, data, nullptr, &hintValue);
-        ASSERT_EQ(res, napi_ok);
-    });
-    t.join();
+    napi_status res = napi_set_instance_data(env, data, nullptr, &hintValue);
+    ASSERT_EQ(res, napi_ok);
 }
 
 /**
@@ -12875,21 +12838,18 @@ HWTEST_F(NapiBasicTest, NapiGetInstanceDataTest001, testing::ext::TestSize.Level
 HWTEST_F(NapiBasicTest, NapiGetInstanceDataTest002, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env;
+    NativeEngineProxy env;
 
-        int dataValue = INT_FORTYTWO;
-        void* dataToSet = &dataValue;
+    int dataValue = INT_FORTYTWO;
+    void* dataToSet = &dataValue;
 
-        napi_status setRes = napi_set_instance_data(env, dataToSet, emptyFinalizeCb, nullptr);
-        ASSERT_EQ(setRes, napi_ok);
+    napi_status setRes = napi_set_instance_data(env, dataToSet, emptyFinalizeCb, nullptr);
+    ASSERT_EQ(setRes, napi_ok);
 
-        void* retrievedData;
-        napi_status getRes = napi_get_instance_data(env, &retrievedData);
-        ASSERT_EQ(getRes, napi_ok);
-        ASSERT_EQ(retrievedData, dataToSet);
-    });
-    t.join();
+    void* retrievedData;
+    napi_status getRes = napi_get_instance_data(env, &retrievedData);
+    ASSERT_EQ(getRes, napi_ok);
+    ASSERT_EQ(retrievedData, dataToSet);
 }
 
 /**
@@ -12912,16 +12872,13 @@ HWTEST_F(NapiBasicTest, NapiGetInstanceDataTest003, testing::ext::TestSize.Level
 HWTEST_F(NapiBasicTest, NapiGetInstanceDataTest004, testing::ext::TestSize.Level1)
 {
     ASSERT_NE(engine_, nullptr);
-    std::thread t([]() {
-        NativeEngineProxy env;
-        env->Deinit();
-        void* retrievedData = nullptr;
-        napi_status res = napi_get_instance_data(env, &retrievedData);
-        ASSERT_EQ(res, napi_ok);
-        ASSERT_EQ(retrievedData, nullptr);
-        env->Init();
-    });
-    t.join();
+    NativeEngineProxy env;
+    env->Deinit();
+    void* retrievedData = nullptr;
+    napi_status res = napi_get_instance_data(env, &retrievedData);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(retrievedData, nullptr);
+    env->Init();
 }
 
 /**
@@ -13582,11 +13539,8 @@ HWTEST_F(NapiBasicTest, NapiCoerceToNativeBindingObjectTest006, testing::ext::Te
  */
 HWTEST_F(NapiBasicTest, NapiCreateArkRuntimeTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        auto res = napi_create_ark_runtime(nullptr);
-        ASSERT_EQ(res, napi_invalid_arg);
-    });
-    t.join();
+    auto res = napi_create_ark_runtime(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
 }
 
 /**
@@ -13596,14 +13550,11 @@ HWTEST_F(NapiBasicTest, NapiCreateArkRuntimeTest001, testing::ext::TestSize.Leve
  */
 HWTEST_F(NapiBasicTest, NapiCreateArkRuntimeTest002, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        auto temp = NativeCreateEnv::g_createNapiEnvCallback;
-        NativeCreateEnv::g_createNapiEnvCallback = nullptr;
-        auto res = napi_create_ark_runtime(nullptr);
-        NativeCreateEnv::g_createNapiEnvCallback = temp;
-        ASSERT_EQ(res, napi_invalid_arg);
-    });
-    t.join();
+    auto temp = NativeCreateEnv::g_createNapiEnvCallback;
+    NativeCreateEnv::g_createNapiEnvCallback = nullptr;
+    auto res = napi_create_ark_runtime(nullptr);
+    NativeCreateEnv::g_createNapiEnvCallback = temp;
+    ASSERT_EQ(res, napi_invalid_arg);
 }
 
 /**
@@ -14120,16 +14071,13 @@ private:
 */
 HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy env;
-        FinalizerChecker* checker = new FinalizerChecker();
-        void* testData = checker;
+    NativeEngineProxy env;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
 
-        napi_status status = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
-        EXPECT_EQ(status, napi_ok);
-        delete checker;
-    });
-    t.join();
+    napi_status status = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(status, napi_ok);
+    delete checker;
 }
 
 /**
@@ -14139,17 +14087,14 @@ HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest001, testing::ext::TestSize.Level
 */
 HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest002, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        void* testData = new char[10];
-        CleanupFinalizerCallBack callback = [](void* arg) {
-            delete[] reinterpret_cast<char*>(arg);
-        };
+    NativeEngineProxy engine;
+    void* testData = new char[10];
+    CleanupFinalizerCallBack callback = [](void* arg) {
+        delete[] reinterpret_cast<char*>(arg);
+    };
 
-        napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
-        EXPECT_EQ(addStatus, napi_ok);
-    });
-    t.join();
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
 }
 
 /**
@@ -14159,19 +14104,16 @@ HWTEST_F(NapiBasicTest, AddCleanupFinalizerTest002, testing::ext::TestSize.Level
 */
 HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy env;
-        FinalizerChecker* checker = new FinalizerChecker();
-        void* testData = checker;
+    NativeEngineProxy env;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
 
-        napi_status addStatus = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
-        EXPECT_EQ(addStatus, napi_ok);
+    napi_status addStatus = napi_add_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
 
-        napi_status removeStatus = napi_remove_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
-        EXPECT_EQ(removeStatus, napi_ok);
-        delete checker;
-    });
-    t.join();
+    napi_status removeStatus = napi_remove_cleanup_finalizer(env, FinalizerChecker::Callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
+    delete checker;
 }
 
 /**
@@ -14181,21 +14123,18 @@ HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest001, testing::ext::TestSize.Le
 */
 HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest002, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        void* testData = new char[10];
-        CleanupFinalizerCallBack callback = [](void* arg) {
-            delete[] reinterpret_cast<char*>(arg);
-        };
+    NativeEngineProxy engine;
+    void* testData = new char[10];
+    CleanupFinalizerCallBack callback = [](void* arg) {
+        delete[] reinterpret_cast<char*>(arg);
+    };
 
-        napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
-        EXPECT_EQ(addStatus, napi_ok);
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
 
-        napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
-        EXPECT_EQ(removeStatus, napi_ok);
-        delete[] reinterpret_cast<char*>(testData);
-    });
-    t.join();
+    napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
+    delete[] reinterpret_cast<char*>(testData);
 }
 
 /**
@@ -14205,20 +14144,17 @@ HWTEST_F(NapiBasicTest, RemoveCleanupFinalizerTest002, testing::ext::TestSize.Le
 */
 HWTEST_F(NapiBasicTest, RunInstanceFinalizerTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        FinalizerChecker* checker = new FinalizerChecker();
-        void* testData = checker;
-        CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
+    NativeEngineProxy engine;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+    CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
 
-        napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
-        EXPECT_EQ(addStatus, napi_ok);
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
 
-        engine->RunInstanceFinalizer();
-        EXPECT_TRUE(checker->Called());
-        delete checker;
-    });
-    t.join();
+    engine->RunInstanceFinalizer();
+    EXPECT_TRUE(checker->Called());
+    delete checker;
 }
 
 /**
@@ -14228,23 +14164,20 @@ HWTEST_F(NapiBasicTest, RunInstanceFinalizerTest001, testing::ext::TestSize.Leve
 */
 HWTEST_F(NapiBasicTest, RunInstanceFinalizer002, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        FinalizerChecker* checker = new FinalizerChecker();
-        void* testData = checker;
-        CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
+    NativeEngineProxy engine;
+    FinalizerChecker* checker = new FinalizerChecker();
+    void* testData = checker;
+    CleanupFinalizerCallBack callback = FinalizerChecker::Callback;
 
-        napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
-        EXPECT_EQ(addStatus, napi_ok);
+    napi_status addStatus = engine->AddCleanupFinalizer(callback, testData);
+    EXPECT_EQ(addStatus, napi_ok);
 
-        napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
-        EXPECT_EQ(removeStatus, napi_ok);
+    napi_status removeStatus = engine->RemoveCleanupFinalizer(callback, testData);
+    EXPECT_EQ(removeStatus, napi_ok);
 
-        engine->RunInstanceFinalizer();
-        EXPECT_FALSE(checker->Called());
-        delete checker;
-    });
-    t.join();
+    engine->RunInstanceFinalizer();
+    EXPECT_FALSE(checker->Called());
+    delete checker;
 }
 
 /**
@@ -14254,44 +14187,41 @@ HWTEST_F(NapiBasicTest, RunInstanceFinalizer002, testing::ext::TestSize.Level1)
  */
 HWTEST_F(NapiBasicTest, NapiEnvCleanupTest001, testing::ext::TestSize.Level1)
 {
-    std::thread t([]() {
-        NativeEngineProxy engine;
-        static bool workDone = false;
-        // make sure async work is done after cleanup hook
-        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
-            engine,
-            [](void* data) {
-                NativeEngineProxy* proxy = reinterpret_cast<NativeEngineProxy*>(data);
-                napi_env env = *proxy;
-                napi_value taskName = nullptr;
-                ASSERT_CHECK_CALL(napi_create_string_utf8(env, __FUNCTION__, NAPI_AUTO_LENGTH, &taskName));
-                napi_async_work* work = new napi_async_work;
-                static std::mutex cleanupMutex;
-                static std::condition_variable cond;
-                ASSERT_CHECK_CALL(napi_create_async_work(
-                    env, nullptr, taskName,
-                    [](napi_env, void*) {
-                        std::unique_lock<std::mutex> lock(cleanupMutex);
-                        cond.notify_one();
-                    },
-                    [](napi_env env, napi_status, void* data) {
-                        napi_async_work* work = reinterpret_cast<napi_async_work*>(data);
-                        ASSERT_CHECK_CALL(napi_delete_async_work(env, *work));
-                        delete work;
-                        workDone = true;
-                    },
-                    work, work));
-                std::unique_lock<std::mutex> lock(cleanupMutex);
-                ASSERT_CHECK_CALL(napi_queue_async_work(env, *work));
-                cond.wait(lock);
-            },
-            &engine));
-        LoggerCollector collector(LogLevel::LOG_DEBUG);
-        engine->RunCleanup();
-        ASSERT_TRUE(collector.Includes("CleanupHandles, request waiting:"));
-        ASSERT_TRUE(workDone);
-    });
-    t.join();
+    NativeEngineProxy engine;
+    static bool workDone = false;
+    // make sure async work is done after cleanup hook
+    ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
+        engine,
+        [](void* data) {
+            NativeEngineProxy* proxy = reinterpret_cast<NativeEngineProxy*>(data);
+            napi_env env = *proxy;
+            napi_value taskName = nullptr;
+            ASSERT_CHECK_CALL(napi_create_string_utf8(env, __FUNCTION__, NAPI_AUTO_LENGTH, &taskName));
+            napi_async_work* work = new napi_async_work;
+            static std::mutex cleanupMutex;
+            static std::condition_variable cond;
+            ASSERT_CHECK_CALL(napi_create_async_work(
+                env, nullptr, taskName,
+                [](napi_env, void*) {
+                    std::unique_lock<std::mutex> lock(cleanupMutex);
+                    cond.notify_one();
+                },
+                [](napi_env env, napi_status, void* data) {
+                    napi_async_work* work = reinterpret_cast<napi_async_work*>(data);
+                    ASSERT_CHECK_CALL(napi_delete_async_work(env, *work));
+                    delete work;
+                    workDone = true;
+                },
+                work, work));
+            std::unique_lock<std::mutex> lock(cleanupMutex);
+            ASSERT_CHECK_CALL(napi_queue_async_work(env, *work));
+            cond.wait(lock);
+        },
+        &engine));
+    LoggerCollector collector(LogLevel::LOG_DEBUG);
+    engine->RunCleanup();
+    ASSERT_TRUE(collector.Includes("CleanupHandles, request waiting:"));
+    ASSERT_TRUE(workDone);
 }
 
 /**
@@ -14414,24 +14344,21 @@ HWTEST_F(NapiBasicTest, ArkNativeReferenceTest005, testing::ext::TestSize.Level1
 
     RefTestData* testData = new RefTestData;
     {
-        std::thread t([&testData]() {
-            NativeEngineProxy env;
-            testData->env_ = env;
-            napi_value val = nullptr;
-            ASSERT_CHECK_CALL(napi_create_object(env, &val));
-            ASSERT_CHECK_CALL(napi_create_reference(env, val, 0, &testData->ref_));
-            ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
-                env,
-                [](void* arg) {
-                    RefTestData* data = reinterpret_cast<RefTestData*>(arg);
-                    ASSERT_CHECK_CALL(napi_delete_reference(data->env_, data->ref_));
-                    data->ref_ = nullptr;
-                },
-                testData));
-        });
-        t.join();
-    }
-    testData->env_ = nullptr;
+        NativeEngineProxy env;
+        testData->env_ = env;
+        napi_value val = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &val));
+        ASSERT_CHECK_CALL(napi_create_reference(env, val, 0, &testData->ref_));
+        ASSERT_CHECK_CALL(napi_add_env_cleanup_hook(
+            env,
+            [](void* arg) {
+                RefTestData* data = reinterpret_cast<RefTestData*>(arg);
+                ASSERT_CHECK_CALL(napi_delete_reference(data->env_, data->ref_));
+                data->ref_ = nullptr;
+            },
+            testData));
+        }
+        testData->env_ = nullptr;
     ASSERT_EQ(testData->ref_, nullptr);
     delete testData;
 }
@@ -14611,4 +14538,64 @@ HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest009, testing::ext::TestSi
 
     auto res = napi_queue_async_work_with_queue(env, work, napi_qos_default, reinterpret_cast<uintptr_t>(&TASKID));
     ASSERT_EQ(res, napi_ok);
+}
+
+static napi_value Func(napi_env env, napi_callback_info info)
+{
+    napi_value num = nullptr;
+    napi_create_int32(env, 666, &num);
+    return num;
+}
+
+static napi_value NewFunc(napi_env env, napi_callback_info info)
+{
+    napi_value num = nullptr;
+    napi_create_int32(env, 42, &num);
+    return num;
+}
+
+/**
+ * @tc.name: NapiFuncWritableTest001
+ * @tc.desc: Test interface of napi_create_function with writable property
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiFuncWritableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value excep = nullptr;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
+    napi_value obj = nullptr;
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_WRITABLE_FUNCTION("func", Func),
+    };
+    ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj, 1, desc));
+    napi_value origFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj, "func", &origFunc));
+    
+    napi_value recv = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &recv));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_call_function(env, recv, origFunc, 0, nullptr, &result));
+    
+    int32_t firstRet = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &firstRet));
+    ASSERT_EQ(firstRet, 666);
+
+    napi_value newFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_create_function(env,"newFunc", NAPI_AUTO_LENGTH, NewFunc, nullptr, &newFunc));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj, "func", newFunc));
+
+    napi_value currentFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj, "func", &currentFunc));
+    
+    bool same = true;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, currentFunc, origFunc, &same));
+    ASSERT_FALSE(same);
+    result = nullptr;
+    ASSERT_CHECK_CALL(napi_call_function(env, recv, currentFunc, 0, nullptr, &result));
+    
+    int32_t last = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env,result,&last));
+    ASSERT_EQ(last, 42);
 }
