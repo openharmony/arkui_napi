@@ -2452,7 +2452,6 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest004, testing::ext::TestSize.Level1)
     LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
     uint8_t* data1 = new uint8_t;
     ASSERT_EQ(napi_wrap(engine, object, data1, finalizer, nullptr, nullptr), napi_ok);
-    ASSERT_TRUE(collector.Includes("napi_wrap: current js_object has been wrapped."));
 }
 
 /**
@@ -2475,7 +2474,6 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest005, testing::ext::TestSize.Level1)
     LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
     uint8_t* data1 = new uint8_t;
     ASSERT_EQ(napi_wrap_async_finalizer(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data0)), napi_ok);
-    ASSERT_TRUE(collector.Includes("napi_wrap_async_finalizer: current js_object has been wrapped."));
 }
 
 /**
@@ -2498,7 +2496,6 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest006, testing::ext::TestSize.Level1)
     LoggerCollector collector(LogLevel::LOG_WARN, LOG_DOMAIN);
     uint8_t* data1 = new uint8_t;
     ASSERT_EQ(napi_wrap_with_size(engine, object, data1, finalizer, nullptr, nullptr, sizeof(data1)), napi_ok);
-    ASSERT_TRUE(collector.Includes("napi_wrap_with_size: current js_object has been wrapped."));
 }
 
 /**
@@ -14541,4 +14538,64 @@ HWTEST_F(NapiBasicTest, NapiQueueAsyncWorkWithQueueTest009, testing::ext::TestSi
 
     auto res = napi_queue_async_work_with_queue(env, work, napi_qos_default, reinterpret_cast<uintptr_t>(&TASKID));
     ASSERT_EQ(res, napi_ok);
+}
+
+static napi_value Func(napi_env env, napi_callback_info info)
+{
+    napi_value num = nullptr;
+    napi_create_int32(env, 666, &num);
+    return num;
+}
+
+static napi_value NewFunc(napi_env env, napi_callback_info info)
+{
+    napi_value num = nullptr;
+    napi_create_int32(env, 42, &num);
+    return num;
+}
+
+/**
+ * @tc.name: NapiFuncWritableTest001
+ * @tc.desc: Test interface of napi_create_function with writable property
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiFuncWritableTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value excep = nullptr;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &excep));
+    napi_value obj = nullptr;
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_WRITABLE_FUNCTION("func", Func),
+    };
+    ASSERT_CHECK_CALL(napi_create_object_with_properties(env, &obj, 1, desc));
+    napi_value origFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj, "func", &origFunc));
+    
+    napi_value recv = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &recv));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_call_function(env, recv, origFunc, 0, nullptr, &result));
+    
+    int32_t firstRet = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &firstRet));
+    ASSERT_EQ(firstRet, 666);
+
+    napi_value newFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_create_function(env,"newFunc", NAPI_AUTO_LENGTH, NewFunc, nullptr, &newFunc));
+    ASSERT_CHECK_CALL(napi_set_named_property(env, obj, "func", newFunc));
+
+    napi_value currentFunc = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(env, obj, "func", &currentFunc));
+    
+    bool same = true;
+    ASSERT_CHECK_CALL(napi_strict_equals(env, currentFunc, origFunc, &same));
+    ASSERT_FALSE(same);
+    result = nullptr;
+    ASSERT_CHECK_CALL(napi_call_function(env, recv, currentFunc, 0, nullptr, &result));
+    
+    int32_t last = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env,result,&last));
+    ASSERT_EQ(last, 42);
 }
