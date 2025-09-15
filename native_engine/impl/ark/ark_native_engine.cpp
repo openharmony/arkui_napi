@@ -23,6 +23,7 @@
 #include "ark_hybrid_native_reference.h"
 #include "ark_native_deferred.h"
 #include "ark_native_reference.h"
+#include "ark_hybrid_native_reference.h"
 #include "ark_native_timer.h"
 #include "native_engine/native_utils.h"
 #include "native_sendable.h"
