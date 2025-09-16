@@ -27,7 +27,7 @@
 
 typedef void (*NAPIGetJSCode)(const char** buf, int* bufLen);
 typedef void (*NapiNativeFinalize)(napi_env env, void* data, void* hint);
-typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint); // hint: detach params
+typedef void* (*NapiDetachCallback)(napi_env env, void* nativeObject, void* hint);      // hint: detach params
 typedef napi_value (*NapiAttachCallback)(napi_env env, void* nativeObject, void* hint); // hint: attach params
 typedef bool (*napi_module_validate_callback)(const char* moduleName);
 typedef struct napi_fast_native_scope__* napi_fast_native_scope;
