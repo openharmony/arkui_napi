@@ -639,6 +639,9 @@ ArkNativeEngine::~ArkNativeEngine()
     if (checkCallbackRef_ != nullptr) {
         delete checkCallbackRef_;
     }
+    if (globalCheckCallbackRef_ != nullptr) {
+        delete globalCheckCallbackRef_;
+    }
     if (options_ != nullptr) {
         delete options_;
         options_ = nullptr;
@@ -2421,6 +2424,13 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
             env->allPromiseRejectCallback_(callErrorArgs);
             delete[] callErrorArgs;
         }
+
+        if (operation == panda::PromiseRejectInfo::PROMISE_REJECTION_EVENT::REJECT) {
+            Local<JSValueRef> globalCheckCallback = LocalValueFromJsValue(env->globalCheckCallbackRef_->Get(env));
+            if (!globalCheckCallback.IsEmpty()) {
+                JSNApi::SetHostEnqueueJob(vm, globalCheckCallback, panda::QueueType::QUEUE_SCRIPT);
+            }
+        }
     }
     if (env->promiseRejectCallbackRef_ == nullptr || env->checkCallbackRef_ == nullptr) {
         HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
@@ -3276,4 +3286,25 @@ napi_status ArkNativeEngine::DestroyContext()
     }
     // waiting all ref callbacks done.
     return napi_ok;
+}
+
+void ArkNativeEngine::RegisterAllPromiseCallback(NapiAllPromiseRejectCallback callback)
+{
+    allPromiseRejectCallback_ = callback;
+    std::string checkCallbackName = "GlobalRejectionHandledCheck";
+    panda::JsiFastNativeScope fastNativeScope(vm_);
+    panda::EscapeLocalScope scope(vm_);
+    auto cb = reinterpret_cast<NapiNativeCallback>(
+        NapiErrorManager::GetInstance()->GetGlobalUnhandledRejectionCheckCallback());
+    NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
+    funcInfo->callback = cb;
+    funcInfo->data = nullptr;
+    funcInfo->env = reinterpret_cast<napi_env>(this);
+
+    Local<JSValueRef> context = GetContext();
+    Local<panda::FunctionRef> fn = panda::FunctionRef::NewConcurrent(vm_, context, ArkNativeFunctionCallBack,
+        CommonDeleter, reinterpret_cast<void*>(funcInfo), true);
+    Local<panda::StringRef> fnName = panda::StringRef::NewFromUtf8(vm_, checkCallbackName.c_str());
+    fn->SetName(vm_, fnName);
+    globalCheckCallbackRef_ = new ArkNativeReference(this, JsValueFromLocalValue(scope.Escape(fn)), 1);
 }
