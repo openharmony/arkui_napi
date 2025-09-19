@@ -417,6 +417,7 @@ ARKTS_Value ARKTS_CreateArray(ARKTS_Env env, uint32_t size)
 ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value* data)
 {
     ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(!size || data, "data is null");
     auto vm = P_CAST(env, EcmaVM*);
 
     auto result = ArrayRef::New(vm, size);
@@ -500,6 +501,7 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
 {
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(length >= 0, "length must be non-negative");
+    ARKTS_ASSERT_P(buffer, "buffer is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayBufferRef::New(vm, buffer, length, ARKTSInner_CJArrayBufferDeleter,
@@ -566,6 +568,10 @@ void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 
 int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest, int32_t count)
 {
+    ARKTS_ASSERT_I(env, "env is null");
+    ARKTS_ASSERT_I(buffer, "buffer is null");
+    ARKTS_ASSERT_I(dest, "dest is null");
+
     auto src = ARKTS_GetArrayBufferRawPtr(env, buffer);
     auto srcSize = ARKTS_GetArrayBufferLength(env, buffer);
     auto targetSize = std::min(srcSize, count);
