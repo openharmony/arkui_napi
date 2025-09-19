@@ -338,7 +338,13 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 
     bool isValidTraceId = SaveAndSetTraceId();
 #if defined(ENABLE_EVENT_HANDLER)
-    uv_call_specify_task(engine_->GetUVLoop());
+    uv_loop_t* loop = nullptr;
+    if (engine_->IsMainEnvContext()) {
+        loop = engine_->GetUVLoop();
+    } else {
+        loop = engine_->GetParent()->GetUVLoop();
+    }
+    uv_call_specify_task(loop);
 #endif
     while (size > 0) {
         data = queue_.front();
