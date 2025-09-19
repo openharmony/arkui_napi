@@ -1554,3 +1554,175 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest014, testing::ext::TestSize.Level1)
     napi_queue_async_work(env, callbackData->work);
     HILOG_INFO("ThreadsafeTest014 end");
 }
+
+static bool g_isCalled = false;
+static std::vector<std::string> gTaskExecOrder;
+
+static void HighPrioTask(uv_loop_t* loop)
+{
+    g_isCalled = true;
+    gTaskExecOrder.push_back("HighPrioTask");
+    uv_unregister_task_to_event(loop);
+}
+static void TSFN(napi_env env, napi_value tsfn_cb, void* context, void* data)
+{
+    ASSERT_TRUE(g_isCalled);
+    EXPECT_EQ(gTaskExecOrder[0], "HighPrioTask");
+    if (data) {
+        std::string strData = static_cast<const char*>(data);
+        gTaskExecOrder.push_back(strData);
+    } else {
+        gTaskExecOrder.push_back("NULL");
+    }
+}
+
+//用例1：有一个UV优先级任务 -> 往队列抛一个任务
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest015, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeTest015 start");
+    g_isCalled = false;
+    napi_env env = (napi_env)engine_;
+    uv_loop_t* loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_register_task_to_worker(loop, HighPrioTask);
+
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value name = nullptr;
+    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
+        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+
+    uv_thread_t uvThread;
+    int rc = uv_thread_create(&uvThread, [](void* data)
+    {
+            napi_threadsafe_function func = (napi_threadsafe_function)data;
+            napi_status s = napi_call_threadsafe_function(func, nullptr, napi_tsfn_nonblocking);
+            EXPECT_EQ(s, napi_ok);
+    }, tsFunc);
+    ASSERT_EQ(rc, 0);
+    uv_thread_join(&uvThread);
+    napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
+    HILOG_INFO("ThreadsafeTest015 end");
+}
+
+//用例2：有一个UV优先级任务 -> 往队列抛多个任务
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest016, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeTest016 start");
+    g_isCalled = false;
+    gTaskExecOrder.clear();
+    napi_env env = (napi_env)engine_;
+    uv_loop_t* loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_register_task_to_worker(loop, HighPrioTask);
+
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value name = nullptr;
+    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
+        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+    
+    const int numTasks = 5;
+    const char* taskNames[numTasks] = { "A", "B", "C", "D", "E" };
+    uv_thread_t uvThread;
+
+    struct ThreadArg { napi_threadsafe_function func; const char** msgs; int num; };
+    int rc = uv_thread_create(&uvThread, [](void* data) {
+        ThreadArg* arg = (ThreadArg*)data;
+        for (int i = 0; i < arg->num; i++) {
+            napi_status s = napi_call_threadsafe_function(arg->func, (void*)arg->msgs[i], napi_tsfn_nonblocking);
+            EXPECT_EQ(s, napi_ok);
+        }
+        delete arg;
+    }, new ThreadArg{ tsFunc, taskNames, numTasks });
+    ASSERT_EQ(rc, 0);
+    uv_thread_join(&uvThread);
+    napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
+    HILOG_INFO("ThreadsafeTest016 end");
+}
+
+//用例3：多线程，有一个UV优先级任务 -> 每个线程往队列抛一个任务
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest017, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeTest017 start");
+    g_isCalled = false;
+    gTaskExecOrder.clear();
+    napi_env env = (napi_env)engine_;
+    uv_loop_t* loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    uv_register_task_to_worker(loop, HighPrioTask);
+
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value name = nullptr;
+    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
+        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+    
+    const int numThreads = 5;
+    const char* msgs[numThreads] = { "A", "B", "C", "D", "E" };
+    uv_thread_t threads[numThreads];
+
+    struct ThreadArg { napi_threadsafe_function func; const char* msg; };
+    // 创建多个线程，每个线程往队列抛一个任务
+    for (int i = 0; i < numThreads; i++) {
+        int rc = uv_thread_create(&threads[i], [](void* data) {
+            ThreadArg* arg = (ThreadArg*)data;
+            napi_status s = napi_call_threadsafe_function(arg->func, (void*)arg->msg, napi_tsfn_nonblocking);
+            EXPECT_EQ(s, napi_ok);
+            delete arg;
+        }, new ThreadArg{ tsFunc, msgs[i] });
+        ASSERT_EQ(rc, 0);
+    }
+    for (int i = 0; i < numThreads; i++) {
+        uv_thread_join(&threads[i]);
+    }
+
+    napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
+    HILOG_INFO("ThreadsafeTest017 end");
+}
+
+//用例4：多线程，有一个UV优先级任务 -> 每个线程往队列抛多个任务
+HWTEST_F(NapiThreadsafeTest, ThreadsafeTest018, testing::ext::TestSize.Level1)
+{
+    HILOG_INFO("ThreadsafeTest018 start");
+    g_isCalled = false;
+    gTaskExecOrder.clear();
+    napi_env env = (napi_env)engine_;
+    uv_loop_t* loop = nullptr;
+    napi_get_uv_event_loop(env, &loop);
+    
+    napi_threadsafe_function tsFunc = nullptr;
+    napi_value name = nullptr;
+    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
+        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+
+    const int numThreads = 3;
+    const int numTasksPerThread = 5;
+    const char* msgs[numThreads][numTasksPerThread] = {
+        { "A1", "A2", "A3", "A4", "A5" },
+        { "B1", "B2", "B3", "B4", "B5" },
+        { "C1", "C2", "C3", "C4", "C5" }
+    };
+    
+    uv_thread_t threads[numThreads];
+    struct ThreadArg { napi_threadsafe_function func; const char** msgs; int num; };
+    for (int t = 0; t < numThreads; t++) {
+        int rc = uv_thread_create(&threads[t], [](void* data) {
+            ThreadArg* arg = (ThreadArg*)data;
+            for (int i = 0; i < arg->num; i++) {
+                napi_status s = napi_call_threadsafe_function(arg->func, (void*)arg->msgs[i], napi_tsfn_nonblocking);
+                EXPECT_EQ(s, napi_ok);
+            }
+            delete arg;
+        }, new ThreadArg{ tsFunc, msgs[t], numTasksPerThread });
+        ASSERT_EQ(rc, 0);
+    }
+    
+    for (int i = 0; i < numThreads; i++) {
+        uv_thread_join(&threads[i]);
+    }
+    uv_register_task_to_worker(loop, HighPrioTask);
+    napi_release_threadsafe_function(tsFunc, napi_tsfn_release);
+    HILOG_INFO("ThreadsafeTest018 end");
+}
