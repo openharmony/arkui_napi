@@ -356,10 +356,7 @@ public:
         return promiseRejectCallbackRef_;
     }
 
-    void RegisterAllPromiseCallback(NapiAllPromiseRejectCallback callback) override
-    {
-        allPromiseRejectCallback_ = callback;
-    }
+    void RegisterAllPromiseCallback(NapiAllPromiseRejectCallback callback) override;
 
     void SetPromiseRejectCallBackRef(NativeReference* rejectCallbackRef) override
     {
@@ -552,5 +549,6 @@ private:
     bool isMultiContextEnabled_ = false;
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
     AppStateNotifier interopAppState_ {};
+    NativeReference *globalCheckCallbackRef_ { nullptr };
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
