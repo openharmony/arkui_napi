@@ -1366,7 +1366,7 @@ bool NapiDefineProperty(napi_env env, Local<panda::ObjectRef> &obj, NapiProperty
         NapiDefinePropertyInner(env, obj, propertyDescriptor, propertyName, result);
     }
     if (JSNApi::HasPendingException(vm)) {
-        HILOG_WARN("occur exception, propertyName:%{public}s", Local<StringRef>(propertyName)->ToString(vm).c_str());
+        HILOG_DEBUG("occur exception, propertyName:%{public}s", Local<StringRef>(propertyName)->ToString(vm).c_str());
         if (reinterpret_cast<NativeEngine*>(env)->IsCrossThreadCheckEnabled()) {
             JSNApi::PrintExceptionInfo(vm);
         }
