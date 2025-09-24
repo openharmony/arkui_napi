@@ -356,7 +356,7 @@ public:
     void Increase##name##Counter();                      \
     void Decrease##name##Counter();                      \
     bool Has##name();
-    NAPI_COUNTER_METHOD(DCL_COUNTER_METHOD);
+    NAPI_COUNTER_METHOD(DCL_COUNTER_METHOD)
 #undef DCL_COUNTER_METHOD
     // alias for HasListening
     bool HasListeningCounter();
