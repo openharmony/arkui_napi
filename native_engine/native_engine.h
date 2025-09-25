@@ -769,6 +769,18 @@ public:
         return allUnhandledRejectionCb_;
     }
 
+    void RegisterGlobalUnhandledRejectionCheckCallback(napi_callback callback)
+    {
+        if (!globalUnhandledRejectionCheckCb_) {
+            globalUnhandledRejectionCheckCb_ = callback;
+        }
+    }
+
+    napi_callback &GetGlobalUnhandledRejectionCheckCallback()
+    {
+        return globalUnhandledRejectionCheckCb_;
+    }
+
     void RegisterHasOnErrorCallback(NapiHasOnErrorCallback callback)
     {
         if (!hasOnErrorCb_) {
@@ -805,6 +817,7 @@ private:
     NapiAllUnhandledRejectionCallback allUnhandledRejectionCb_ { nullptr };
     NapiHasOnErrorCallback hasOnErrorCb_ { nullptr };
     NapiHasAllUnhandledRejectionCallback hasAllUnhandledRejectionCb_ { nullptr };
+    napi_callback globalUnhandledRejectionCheckCb_ { nullptr };
 };
 
 bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignored = 0, int32_t deepth = -1);
