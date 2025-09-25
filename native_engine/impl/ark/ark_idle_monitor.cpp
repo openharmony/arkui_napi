@@ -249,7 +249,7 @@ void ArkIdleMonitor::NotifyMainThreadTryCompressGC()
     }
     auto task = [this]() {
         JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::FULL_GC);
-        if (CheckWorkerEnvQueueAllInIdle()) {
+        if (CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_CHECK_TASK_COUNT)) {
             JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
         }
     };
@@ -269,7 +269,9 @@ void ArkIdleMonitor::NotifyMainThreadTryCompressGCByBackground()
     };
     auto task = [this]() {
         JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::FULL_GC);
-        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+        if (CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_CHECK_TASK_COUNT_BACKGROUND)) {
+            JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+        }
     };
     if (IsIdleState()) {
         mainThreadHandler_->PostTask(task, "ARKTS_BACKGROUND_COMPRESS", 0,
@@ -378,6 +380,7 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
     if (started_ && inBackground) {
         HILOG_DEBUG("ArkIdleMonitor post check switch background gc task");
         StopIdleMonitorTimerTask();
+        CheckWorkerEnvQueue();
         PostSwitchBackgroundGCTask();
     }
 #endif
@@ -521,13 +524,13 @@ void ArkIdleMonitor::CheckWorkerEnvQueue()
     }
 }
 
-bool ArkIdleMonitor::CheckWorkerEnvQueueAllInIdle()
+bool ArkIdleMonitor::CheckWorkerEnvQueueAllInIdle(uint32_t idleCount)
 {
     std::lock_guard<std::mutex> lock(queueMutex_);
     for (size_t i = 0; i < workerEnvQueue_.size(); i++) {
         napi_env env = workerEnvQueue_.front();
         auto arkNativeEngine = reinterpret_cast<ArkNativeEngine*>(env);
-        if (arkNativeEngine->GetWorkerThreadState()->GetCheckCount() < IDLE_INBACKGROUND_CHECK_LENGTH) {
+        if (arkNativeEngine->GetWorkerThreadState()->CheckIdleState() < idleCount) {
             return false;
         }
         workerEnvQueue_.pop();
