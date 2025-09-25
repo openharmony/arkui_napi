@@ -138,32 +138,3 @@ ohos_shared_library("ark_interop") {
     }
   }
 }
-
-ohos_shared_library("cjLibLoader") {
-  part_name = "napi"
-  subsystem_name = "arkui"
-  relative_install_dir = "module"
-
-  configs = [ ":ark_interop_config" ]
-
-  defines = []
-  if (current_cpu == "arm64") {
-    defines += [ "USE_LIBS_ARM64" ]
-  } else if (current_cpu == "arm") {
-    defines += [ "USE_LIBS_ARM" ]
-  } else if (current_cpu == "x86_64") {
-    defines += [ "USE_LIBS_x86_64" ]
-  } else {
-    print("unsupported cpu ${current_cpu}")
-  }
-
-  sources = [ "ark_interop_loader.cpp" ]
-  if (!ark_standalone_build) {
-    external_deps = [ "hilog:libhilog" ]
-  }
-
-  deps = [
-    ":cj_envsetup",
-    "../../../..:ace_napi",
-  ]
-}
