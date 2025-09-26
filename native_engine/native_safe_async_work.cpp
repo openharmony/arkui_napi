@@ -344,9 +344,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     } else {
         loop = engine_->GetParent()->GetUVLoop();
     }
-    lock.unlock();
     uv_call_specify_task(loop);
-    lock.lock();
 #endif
     while (size > 0) {
         data = queue_.front();
