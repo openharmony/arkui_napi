@@ -1985,7 +1985,7 @@ HWTEST_F(NapiContextTest, CreateLimitRuntimeWithMultiContext001, testing::ext::T
             },
             [](std::string, std::string err) {
                 executed = true;
-                ASSERT_NE(err.find("(napi_create_limit_runtime)] multi-context does not support this interface"),
+                ASSERT_NE(err.find("[napi_create_limit_runtime] multi-context does not support this interface"),
                         std::string::npos);
             })
             .Run();
@@ -2335,7 +2335,7 @@ HWTEST_F(NapiContextTest, RunActorWithMultiContext001, testing::ext::TestSize.Le
             },
             [](std::string, std::string err) {
                 executed = true;
-                ASSERT_NE(err.find("(napi_run_actor)] multi-context does not support this interface"),
+                ASSERT_NE(err.find("[napi_run_actor] multi-context does not support this interface"),
                           std::string::npos);
             })
             .Run();
