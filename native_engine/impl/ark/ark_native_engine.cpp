@@ -929,7 +929,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
     if (module) {
         return scope.Escape(arkNativeEngine->LoadNativeModule(moduleManager, moduleName, module, exports, errInfo));
     } else {
-        HILOG_INFO("%{public}s", errInfo.c_str());
+        HILOG_DEBUG("%{public}s", errInfo.c_str());
         return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
     }
 }
