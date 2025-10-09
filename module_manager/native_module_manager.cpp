@@ -521,6 +521,32 @@ bool NativeModuleManager::GetLdNamespaceName(const std::string &moduleName, std:
 #endif
 }
 
+void NativeModuleManager::InheritNamespaceEachOther(const std::string& src, const std::string& dst)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    HILOG_DEBUG("namespace_1 is %{public}s, namespace_2 is %{public}s",
+         src.c_str(), dst.c_str());
+    if (src.empty() || dst.empty()) {
+        HILOG_ERROR("Invalid input parameters");
+        return;
+    }
+
+    Dl_namespace ns;
+    Dl_namespace current_ns;
+    if (dlns_get(src.c_str(), &ns) != 0) {
+        HILOG_ERROR("dlns_get  %{public}s failed", src.c_str());
+        return;
+    };
+    if (dlns_get(dst.c_str(), &current_ns) != 0) {
+        HILOG_ERROR("dlns_get  %{public}s failed", dst.c_str());
+        return;
+    };
+    dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
+    dlns_inherit(&current_ns, &ns, ALLOW_ALL_SHARED_LIBS);
+#endif
+}
+
 void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                                         const bool& isSystemApp)
 {
@@ -842,7 +868,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
                 prefix, dupModuleName, zfix, soPostfix) == -1) {
                 return false;
             }
-            
+
             if (sprintf_s(nativeModulePath[MODULE_PATH_SECONDARY_INDEX], pathLength, "%s/%s%s",
                 sysAbcPrefix.c_str(), dupModuleName, abcfix) == -1) {
                 return false;
@@ -1130,7 +1156,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     if (lib != nullptr) {
         Napi_onLoadCallback(lib, moduleName);
     }
-    
+
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (tailNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
