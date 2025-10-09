@@ -525,8 +525,7 @@ void NativeModuleManager::InheritNamespaceEachOther(const std::string& src, cons
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-    HILOG_DEBUG("namespace_1 is %{public}s, namespace_2 is %{public}s",
-         src.c_str(), dst.c_str());
+    HILOG_DEBUG("namespace_1 is %{public}s, namespace_2 is %{public}s", src.c_str(), dst.c_str());
     if (src.empty() || dst.empty()) {
         HILOG_ERROR("Invalid input parameters");
         return;
