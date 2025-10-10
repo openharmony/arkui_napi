@@ -658,6 +658,7 @@ protected:
     static std::unordered_set<NativeEngine*> g_alivedEngine_;
 public:
     uint64_t openHandleScopes_ = 0;
+    uint64_t openCriticalScopes_ = 0;
     panda::Local<panda::ObjectRef> lastException_;
 
 private:
