@@ -782,6 +782,73 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_open_critical_scope(napi_env env, napi_critical_scope* scope)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, scope);
+    CROSS_THREAD_CHECK(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+
+    if (engine->openCriticalScopes_ != 0) {
+        HILOG_ERROR("Already in critical scope, cannot open critical scope nested.");
+        return napi_set_last_error(env, napi_generic_failure);
+    }
+
+    *scope = reinterpret_cast<napi_critical_scope>(new panda::JsiFastNativeScope(engine->GetEcmaVm()));
+    engine->openCriticalScopes_++;
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_close_critical_scope(napi_env env, napi_critical_scope scope)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, scope);
+    CROSS_THREAD_CHECK(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (engine->openCriticalScopes_ == 0) {
+        HILOG_ERROR("Critical scope mismatch, cannot close critical scope.");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    engine->openCriticalScopes_--;
+    delete reinterpret_cast<panda::JsiFastNativeScope*>(scope);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_buffer_string_utf16_in_critical_scope(napi_env env,
+                                                                       napi_value value,
+                                                                       const char16_t** buffer,
+                                                                       size_t* length)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, buffer);
+    CHECK_ARG(env, length);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+
+    // Ensure inside critical scope
+    RETURN_STATUS_IF_FALSE(env, engine->openCriticalScopes_, napi_generic_failure);
+
+    auto vm = engine->GetEcmaVm();
+
+    // String type check
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsStringWithoutSwitchState(vm), napi_string_expected);
+    Local<panda::StringRef> stringVal(nativeValue);
+
+    uint32_t len = 0;
+    const uint16_t *buf = stringVal->GetBufferUtf16(vm, len);
+    RETURN_STATUS_IF_FALSE(env, buf, napi_invalid_arg);
+
+    *buffer = reinterpret_cast<const char16_t *>(buf);
+    *length = static_cast<size_t>(len);
+
+    return napi_clear_last_error(env);
+}
+
 // Methods to coerce values
 // These APIs may execute user scripts
 NAPI_EXTERN napi_status napi_coerce_to_bool(napi_env env, napi_value value, napi_value* result)
