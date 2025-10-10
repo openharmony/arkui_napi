@@ -84,6 +84,7 @@ public:
     static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
+    void InheritNamespaceEachOther(const std::string& src, const std::string& dst);
     void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                        const bool& isSystemApp = false);
     bool GetLdNamespaceName(const std::string &moduleName, std::string &nsName);
