@@ -47,6 +47,12 @@ static inline napi_status napi_set_last_error(napi_env env,
         return napi_invalid_arg; \
     }
 
+#define CHECK_ENV_AND_STATUS(env)                                            \
+    CHECK_ENV((env));                                                        \
+    if (reinterpret_cast<NativeEngine*>(env)->openCriticalScopes_ > 0) {     \
+        HILOG_FATAL("current interface cannot invoke under critical scope"); \
+    }
+
 #define CHECK_ARG(env, arg) RETURN_STATUS_IF_FALSE((env), ((arg) != nullptr), napi_invalid_arg)
 
 #define NAPI_PREAMBLE(env)                                                     \
@@ -57,6 +63,10 @@ static inline napi_status napi_set_last_error(napi_env env,
         napi_pending_exception);                                               \
         napi_clear_last_error((env));                                          \
     TryCatch tryCatch(env)
+
+#define NAPI_PREAMBLE_WITH_STATUS_CHECK(env) \
+    CHECK_ENV_AND_STATUS((env));             \
+    NAPI_PREAMBLE((env))
 
 #define GET_RETURN_STATUS(env)                                                 \
     (!tryCatch.HasCaught()                                                     \

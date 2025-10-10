@@ -75,7 +75,7 @@ NAPI_EXTERN NAPI_NO_RETURN void napi_fatal_error(const char* location,
 
 NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result_env)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result_env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -91,8 +91,7 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
 
 NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err)
 {
-    NAPI_PREAMBLE(env);
-    CHECK_ENV(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, err);
 
     auto exceptionValue = LocalValueFromJsValue(err);
@@ -113,7 +112,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
                                                void* data,
                                                napi_async_work* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, execute);
     CHECK_ARG(env, complete);
@@ -140,7 +139,7 @@ NAPI_EXTERN napi_status napi_create_async_work(napi_env env,
 
 NAPI_EXTERN napi_status napi_delete_async_work(napi_env env, napi_async_work work)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, work);
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
@@ -152,7 +151,7 @@ NAPI_EXTERN napi_status napi_delete_async_work(napi_env env, napi_async_work wor
 
 NAPI_EXTERN napi_status napi_queue_async_work(napi_env env, napi_async_work work)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, work);
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
@@ -163,7 +162,7 @@ NAPI_EXTERN napi_status napi_queue_async_work(napi_env env, napi_async_work work
 
 NAPI_EXTERN napi_status napi_cancel_async_work(napi_env env, napi_async_work work)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, work);
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
@@ -182,7 +181,7 @@ NAPI_EXTERN napi_status napi_get_node_version(napi_env env, const napi_node_vers
 // Return the current libuv event loop for a given environment
 NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** loop)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, loop);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -202,7 +201,7 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
 
 NAPI_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, fun);
     WEAK_CROSS_THREAD_CHECK(env);
 
@@ -214,7 +213,7 @@ NAPI_EXTERN napi_status napi_add_env_cleanup_hook(napi_env env, void (*fun)(void
 
 NAPI_EXTERN napi_status napi_remove_env_cleanup_hook(napi_env env, void (*fun)(void* arg), void* arg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, fun);
     WEAK_CROSS_THREAD_CHECK(env);
 
@@ -333,7 +332,7 @@ struct napi_async_cleanup_hook_handle__ {
 NAPI_EXTERN napi_status napi_add_async_cleanup_hook(
     napi_env env, napi_async_cleanup_hook hook, void* arg, napi_async_cleanup_hook_handle* remove_handle)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, hook);
     CROSS_THREAD_CHECK(env);
 
@@ -361,7 +360,7 @@ NAPI_EXTERN napi_status napi_create_threadsafe_function(napi_env env, napi_value
     napi_finalize thread_finalize_cb, void* context, napi_threadsafe_function_call_js call_js_cb,
     napi_threadsafe_function* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, async_resource_name);
     RETURN_STATUS_IF_FALSE(
         env, initial_thread_count > 0 && initial_thread_count <= MAX_THREAD_SAFE_COUNT, napi_invalid_arg);
@@ -464,7 +463,7 @@ NAPI_EXTERN napi_status napi_get_threadsafe_function_context(napi_threadsafe_fun
 
 NAPI_EXTERN napi_status napi_ref_threadsafe_function(napi_env env, napi_threadsafe_function func)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, func);
 
     auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(func);
@@ -478,7 +477,7 @@ NAPI_EXTERN napi_status napi_ref_threadsafe_function(napi_env env, napi_threadsa
 
 NAPI_EXTERN napi_status napi_unref_threadsafe_function(napi_env env, napi_threadsafe_function func)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, func);
 
     auto safeAsyncWork = reinterpret_cast<NativeSafeAsyncWork*>(func);
@@ -493,7 +492,7 @@ NAPI_EXTERN napi_status napi_unref_threadsafe_function(napi_env env, napi_thread
 NAPI_EXTERN napi_status napi_async_init(
     napi_env env, napi_value async_resource, napi_value async_resource_name, napi_async_context* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, async_resource_name);
     CHECK_ARG(env, result);
 
@@ -525,7 +524,7 @@ NAPI_EXTERN napi_status napi_async_init(
 
 NAPI_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_context async_context)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, async_context);
 
     NativeAsyncHookContext* nativeAsyncContext = reinterpret_cast<NativeAsyncHookContext*>(async_context);
@@ -538,7 +537,7 @@ NAPI_EXTERN napi_status napi_async_destroy(napi_env env, napi_async_context asyn
 NAPI_EXTERN napi_status napi_open_callback_scope(
     napi_env env, napi_value, napi_async_context async_context_handle, napi_callback_scope* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     NativeAsyncHookContext* nodeAsyncContext = reinterpret_cast<NativeAsyncHookContext*>(async_context_handle);
@@ -550,7 +549,7 @@ NAPI_EXTERN napi_status napi_open_callback_scope(
 
 NAPI_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_scope scope)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
 
     auto ret = NativeAsyncHookContext::CloseCallbackScope(reinterpret_cast<NativeEngine*>(env),
@@ -567,7 +566,7 @@ NAPI_EXTERN napi_status napi_close_callback_scope(napi_env env, napi_callback_sc
 NAPI_EXTERN napi_status napi_set_instance_data(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CROSS_THREAD_CHECK(env);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto callback = reinterpret_cast<NativeFinalize>(finalize_cb);
@@ -577,7 +576,7 @@ NAPI_EXTERN napi_status napi_set_instance_data(
 
 NAPI_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, data);
     CROSS_THREAD_CHECK(env);
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -587,7 +586,7 @@ NAPI_EXTERN napi_status napi_get_instance_data(napi_env env, void** data)
 
 NAPI_EXTERN napi_status node_api_get_module_file_name(napi_env env, const char** result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     *result = engine->GetModuleFileName();
@@ -603,7 +602,7 @@ NAPI_EXTERN napi_status napi_make_callback(napi_env env,
                                            const napi_value* argv,
                                            napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, func);
     CHECK_ARG(env, recv);
     if (argc > 0) {

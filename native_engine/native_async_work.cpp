@@ -280,7 +280,14 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
 #endif
 
     // Don't use that after complete
+    auto complete = that->complete_;
+    auto description = that->GetTraceDescription();
     that->complete_(engine, nstatus, that->data_);
+    if (engine->openCriticalScopes_ > 0) {
+        HILOG_FATAL("critical scope still open after user callback (ID: %{public}" PRIuPTR
+                    ") returned, task description: %{public}s",
+                    reinterpret_cast<uintptr_t>(complete), description.c_str());
+    }
     if (tryCatch.HasCaught()) {
         engine->HandleUncaughtException();
     }

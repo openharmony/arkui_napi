@@ -56,16 +56,10 @@ void *NativeEngineTest::Run(void *args)
 
 void DeathTest::Run()
 {
-    size_t stackSize = GetCurrentStackSize();
     ASSERT_NE(pipe(coutPipe_), -1);
     ASSERT_NE(pipe(cerrPipe_), -1);
 
-    // Malloc stack of child process
-    ASSERT_FALSE(stackSize < 0 || stackSize > MAX_ALLOWED_CHILD_PROCESS_STACK_SIZE);
-    char* childStack = new char[stackSize];
-    ASSERT_NE(childStack, nullptr);
-
-    pid_t childPid = clone(RunInChild, childStack + stackSize, SIGCHLD, (void*)this);
+    pid_t childPid = clone(RunInChild, nullptr, SIGCHLD, (void*)this);
     if (childPid != -1) {
         int status = 0;
         ASSERT_EQ(waitpid(childPid, &status, 0), childPid);
@@ -83,19 +77,7 @@ void DeathTest::Run()
     close(coutPipe_[0]);
     close(cerrPipe_[0]);
 
-    free(childStack);
     ASSERT_NE(childPid, -1);
-}
-
-size_t DeathTest::GetCurrentStackSize()
-{
-    //  Get stack size of current thread
-    pthread_attr_t attr;
-    size_t stackSize = 0;
-    pthread_getattr_np(pthread_self(), &attr);
-    pthread_attr_getstacksize(&attr, &stackSize);
-    pthread_attr_destroy(&attr);
-    return stackSize;
 }
 
 int DeathTest::RunInChild(void* arg)
@@ -122,6 +104,8 @@ int DeathTest::RunInChild(void* arg)
     // close read pipe port
     close(that->coutPipe_[1]);
     close(that->cerrPipe_[1]);
+    // force exit subprocess after test
+    _exit(0);
     return 0;
 }
 
