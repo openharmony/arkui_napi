@@ -337,26 +337,25 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
 
     bool isValidTraceId = SaveAndSetTraceId();
-#if defined(ENABLE_EVENT_HANDLER)
+
     uv_loop_t* loop = nullptr;
     if (engine_->IsMainEnvContext()) {
         loop = engine_->GetUVLoop();
     } else {
         loop = engine_->GetParent()->GetUVLoop();
     }
-    lock.unlock();
-    uv_call_specify_task(loop);
-    lock.lock();
-#endif
+
     while (size > 0) {
         data = queue_.front();
         // when queue is full, notify send.
         if (size == maxQueueSize_ && maxQueueSize_ > 0) {
             condition_.notify_one();
         }
-
         napi_value func_ = (ref_ == nullptr) ? nullptr : ref_->Get(engine_);
         lock.unlock();
+#if defined(ENABLE_EVENT_HANDLER)
+    uv_call_specify_task(loop);
+#endif
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
         } else {
