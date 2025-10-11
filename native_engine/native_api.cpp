@@ -4649,7 +4649,6 @@ NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
         return napi_set_last_error(env, status);
     }
     return napi_ok;
-
 }
 
 NAPI_EXTERN napi_status napi_create_strong_reference(
