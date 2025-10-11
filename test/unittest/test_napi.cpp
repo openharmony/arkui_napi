@@ -80,6 +80,7 @@ static constexpr const char16_t TEST_CHAR16_STRING[] = u"TestString";
 static constexpr const char TEST_CHAR_ERROR_CODE[] = "500";
 static constexpr const char TEST_CHAR_ERROR_MESSAGE[] = "Common error";
 static constexpr const char TEST_CHAR_TEST_FUNC[] = "testFunc";
+constexpr const char16_t TEST_STR_UTF16[] = u"中文,English,123456,!@#$%$#^%&12345";
 
 class NapiBasicTest : public NativeEngineTest {
 public:
@@ -14625,4 +14626,587 @@ HWTEST_F(NapiBasicTest, NapiFuncWritableTest001, testing::ext::TestSize.Level1)
     int32_t last = 0;
     ASSERT_CHECK_CALL(napi_get_value_int32(env,result,&last));
     ASSERT_EQ(last, 42);
+}
+
+/**
+ * @tc.name: NapiOpenCriticalScopeTest001
+ * @tc.desc: Test napi_open_critical_scope when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = nullptr;
+    napi_critical_scope scope = nullptr;
+    napi_status status = napi_open_critical_scope(env, &scope);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiOpenCriticalScopeTest002
+ * @tc.desc: Test napi_open_critical_scope when the input argument scope is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_critical_scope* scope = nullptr;
+    napi_status status = napi_open_critical_scope(env, scope);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiOpenCriticalScopeTest003
+ * @tc.desc: Test napi_open_critical_scope when calling it.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_critical_scope scope = nullptr;
+    napi_status status = napi_open_critical_scope(env, &scope);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_NE(scope, nullptr);
+    ASSERT_CHECK_CALL(napi_close_critical_scope(env, scope));
+}
+
+/**
+ * @tc.name: NapiCloseCriticalScopeTest001
+ * @tc.desc: Test napi_close_critical_scope when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCloseCriticalScopeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = nullptr;
+    napi_critical_scope scope = nullptr;
+    napi_status status = napi_close_critical_scope(env, scope);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCloseCriticalScopeTest002
+ * @tc.desc: Test napi_close_critical_scope when the input argument scope is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCloseCriticalScopeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_critical_scope scope = nullptr;
+    napi_status status = napi_close_critical_scope(env, scope);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest001
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+    const char16_t* data = nullptr;
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(nullptr, value, &data, &length);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest002
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument value is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    const char16_t* data = nullptr;
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest003
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument buffer is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, nullptr, &length);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest004
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument length is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+    const char16_t* data = nullptr;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest005
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope without opening the critical scope.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+    const char16_t* data = nullptr;
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
+    ASSERT_EQ(status, napi_generic_failure);
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest006
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when value is not string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_critical_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
+
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    const char16_t* data = nullptr;
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
+    ASSERT_EQ(status, napi_string_expected);
+
+    ASSERT_CHECK_CALL(napi_close_critical_scope(env, scope));
+}
+
+/**
+ * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest007
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when value is lineString.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_critical_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
+
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+    const char16_t* data = nullptr;
+    size_t length = 0;
+    napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_NE(data, nullptr);
+    ASSERT_EQ(length, sizeof(TEST_STR_UTF16) / sizeof(char16_t) - 1);
+    ASSERT_STREQ(reinterpret_cast<const char*>(data), reinterpret_cast<const char*>(TEST_STR_UTF16));
+
+    ASSERT_CHECK_CALL(napi_close_critical_scope(env, scope));
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest001
+ * @tc.desc: Test napi_create_strong_reference when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32_10, &value));
+    napi_strong_ref ref = nullptr;
+    napi_status status = napi_create_strong_reference(nullptr, value, &ref);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest002
+ * @tc.desc: Test napi_create_strong_reference when the input argument value is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_strong_ref ref = nullptr;
+    napi_status status = napi_create_strong_reference(env, nullptr, &ref);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest003
+ * @tc.desc: Test napi_create_strong_reference when the input argument result is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value value = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32_10, &value));
+    napi_status status = napi_create_strong_reference(env, value, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest004
+ * @tc.desc: Test napi_create_strong_reference after triggering gc.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_type_tag_object(env, value, &typeTags[INT_ZERO]));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_EQ(result, napi_object);
+    bool resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest005
+ * @tc.desc: Test napi_create_strong_reference after triggering gc.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    napi_strong_ref ref2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_type_tag_object(env, value, &typeTags[INT_ZERO]));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref2));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_EQ(result, napi_object);
+    bool resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    napi_value value2 = nullptr;
+    result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref2, &value2));
+    ASSERT_CHECK_CALL(napi_typeof(env, value2, &result));
+    ASSERT_EQ(result, napi_object);
+    resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value2, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref2));
+}
+
+/**
+ * @tc.name: NapiCreateStrongRefTest006
+ * @tc.desc: Test napi_create_strong_reference after triggering gc.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_value value2 = nullptr;
+    napi_strong_ref ref = nullptr;
+    napi_strong_ref ref2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_type_tag_object(env, value, &typeTags[INT_ZERO]));
+    ASSERT_CHECK_CALL(napi_create_object(env, &value2));
+    ASSERT_CHECK_CALL(napi_type_tag_object(env, value2, &typeTags[INT_ONE]));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value2, &ref2));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_EQ(result, napi_object);
+    bool resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref2, &value2));
+    ASSERT_CHECK_CALL(napi_typeof(env, value2, &result));
+    ASSERT_EQ(result, napi_object);
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value2, &typeTags[INT_ONE], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref2));
+}
+
+/**
+ * @tc.name: NapiGetStrongRefValueTest001
+ * @tc.desc: Test napi_get_strong_reference_value when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    napi_status status = napi_get_strong_reference_value(nullptr, ref, &value);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiGetStrongRefValueTest002
+ * @tc.desc: Test napi_get_strong_reference_value when the input argument ref is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    napi_status status = napi_get_strong_reference_value(env, ref, &value);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetStrongRefValueTest003
+ * @tc.desc: Test napi_get_strong_reference_value when the input argument result is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    napi_status status = napi_get_strong_reference_value(env, ref, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiGetStrongRefValueTest004
+ * @tc.desc: Test napi_get_strong_reference_value without delete strong reference.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_value value2 = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+
+    bool result = false;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value2));
+    ASSERT_CHECK_CALL(napi_strict_equals(env, value, value2, &result));
+    ASSERT_TRUE(result);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiGetStrongRefValueTest005
+ * @tc.desc: Test napi_get_strong_reference_value without delete strong reference.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+
+    napi_valuetype result = napi_undefined;
+    napi_value value2 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value2));
+    ASSERT_CHECK_CALL(napi_typeof(env, value2, &result));
+    ASSERT_NE(result, napi_object);
+}
+
+/**
+ * @tc.name: NapiDeleteStrongRefTest001
+ * @tc.desc: Test napi_delete_strong_reference when the input argument env is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    napi_status status = napi_delete_strong_reference(nullptr, ref);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiDeleteStrongRefTest002
+ * @tc.desc: Test napi_delete_strong_reference when the input argument ref is nullptr.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_strong_ref ref = nullptr;
+    napi_status status = napi_delete_strong_reference(env, ref);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiDeleteStrongRefTest003
+ * @tc.desc: Test napi_delete_strong_reference whether the value has been released.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_NE(result, napi_object);
+}
+
+/**
+ * @tc.name: NapiDeleteStrongRefTest004
+ * @tc.desc: Test napi_delete_strong_reference whether the value has been released.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    napi_strong_ref ref2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+    ASSERT_CHECK_CALL(napi_type_tag_object(env, value, &typeTags[INT_ZERO]));
+
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref2));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref2, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_EQ(result, napi_object);
+    bool resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref2));
+}
+
+/**
+ * @tc.name: NapiDeleteStrongRefTest005
+ * @tc.desc: Test napi_delete_strong_reference whether the value has been released.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value value = nullptr;
+    napi_strong_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &value));
+
+    ASSERT_CHECK_CALL(napi_create_strong_reference(env, value, &ref));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+    ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
+
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(), panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::FULL_GC);
+
+    napi_valuetype result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value));
+    ASSERT_CHECK_CALL(napi_typeof(env, value, &result));
+    ASSERT_NE(result, napi_object);
 }
