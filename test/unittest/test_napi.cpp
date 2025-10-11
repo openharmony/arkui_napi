@@ -14643,7 +14643,7 @@ HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest001, testing::ext::TestSize.Lev
 
 /**
  * @tc.name: NapiOpenCriticalScopeTest002
- * @tc.desc: Test napi_open_critical_scope when the input argument env is nullptr.
+ * @tc.desc: Test napi_open_critical_scope when the input argument scope is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest002, testing::ext::TestSize.Level1)
@@ -14656,7 +14656,7 @@ HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest002, testing::ext::TestSize.Lev
 
 /**
  * @tc.name: NapiOpenCriticalScopeTest003
- * @tc.desc: Test napi_open_critical_scope when multiple call.
+ * @tc.desc: Test napi_open_critical_scope when calling it.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiOpenCriticalScopeTest003, testing::ext::TestSize.Level1)
@@ -14684,7 +14684,7 @@ HWTEST_F(NapiBasicTest, NapiCloseCriticalScopeTest001, testing::ext::TestSize.Le
 
 /**
  * @tc.name: NapiCloseCriticalScopeTest002
- * @tc.desc: Test napi_close_critical_scope when the input argument env is nullptr.
+ * @tc.desc: Test napi_close_critical_scope when the input argument scope is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiCloseCriticalScopeTest002, testing::ext::TestSize.Level1)
@@ -14713,7 +14713,7 @@ HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest001, testing::ex
 
 /**
  * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest002
- * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument env is nullptr.
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument value is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest002, testing::ext::TestSize.Level1)
@@ -14728,7 +14728,7 @@ HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest002, testing::ex
 
 /**
  * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest003
- * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument env is nullptr.
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument buffer is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest003, testing::ext::TestSize.Level1)
@@ -14743,7 +14743,7 @@ HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest003, testing::ex
 
 /**
  * @tc.name: NapiGetBufferStrUTF16InCriticalScopeTest004
- * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument env is nullptr.
+ * @tc.desc: Test napi_get_buffer_string_utf16_in_critical_scope when the input argument length is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest004, testing::ext::TestSize.Level1)
@@ -14834,7 +14834,7 @@ HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest001, testing::ext::TestSize.Level
 
 /**
  * @tc.name: NapiCreateStrongRefTest002
- * @tc.desc: Test napi_create_strong_reference when the input argument env is nullptr.
+ * @tc.desc: Test napi_create_strong_reference when the input argument value is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest002, testing::ext::TestSize.Level1)
@@ -14847,7 +14847,7 @@ HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest002, testing::ext::TestSize.Level
 
 /**
  * @tc.name: NapiCreateStrongRefTest003
- * @tc.desc: Test napi_create_strong_reference when the input argument env is nullptr.
+ * @tc.desc: Test napi_create_strong_reference when the input argument result is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest003, testing::ext::TestSize.Level1)
@@ -14922,6 +14922,15 @@ HWTEST_F(NapiBasicTest, NapiCreateStrongRefTest005, testing::ext::TestSize.Level
     ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value, &typeTags[INT_ZERO], &resultBool));
     ASSERT_TRUE(resultBool);
 
+    napi_value value2 = nullptr;
+    result = napi_undefined;
+    ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref2, &value2));
+    ASSERT_CHECK_CALL(napi_typeof(env, value2, &result));
+    ASSERT_EQ(result, napi_object);
+    resultBool = false;
+    ASSERT_CHECK_CALL(napi_check_object_type_tag(env, value2, &typeTags[INT_ZERO], &resultBool));
+    ASSERT_TRUE(resultBool);
+
     ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
     ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref2));
 }
@@ -14991,7 +15000,7 @@ HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest001, testing::ext::TestSize.Lev
 
 /**
  * @tc.name: NapiGetStrongRefValueTest002
- * @tc.desc: Test napi_get_strong_reference_value when the input argument env is nullptr.
+ * @tc.desc: Test napi_get_strong_reference_value when the input argument ref is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest002, testing::ext::TestSize.Level1)
@@ -15006,7 +15015,7 @@ HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest002, testing::ext::TestSize.Lev
 
 /**
  * @tc.name: NapiGetStrongRefValueTest003
- * @tc.desc: Test napi_get_strong_reference_value when the input argument env is nullptr.
+ * @tc.desc: Test napi_get_strong_reference_value when the input argument result is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest003, testing::ext::TestSize.Level1)
@@ -15070,11 +15079,11 @@ HWTEST_F(NapiBasicTest, NapiGetStrongRefValueTest005, testing::ext::TestSize.Lev
 
     ASSERT_CHECK_CALL(napi_delete_strong_reference(env, ref));
 
-    bool result = false;
+    napi_valuetype result = napi_undefined;
     napi_value value2 = nullptr;
     ASSERT_CHECK_CALL(napi_get_strong_reference_value(env, ref, &value2));
-    ASSERT_CHECK_CALL(napi_strict_equals(env, value, value2, &result));
-    ASSERT_FALSE(result);
+    ASSERT_CHECK_CALL(napi_typeof(env, value2, &result));
+    ASSERT_NE(result, napi_object);
 }
 
 /**
@@ -15098,7 +15107,7 @@ HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest001, testing::ext::TestSize.Level
 
 /**
  * @tc.name: NapiDeleteStrongRefTest002
- * @tc.desc: Test napi_delete_strong_reference when the input argument env is nullptr.
+ * @tc.desc: Test napi_delete_strong_reference when the input argument ref is nullptr.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiDeleteStrongRefTest002, testing::ext::TestSize.Level1)
