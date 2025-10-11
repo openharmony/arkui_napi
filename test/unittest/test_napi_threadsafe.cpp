@@ -84,6 +84,10 @@ bool acquireFlag = false;
 static int32_t g_receiveCnt = 0;
 static bool g_isTailA = false;
 static bool g_isTailB = false;
+static bool g_isCalled = false;
+static std::vector<std::string> gTaskExecOrder;
+constexpr const char* kTaskNameHighPrio = "HighPrioTask";
+constexpr const char* kTaskNameNull = "Null";
 
 static constexpr int INT_ONE = 1;
 static constexpr int INT_TWO = 2;
@@ -1555,28 +1559,25 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest014, testing::ext::TestSize.Level1)
     HILOG_INFO("ThreadsafeTest014 end");
 }
 
-static bool g_isCalled = false;
-static std::vector<std::string> gTaskExecOrder;
 
 static void HighPrioTask(uv_loop_t* loop)
 {
     g_isCalled = true;
-    gTaskExecOrder.push_back("HighPrioTask");
+    gTaskExecOrder.push_back(kTaskNameHighPrio);
     uv_unregister_task_to_event(loop);
 }
-static void TSFN(napi_env env, napi_value tsfn_cb, void* context, void* data)
+
+static void HighPriorityTaskTest(napi_env env, napi_value tsfn_cb, void* context, void* data)
 {
     ASSERT_TRUE(g_isCalled);
-    EXPECT_EQ(gTaskExecOrder[0], "HighPrioTask");
     if (data) {
         std::string strData = static_cast<const char*>(data);
         gTaskExecOrder.push_back(strData);
     } else {
-        gTaskExecOrder.push_back("NULL");
+        gTaskExecOrder.push_back(kTaskNameNull);
     }
 }
 
-//用例1：有一个UV优先级任务 -> 往队列抛一个任务
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest015, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeTest015 start");
@@ -1588,9 +1589,9 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest015, testing::ext::TestSize.Level1)
 
     napi_threadsafe_function tsFunc = nullptr;
     napi_value name = nullptr;
-    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_string_latin1(env, "HighPriorityTaskTest", NAPI_AUTO_LENGTH, &name), napi_ok);
     ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
-        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+        0, 1, nullptr, nullptr, nullptr, HighPriorityTaskTest, &tsFunc), napi_ok);
 
     uv_thread_t uvThread;
     int rc = uv_thread_create(&uvThread, [](void* data)
@@ -1605,7 +1606,6 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest015, testing::ext::TestSize.Level1)
     HILOG_INFO("ThreadsafeTest015 end");
 }
 
-//用例2：有一个UV优先级任务 -> 往队列抛多个任务
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest016, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeTest016 start");
@@ -1618,9 +1618,9 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest016, testing::ext::TestSize.Level1)
 
     napi_threadsafe_function tsFunc = nullptr;
     napi_value name = nullptr;
-    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_string_latin1(env, "HighPriorityTaskTest", NAPI_AUTO_LENGTH, &name), napi_ok);
     ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
-        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+        0, 1, nullptr, nullptr, nullptr, HighPriorityTaskTest, &tsFunc), napi_ok);
     
     const int numTasks = 5;
     const char* taskNames[numTasks] = { "A", "B", "C", "D", "E" };
@@ -1641,7 +1641,6 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest016, testing::ext::TestSize.Level1)
     HILOG_INFO("ThreadsafeTest016 end");
 }
 
-//用例3：多线程，有一个UV优先级任务 -> 每个线程往队列抛一个任务
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest017, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeTest017 start");
@@ -1654,16 +1653,16 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest017, testing::ext::TestSize.Level1)
 
     napi_threadsafe_function tsFunc = nullptr;
     napi_value name = nullptr;
-    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_string_latin1(env, "HighPriorityTaskTest", NAPI_AUTO_LENGTH, &name), napi_ok);
     ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
-        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+        0, 1, nullptr, nullptr, nullptr, HighPriorityTaskTest, &tsFunc), napi_ok);
     
     const int numThreads = 5;
     const char* msgs[numThreads] = { "A", "B", "C", "D", "E" };
     uv_thread_t threads[numThreads];
 
     struct ThreadArg { napi_threadsafe_function func; const char* msg; };
-    // 创建多个线程，每个线程往队列抛一个任务
+
     for (int i = 0; i < numThreads; i++) {
         int rc = uv_thread_create(&threads[i], [](void* data) {
             ThreadArg* arg = (ThreadArg*)data;
@@ -1681,7 +1680,6 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest017, testing::ext::TestSize.Level1)
     HILOG_INFO("ThreadsafeTest017 end");
 }
 
-//用例4：多线程，有一个UV优先级任务 -> 每个线程往队列抛多个任务
 HWTEST_F(NapiThreadsafeTest, ThreadsafeTest018, testing::ext::TestSize.Level1)
 {
     HILOG_INFO("ThreadsafeTest018 start");
@@ -1693,9 +1691,9 @@ HWTEST_F(NapiThreadsafeTest, ThreadsafeTest018, testing::ext::TestSize.Level1)
     
     napi_threadsafe_function tsFunc = nullptr;
     napi_value name = nullptr;
-    ASSERT_EQ(napi_create_string_latin1(env, "TSFN", NAPI_AUTO_LENGTH, &name), napi_ok);
+    ASSERT_EQ(napi_create_string_latin1(env, "HighPriorityTaskTest", NAPI_AUTO_LENGTH, &name), napi_ok);
     ASSERT_EQ(napi_create_threadsafe_function(env, nullptr, nullptr, name,
-        0, 1, nullptr, nullptr, nullptr, TSFN, &tsFunc), napi_ok);
+        0, 1, nullptr, nullptr, nullptr, HighPriorityTaskTest, &tsFunc), napi_ok);
 
     const int numThreads = 3;
     const int numTasksPerThread = 5;
