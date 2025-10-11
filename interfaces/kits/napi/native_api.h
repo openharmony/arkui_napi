@@ -211,17 +211,12 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
                                                          napi_qos_t qos,
                                                          uintptr_t taskId);
 
-
 NAPI_EXTERN napi_status napi_create_strong_reference(napi_env env, napi_value value, napi_strong_ref* result);
-
 NAPI_EXTERN napi_status napi_delete_strong_reference(napi_env env, napi_strong_ref ref);
-
 NAPI_EXTERN napi_status napi_get_strong_reference_value(napi_env env, napi_strong_ref ref, napi_value* result);
 
 NAPI_EXTERN napi_status napi_open_critical_scope(napi_env env, napi_critical_scope* scope);
-
 NAPI_EXTERN napi_status napi_close_critical_scope(napi_env env, napi_critical_scope scope);
-
 NAPI_EXTERN napi_status napi_get_buffer_string_utf16_in_critical_scope(napi_env env,
                                                                        napi_value value,
                                                                        const char16_t** buffer,
