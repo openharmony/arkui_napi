@@ -226,7 +226,6 @@ NAPI_EXTERN napi_status napi_get_buffer_string_utf16_in_critical_scope(napi_env 
                                                                        napi_value value,
                                                                        const char16_t** buffer,
                                                                        size_t* length);
-
 #ifdef __cplusplus
 }
 #endif
