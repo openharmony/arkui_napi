@@ -2078,7 +2078,6 @@ HWTEST_F(NapiContextTest, MapGetValuesWithMultiContext001, testing::ext::TestSiz
  */
 HWTEST_F(NapiContextTest, CreateLimitRuntimeWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    static bool executed = false;
     BasicDeathTest(
         []() {
             NativeEngineProxy rootEngine;
@@ -2086,13 +2085,10 @@ HWTEST_F(NapiContextTest, CreateLimitRuntimeWithMultiContext001, testing::ext::T
             napi_env limitEnv = nullptr;
             napi_create_limit_runtime(contextEngine, &limitEnv);
         },
-        [](std::string, std::string err) {
-            executed = true;
+        []([[maybe_unused]] const std::string& out, const std::string& err) {
             ASSERT_NE(err.find("[napi_create_limit_runtime] multi-context does not support this interface"),
                       std::string::npos);
-        })
-        .Run();
-    ASSERT_TRUE(executed);
+        });
 }
 
 /**
@@ -2424,7 +2420,6 @@ HWTEST_F(NapiContextTest, SerializeInnerWithMultiContext006, testing::ext::TestS
  */
 HWTEST_F(NapiContextTest, RunActorWithMultiContext001, testing::ext::TestSize.Level1)
 {
-    static bool executed = false;
     BasicDeathTest(
         []() {
             NativeEngineProxy rootEngine;
@@ -2433,12 +2428,9 @@ HWTEST_F(NapiContextTest, RunActorWithMultiContext001, testing::ext::TestSize.Le
             char buf[16] { 0 };
             napi_run_actor(contextEngine, "", buf, &result);
         },
-        [](std::string, std::string err) {
-            executed = true;
+        []([[maybe_unused]] const std::string& out, const std::string& err) {
             ASSERT_NE(err.find("[napi_run_actor] multi-context does not support this interface"), std::string::npos);
-        })
-        .Run();
-    ASSERT_TRUE(executed);
+        });
 }
 
 /**

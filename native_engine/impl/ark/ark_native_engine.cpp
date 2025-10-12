@@ -14,7 +14,9 @@
  */
 
 #include "ark_native_engine.h"
+#include <cstdint>
 #include "ecmascript/napi/include/jsnapi_expo.h"
+#include "utils/log.h"
 
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
@@ -1229,6 +1231,13 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
 #endif
 #endif
         }
+    }
+
+    if (engine->openCriticalScopes_ > 0) {
+        Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
+        auto name = fn->GetName(vm)->ToString(vm);
+        HILOG_FATAL("critical scope still open after user callback '%{public}s' (ID: %{public}" PRIuPTR ") returned",
+                    name.c_str(), reinterpret_cast<uintptr_t>(cb));
     }
 
     if (JSNApi::IsMixedDebugEnabled(vm)) {

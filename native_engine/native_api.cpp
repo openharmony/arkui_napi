@@ -126,7 +126,7 @@ NAPI_EXTERN napi_status napi_get_last_error_info(napi_env env, const napi_extend
 // Getters for defined singletons
 NAPI_EXTERN napi_status napi_get_undefined(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -138,7 +138,7 @@ NAPI_EXTERN napi_status napi_get_undefined(napi_env env, napi_value* result)
 
 NAPI_EXTERN napi_status napi_get_null(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -150,7 +150,7 @@ NAPI_EXTERN napi_status napi_get_null(napi_env env, napi_value* result)
 
 NAPI_EXTERN napi_status napi_get_global(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -169,7 +169,7 @@ NAPI_EXTERN napi_status napi_get_global(napi_env env, napi_value* result)
 
 NAPI_EXTERN napi_status napi_get_boolean(napi_env env, bool value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -185,7 +185,7 @@ NAPI_EXTERN napi_status napi_get_boolean(napi_env env, bool value, napi_value* r
 // Methods to create Primitive types/Objects
 NAPI_EXTERN napi_status napi_create_object(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -201,7 +201,7 @@ NAPI_EXTERN napi_status napi_create_object_with_properties(napi_env env,
                                                            size_t property_count,
                                                            const napi_property_descriptor* properties)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
     SWITCH_CONTEXT(env);
 
@@ -244,7 +244,7 @@ NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
                                                                  const char** keys,
                                                                  const napi_value* values)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     SWITCH_CONTEXT(env);
@@ -258,7 +258,7 @@ NAPI_EXTERN napi_status napi_create_object_with_named_properties(napi_env env,
 
 NAPI_EXTERN napi_status napi_create_array(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -270,7 +270,7 @@ NAPI_EXTERN napi_status napi_create_array(napi_env env, napi_value* result)
 
 NAPI_EXTERN napi_status napi_create_array_with_length(napi_env env, size_t length, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -282,7 +282,7 @@ NAPI_EXTERN napi_status napi_create_array_with_length(napi_env env, size_t lengt
 
 NAPI_EXTERN napi_status napi_create_sendable_array(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
     if (!engine->IsMainEnvContext()) {
@@ -298,7 +298,7 @@ NAPI_EXTERN napi_status napi_create_sendable_array(napi_env env, napi_value* res
 
 NAPI_EXTERN napi_status napi_create_sendable_array_with_length(napi_env env, size_t length, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -315,7 +315,7 @@ NAPI_EXTERN napi_status napi_create_sendable_array_with_length(napi_env env, siz
 
 NAPI_EXTERN napi_status napi_create_double(napi_env env, double value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -327,7 +327,7 @@ NAPI_EXTERN napi_status napi_create_double(napi_env env, double value, napi_valu
 
 NAPI_EXTERN napi_status napi_create_int32(napi_env env, int32_t value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -339,7 +339,7 @@ NAPI_EXTERN napi_status napi_create_int32(napi_env env, int32_t value, napi_valu
 
 NAPI_EXTERN napi_status napi_create_uint32(napi_env env, uint32_t value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -351,7 +351,7 @@ NAPI_EXTERN napi_status napi_create_uint32(napi_env env, uint32_t value, napi_va
 
 NAPI_EXTERN napi_status napi_create_int64(napi_env env, int64_t value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -363,7 +363,7 @@ NAPI_EXTERN napi_status napi_create_int64(napi_env env, int64_t value, napi_valu
 
 NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str, size_t length, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, str);
     CHECK_ARG(env, result);
 
@@ -382,7 +382,7 @@ NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str,
 
 NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, size_t length, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, str);
     CHECK_ARG(env, result);
 
@@ -402,7 +402,7 @@ NAPI_EXTERN napi_status napi_create_string_utf8(napi_env env, const char* str, s
 NAPI_EXTERN napi_status napi_create_string_utf16(
     napi_env env, const char16_t* str, size_t length, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, str);
     CHECK_ARG(env, result);
     RETURN_STATUS_IF_FALSE(env, (length == NAPI_AUTO_LENGTH) || (length <= INT_MAX), napi_invalid_arg);
@@ -427,7 +427,7 @@ NAPI_EXTERN napi_status napi_create_string_utf16(
 
 NAPI_EXTERN napi_status napi_create_symbol(napi_env env, napi_value description, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -453,7 +453,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
                                              void* data,
                                              napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, cb);
     CHECK_ARG(env, result);
 
@@ -488,7 +488,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
 
 NAPI_EXTERN napi_status napi_create_error(napi_env env, napi_value code, napi_value msg, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
     CHECK_ARG(env, result);
 
@@ -517,7 +517,7 @@ NAPI_EXTERN napi_status napi_create_error(napi_env env, napi_value code, napi_va
 
 NAPI_EXTERN napi_status napi_create_type_error(napi_env env, napi_value code, napi_value msg, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
     CHECK_ARG(env, result);
 
@@ -545,7 +545,7 @@ NAPI_EXTERN napi_status napi_create_type_error(napi_env env, napi_value code, na
 
 NAPI_EXTERN napi_status napi_create_range_error(napi_env env, napi_value code, napi_value msg, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
     CHECK_ARG(env, result);
 
@@ -575,7 +575,7 @@ NAPI_EXTERN napi_status napi_create_range_error(napi_env env, napi_value code, n
 // Methods to get the native napi_value from Primitive type
 NAPI_EXTERN napi_status napi_typeof(napi_env env, napi_value value, napi_valuetype* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -613,7 +613,7 @@ NAPI_EXTERN napi_status napi_typeof(napi_env env, napi_value value, napi_valuety
 
 NAPI_EXTERN napi_status napi_get_value_double(napi_env env, napi_value value, double* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -627,7 +627,7 @@ NAPI_EXTERN napi_status napi_get_value_double(napi_env env, napi_value value, do
 
 NAPI_EXTERN napi_status napi_get_value_int32(napi_env env, napi_value value, int32_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -642,7 +642,7 @@ NAPI_EXTERN napi_status napi_get_value_int32(napi_env env, napi_value value, int
 
 NAPI_EXTERN napi_status napi_get_value_uint32(napi_env env, napi_value value, uint32_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -656,7 +656,7 @@ NAPI_EXTERN napi_status napi_get_value_uint32(napi_env env, napi_value value, ui
 
 NAPI_EXTERN napi_status napi_get_value_int64(napi_env env, napi_value value, int64_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -670,7 +670,7 @@ NAPI_EXTERN napi_status napi_get_value_int64(napi_env env, napi_value value, int
 
 NAPI_EXTERN napi_status napi_get_value_bool(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -689,7 +689,7 @@ NAPI_EXTERN napi_status napi_get_value_string_latin1(napi_env env,
                                                      size_t bufsize,
                                                      size_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
@@ -721,7 +721,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8(napi_env env,
                                                    size_t bufsize,
                                                    size_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
@@ -752,7 +752,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
                                                     size_t bufsize,
                                                     size_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
@@ -784,7 +784,7 @@ NAPI_EXTERN napi_status napi_get_value_string_utf16(napi_env env,
 
 NAPI_EXTERN napi_status napi_open_critical_scope(napi_env env, napi_critical_scope* scope)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
     CROSS_THREAD_CHECK(env);
 
@@ -853,7 +853,7 @@ NAPI_EXTERN napi_status napi_get_buffer_string_utf16_in_critical_scope(napi_env 
 // These APIs may execute user scripts
 NAPI_EXTERN napi_status napi_coerce_to_bool(napi_env env, napi_value value, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -867,7 +867,7 @@ NAPI_EXTERN napi_status napi_coerce_to_bool(napi_env env, napi_value value, napi
 
 NAPI_EXTERN napi_status napi_coerce_to_number(napi_env env, napi_value value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -881,7 +881,7 @@ NAPI_EXTERN napi_status napi_coerce_to_number(napi_env env, napi_value value, na
 
 NAPI_EXTERN napi_status napi_coerce_to_object(napi_env env, napi_value value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -895,7 +895,7 @@ NAPI_EXTERN napi_status napi_coerce_to_object(napi_env env, napi_value value, na
 
 NAPI_EXTERN napi_status napi_coerce_to_string(napi_env env, napi_value value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -910,7 +910,7 @@ NAPI_EXTERN napi_status napi_coerce_to_string(napi_env env, napi_value value, na
 // Methods to work with Objects
 NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
@@ -927,7 +927,7 @@ NAPI_EXTERN napi_status napi_get_prototype(napi_env env, napi_value object, napi
 
 NAPI_EXTERN napi_status napi_get_property_names(napi_env env, napi_value object, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
@@ -943,7 +943,7 @@ NAPI_EXTERN napi_status napi_get_property_names(napi_env env, napi_value object,
 
 NAPI_EXTERN napi_status napi_set_property(napi_env env, napi_value object, napi_value key, napi_value value)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
     CHECK_ARG(env, value);
@@ -962,7 +962,7 @@ NAPI_EXTERN napi_status napi_set_property(napi_env env, napi_value object, napi_
 
 NAPI_EXTERN napi_status napi_has_property(napi_env env, napi_value object, napi_value key, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
@@ -980,7 +980,7 @@ NAPI_EXTERN napi_status napi_has_property(napi_env env, napi_value object, napi_
 
 NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_value key, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
@@ -1001,7 +1001,7 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
 
 NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, napi_value key, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
 
@@ -1023,7 +1023,7 @@ NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, na
 
 NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, napi_value key, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
@@ -1043,7 +1043,7 @@ NAPI_EXTERN napi_status napi_has_own_property(napi_env env, napi_value object, n
 
 NAPI_EXTERN napi_status napi_set_named_property(napi_env env, napi_value object, const char* utf8name, napi_value value)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, value);
@@ -1063,7 +1063,7 @@ NAPI_EXTERN napi_status napi_set_named_property(napi_env env, napi_value object,
 
 NAPI_EXTERN napi_status napi_has_named_property(napi_env env, napi_value object, const char* utf8name, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
@@ -1084,7 +1084,7 @@ NAPI_EXTERN napi_status napi_get_named_property(napi_env env,
                                                 const char* utf8name,
                                                 napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
@@ -1107,7 +1107,7 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
                                                          const char* utf8name,
                                                          napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
@@ -1126,7 +1126,7 @@ NAPI_EXTERN napi_status napi_get_own_property_descriptor(napi_env env,
 
 NAPI_EXTERN napi_status napi_set_element(napi_env env, napi_value object, uint32_t index, napi_value value)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, value);
 
@@ -1143,7 +1143,7 @@ NAPI_EXTERN napi_status napi_set_element(napi_env env, napi_value object, uint32
 
 NAPI_EXTERN napi_status napi_has_element(napi_env env, napi_value object, uint32_t index, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
@@ -1159,7 +1159,7 @@ NAPI_EXTERN napi_status napi_has_element(napi_env env, napi_value object, uint32
 
 NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32_t index, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
 
@@ -1179,7 +1179,7 @@ NAPI_EXTERN napi_status napi_get_element(napi_env env, napi_value object, uint32
 
 NAPI_EXTERN napi_status napi_delete_element(napi_env env, napi_value object, uint32_t index, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
 
     auto nativeValue = LocalValueFromJsValue(object);
@@ -1200,7 +1200,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
                                                size_t property_count,
                                                const napi_property_descriptor* properties)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, properties);
 
@@ -1225,7 +1225,7 @@ NAPI_EXTERN napi_status napi_define_properties(napi_env env,
 // Methods to work with Arrays
 NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -1239,8 +1239,8 @@ NAPI_EXTERN napi_status napi_is_array(napi_env env, napi_value value, bool* resu
 
 NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, uint32_t* result)
 {
-    // Omit to use NAPI_PREAMBLE and CHECK_ARG directly for performance.
-    CHECK_ENV(env);
+    // Omit to use NAPI_PREAMBLE_WITH_STATUS_CHECK and CHECK_ARG directly for performance.
+    CHECK_ENV_AND_STATUS(env);
     RETURN_STATUS_IF_FALSE(env, (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
         napi_pending_exception);
     napi_clear_last_error((env));
@@ -1281,7 +1281,7 @@ NAPI_EXTERN napi_status napi_get_array_length(napi_env env, napi_value value, ui
 
 NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -1304,7 +1304,7 @@ NAPI_EXTERN napi_status napi_is_sendable(napi_env env, napi_value value, bool* r
 // Methods to compare values
 NAPI_EXTERN napi_status napi_strict_equals(napi_env env, napi_value lhs, napi_value rhs, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, lhs);
     CHECK_ARG(env, rhs);
     CHECK_ARG(env, result);
@@ -1324,7 +1324,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
                                            const napi_value* argv,
                                            napi_value* result)
 {
-    CHECK_ENV((env));
+    CHECK_ENV_AND_STATUS((env));
     RETURN_STATUS_IF_FALSE((env), (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
         napi_pending_exception);
     napi_clear_last_error((env));
@@ -1375,7 +1375,7 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
                                           const napi_value* argv,
                                           napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, constructor);
     if (argc > 0) {
         CHECK_ARG(env, argv);
@@ -1402,7 +1402,7 @@ NAPI_EXTERN napi_status napi_new_instance(napi_env env,
 
 NAPI_EXTERN napi_status napi_instanceof(napi_env env, napi_value object, napi_value constructor, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, constructor);
     CHECK_ARG(env, result);
@@ -1430,7 +1430,7 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
                                          napi_value* this_arg, // [out] Receives the JS 'this' arg for the call
                                          void** data)          // [out] Receives the data pointer for the callback.
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, cbinfo);
 
     auto info = reinterpret_cast<panda::JsiRuntimeCallInfo*>(cbinfo);
@@ -1477,7 +1477,7 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
 
 NAPI_EXTERN napi_status napi_get_new_target(napi_env env, napi_callback_info cbinfo, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, cbinfo);
     CHECK_ARG(env, result);
 
@@ -1509,7 +1509,7 @@ NAPI_EXTERN napi_status napi_define_class(napi_env env,
                                           const napi_property_descriptor* properties,
                                           napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, utf8name);
     RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX, napi_object_expected);
     CHECK_ARG(env, constructor);
@@ -1548,7 +1548,7 @@ NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
                                                    napi_value parent,
                                                    napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, utf8name);
     RETURN_STATUS_IF_FALSE(env, length == NAPI_AUTO_LENGTH || length <= INT_MAX,
                            napi_object_expected);
@@ -1587,7 +1587,7 @@ NAPI_EXTERN napi_status napi_create_sendable_object_with_properties(napi_env env
                                                                     const napi_property_descriptor* properties,
                                                                     napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -1605,7 +1605,7 @@ NAPI_EXTERN napi_status napi_create_sendable_object_with_properties(napi_env env
 
 NAPI_EXTERN napi_status napi_create_map(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     SWITCH_CONTEXT(env);
@@ -1618,7 +1618,7 @@ NAPI_EXTERN napi_status napi_create_map(napi_env env, napi_value* result)
 
 NAPI_EXTERN napi_status napi_create_sendable_map(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -1635,7 +1635,7 @@ NAPI_EXTERN napi_status napi_create_sendable_map(napi_env env, napi_value* resul
 
 NAPI_EXTERN napi_status napi_map_set_property(napi_env env, napi_value map, napi_value key, napi_value value)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, key);
     CHECK_ARG(env, value);
@@ -1663,7 +1663,7 @@ NAPI_EXTERN napi_status napi_map_set_named_property(napi_env env,
                                                     const char* utf8name,
                                                     napi_value value)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, value);
@@ -1688,7 +1688,7 @@ NAPI_EXTERN napi_status napi_map_set_named_property(napi_env env,
 
 NAPI_EXTERN napi_status napi_map_get_property(napi_env env, napi_value map, napi_value key, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
@@ -1718,7 +1718,7 @@ NAPI_EXTERN napi_status napi_map_get_named_property(napi_env env,
                                                     const char* utf8name,
                                                     napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
@@ -1744,7 +1744,7 @@ NAPI_EXTERN napi_status napi_map_get_named_property(napi_env env,
 
 NAPI_EXTERN napi_status napi_map_has_property(napi_env env, napi_value map, napi_value key, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, key);
     CHECK_ARG(env, result);
@@ -1770,7 +1770,7 @@ NAPI_EXTERN napi_status napi_map_has_property(napi_env env, napi_value map, napi
 
 NAPI_EXTERN napi_status napi_map_has_named_property(napi_env env, napi_value map, const char* utf8name, bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, utf8name);
     CHECK_ARG(env, result);
@@ -1795,7 +1795,7 @@ NAPI_EXTERN napi_status napi_map_has_named_property(napi_env env, napi_value map
 
 NAPI_EXTERN napi_status napi_map_delete_property(napi_env env, napi_value map, napi_value key)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, key);
 
@@ -1818,7 +1818,7 @@ NAPI_EXTERN napi_status napi_map_delete_property(napi_env env, napi_value map, n
 
 NAPI_EXTERN napi_status napi_map_clear(napi_env env, napi_value map)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
 
     auto nativeValue = LocalValueFromJsValue(map);
@@ -1839,7 +1839,7 @@ NAPI_EXTERN napi_status napi_map_clear(napi_env env, napi_value map)
 
 NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, result);
 
@@ -1863,7 +1863,7 @@ NAPI_EXTERN napi_status napi_map_get_size(napi_env env, napi_value map, uint32_t
 
 NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, result);
 
@@ -1886,7 +1886,7 @@ NAPI_EXTERN napi_status napi_map_get_entries(napi_env env, napi_value map, napi_
 
 NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, result);
 
@@ -1909,7 +1909,7 @@ NAPI_EXTERN napi_status napi_map_get_keys(napi_env env, napi_value map, napi_val
 
 NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, map);
     CHECK_ARG(env, result);
 
@@ -1932,7 +1932,7 @@ NAPI_EXTERN napi_status napi_map_get_values(napi_env env, napi_value map, napi_v
 
 NAPI_EXTERN napi_status napi_map_iterator_get_next(napi_env env, napi_value iterator, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, iterator);
     CHECK_ARG(env, result);
 
@@ -1962,7 +1962,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
                                   void* finalize_hint,
                                   napi_ref* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
     CHECK_ARG(env, finalize_cb);
@@ -2004,7 +2004,7 @@ NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
                                           size_t native_binding_size,
                                           napi_ref* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
@@ -2052,7 +2052,7 @@ NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
                                                   napi_ref* result,
                                                   size_t native_binding_size)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
@@ -2091,7 +2091,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
                                             napi_ref* result,
                                             size_t native_binding_size)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
@@ -2126,7 +2126,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
 
 NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
@@ -2149,7 +2149,7 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
 
 NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, void** result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
@@ -2192,7 +2192,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable(napi_env env,
                                            napi_finalize finalize_cb,
                                            void* finalize_hint)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
@@ -2220,7 +2220,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
                                                      void* finalize_hint,
                                                      size_t native_binding_size)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, native_object);
 
@@ -2243,7 +2243,7 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
 
 NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
@@ -2265,7 +2265,7 @@ NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object,
 
 NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, result);
 
@@ -2290,7 +2290,7 @@ NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_ob
 NAPI_EXTERN napi_status napi_create_external(
     napi_env env, void* data, napi_finalize finalize_cb, void* finalize_hint, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2315,7 +2315,7 @@ NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env,
                                                        napi_value* result,
                                                        size_t native_binding_size)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2335,7 +2335,7 @@ NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env,
 
 NAPI_EXTERN napi_status napi_get_value_external(napi_env env, napi_value value, void** result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -2355,7 +2355,7 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
                                               uint32_t initial_refcount,
                                               napi_ref* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<ArkNativeEngine*>(env);
@@ -2369,7 +2369,7 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
 // be GC'd unless there are other references to it.
 NAPI_EXTERN napi_status napi_delete_reference(napi_env env, napi_ref ref)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
@@ -2390,7 +2390,7 @@ NAPI_EXTERN napi_status napi_delete_reference(napi_env env, napi_ref ref)
 // results in an error.
 NAPI_EXTERN napi_status napi_reference_ref(napi_env env, napi_ref ref, uint32_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
@@ -2409,7 +2409,7 @@ NAPI_EXTERN napi_status napi_reference_ref(napi_env env, napi_ref ref, uint32_t*
 // refcount is already 0 results in an error.
 NAPI_EXTERN napi_status napi_reference_unref(napi_env env, napi_ref ref, uint32_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
@@ -2427,7 +2427,7 @@ NAPI_EXTERN napi_status napi_reference_unref(napi_env env, napi_ref ref, uint32_
 // is still successful but the result is nullptr.
 NAPI_EXTERN napi_status napi_get_reference_value(napi_env env, napi_ref ref, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
     CHECK_ARG(env, result);
 
@@ -2440,7 +2440,7 @@ NAPI_EXTERN napi_status napi_get_reference_value(napi_env env, napi_ref ref, nap
 
 NAPI_EXTERN napi_status napi_open_handle_scope(napi_env env, napi_handle_scope* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2451,7 +2451,7 @@ NAPI_EXTERN napi_status napi_open_handle_scope(napi_env env, napi_handle_scope* 
 
 NAPI_EXTERN napi_status napi_close_handle_scope(napi_env env, napi_handle_scope scope)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2466,7 +2466,7 @@ NAPI_EXTERN napi_status napi_close_handle_scope(napi_env env, napi_handle_scope 
 
 NAPI_EXTERN napi_status napi_open_escapable_handle_scope(napi_env env, napi_escapable_handle_scope* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2477,7 +2477,7 @@ NAPI_EXTERN napi_status napi_open_escapable_handle_scope(napi_env env, napi_esca
 
 NAPI_EXTERN napi_status napi_close_escapable_handle_scope(napi_env env, napi_escapable_handle_scope scope)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2495,7 +2495,7 @@ NAPI_EXTERN napi_status napi_escape_handle(napi_env env,
                                            napi_value escapee,
                                            napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
     CHECK_ARG(env, escapee);
     CHECK_ARG(env, result);
@@ -2511,7 +2511,7 @@ NAPI_EXTERN napi_status napi_escape_handle(napi_env env,
 // Methods to support error handling
 NAPI_EXTERN napi_status napi_throw(napi_env env, napi_value error)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, error);
 
     auto nativeValue = LocalValueFromJsValue(error);
@@ -2525,7 +2525,7 @@ NAPI_EXTERN napi_status napi_throw(napi_env env, napi_value error)
 
 NAPI_EXTERN napi_status napi_throw_error(napi_env env, const char* code, const char* msg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
 
     SWITCH_CONTEXT(env);
@@ -2545,7 +2545,7 @@ NAPI_EXTERN napi_status napi_throw_error(napi_env env, const char* code, const c
 
 NAPI_EXTERN napi_status napi_throw_type_error(napi_env env, const char* code, const char* msg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
 
     SWITCH_CONTEXT(env);
@@ -2565,7 +2565,7 @@ NAPI_EXTERN napi_status napi_throw_type_error(napi_env env, const char* code, co
 
 NAPI_EXTERN napi_status napi_throw_range_error(napi_env env, const char* code, const char* msg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, msg);
 
     SWITCH_CONTEXT(env);
@@ -2585,7 +2585,7 @@ NAPI_EXTERN napi_status napi_throw_range_error(napi_env env, const char* code, c
 
 NAPI_EXTERN napi_status napi_is_error(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -2600,7 +2600,7 @@ NAPI_EXTERN napi_status napi_is_error(napi_env env, napi_value value, bool* resu
 // Methods to support catching exceptions
 NAPI_EXTERN napi_status napi_is_exception_pending(napi_env env, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -2610,7 +2610,7 @@ NAPI_EXTERN napi_status napi_is_exception_pending(napi_env env, bool* result)
 
 NAPI_EXTERN napi_status napi_get_and_clear_last_exception(napi_env env, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -2630,7 +2630,7 @@ NAPI_EXTERN napi_status napi_get_and_clear_last_exception(napi_env env, napi_val
 // Methods to work with array buffers and typed arrays
 NAPI_EXTERN napi_status napi_is_arraybuffer(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -2645,7 +2645,7 @@ NAPI_EXTERN napi_status napi_is_arraybuffer(napi_env env, napi_value value, bool
 
 NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length, void** data, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, data);
     CHECK_ARG(env, result);
 
@@ -2668,7 +2668,7 @@ NAPI_EXTERN napi_status napi_create_arraybuffer(napi_env env, size_t byte_length
 NAPI_EXTERN napi_status napi_create_sendable_arraybuffer(napi_env env, size_t byte_length,
                                                          void** data, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, data);
     CHECK_ARG(env, result);
 
@@ -2695,7 +2695,7 @@ NAPI_EXTERN napi_status napi_create_external_arraybuffer(napi_env env,
                                                          void* finalize_hint,
                                                          napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, external_data);
     CHECK_ARG(env, finalize_cb);
     CHECK_ARG(env, result);
@@ -2720,7 +2720,7 @@ NAPI_EXTERN napi_status napi_get_arraybuffer_info(napi_env env,
                                                   void** data,
                                                   size_t* byte_length)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, byte_length);
 
@@ -2750,7 +2750,7 @@ NAPI_EXTERN napi_status napi_get_arraybuffer_info(napi_env env,
 
 NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -2766,7 +2766,7 @@ NAPI_EXTERN napi_status napi_is_typedarray(napi_env env, napi_value value, bool*
 EXTERN_C_START
 NAPI_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -2780,7 +2780,7 @@ NAPI_EXTERN napi_status napi_is_buffer(napi_env env, napi_value value, bool* res
 
 NAPI_EXTERN napi_status napi_create_buffer(napi_env env, size_t size, void** data, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, data);
     CHECK_ARG(env, result);
     RETURN_STATUS_IF_FALSE(env, size > 0, napi_invalid_arg);
@@ -2818,7 +2818,7 @@ NAPI_EXTERN napi_status napi_create_buffer_copy(napi_env env,
                                                 void** result_data,
                                                 napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, data);
     CHECK_ARG(env, result_data);
     CHECK_ARG(env, result);
@@ -2863,7 +2863,7 @@ NAPI_EXTERN napi_status napi_create_external_buffer(napi_env env,
                                                     void* finalize_hint,
                                                     napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
     CHECK_ARG(env, data);
     RETURN_STATUS_IF_FALSE(env, length > 0, napi_invalid_arg);
@@ -2902,7 +2902,7 @@ NAPI_EXTERN napi_status napi_create_external_buffer(napi_env env,
 
 NAPI_EXTERN napi_status napi_get_buffer_info(napi_env env, napi_value value, void** data, size_t* length)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
@@ -2918,7 +2918,7 @@ NAPI_EXTERN napi_status napi_get_buffer_info(napi_env env, napi_value value, voi
 
 NAPI_EXTERN napi_status napi_object_freeze(napi_env env, napi_value object)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
 
     auto nativeValue = LocalValueFromJsValue(object);
@@ -2934,7 +2934,7 @@ NAPI_EXTERN napi_status napi_object_freeze(napi_env env, napi_value object)
 
 NAPI_EXTERN napi_status napi_object_seal(napi_env env, napi_value object)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
 
     auto nativeValue = LocalValueFromJsValue(object);
@@ -2957,7 +2957,7 @@ NAPI_EXTERN napi_status napi_create_typedarray(napi_env env,
                                                size_t byte_offset,
                                                napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, result);
 
@@ -2983,7 +2983,7 @@ NAPI_EXTERN napi_status napi_create_sendable_typedarray(napi_env env,
                                                         size_t byte_offset,
                                                         napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, result);
 
@@ -3017,7 +3017,7 @@ NAPI_EXTERN napi_status napi_get_typedarray_info(napi_env env,
                                                  napi_value* arraybuffer,
                                                  size_t* byte_offset)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, typedarray);
 
     auto value = LocalValueFromJsValue(typedarray);
@@ -3075,7 +3075,7 @@ NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
                                              size_t byte_offset,
                                              napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, result);
 
@@ -3101,7 +3101,7 @@ NAPI_EXTERN napi_status napi_create_dataview(napi_env env,
 
 NAPI_EXTERN napi_status napi_is_dataview(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3120,7 +3120,7 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
                                                napi_value* arraybuffer,
                                                size_t* byte_offset)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, dataview);
 
     auto nativeValue = LocalValueFromJsValue(dataview);
@@ -3136,7 +3136,7 @@ NAPI_EXTERN napi_status napi_get_dataview_info(napi_env env,
 // version management
 NAPI_EXTERN napi_status napi_get_version(napi_env env, uint32_t* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     *result = NAPI_VERSION;
@@ -3146,7 +3146,7 @@ NAPI_EXTERN napi_status napi_get_version(napi_env env, uint32_t* result)
 // Promises
 NAPI_EXTERN napi_status napi_create_promise(napi_env env, napi_deferred* deferred, napi_value* promise)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     SWITCH_CONTEXT(env);
     if (panda::JSNApi::HasPendingException(engine->GetEcmaVm())) {
         return napi_pending_exception;
@@ -3167,7 +3167,7 @@ NAPI_EXTERN napi_status napi_create_promise(napi_env env, napi_deferred* deferre
 
 NAPI_EXTERN napi_status napi_resolve_deferred(napi_env env, napi_deferred deferred, napi_value resolution)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, resolution);
 
@@ -3179,7 +3179,7 @@ NAPI_EXTERN napi_status napi_resolve_deferred(napi_env env, napi_deferred deferr
 
 NAPI_EXTERN napi_status napi_reject_deferred(napi_env env, napi_deferred deferred, napi_value rejection)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, deferred);
     CHECK_ARG(env, rejection);
 
@@ -3191,7 +3191,7 @@ NAPI_EXTERN napi_status napi_reject_deferred(napi_env env, napi_deferred deferre
 
 NAPI_EXTERN napi_status napi_is_promise(napi_env env, napi_value value, bool* is_promise)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, is_promise);
 
@@ -3206,7 +3206,7 @@ NAPI_EXTERN napi_status napi_is_promise(napi_env env, napi_value value, bool* is
 // promise reject events
 NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_ref ref, napi_ref checkRef)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
     CHECK_ARG(env, checkRef);
 
@@ -3232,7 +3232,7 @@ NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_r
 // Running a script
 NAPI_EXTERN napi_status napi_run_script(napi_env env, napi_value script, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, script);
     CHECK_ARG(env, result);
 
@@ -3245,7 +3245,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env,
                                        char* entryPoint,
                                        napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
 
     std::string pathStr(path);
@@ -3259,7 +3259,7 @@ NAPI_EXTERN napi_status napi_run_actor(napi_env env,
 
 NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
     SWITCH_CONTEXT(env);
     *result = engine->NapiLoadModule(path);
@@ -3271,7 +3271,7 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
                                                    const char* module_info,
                                                    napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
     SWITCH_CONTEXT(env);
     *result = engine->NapiLoadModuleWithInfo(path, module_info);
@@ -3285,7 +3285,7 @@ NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
 NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(
     napi_env env, int64_t change_in_bytes, int64_t* adjusted_value)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, adjusted_value);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -3296,7 +3296,7 @@ NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(
 
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3311,7 +3311,7 @@ NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* r
 
 NAPI_EXTERN napi_status napi_is_arguments_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3326,7 +3326,7 @@ NAPI_EXTERN napi_status napi_is_arguments_object(napi_env env, napi_value value,
 
 NAPI_EXTERN napi_status napi_is_async_function(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3340,7 +3340,7 @@ NAPI_EXTERN napi_status napi_is_async_function(napi_env env, napi_value value, b
 
 NAPI_EXTERN napi_status napi_is_boolean_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3355,7 +3355,7 @@ NAPI_EXTERN napi_status napi_is_boolean_object(napi_env env, napi_value value, b
 
 NAPI_EXTERN napi_status napi_is_generator_function(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3370,7 +3370,7 @@ NAPI_EXTERN napi_status napi_is_generator_function(napi_env env, napi_value valu
 
 NAPI_EXTERN napi_status napi_is_map_iterator(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3385,7 +3385,7 @@ NAPI_EXTERN napi_status napi_is_map_iterator(napi_env env, napi_value value, boo
 
 NAPI_EXTERN napi_status napi_is_set_iterator(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3400,7 +3400,7 @@ NAPI_EXTERN napi_status napi_is_set_iterator(napi_env env, napi_value value, boo
 
 NAPI_EXTERN napi_status napi_is_generator_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3415,7 +3415,7 @@ NAPI_EXTERN napi_status napi_is_generator_object(napi_env env, napi_value value,
 
 NAPI_EXTERN napi_status napi_is_module_namespace_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3430,7 +3430,7 @@ NAPI_EXTERN napi_status napi_is_module_namespace_object(napi_env env, napi_value
 
 NAPI_EXTERN napi_status napi_is_proxy(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3444,7 +3444,7 @@ NAPI_EXTERN napi_status napi_is_proxy(napi_env env, napi_value value, bool* resu
 
 NAPI_EXTERN napi_status napi_is_reg_exp(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3458,7 +3458,7 @@ NAPI_EXTERN napi_status napi_is_reg_exp(napi_env env, napi_value value, bool* re
 
 NAPI_EXTERN napi_status napi_is_number_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3473,7 +3473,7 @@ NAPI_EXTERN napi_status napi_is_number_object(napi_env env, napi_value value, bo
 
 NAPI_EXTERN napi_status napi_is_map(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3487,7 +3487,7 @@ NAPI_EXTERN napi_status napi_is_map(napi_env env, napi_value value, bool* result
 
 NAPI_EXTERN napi_status napi_is_set(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3501,7 +3501,7 @@ NAPI_EXTERN napi_status napi_is_set(napi_env env, napi_value value, bool* result
 
 NAPI_EXTERN napi_status napi_is_string_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3516,7 +3516,7 @@ NAPI_EXTERN napi_status napi_is_string_object(napi_env env, napi_value value, bo
 
 NAPI_EXTERN napi_status napi_is_symbol_object(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3530,7 +3530,7 @@ NAPI_EXTERN napi_status napi_is_symbol_object(napi_env env, napi_value value, bo
 
 NAPI_EXTERN napi_status napi_is_weak_map(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3544,7 +3544,7 @@ NAPI_EXTERN napi_status napi_is_weak_map(napi_env env, napi_value value, bool* r
 
 NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3558,7 +3558,7 @@ NAPI_EXTERN napi_status napi_is_weak_set(napi_env env, napi_value value, bool* r
 
 NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result_env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -3580,7 +3580,7 @@ NAPI_EXTERN napi_status napi_serialize(napi_env env,
                                        napi_value clone_list,
                                        void** result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, transfer_list);
     CHECK_ARG(env, clone_list);
@@ -3601,7 +3601,7 @@ NAPI_EXTERN napi_status napi_serialize_inner(napi_env env, napi_value object, na
                                              napi_value clone_list, bool defaultTransfer, bool defaultCloneSendable,
                                              void** result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, transfer_list);
     CHECK_ARG(env, result);
@@ -3621,7 +3621,7 @@ NAPI_EXTERN napi_status napi_serialize_inner_with_error(napi_env env, napi_value
                                                         napi_value clone_list, bool defaultTransfer,
                                                         bool defaultCloneSendable, void** result, std::string& error)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, transfer_list);
     CHECK_ARG(env, result);
@@ -3638,7 +3638,7 @@ NAPI_EXTERN napi_status napi_serialize_inner_with_error(napi_env env, napi_value
 
 NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value* object)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, buffer);
     CHECK_ARG(env, object);
 
@@ -3652,7 +3652,7 @@ NAPI_EXTERN napi_status napi_deserialize(napi_env env, void* buffer, napi_value*
 
 NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffer)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, buffer);
 
     panda::JSNApi::DeleteSerializationData(buffer);
@@ -3662,7 +3662,7 @@ NAPI_EXTERN napi_status napi_delete_serialization_data(napi_env env, void* buffe
 
 NAPI_EXTERN napi_status napi_create_bigint_int64(napi_env env, int64_t value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -3674,7 +3674,7 @@ NAPI_EXTERN napi_status napi_create_bigint_int64(napi_env env, int64_t value, na
 
 NAPI_EXTERN napi_status napi_create_bigint_uint64(napi_env env, uint64_t value, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, result);
 
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -3687,7 +3687,7 @@ NAPI_EXTERN napi_status napi_create_bigint_uint64(napi_env env, uint64_t value, 
 NAPI_EXTERN napi_status napi_get_value_bigint_int64(
     napi_env env, napi_value value, int64_t* result, bool* lossless)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
     CHECK_ARG(env, lossless);
@@ -3705,7 +3705,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_int64(
 NAPI_EXTERN napi_status napi_get_value_bigint_uint64(
     napi_env env, napi_value value, uint64_t* result, bool* lossless)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
     CHECK_ARG(env, lossless);
@@ -3722,7 +3722,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_uint64(
 
 NAPI_EXTERN napi_status napi_is_date(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3736,7 +3736,7 @@ NAPI_EXTERN napi_status napi_is_date(napi_env env, napi_value value, bool* resul
 
 NAPI_EXTERN napi_status napi_is_detached_arraybuffer(napi_env env, napi_value arraybuffer, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, result);
 
@@ -3758,7 +3758,7 @@ NAPI_EXTERN napi_status napi_get_all_property_names(
     napi_env env, napi_value object, napi_key_collection_mode key_mode,
     napi_key_filter key_filter, napi_key_conversion key_conversion, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, object);
     CHECK_ARG(env, result);
     auto nativeValue = LocalValueFromJsValue(object);
@@ -3814,7 +3814,7 @@ NAPI_EXTERN napi_status napi_get_all_property_names(
 
 NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybuffer)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, arraybuffer);
 
     auto nativeValue = LocalValueFromJsValue(arraybuffer);
@@ -3832,7 +3832,7 @@ NAPI_EXTERN napi_status napi_detach_arraybuffer(napi_env env, napi_value arraybu
 
 NAPI_EXTERN napi_status napi_type_tag_object(napi_env env, napi_value js_object, const napi_type_tag* type_tag)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, type_tag);
 
@@ -3894,7 +3894,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
                                                    const napi_type_tag* type_tag,
                                                    bool* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, type_tag);
     CHECK_ARG(env, result);
@@ -3929,7 +3929,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
 
 NAPI_EXTERN napi_status napi_create_date(napi_env env, double time, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
 
     SWITCH_CONTEXT(env);
@@ -3941,7 +3941,7 @@ NAPI_EXTERN napi_status napi_create_date(napi_env env, double time, napi_value* 
 
 NAPI_EXTERN napi_status napi_get_date_value(napi_env env, napi_value value, double* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -3968,7 +3968,7 @@ NAPI_EXTERN napi_status napi_add_finalizer(napi_env env,
                                            void* finalize_hint,
                                            napi_ref* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, finalize_cb);
 
@@ -3995,7 +3995,7 @@ NAPI_EXTERN napi_status napi_create_bigint_words(napi_env env,
                                                  const uint64_t* words,
                                                  napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, words);
     CHECK_ARG(env, result);
     RETURN_STATUS_IF_FALSE(env, word_count <= INT_MAX, napi_invalid_arg);
@@ -4024,7 +4024,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
                                                     size_t* word_count,
                                                     uint64_t* words)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, word_count);
 
@@ -4058,7 +4058,7 @@ NAPI_EXTERN napi_status napi_get_value_bigint_words(napi_env env,
 
 NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, result);
 
     SWITCH_CONTEXT(env);
@@ -4077,7 +4077,7 @@ NAPI_EXTERN napi_status napi_run_script_path(napi_env env, const char* path, nap
 
 NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4091,7 +4091,7 @@ NAPI_EXTERN napi_status napi_is_big_int64_array(napi_env env, napi_value value, 
 
 NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4105,7 +4105,7 @@ NAPI_EXTERN napi_status napi_is_big_uint64_array(napi_env env, napi_value value,
 
 NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4118,7 +4118,7 @@ NAPI_EXTERN napi_status napi_is_shared_array_buffer(napi_env env, napi_value val
 
 NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     [[maybe_unused]] auto vm = engine->GetEcmaVm();
@@ -4135,7 +4135,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
 
 NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& stack)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     auto vm = engine->GetEcmaVm();
@@ -4149,7 +4149,7 @@ NAPI_EXTERN napi_status napi_get_hybrid_stack_trace(napi_env env, std::string& s
 
 NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     auto nativeValue = LocalValueFromJsValue(data);
     SWITCH_CONTEXT(env);
@@ -4165,7 +4165,7 @@ NAPI_EXTERN napi_status napi_object_get_keys(napi_env env, napi_value data, napi
 
 NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_work work, napi_qos_t qos)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, work);
 
     auto asyncWork = reinterpret_cast<NativeAsyncWork*>(work);
@@ -4178,7 +4178,7 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_queue(napi_env env,
                                                          napi_qos_t qos,
                                                          uintptr_t taskId)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, work);
     RETURN_STATUS_IF_FALSE(env, taskId != 0, napi_invalid_arg);
 
@@ -4232,7 +4232,7 @@ NAPI_EXTERN napi_status napi_coerce_to_native_binding_object(napi_env env,
                                                              void* native_object,
                                                              void* hint)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, js_object);
     CHECK_ARG(env, detach_cb);
     CHECK_ARG(env, attach_cb);
@@ -4281,7 +4281,7 @@ NAPI_EXTERN napi_status napi_add_detached_finalizer(napi_env env,
                                                     napi_detach_finalize_callback detach_finalize_cb,
                                                     void* finalize_hint)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, native_binding_object);
     CHECK_ARG(env, detach_finalize_cb);
 
@@ -4311,7 +4311,7 @@ NAPI_EXTERN napi_status napi_add_detached_finalizer(napi_env env,
 
 NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, std::string& result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
 
     auto nativeValue = LocalValueFromJsValue(value);
@@ -4327,7 +4327,7 @@ NAPI_EXTERN napi_status napi_get_print_string(napi_env env, napi_value value, st
 
 NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     if (mode < napi_event_mode_default || mode > napi_event_mode_nowait) {
         HILOG_ERROR("invalid mode %{public}d", static_cast<int32_t>(mode));
@@ -4351,7 +4351,7 @@ NAPI_EXTERN napi_status napi_run_event_loop(napi_env env, napi_event_mode mode)
 
 NAPI_EXTERN napi_status napi_stop_event_loop(napi_env env)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
     if (!nativeEngine->IsMainEnvContext()) {
@@ -4405,7 +4405,7 @@ NAPI_EXTERN napi_status napi_destroy_ark_runtime(napi_env* env)
 
 NAPI_EXTERN napi_status napi_is_concurrent_function(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4439,7 +4439,7 @@ NAPI_EXTERN napi_status napi_call_threadsafe_function_with_priority(napi_threads
 
 NAPI_EXTERN napi_status napi_open_fast_native_scope(napi_env env, napi_fast_native_scope* scope)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, scope);
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
@@ -4461,7 +4461,7 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
                                                           void** data,
                                                           size_t* byte_length)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, arraybuffer);
     CHECK_ARG(env, byte_length);
 
@@ -4484,7 +4484,7 @@ NAPI_EXTERN napi_status napi_get_shared_array_buffer_info(napi_env env,
 
 NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, src);
     CHECK_ARG(env, result);
 
@@ -4503,7 +4503,7 @@ NAPI_EXTERN napi_status napi_encode(napi_env env, napi_value src, napi_value* re
 
 NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4518,7 +4518,7 @@ NAPI_EXTERN napi_status napi_is_bitvector(napi_env env, napi_value value, bool* 
 
 NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, fun);
     CROSS_THREAD_CHECK(env);
 
@@ -4530,7 +4530,7 @@ NAPI_EXTERN napi_status napi_add_cleanup_finalizer(napi_env env, void (*fun)(voi
 
 NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, error);
 
     auto nativeValue = LocalValueFromJsValue(error);
@@ -4544,7 +4544,7 @@ NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error)
 // This interface is always used for load module on host
 NAPI_EXTERN napi_status napi_load_module_with_path(napi_env env, const char* path, napi_value* result)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, path);
     CHECK_ARG(env, result);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -4559,7 +4559,7 @@ NAPI_EXTERN napi_status napi_load_module_with_path(napi_env env, const char* pat
 
 NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(void* arg), void* arg)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, fun);
     CROSS_THREAD_CHECK(env);
 
@@ -4571,7 +4571,7 @@ NAPI_EXTERN napi_status napi_remove_cleanup_finalizer(napi_env env, void (*fun)(
 
 NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     CHECK_ARG(env, newEnv);
 
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
@@ -4605,7 +4605,7 @@ NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
 
 NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
 {
-    NAPI_PREAMBLE(env);
+    NAPI_PREAMBLE_WITH_STATUS_CHECK(env);
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
     // worker and taskpool will support multi-context later
     if (!nativeEngine->IsMainThread()) {
@@ -4624,7 +4624,7 @@ NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
 
 NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
 
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
     const EcmaVM* vm = nativeEngine->GetEcmaVm();
