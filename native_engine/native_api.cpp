@@ -4654,7 +4654,7 @@ NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
 NAPI_EXTERN napi_status napi_create_strong_reference(
     napi_env env, napi_value value, napi_strong_ref* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, value);
     CHECK_ARG(env, result);
 
@@ -4668,7 +4668,7 @@ NAPI_EXTERN napi_status napi_create_strong_reference(
 
 NAPI_EXTERN napi_status napi_delete_strong_reference(napi_env env, napi_strong_ref ref)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
 
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
@@ -4681,7 +4681,7 @@ NAPI_EXTERN napi_status napi_delete_strong_reference(napi_env env, napi_strong_r
 NAPI_EXTERN napi_status napi_get_strong_reference_value(
     napi_env env, napi_strong_ref ref, napi_value* result)
 {
-    CHECK_ENV(env);
+    CHECK_ENV_AND_STATUS(env);
     CHECK_ARG(env, ref);
     CHECK_ARG(env, result);
     CROSS_THREAD_CHECK(env);
