@@ -191,7 +191,7 @@ private:
     bool CheckLowNotifyState() const;
     bool CheckLowRunningDurationState() const;
     bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
-    bool CheckWorkerEnvQueueAllInIdle();
+    bool CheckWorkerEnvQueueAllInIdle(uint32_t idleCount);
     void SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration);
     void IntervalMonitor();
     void NotifyMainThreadTryCompressGC();
@@ -227,6 +227,8 @@ private:
     static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.7f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
     static constexpr uint32_t IDLE_WORKER_TRIGGER_COUNT = 1; // it needs over IDLE_INBACKGROUND_CHECK_LENGTH
+    static constexpr uint32_t IDLE_WORKER_CHECK_TASK_COUNT = 4;
+    static constexpr uint32_t IDLE_WORKER_CHECK_TASK_COUNT_BACKGROUND = 1;
 
     std::atomic<bool> idleState_ {false};
     std::atomic<bool> inBackground_ {true};

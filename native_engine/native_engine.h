@@ -70,14 +70,15 @@ enum class WorkerVersion {
 
 class WorkerThreadState {
 public:
-    void CheckIdleState()
+    uint32_t CheckIdleState()
     {
-        if (!isRunning_.load() && taskCount_ == lastTaskCount_) {
-            checkCount_++;
-            return;
+        if (!isRunning_.load() && taskCount_ <= (lastTaskCount_ + IDLE_CHECK_COUNT)) {
+            lastTaskCount_ = taskCount_;
+            return ++checkCount_;
         }
         checkCount_ = 0;
         lastTaskCount_ = taskCount_;
+        return checkCount_;
     }
 
     uint32_t GetCheckCount()
@@ -96,6 +97,7 @@ public:
         isRunning_.store(false);
     }
 private:
+    static constexpr uint32_t IDLE_CHECK_COUNT = 5;
     std::atomic<bool> isRunning_ {false};
     uint32_t taskCount_ {0};
     uint32_t lastTaskCount_ {0};

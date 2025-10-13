@@ -284,6 +284,7 @@ napi_status NativeEvent::SendCancelableEvent(const std::function<void(void*)> &c
     std::function<void()> task = [eng = engine_, callback, data, eventId]() {
         auto tcin = TraceLogClass("Cancelable Event callback:handleId:" + std::to_string(eventId));
         auto vm = eng->GetEcmaVm();
+        WorkerRunningScope taskScope(reinterpret_cast<napi_env>(eng));
         panda::LocalScope scope(vm);
         callback(data);
     };
