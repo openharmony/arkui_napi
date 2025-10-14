@@ -496,6 +496,8 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
     EnableNapiProfiler();
     LocalScope scope(vm_);
 
+    // save the first context
+    context_ = Global<JSValueRef>(vm, JSNApi::GetCurrentContext(vm));
     options_ = new NapiOptions();
     // Update cache of ark runtime cross thread check option.
     UpdateCrossThreadCheckStatus();
@@ -551,9 +553,6 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 
     // enable idle gc
     ArkIdleMonitor::GetInstance()->EnableIdleGC(this);
-
-    // save the first context
-    context_ = Global<JSValueRef>(vm, JSNApi::GetCurrentContext(vm));
 }
 
 /**
