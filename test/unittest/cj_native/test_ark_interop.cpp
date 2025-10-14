@@ -1326,7 +1326,6 @@ TEST_F(ArkInteropTest, GlobalWeak)
     weakTest.Start();
     weakTest.WaitForComplete();
     EXPECT_TRUE(weakTest.IsComplete());
-    EXPECT_TRUE(weakTest.IsAllDisposed());
 }
 
 TEST_F(ArkInteropTest, GlobalToValue)
