@@ -14780,11 +14780,11 @@ HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest005, testing::ex
 HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest006, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    napi_critical_scope scope = nullptr;
-    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
-
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_object(env, &value));
+
+    napi_critical_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
     const char16_t* data = nullptr;
     size_t length = 0;
     napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
@@ -14801,11 +14801,12 @@ HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest006, testing::ex
 HWTEST_F(NapiBasicTest, NapiGetBufferStrUTF16InCriticalScopeTest007, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    napi_critical_scope scope = nullptr;
-    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
 
     napi_value value = nullptr;
     ASSERT_CHECK_CALL(napi_create_string_utf16(env, TEST_STR_UTF16, NAPI_AUTO_LENGTH, &value));
+
+    napi_critical_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_critical_scope(env, &scope));
     const char16_t* data = nullptr;
     size_t length = 0;
     napi_status status = napi_get_buffer_string_utf16_in_critical_scope(env, value, &data, &length);
