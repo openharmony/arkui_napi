@@ -571,6 +571,110 @@ HWTEST_F(NapiBasicTest, StringTest005, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: ExternalStringTest001
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ExternalStringTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char16_t testStr[] = u"123456"; // 123456: test numbers
+    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
+    char16_t *str = new char16_t[testStrLength + 1];
+    std::copy(testStr, testStr + testStrLength + 1, str);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, NAPI_AUTO_LENGTH, nullptr, nullptr, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    size_t copied;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, nullptr, 0, &copied));
+    char16_t buffer[copied + 1];
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, testStrLength + 1, &copied));
+    ASSERT_EQ(copied, testStrLength);
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    delete[] str;
+}
+
+/**
+ * @tc.name: ExternalStringTest002
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ExternalStringTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char16_t testStr[] = u"123456"; // 123456: test numbers
+    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
+    char16_t *str = new char16_t[testStrLength];
+    std::copy(testStr, testStr + testStrLength, str);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, testStrLength, nullptr, nullptr, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    size_t copied;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, nullptr, 0, &copied));
+    char16_t buffer[copied + 1];
+    ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, testStrLength + 1, &copied));
+    ASSERT_EQ(copied, testStrLength);
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    delete[] str;
+}
+
+/**
+ * @tc.name: ExternalStringTest003
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ExternalStringTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "123456"; // 123456: test numbers
+    size_t testStrLength = std::char_traits<char>::length(testStr);
+    char *str = new char[testStrLength + 1];
+    std::copy(testStr, testStr + testStrLength + 1, str);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, NAPI_AUTO_LENGTH, nullptr, nullptr, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    size_t copied;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &copied));
+    char buffer[copied + 1];
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, testStrLength + 1, &copied));
+    ASSERT_EQ(copied, testStrLength);
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    delete[] str;
+}
+
+/**
+ * @tc.name: ExternalStringTest004
+ * @tc.desc: Test string type.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ExternalStringTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "123456"; // 123456: test numbers
+    size_t testStrLength = std::char_traits<char>::length(testStr);
+    char *str = new char[testStrLength];
+    std::copy(testStr, testStr + testStrLength, str);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, testStrLength, nullptr, nullptr, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    size_t copied;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &copied));
+    char buffer[copied + 1];
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, testStrLength + 1, &copied));
+    ASSERT_EQ(copied, testStrLength);
+    for (size_t i = 0; i < copied; i++) {
+        ASSERT_TRUE(testStr[i] == buffer[i]);
+    }
+    delete[] str;
+}
+
+/**
  * @tc.name: TypetagTest001
  * @tc.desc: Test typetag type.
  * @tc.type: FUNC
