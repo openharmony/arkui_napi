@@ -47,8 +47,6 @@ public:
     virtual void TestBody() = 0;
     virtual void AssertResult() = 0;
 
-    static constexpr size_t MAX_ALLOWED_CHILD_PROCESS_STACK_SIZE = 8 * (1 << 20); // 8MB for max stack size
-
 protected:
     std::string coutResult_;
     std::string cerrResult_;
@@ -58,7 +56,6 @@ protected:
     int signal_ { 0 };
 
 private:
-    static size_t GetCurrentStackSize();
     static int RunInChild(void* arg);
     static void RedirectHilog(const LogType, const LogLevel level, const unsigned int, const char*, const char* msg);
     static std::string ReadFd(int fd);
@@ -71,25 +68,9 @@ class BasicDeathTest final : public DeathTest {
 public:
     using TestFunc = std::function<void()>;
     using AssertFunc = std::function<void(const std::string& cout, const std::string& err)>;
-    explicit BasicDeathTest(TestFunc testFunc) : test_(testFunc)
+    explicit BasicDeathTest(TestFunc testFunc, AssertFunc assertFunc = nullptr) : test_(testFunc), assert_(assertFunc)
     {
         Run();
-    }
-    BasicDeathTest(TestFunc testFunc, AssertFunc assertFunc) : test_(testFunc), assert_(assertFunc)
-    {
-        Run();
-    }
-    void TestBody() override
-    {
-        if (test_ != nullptr) {
-            test_();
-        }
-    }
-    void AssertResult() override
-    {
-        if (assert_ != nullptr) {
-            assert_(coutResult_, cerrResult_);
-        }
     }
     BasicDeathTest& AssertOutput(const std::string& search)
     {
@@ -123,24 +104,51 @@ public:
         AssertEq(signal_, signal);
         return *this;
     }
+    bool GetResult() const
+    {
+        return assertResult_;
+    }
 
 private:
+    void TestBody() override
+    {
+        if (test_ != nullptr) {
+            test_();
+        }
+    }
+    void AssertResult() override
+    {
+        if (assert_ != nullptr) {
+            assert_(coutResult_, cerrResult_);
+        }
+    }
+
     template<typename T>
     void AssertNe(T lval, T rval)
     {
+        auto old = assertResult_;
+        assertResult_ = false;
         ASSERT_NE(lval, rval);
+        assertResult_ = old;
     }
     template<typename T>
     void AssertEq(T lval, T rval)
     {
+        auto old = assertResult_;
+        assertResult_ = false;
         ASSERT_EQ(lval, rval);
+        assertResult_ = old;
     }
     void AssertTrue(bool val)
     {
+        auto old = assertResult_;
+        assertResult_ = false;
         ASSERT_TRUE(val);
+        assertResult_ = old;
     }
     TestFunc test_ { nullptr };
     AssertFunc assert_ { nullptr };
+    bool assertResult_ { true };
 };
 
 class NativeEngineProxy {

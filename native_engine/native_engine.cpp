@@ -14,6 +14,8 @@
  */
 
 #include "native_engine/native_engine.h"
+#include <cstdint>
+#include <memory>
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(IOS_PLATFORM) && !defined(LINUX_PLATFORM)
 #include <sys/epoll.h>
@@ -77,7 +79,8 @@ NativeEngine* NativeEngine::g_mainThreadEngine_;
 NapiErrorManager* NapiErrorManager::instance_ = NULL;
 static std::mutex g_errorManagerInstanceMutex;
 
-NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
+NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine),
+                                             criticalScopeCounter_(std::make_shared<uint64_t>(0))
 {
     SetMainThreadEngine(this);
     SetAlive();
@@ -86,7 +89,8 @@ NativeEngine::NativeEngine(void* jsEngine) : jsEngine_(jsEngine)
 }
 
 NativeEngine::NativeEngine(NativeEngine* parent) : jsEngine_(parent->jsEngine_),
-                                                   workerThreadState_(nullptr)
+                                                   workerThreadState_(nullptr),
+                                                   criticalScopeCounter_(parent->criticalScopeCounter_)
 {
     // make napi_async_work and napi_threadsafe_function is reachable
     // update engine id
@@ -926,7 +930,7 @@ void NativeEngine::CleanupHandles()
         (storage)--;                                    \
     }                                                   \
                                                         \
-    bool NativeEngine::Has##name()                      \
+    bool NativeEngine::Has##name() const                \
     {                                                   \
         return LOAD((storage)) != 0;                    \
     }
@@ -934,6 +938,21 @@ void NativeEngine::CleanupHandles()
 NAPI_COUNTER_METHOD(BODY_COUNTER_METHOD)
 
 #undef BODY_COUNTER_METHOD
+
+void NativeEngine::IncreaseCriticalScopeCounter()
+{
+    (*criticalScopeCounter_)++;
+}
+
+void NativeEngine::DecreaseCriticalScopeCounter()
+{
+    (*criticalScopeCounter_)--;
+}
+
+bool NativeEngine::HasCriticalScope() const
+{
+    return (*criticalScopeCounter_) > 0;
+}
 
 // alias for HasListening
 bool NativeEngine::HasListeningCounter()

@@ -358,7 +358,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
 #endif
         if (callJsCallback_ != nullptr) {
             callJsCallback_(engine_, func_, context_, data);
-            if (engine_->openCriticalScopes_ > 0) {
+            if (engine_->HasCriticalScope()) {
                 HILOG_FATAL("critical scope still open after user callback (ID: %{public}" PRIuPTR ") returned",
                             reinterpret_cast<uintptr_t>(callJsCallback_));
             }
@@ -454,7 +454,7 @@ napi_status NativeSafeAsyncWork::PostTask(void *data, int32_t priority, bool isT
         bool isValidTraceId = SaveAndSetTraceId();
         if (this->callJsCallback_ != nullptr) {
             this->callJsCallback_(engine_, func_, context_, data);
-            if (engine_->openCriticalScopes_ > 0) {
+            if (engine_->HasCriticalScope()) {
                 HILOG_FATAL("critical scope still open after user callback (ID: %{public}" PRIuPTR ") returned",
                             reinterpret_cast<uintptr_t>(callJsCallback_));
             }

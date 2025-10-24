@@ -170,10 +170,8 @@ public:
     bool IsReadyToDelete();
     void Delete();
 
-    NAPI_EXPORT const EcmaVM* GetEcmaVm() const override
-    {
-        return vm_;
-    }
+    const EcmaVM* GetEcmaVm() const override;
+    const EcmaVM* GetEcmaVmCritical() const override;
     const ArkNativeEngine* GetParent() const override;
 
     void Loop(LoopMode mode, bool needSync = false) override;
