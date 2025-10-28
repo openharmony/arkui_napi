@@ -82,6 +82,7 @@ NAPI_EXTERN napi_status napi_queue_async_work_with_qos(napi_env env, napi_async_
 
 typedef struct napi_strong_ref__* napi_strong_ref;
 typedef struct napi_critical_scope__* napi_critical_scope;
+typedef struct napi_sendable_ref__* napi_sendable_ref;
 
 NAPI_EXTERN napi_status napi_load_module(napi_env env, const char* path, napi_value* result);
 NAPI_EXTERN napi_status napi_load_module_with_info(napi_env env,
@@ -197,6 +198,15 @@ NAPI_EXTERN napi_status napi_wrap_sendable_with_size(napi_env env,
                                                      size_t native_binding_size);
 NAPI_EXTERN napi_status napi_unwrap_sendable(napi_env env, napi_value js_object, void** result);
 NAPI_EXTERN napi_status napi_remove_wrap_sendable(napi_env env, napi_value js_object, void** result);
+
+NAPI_EXTERN napi_status napi_create_strong_sendable_reference(napi_env env,
+                                                              napi_value value,
+                                                              napi_sendable_ref* result);
+NAPI_EXTERN napi_status napi_delete_strong_sendable_reference(napi_env env,
+                                                              napi_sendable_ref ref);
+NAPI_EXTERN napi_status napi_get_strong_sendable_reference_value(napi_env env,
+                                                                 napi_sendable_ref ref,
+                                                                 napi_value* result);
 // ======================================== sendable api end ======================================== //
 
 // ======================================== multiple-context ======================================== //

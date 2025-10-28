@@ -24,6 +24,7 @@
 #include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"
 #include "native_engine/impl/ark/ark_native_reference.h"
+#include "native_engine/impl/ark/ark_sendable_native_reference.h"
 #include "native_engine/native_create_env.h"
 #include "native_engine/native_utils.h"
 #include "native_engine/worker_manager.h"
@@ -4684,5 +4685,82 @@ NAPI_EXTERN napi_status napi_get_strong_reference_value(
     Local<JSValueRef> local(reinterpret_cast<uintptr_t>(ref));
     *result = reinterpret_cast<napi_value>(JsValueFromLocalValue(local));
 
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_create_strong_sendable_reference(napi_env env,
+                                                              napi_value value,
+                                                              napi_sendable_ref* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    if (!nativeValue->IsSendable(engine->GetEcmaVm())) {
+        HILOG_ERROR("Can not create sendable reference from a non-sendable value");
+        return napi_set_last_error(env, napi_object_expected);
+    }
+
+    auto ref = new ArkSendableNativeReference(engine, nativeValue);
+
+    *result = reinterpret_cast<napi_sendable_ref>(ref);
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_delete_strong_sendable_reference(napi_env env,
+                                                              napi_sendable_ref ref)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, ref);
+
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    auto reference = reinterpret_cast<ArkSendableNativeReference*>(ref);
+    {
+        // Create scope to recycle handles created from reference->Get.
+        HandleScopeWrapper(reinterpret_cast<NativeEngine*>(env));
+        napi_value value = reference->Get(engine);
+        if (!LocalValueFromJsValue(value)->IsSendable(engine->GetEcmaVm())) {
+            HILOG_ERROR("Can not delete a non-sendable reference by napi_delete_strong_sendable_reference.");
+            return napi_set_last_error(env, napi_generic_failure);
+        }
+    }
+    reference->DeleteSendableRef(engine);
+    delete reference;
+    reference = nullptr;
+
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_strong_sendable_reference_value(napi_env env,
+                                                                 napi_sendable_ref ref,
+                                                                 napi_value* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, ref);
+    CHECK_ARG(env, result);
+
+    ArkNativeEngine* engine = reinterpret_cast<ArkNativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    auto reference = reinterpret_cast<ArkSendableNativeReference*>(ref);
+    napi_value value = reference->Get(engine);
+    if (!LocalValueFromJsValue(value)->IsSendable(engine->GetEcmaVm())) {
+        HILOG_ERROR("Can not get sendable value from a non-sendable reference.");
+        return napi_set_last_error(env, napi_generic_failure);
+    }
+    *result = value;
     return napi_clear_last_error(env);
 }

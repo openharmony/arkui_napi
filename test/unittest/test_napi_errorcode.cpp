@@ -1941,3 +1941,61 @@ HWTEST_F(NapiErrorCodeTest, NapiRemoveWrapTest003, testing::ext::TestSize.Level1
     napi_status status = napi_remove_wrap(env, obj, (void **)&testStr);
     ASSERT_EQ(status, napi_object_expected);
 }
+
+HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    napi_value sObj = nullptr;
+    napi_sendable_ref ref = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_array(env, &obj));
+    ASSERT_CHECK_CALL(napi_create_sendable_array(env, &sObj));
+
+    ASSERT_EQ(napi_create_strong_sendable_reference(nullptr, sObj, &ref), napi_invalid_arg);
+    ASSERT_EQ(napi_create_strong_sendable_reference(env, nullptr, &ref), napi_invalid_arg);
+    ASSERT_EQ(napi_create_strong_sendable_reference(env, sObj, nullptr), napi_invalid_arg);
+
+    ASSERT_EQ(napi_create_strong_sendable_reference(env, obj, &ref), napi_object_expected);
+    ASSERT_EQ(ref, nullptr);
+}
+
+HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    napi_value sObj = nullptr;
+    napi_sendable_ref ref = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_array(env, &obj));
+    ASSERT_CHECK_CALL(napi_create_sendable_array(env, &sObj));
+
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &ref));
+    ASSERT_NE(ref, nullptr);
+
+    ASSERT_EQ(napi_delete_strong_sendable_reference(nullptr, ref), napi_invalid_arg);
+    ASSERT_EQ(napi_delete_strong_sendable_reference(env, nullptr), napi_invalid_arg);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
+}
+
+HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    napi_value sObj = nullptr;
+    napi_sendable_ref ref = nullptr;
+
+    ASSERT_CHECK_CALL(napi_create_array(env, &obj));
+    ASSERT_CHECK_CALL(napi_create_sendable_array(env, &sObj));
+
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &ref));
+    ASSERT_NE(ref, nullptr);
+
+    napi_value value = nullptr;
+    ASSERT_EQ(napi_get_strong_sendable_reference_value(nullptr, ref, &value), napi_invalid_arg);
+    ASSERT_EQ(napi_get_strong_sendable_reference_value(env, nullptr, &value), napi_invalid_arg);
+    ASSERT_EQ(napi_get_strong_sendable_reference_value(env, ref, nullptr), napi_invalid_arg);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
+}

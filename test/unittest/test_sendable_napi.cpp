@@ -2171,3 +2171,131 @@ HWTEST_F(NapiSendableTest, SerializeDeSerializeSendableDataTest005, testing::ext
 
     napi_delete_serialization_data(env, data);
 }
+
+void CheckSendableReferenceValue(napi_env env, napi_sendable_ref ref)
+{
+    napi_value refValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(env, ref, &refValue));
+    ASSERT_NE(refValue, nullptr);
+    napi_valuetype type = napi_undefined;
+    ASSERT_CHECK_CALL(napi_typeof(env, refValue, &type));
+    ASSERT_EQ(type, napi_object);
+}
+
+void CheckSendableReferenceValueInThread(napi_sendable_ref ref)
+{
+    panda::RuntimeOption options;
+    options.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
+    EcmaVM* vm = panda::JSNApi::CreateJSVM(options);
+    if (!vm) {
+        HILOG_ERROR("create EcmaVM failed");
+        return;
+    }
+    auto engine = new ArkNativeEngine(vm, nullptr);
+    if (!engine) {
+        HILOG_ERROR("alloc ArkEngine failed");
+        panda::JSNApi::DestroyJSVM(vm);
+        return;
+    }
+    napi_env newEnv = reinterpret_cast<napi_env>(engine);
+
+    CheckSendableReferenceValue(newEnv, ref);
+
+    delete engine;
+    engine = nullptr;
+    panda::JSNApi::DestroyJSVM(vm);
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_sendable_ref ref = nullptr;
+    {
+        // create a sendable object holded by napi_sendable_ref
+        napi_handle_scope scope = nullptr;
+        ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_sendable_array(env, &result));
+        ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, result, &ref));
+
+        ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+    }
+
+    CheckSendableReferenceValue(env, ref);
+
+    std::thread t1([ref] () {
+        CheckSendableReferenceValueInThread(ref);
+    });
+
+    std::thread t2([ref] () {
+        CheckSendableReferenceValueInThread(ref);
+    });
+
+    std::thread t3([ref] () {
+        CheckSendableReferenceValueInThread(ref);
+    });
+
+    std::thread t4([ref] () {
+        CheckSendableReferenceValueInThread(ref);
+    });
+
+    std::thread t5([ref] () {
+        CheckSendableReferenceValueInThread(ref);
+    });
+
+    t1.join();
+    t2.join();
+    t3.join();
+    t4.join();
+    t5.join();
+
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_sendable_ref ref = nullptr;
+    std::thread t([&ref] () {
+        panda::RuntimeOption options;
+        options.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
+        EcmaVM* vm = panda::JSNApi::CreateJSVM(options);
+        if (!vm) {
+            HILOG_ERROR("create EcmaVM failed");
+            return;
+        }
+        auto engine = new ArkNativeEngine(vm, nullptr);
+        if (!engine) {
+            HILOG_ERROR("alloc ArkEngine failed");
+            panda::JSNApi::DestroyJSVM(vm);
+            return;
+        }
+        napi_env newEnv = reinterpret_cast<napi_env>(engine);
+
+        napi_handle_scope scope = nullptr;
+        ASSERT_CHECK_CALL(napi_open_handle_scope(newEnv, &scope));
+
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_sendable_array(newEnv, &result));
+        napi_sendable_ref tmpRef = nullptr;
+        ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(newEnv, result, &tmpRef));
+        ref = tmpRef;
+
+        ASSERT_CHECK_CALL(napi_close_handle_scope(newEnv, scope));
+
+        CheckSendableReferenceValue(newEnv, ref);
+
+        delete engine;
+        engine = nullptr;
+        panda::JSNApi::DestroyJSVM(vm);
+    });
+
+    t.join();
+
+    CheckSendableReferenceValue(env, ref);
+
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
+}
