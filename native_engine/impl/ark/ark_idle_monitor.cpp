@@ -560,7 +560,7 @@ void ArkIdleMonitor::StopIdleMonitorTimerTask()
 {
 #if defined(ENABLE_FFRT)
     std::lock_guard<std::mutex> lock(timerMutex_);
-    HILOG_INFO("StopIdleMonitorTimerTask get timerMutex_");
+    HILOG_INFO("Get timerMutex_");
     if (currentTimerHandler_ != -1) {
         ffrt_timer_stop(ffrt_qos_user_initiated, currentTimerHandler_);
         currentTimerHandler_ = -1;
