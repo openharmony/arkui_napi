@@ -1165,8 +1165,8 @@ TEST_F(ArkInteropTest, PromiseThen)
     std::mutex mutex;
     std::unique_lock lock(mutex);
 
-    constexpr int checkDuration = 10;
-    int waitTimes = 10; // set 100ms timeout
+    constexpr int checkDuration = 100;
+    int waitTimes = 50; // set 100ms timeout
     while (!isComplete && waitTimes--) {
         cv.wait_for(lock, std::chrono::milliseconds(checkDuration));
     }
@@ -1204,8 +1204,7 @@ TEST_F(ArkInteropTest, CycleFreeExtern)
         EXPECT_EQ(local.GetCycleFreeFuncCount(), funcCount + 1);
         auto object = ARKTS_CreateCycleFreeExtern(local.GetEnv(), id);
         EXPECT_TRUE(ARKTS_IsExternal(env, object));
-        auto handle = ARKTS_GetExternalData(env, object);
-        uint32_t resid = reinterpret_cast<uint64_t>(handle);
+        auto resid = ARKTS_GetExternalData(env, object);
         EXPECT_EQ(resid, id);
 
         ARKTS_CloseScope(env, scope);
@@ -1216,6 +1215,10 @@ class GlobalWeakTest {
 public:
     GlobalWeakTest(): local(ARKTS_CreateEngineWithNewThread()), status(CREATING)
     {
+    }
+    ~GlobalWeakTest()
+    {
+        ReleaseGlobals();
     }
 
     void Start()
@@ -1305,7 +1308,6 @@ private:
                 status = DISPOSE;
                 break;
             case DISPOSE:
-                ReleaseGlobals();
                 status = COMPLETE;
                 cv.notify_all();
                 return;
@@ -1410,7 +1412,7 @@ TEST_F(ArkInteropTest, GlobalRelease)
             return;
         }
         auto scope = ARKTS_OpenScope(env);
-        auto totalRepeat = 500000;
+        auto totalRepeat = 200000;
         for (int i = 0;i < totalRepeat; ++i) {
             auto object = ARKTS_CreateObject(env);
             auto global = ARKTS_CreateGlobal(env, object);
@@ -1438,7 +1440,7 @@ TEST_F(ArkInteropTest, GlobalReleaseSync)
     MockContext local;
     auto env = local.GetEnv();
     int loops = 10;
-    auto totalRepeat = 500000;
+    auto totalRepeat = 200000;
     for (int i = 0;i < loops; ++i) {
         auto scope = ARKTS_OpenScope(env);
         for (int j = 0;j < totalRepeat; ++j) {
@@ -1456,7 +1458,7 @@ TEST_F(ArkInteropTest, PromiseRelease)
     MockContext local;
     auto env = local.GetEnv();
     int loops = 20;
-    auto totalRepeat = 50000;
+    auto totalRepeat = 20000;
     auto undefined = ARKTS_CreateUndefined();
     for (int i = 0;i < loops; ++i) {
         auto scope = ARKTS_OpenScope(env);

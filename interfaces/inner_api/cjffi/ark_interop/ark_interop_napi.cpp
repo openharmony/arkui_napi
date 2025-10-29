@@ -87,10 +87,10 @@ std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError)
     panda::JsiFastNativeScope fastNativeScope(vm);
     auto exception = BIT_CAST(jsError, Local<JSValueRef>);
     if (exception->IsString(vm)) {
-        auto errorInsJs = *P_CAST(jsError, StringRef*);
+        auto errorInsJs = *BIT_CAST(jsError, StringRef*);
         return errorInsJs.ToString(vm);
     } else if (exception->IsError(vm)) {
-        auto errorObJ = *P_CAST(jsError, ObjectRef*);
+        auto errorObJ = *BIT_CAST(jsError, ObjectRef*);
         auto nameValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "name"));
         auto messageValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "message"));
         auto stackValue = errorObJ.Get(vm, StringRef::NewFromUtf8(vm, "stack"));
@@ -119,7 +119,7 @@ uint64_t ARKTS_GetPosixThreadId()
 
 ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src)
 {
-    ARKTS_ASSERT(src, "src is null", N_UNDEFINED);
+    ARKTS_ASSERT(env, "env is null", N_UNDEFINED);
     auto value = BIT_CAST(src, JSValueRef);
     if (value.IsHole()) {
         return N_UNDEFINED;
@@ -133,7 +133,7 @@ ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src)
         return N_NUMBER;
     }
 
-    value = *P_CAST(src, JSValueRef*);
+    value = *BIT_CAST(src, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
     if (value.IsNull()) {
         return N_NULL;
@@ -182,7 +182,7 @@ bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b)
         default:
             auto vm = P_CAST(env, EcmaVM*);
             panda::JsiFastNativeScope fastNativeScope(vm);
-            auto aTag = *P_CAST(a, JSValueRef*);
+            auto aTag = *BIT_CAST(a, JSValueRef*);
             auto bTag = BIT_CAST(b, Local<JSValueRef>);
             return aTag.IsStrictEquals(vm, bTag);
     }
@@ -190,27 +190,27 @@ bool ARKTS_StrictEqual(ARKTS_Env env, ARKTS_Value a, ARKTS_Value b)
 
 ARKTS_Value ARKTS_CreateNull()
 {
-    return P_CAST(JSTaggedValue::VALUE_NULL, ARKTS_Value);
+    return  { .value = JSTaggedValue::VALUE_NULL };
 }
 
 bool ARKTS_IsNull(ARKTS_Value value)
 {
-    return P_CAST(value, JSTaggedType) == JSTaggedValue::VALUE_NULL;
+    return value.value == JSTaggedValue::VALUE_NULL;
 }
 
 ARKTS_Value ARKTS_CreateUndefined()
 {
-    return P_CAST(JSTaggedValue::VALUE_UNDEFINED, ARKTS_Value);
+    return { .value = JSTaggedValue::VALUE_UNDEFINED };
 }
 
 bool ARKTS_IsUndefined(ARKTS_Value value)
 {
-    return P_CAST(value, JSTaggedType) == JSTaggedValue::VALUE_UNDEFINED;
+    return value.value == JSTaggedValue::VALUE_UNDEFINED;
 }
 
 ARKTS_Value ARKTS_CreateBool(bool value)
 {
-    return P_CAST(value ? JSTaggedValue::VALUE_TRUE : JSTaggedValue::VALUE_FALSE, ARKTS_Value);
+    return { .value = value ? JSTaggedValue::VALUE_TRUE : JSTaggedValue::VALUE_FALSE };
 }
 
 bool ARKTS_IsBool(ARKTS_Value value)
@@ -300,7 +300,7 @@ bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value)
         return false;
     }
     auto vm = P_CAST(env, EcmaVM*);
-    tag = *P_CAST(value, JSValueRef*);
+    tag = *P_CAST(value.pointer, JSValueRef*);
     return tag.IsConstructor(vm);
 }
 
@@ -369,7 +369,7 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
 
     auto vm = P_CAST(env, EcmaVM*);
 
-    auto funcHandle = *P_CAST(func, FunctionRef*);
+    auto funcHandle = *P_CAST(func.pointer, FunctionRef*);
     auto thisHandle = ARKTS_ToHandle<JSValueRef>(thisArg);
 
     Local<JSValueRef> formattedArgs[MAX_CALL_ARGS];
@@ -390,7 +390,7 @@ ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_V
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto funcHandle = *P_CAST(clazz, FunctionRef*);
+    auto funcHandle = *P_CAST(clazz.pointer, FunctionRef*);
 
     Local<JSValueRef> formattedArgs[MAX_CALL_ARGS];
     FormatArguments(numArgs, args, formattedArgs);
@@ -434,9 +434,9 @@ uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array)
     ARKTS_ASSERT_I(ARKTS_IsArray(env, array), "array is not array");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto ref = P_CAST(array, JSValueRef*);
+    auto ref = P_CAST(array.pointer, JSValueRef*);
     if (ref->IsJSArray(vm)) {
-        return P_CAST(array, ArrayRef*)->Length(vm);
+        return P_CAST(array.pointer, ArrayRef*)->Length(vm);
     }
     auto l = ARKTS_CreateUtf8(env, "length", 6);
     auto r = ARKTS_GetProperty(env, array, l);
@@ -482,7 +482,7 @@ bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value)
     if (!v.IsHeapObject()) {
         return false;
     }
-    v = *P_CAST(value, JSValueRef*);
+    v = *P_CAST(value.pointer, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
     return v.IsArray(vm);
 }
@@ -504,10 +504,21 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
     ARKTS_ASSERT_P(buffer, "buffer is null");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto result = ArrayBufferRef::New(vm, buffer, length, ARKTSInner_CJArrayBufferDeleter,
-                                      reinterpret_cast<void*>(finalizerHint));
+    if constexpr (sizeof(void*) == 8) {
+        auto result = ArrayBufferRef::New(vm, buffer, length, ARKTSInner_CJArrayBufferDeleter,
+            reinterpret_cast<void*>(finalizerHint));
 
-    return ARKTS_FromHandle(result);
+        return ARKTS_FromHandle(result);
+    } else {
+        auto pointer = new (std::nothrow) ARKTSInner_External {finalizerHint};
+        if (!pointer) {
+            return ARKTS_CreateUndefined();
+        }
+        auto result = ArrayBufferRef::New(vm, buffer, length, ARKTSInner_CJArrayBufferDeleter,
+            pointer);
+
+        return ARKTS_FromHandle(result);
+    }
 }
 
 bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
@@ -545,10 +556,10 @@ int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 
 void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_N(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
+    ARKTS_ASSERT_N(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     if (handle->IsArrayBuffer(vm)) {
@@ -569,7 +580,7 @@ void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest, int32_t count)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(buffer, "buffer is null");
+    ARKTS_ASSERT_I(buffer.value, "buffer is null");
     ARKTS_ASSERT_I(dest, "dest is null");
 
     auto src = ARKTS_GetArrayBufferRawPtr(env, buffer);
@@ -583,13 +594,23 @@ int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest
     return targetSize;
 }
 
-ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data)
+ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, int64_t data)
 {
     ARKTS_ASSERT_P(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto result = NativePointerRef::New(vm, data, ARKTSInner_CJExternalDeleter, env);
-    return ARKTS_FromHandle(result);
+    if constexpr (sizeof(void*) == 8) {
+        auto result = NativePointerRef::New(vm, reinterpret_cast<void*>(static_cast<intptr_t>(data)),
+            ARKTSInner_CJExternalDeleter, env);
+        return ARKTS_FromHandle(result);
+    } else {
+        auto pointer = new (std::nothrow) ARKTSInner_External {data};
+        if (!pointer) {
+            return ARKTS_CreateUndefined();
+        }
+        auto result = NativePointerRef::New(vm, pointer, ARKTSInner_CJExternalDeleter, env);
+        return ARKTS_FromHandle(result);
+    }
 }
 
 bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
@@ -605,16 +626,27 @@ bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
     return handle->IsNativePointer(vm);
 }
 
-void* ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value)
+int64_t ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(ARKTS_IsExternal(env, value), "value is not external data");
-    auto external = *P_CAST(value, NativePointerRef*);
-    return external.Value();
+    ARKTS_ASSERT_I(ARKTS_IsExternal(env, value), "value is not external data");
+    auto external = *P_CAST(value.pointer, NativePointerRef*);
+
+    if constexpr (sizeof(void*) == 8) {
+        return reinterpret_cast<int64_t>(external.Value());
+    } else {
+        auto data = external.Value();
+        if (!data) {
+            LOGE("invalid external data");
+            return -1;
+        }
+        auto pointer = reinterpret_cast<ARKTSInner_External*>(data);
+        return pointer->data;
+    }
 }
 
 ARKTS_Promise ARKTS_CreatePromiseCapability(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_N(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
 
@@ -669,7 +701,7 @@ bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
         return false;
     }
     auto vm = P_CAST(env, EcmaVM*);
-    v= *P_CAST(value, JSValueRef*);
+    v= *P_CAST(value.pointer, JSValueRef*);
     return v.IsPromise(vm);
 }
 
@@ -710,15 +742,15 @@ ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value call
 
 ARKTS_Scope ARKTS_OpenScope(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_N(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     return CJ::ARKTS_ScopeManager::OpenScope(vm);
 }
 
 ARKTS_Result ARKTS_Return(ARKTS_Env env, ARKTS_Scope scope, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(value, "value is invalid");
+    ARKTS_ASSERT(env, "env is null", {});
+    ARKTS_ASSERT(value, "value is invalid", {});
 
     auto vm = P_CAST(env, EcmaVM*);
     if (!CJ::ARKTS_ScopeManager::CloseScope(scope)) {
@@ -805,7 +837,7 @@ ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info)
 
 void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_N(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     return JSNApi::GetEnv(vm);
 }
@@ -886,17 +918,29 @@ static void CycleFreeObjectReleaser(void* /*env*/, void* nativePointer, void* /*
     if (!g_cycleFreeCallback) {
         return;
     }
-    auto id = static_cast<int64_t>(reinterpret_cast<uintptr_t>(nativePointer));
-    g_cycleFreeCallback->refRelease(id);
+    if constexpr (sizeof(void*) == 8) {
+        auto id = static_cast<int64_t>(reinterpret_cast<uintptr_t>(nativePointer));
+        g_cycleFreeCallback->refRelease(id);
+    } else {
+        auto pointer = reinterpret_cast<ARKTSInner_External*>(nativePointer);
+        g_cycleFreeCallback->refRelease(pointer->data);
+    }
 }
 
 ARKTS_Value ARKTS_CreateCycleFreeExtern(ARKTS_Env env, int64_t id)
 {
     ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
-    auto data = reinterpret_cast<void*>(static_cast<uintptr_t>(id));
-    auto result = NativePointerRef::New(vm, data, CycleFreeObjectReleaser, nullptr);
-    return ARKTS_FromHandle(result);
+
+    if constexpr (sizeof (void*) == 8) {
+        auto data = reinterpret_cast<void*>(static_cast<uintptr_t>(id));
+        auto result = NativePointerRef::New(vm, data, CycleFreeObjectReleaser, nullptr);
+        return ARKTS_FromHandle(result);
+    } else {
+        auto pointer = new ARKTSInner_External {id};
+        auto result = NativePointerRef::New(vm, pointer, CycleFreeObjectReleaser, nullptr);
+        return ARKTS_FromHandle(result);
+    }
 }
 
 ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env)

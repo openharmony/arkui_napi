@@ -49,10 +49,17 @@ typedef enum {
     N_CONFIGURABLE = 0x4,
 } ARKTS_PropertyFlag;
 
-typedef struct ARKTS_Value_* ARKTS_Value;
+typedef union {
+    uint64_t value;
+    void* pointer;
+} ARKTS_Value;
+typedef struct ARKTS_Result_ {
+    uint64_t value;
+} ARKTS_Result;
+
 typedef struct ARKTS_Env_* ARKTS_Env;
 typedef struct ARKTS_CallInfo_* ARKTS_CallInfo;
-typedef struct ARKTS_Result_* ARKTS_Result;
+
 /**
  * be caution: ARKTS_Promise is not ARKTS_Value, you may not cast ARKTS_Promise to ARKTS_Value.
  */
@@ -160,9 +167,9 @@ EXPORT ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobal(ARKTS_Env env, ARKTS_Global global);
 EXPORT void ARKTS_DisposeGlobalSync(ARKTS_Env env, ARKTS_Global global);
 
-EXPORT ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, void* data);
+EXPORT ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, int64_t data);
 EXPORT bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value);
-EXPORT void* ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value);
+EXPORT int64_t ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value);
 
 EXPORT ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t length);
 EXPORT bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value);

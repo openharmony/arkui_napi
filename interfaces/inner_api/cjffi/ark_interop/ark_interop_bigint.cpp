@@ -86,7 +86,7 @@ bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
     if (!tag.IsHeapObject()) {
         return false;
     }
-    tag = *P_CAST(value, panda::JSValueRef*);
+    tag = *P_CAST(value.pointer, panda::JSValueRef*);
     auto vm = P_CAST(env, panda::EcmaVM*);
     return tag.IsBigInt(vm);
 }
@@ -96,7 +96,7 @@ int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_I(ARKTS_IsBigInt(env, value), "value is not bigint");
     auto vm = P_CAST(env, panda::EcmaVM*);
 
-    auto bigint = P_CAST(value, panda::BigIntRef*);
+    auto bigint = P_CAST(value.pointer, panda::BigIntRef*);
     return bigint->GetWordsArraySize(vm) * WORD_BYTES;
 }
 

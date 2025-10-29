@@ -125,7 +125,7 @@ void ARKTS_DisposeEventHandler(ARKTS_Env env)
     }
 }
 
-void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, void* data)
+void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, int64_t data)
 {
     // uv_loop first, secondary is for compatible with early version.
     if (auto loop = ARKTSInner_GetUvLoop(env)) {
@@ -149,7 +149,7 @@ void ARKTSInner_CreateAsyncTask(ARKTS_Env env, ARKTS_AsyncCallback callback, voi
 void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId)
 {
     ARKTS_ASSERT_V(env, "env is null");
-    ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, reinterpret_cast<void*>(callbackId));
+    ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, callbackId);
 }
 
 ARKTS_Loop_::ARKTS_Loop_(napi_env env, uv_loop_t* loop) : asyncReq(), status(IDLE)

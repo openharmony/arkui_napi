@@ -51,10 +51,10 @@ bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
 
 const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(ARKTS_IsSymbol(env, value), "value is not a symbol");
+    ARKTS_ASSERT_N(ARKTS_IsSymbol(env, value), "value is not a symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
-    auto symbol = *P_CAST(value, SymbolRef*);
+    auto symbol = *P_CAST(value.pointer, SymbolRef*);
     auto desc = symbol.GetDescription(vm);
     auto desc1 = BIT_CAST(desc, ARKTS_Value);
     if (ARKTS_IsString(env, desc1)) {

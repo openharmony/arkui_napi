@@ -42,6 +42,7 @@ ohos_unittest("test_ark_interop") {
     "eventhandler:libeventhandler",
     "hilog:libhilog",
     "libuv:uv",
+    "c_utils:utils"
   ]
 }
 
