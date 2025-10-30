@@ -489,7 +489,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                                                                                      isLimitedWorker_(isLimitedWorker),
                                                                                      isMainEnvContext_(true)
 {
-    HILOG_INFO("ArkNativeEngine is created, id %{public}" PRIu64, GetId());
+    HILOG_INFO("Created, id %{public}" PRIu64, GetId());
 
     JSNApi::SetEnv(vm, this);
     // enable napi profiler
@@ -571,7 +571,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
       isMainEnvContext_(false),
       isMultiContextEnabled_(true)
 {
-    HILOG_INFO("ArkContextEngine is created, id %{public}" PRIu64, GetId());
+    HILOG_INFO("Created, id %{public}" PRIu64, GetId());
 
     // The sub-context environment must be deleted before the uv_loop is destroyed.
     // In this case, we cannot delay the destruction of the context environment
@@ -611,7 +611,7 @@ ArkNativeEngine::ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<J
 ArkNativeEngine::~ArkNativeEngine()
 {
     HILOG_INFO("%{public}s %{public}" PRIu64 " is deconstructed",
-               isMainEnvContext_ ? "ArkNativeEngine" : "ArkContextEngine", GetId());
+               isMainEnvContext_ ? "" : "ArkContextEngine", GetId());
 
     engineState_ = ArkNativeEngineState::RELEASING;
 
@@ -1875,10 +1875,10 @@ Local<JSValueRef> ArkNativeEngine::NapiLoadNativeModule(std::string path)
 napi_value ArkNativeEngine::NapiLoadModule(const char* path)
 {
     if (path == nullptr) {
-        HILOG_ERROR("ArkNativeEngine:The module name is empty");
+        HILOG_ERROR("ArkNativeEngine path is empty");
         return nullptr;
     }
-    HILOG_INFO("ArkNativeEngine::NapiLoadModule path:%{public}s", path);
+    HILOG_INFO("ArkNativeEngine path:%{public}s", path);
     panda::EscapeLocalScope scope(vm_);
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     Local exportObj(undefObj);
