@@ -29,6 +29,7 @@
 
 #include "native_engine/native_utils.h"
 #include "unicode/ucnv.h"
+#include "securec.h"
 
 constexpr size_t NAME_BUFFER_SIZE = 64;
 static constexpr auto PANDA_MAIN_FUNCTION = "_GLOBAL::func_main_0";
