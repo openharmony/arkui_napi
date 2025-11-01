@@ -120,12 +120,4 @@ int64_t RemoteData::GetID() const
     return id_;
 }
 
-FFIData::~FFIData()
-{
-    auto cjFunc = CJFFIFnInvoker::GetInstance()->GetCJFuncs().atCOHOSFFIReleaseRemoteData;
-    if (!cjFunc) {
-        HiLog::Error(LABEL, "Failed to invoke CJ function: FFIReleaseRemoteData!");
-        return;
-    }
-    cjFunc(GetID());
-}
+FFIData::~FFIData() {}
