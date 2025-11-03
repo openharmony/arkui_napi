@@ -3511,6 +3511,16 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     return napi_ok;
 }
 
+NAPI_EXTERN napi_status napi_destroy_runtime(napi_env env)
+{
+    CHECK_ENV(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    delete engine;
+
+    return napi_ok;
+}
+
 NAPI_EXTERN napi_status napi_serialize(napi_env env,
                                        napi_value object,
                                        napi_value transfer_list,
