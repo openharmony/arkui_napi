@@ -754,7 +754,7 @@ Local<JSValueRef> ArkNativeEngine::GetContext() const
 const EcmaVM* ArkNativeEngine::GetEcmaVm() const
 {
     if (HasCriticalScope()) {
-        HILOG_FATAL("napi cannot invoke in critical scope, env: %{public}" PRIu64, GetId());
+        HILOG_FATAL("napi cannot invoke under critical scope, id: %{public}" PRIu64, GetId());
     }
     return GetEcmaVmCritical();
 }

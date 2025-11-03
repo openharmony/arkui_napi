@@ -26,7 +26,7 @@
 #include "utils/log.h"
 
 // use macro instead of constexpr variable, due to need concat with other string
-#define TEST_NAPI_UNCLOSED_CRITICAL_LOG "napi cannot invoke in critical scope, env: "
+#define TEST_NAPI_UNCLOSED_CRITICAL_LOG "napi cannot invoke under critical scope, id: "
 #define TEST_UNCLOSED_CRITICAL_CALLBACK_LOG "critical scope still open after user callback"
 
 class NapiCriticalTest : public NativeEngineTest {
