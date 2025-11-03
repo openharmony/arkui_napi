@@ -43,7 +43,6 @@
 
 NAPI_EXTERN napi_status napi_fatal_exception(napi_env env, napi_value err);
 
-
 NAPI_EXTERN napi_status napi_create_string_utf16(napi_env env,
                                                  const char16_t* str,
                                                  size_t length,
@@ -72,6 +71,7 @@ NAPI_INNER_EXTERN napi_status napi_adjust_external_memory(napi_env env,
 extern "C" {
 #endif
 
+typedef void (*napi_finalize_callback)(void* finalize_data, void* finalize_hint);
 typedef void* (*napi_native_binding_detach_callback)(napi_env env, void* native_object, void* hint);
 typedef napi_value (*napi_native_binding_attach_callback)(napi_env env, void* native_object, void* hint);
 typedef void (*napi_detach_finalize_callback)(void* detachedObject, void* finalizeHint);
@@ -221,6 +221,19 @@ NAPI_EXTERN napi_status napi_get_buffer_string_utf16_in_critical_scope(napi_env 
                                                                        napi_value value,
                                                                        const char16_t** buffer,
                                                                        size_t* length);
+
+NAPI_EXTERN napi_status napi_create_external_string_utf16(napi_env env,
+                                                          const char16_t* str,
+                                                          size_t length,
+                                                          napi_finalize_callback finalize_callback,
+                                                          void* finalize_hint,
+                                                          napi_value* result);
+NAPI_EXTERN napi_status napi_create_external_string_ascii(napi_env env,
+                                                          const char* str,
+                                                          size_t length,
+                                                          napi_finalize_callback finalize_callback,
+                                                          void* finalize_hint,
+                                                          napi_value* result);
 #ifdef __cplusplus
 }
 #endif
