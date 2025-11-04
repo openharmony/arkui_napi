@@ -54,14 +54,14 @@ std::mutex g_instanceMutex;
 
 NativeModuleManager::NativeModuleManager()
 {
-    HILOG_DEBUG("enter");
+    MODULEMNG_HILOG_DEBUG("enter");
     pthread_mutex_init(&mutex_, nullptr);
     moduleLoadChecker_ = std::make_unique<ModuleLoadChecker>();
 }
 
 NativeModuleManager::~NativeModuleManager()
 {
-    HILOG_INFO("enter");
+    MODULEMNG_HILOG_INFO("enter");
     {
         std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
         NativeModule* nativeModule = headNativeModule_;
@@ -116,7 +116,7 @@ NativeModuleManager* NativeModuleManager::GetInstance()
         std::lock_guard<std::mutex> lock(g_instanceMutex);
         if (instance_ == NULL) {
             instance_ = new NativeModuleManager();
-            HILOG_DEBUG("create native module manager instance");
+            MODULEMNG_HILOG_DEBUG("create native module manager instance");
         }
     }
     return instance_;
@@ -124,7 +124,7 @@ NativeModuleManager* NativeModuleManager::GetInstance()
 
 void NativeModuleManager::SetNativeEngine(std::string moduleKey, NativeEngine* nativeEngine)
 {
-    HILOG_DEBUG("modulekey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     if (nativeEngine != nullptr) {
         nativeEngine->SetModuleName(moduleKey);
     }
@@ -134,7 +134,7 @@ void NativeModuleManager::SetNativeEngine(std::string moduleKey, NativeEngine* n
 
 void NativeModuleManager::EmplaceModuleLib(std::string moduleKey, const LIBHANDLE lib)
 {
-    HILOG_DEBUG("modulekey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleLibMutex_);
     if (lib != nullptr) {
         moduleLibMap_.emplace(moduleKey, lib);
@@ -143,13 +143,13 @@ void NativeModuleManager::EmplaceModuleLib(std::string moduleKey, const LIBHANDL
 
 bool NativeModuleManager::RemoveModuleLib(const std::string moduleKey)
 {
-    HILOG_DEBUG("moduleKey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     bool deleted = false;
     std::lock_guard<std::mutex> lock(moduleLibMutex_);
     auto it = moduleLibMap_.find(moduleKey);
     if (it != moduleLibMap_.end()) {
         moduleLibMap_.erase(it);
-        HILOG_DEBUG("module '%{public}s' erased", moduleKey.c_str());
+        MODULEMNG_HILOG_DEBUG("module '%{public}s' erased", moduleKey.c_str());
         deleted = true;
     }
     return deleted;
@@ -157,7 +157,7 @@ bool NativeModuleManager::RemoveModuleLib(const std::string moduleKey)
 
 LIBHANDLE NativeModuleManager::GetNativeModuleHandle(const std::string& moduleKey) const
 {
-    HILOG_DEBUG("moduleKey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleLibMutex_);
     auto it = moduleLibMap_.find(moduleKey);
     if (it == moduleLibMap_.end()) {
@@ -168,7 +168,7 @@ LIBHANDLE NativeModuleManager::GetNativeModuleHandle(const std::string& moduleKe
 
 void NativeModuleManager::EmplaceModuleBuffer(const std::string moduleKey, const uint8_t* lib)
 {
-    HILOG_DEBUG("modulekey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleBufMutex_);
     if (lib != nullptr) {
         moduleBufMap_.emplace(moduleKey, lib);
@@ -177,13 +177,13 @@ void NativeModuleManager::EmplaceModuleBuffer(const std::string moduleKey, const
 
 bool NativeModuleManager::RemoveModuleBuffer(const std::string moduleKey)
 {
-    HILOG_DEBUG("moduleKey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     bool deleted = false;
     std::lock_guard<std::mutex> lock(moduleBufMutex_);
     auto it = moduleBufMap_.find(moduleKey);
     if (it != moduleBufMap_.end()) {
         moduleBufMap_.erase(it);
-        HILOG_DEBUG("module '%{public}s' erased", moduleKey.c_str());
+        MODULEMNG_HILOG_DEBUG("module '%{public}s' erased", moduleKey.c_str());
         deleted = true;
     }
     return deleted;
@@ -191,7 +191,7 @@ bool NativeModuleManager::RemoveModuleBuffer(const std::string moduleKey)
 
 const uint8_t* NativeModuleManager::GetBufferHandle(const std::string& moduleKey) const
 {
-    HILOG_DEBUG("moduleKey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleBufMutex_);
     auto it = moduleBufMap_.find(moduleKey);
     if (it == moduleBufMap_.end()) {
@@ -206,22 +206,22 @@ bool NativeModuleManager::RemoveNativeModule(const std::string& moduleKey)
     bool handleRemoved = RemoveModuleLib(moduleKey);
     bool moduleRemoved = RemoveNativeModuleByCache(moduleKey);
 
-    HILOG_DEBUG("handleAbcRemoved is %{public}d, handleRemoved is %{public}d, moduleRemoved is %{public}d",
+    MODULEMNG_HILOG_DEBUG("handleAbcRemoved is %{public}d, handleRemoved is %{public}d, moduleRemoved is %{public}d",
         handleAbcRemoved, handleRemoved, moduleRemoved);
     return ((handleRemoved || handleAbcRemoved) && moduleRemoved);
 }
 
 bool NativeModuleManager::UnloadNativeModule(const std::string& moduleKey)
 {
-    HILOG_DEBUG("moduleKey is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     LIBHANDLE handle = GetNativeModuleHandle(moduleKey);
     if (handle == nullptr) {
-        HILOG_ERROR("failed to get native module handle.");
+        MODULEMNG_HILOG_ERROR("failed");
         return false;
     }
 
     if (RemoveNativeModule(moduleKey) == false) {
-        HILOG_ERROR("remove native module failed.");
+        MODULEMNG_HILOG_ERROR("failed");
         return false;
     }
 
@@ -231,17 +231,17 @@ bool NativeModuleManager::UnloadNativeModule(const std::string& moduleKey)
 std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool isAppModule)
 {
     if (moduleName == nullptr) {
-        HILOG_ERROR("invalid param. moduleName is nullptr");
+        MODULEMNG_HILOG_ERROR("null");
         return "";
     }
-    HILOG_INFO("moduleName is '%{public}s', isAppModule is %{public}d", moduleName, isAppModule);
+    MODULEMNG_HILOG_INFO("moduleName:%{public}s, isApp:%{public}d", moduleName, isAppModule);
 
     std::string loadPath;
     std::string name = isAppModule ? (prefix_ + "/" + moduleName) : moduleName;
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
     const char* pathKey = "default";
     if (!GetNativeModulePath(moduleName, pathKey, "", isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        HILOG_ERROR("get native module path failed");
+        MODULEMNG_HILOG_ERROR("get native module path failed");
         return loadPath;
     }
     NativeModule* cacheNativeModule = nullptr;
@@ -249,7 +249,7 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
     NativeModule* module =
         FindNativeModuleByCache(name.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
     if (module == nullptr) {
-        HILOG_ERROR("get module file name failed");
+        MODULEMNG_HILOG_ERROR("failed");
         return loadPath;
     }
     loadPath = nativeModulePath[0];
@@ -257,18 +257,18 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
         std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
         loadPath = std::string(appLibPathMap_[pathKey]) + "/" + nativeModulePath[0];
     }
-    HILOG_ERROR("get module file name failed, moduleName is %{public}s", moduleName);
+    MODULEMNG_HILOG_ERROR("failed");
     return loadPath;
 }
 
 void NativeModuleManager::Register(NativeModule* nativeModule)
 {
     if (nativeModule == nullptr) {
-        HILOG_ERROR("nativeModule value is null");
+        MODULEMNG_HILOG_ERROR("Module null");
         return;
     }
 
-    HILOG_DEBUG("native module name is '%{public}s'", nativeModule->name);
+    MODULEMNG_HILOG_DEBUG("native module name is '%{public}s'", nativeModule->name);
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     const char *nativeModuleName = nativeModule->name == nullptr ? "" : nativeModule->name;
     std::string appName = prefix_ + "/" + nativeModuleName;
@@ -279,13 +279,13 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     }
     char *moduleName = strdup(tmpName.c_str());
     if (moduleName == nullptr) {
-        HILOG_ERROR("strdup failed. tmpName is %{public}s", tmpName.c_str());
+        MODULEMNG_HILOG_ERROR("failed");
         return;
     }
 
     if (g_isLoadingModule || !strcmp(loadingModuleName_.c_str(), moduleName)) {
         if (!CreateTailNativeModule()) {
-            HILOG_ERROR("create tail nativeModule failed");
+            MODULEMNG_HILOG_ERROR("failed");
             free(moduleName);
             return;
         }
@@ -302,13 +302,13 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         tailNativeModule_->moduleLoaded = true;
         tailNativeModule_->systemFilePath = "";
         if (isAppModule_) {
-            HILOG_INFO("Tail module name is '%{public}s'", tailNativeModule_->name);
+            MODULEMNG_HILOG_INFO("Tail:%{public}s", tailNativeModule_->name);
         }
-        HILOG_DEBUG("At tail register module name is '%{public}s', isAppModule is %{public}d", tailNativeModule_->name,
-            isAppModule_);
+        MODULEMNG_HILOG_DEBUG("At tail register module name is '%{public}s', isAppModule is %{public}d",
+            tailNativeModule_->name, isAppModule_);
     } else {
         if (!CreateHeadNativeModule()) {
-            HILOG_ERROR("create head nativeModule failed");
+            MODULEMNG_HILOG_ERROR("failed");
             return;
         }
         headNativeModule_->version = nativeModule->version;
@@ -321,7 +321,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         headNativeModule_->getABCCode = nativeModule->getABCCode;
         headNativeModule_->moduleLoaded = true;
         headNativeModule_->systemFilePath = "";
-        HILOG_INFO("At head register module name is '%{public}s', isAppModule is %{public}d",
+        MODULEMNG_HILOG_INFO("Head module name:%{public}s, isApp:%{public}d",
             headNativeModule_->name, isAppModule_);
     }
 }
@@ -331,14 +331,14 @@ bool NativeModuleManager::CreateHeadNativeModule()
     if (headNativeModule_ == tailNativeModule_ && tailNativeModule_ == nullptr) {
         headNativeModule_ = new NativeModule();
         if (headNativeModule_ == nullptr) {
-            HILOG_ERROR("first NativeModule create failed");
+            MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         tailNativeModule_ = headNativeModule_;
     } else {
         auto head = new NativeModule();
         if (head == nullptr) {
-            HILOG_ERROR("head NativeModule create failed");
+            MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         if (headNativeModule_) {
@@ -354,14 +354,14 @@ bool NativeModuleManager::CreateTailNativeModule()
     if (headNativeModule_ == tailNativeModule_ && tailNativeModule_ == nullptr) {
         headNativeModule_ = new NativeModule();
         if (headNativeModule_ == nullptr) {
-            HILOG_ERROR("first NativeModule create failed");
+            MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         tailNativeModule_ = headNativeModule_;
     } else {
         auto tail = new NativeModule();
         if (tail == nullptr) {
-            HILOG_ERROR("tail NativeModule create failed");
+            MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         if (tailNativeModule_) {
@@ -376,7 +376,7 @@ bool NativeModuleManager::CreateTailNativeModule()
     !defined(LINUX_PLATFORM)
 void NativeModuleManager::CreateSharedLibsSonames()
 {
-    HILOG_DEBUG("enter");
+    MODULEMNG_HILOG_DEBUG("enter");
     const char* allowList[] = {
         // bionic library
         "libc.so",
@@ -502,7 +502,7 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
 
     nsMap_[moduleName] = ns;
 
-    HILOG_DEBUG("end. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
+    MODULEMNG_HILOG_DEBUG("end. moduleName: %{public}s, path: %{public}s", moduleName.c_str(), lib_ld_path);
 #endif
 }
 
@@ -511,7 +511,7 @@ bool NativeModuleManager::GetLdNamespaceName(const std::string &moduleName, std:
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     if (nsMap_.find(moduleName) == nsMap_.end()) {
-        HILOG_ERROR("not found ns: %{public}s", moduleName.c_str());
+        MODULEMNG_HILOG_ERROR("missing ns: %{public}s", moduleName.c_str());
         return false;
     }
     nsName = MODULE_NS + moduleName;
@@ -525,20 +525,20 @@ void NativeModuleManager::InheritNamespaceEachOther(const std::string& src, cons
 {
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-    HILOG_DEBUG("namespace_1 is %{public}s, namespace_2 is %{public}s", src.c_str(), dst.c_str());
+    MODULEMNG_HILOG_DEBUG("namespace_1 is %{public}s, namespace_2 is %{public}s", src.c_str(), dst.c_str());
     if (src.empty() || dst.empty()) {
-        HILOG_ERROR("Invalid input parameters");
+        MODULEMNG_HILOG_ERROR("Bad params");
         return;
     }
 
     Dl_namespace ns;
     Dl_namespace current_ns;
     if (dlns_get(src.c_str(), &ns) != 0) {
-        HILOG_ERROR("dlns_get  %{public}s failed", src.c_str());
+        MODULEMNG_HILOG_ERROR("dlns_get  %{public}s failed", src.c_str());
         return;
     };
     if (dlns_get(dst.c_str(), &current_ns) != 0) {
-        HILOG_ERROR("dlns_get  %{public}s failed", dst.c_str());
+        MODULEMNG_HILOG_ERROR("dlns_get  %{public}s failed", dst.c_str());
         return;
     };
     dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
@@ -549,7 +549,7 @@ void NativeModuleManager::InheritNamespaceEachOther(const std::string& src, cons
 void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                                         const bool& isSystemApp)
 {
-    HILOG_DEBUG("moduleName is %{public}s, isisSystemApp is %{public}d", moduleName.c_str(), isSystemApp);
+    MODULEMNG_HILOG_DEBUG("moduleName is %{public}s, isisSystemApp is %{public}d", moduleName.c_str(), isSystemApp);
 
     std::string tmpPath = "";
     for (size_t i = 0; i < appLibPath.size(); i++) {
@@ -565,7 +565,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
 
     char *tmp = strdup(tmpPath.c_str());
     if (tmp == nullptr) {
-        HILOG_ERROR("strdup failed. tmpPath is %{public}s", tmpPath.c_str());
+        MODULEMNG_HILOG_ERROR("strdup failed. tmpPath is %{public}s", tmpPath.c_str());
         return;
     }
 
@@ -575,7 +575,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     }
     appLibPathMap_[moduleName] = tmp;
     CreateLdNamespace(moduleName, tmp, isSystemApp);
-    HILOG_DEBUG("path: %{public}s", appLibPathMap_[moduleName]);
+    MODULEMNG_HILOG_DEBUG("path: %{public}s", appLibPathMap_[moduleName]);
 }
 
 void NativeModuleManager::MoveApiAllowListCheckerPtr(
@@ -590,31 +590,31 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     std::string& errInfo, bool internal, const char* relativePath)
 {
     if (moduleName == nullptr) {
-        errInfo = "load native module failed. moduleName is nullptr";
-        HILOG_ERROR("%{public}s", errInfo.c_str());
+        errInfo = "nullptr";
+        MODULEMNG_HILOG_ERROR("%{public}s", errInfo.c_str());
         return nullptr;
     }
 
     if (relativePath == nullptr) {
-        errInfo = "load native module failed. relativePath is nullptr";
-        HILOG_ERROR("%{public}s", errInfo.c_str());
+        errInfo = "nullptr";
+        MODULEMNG_HILOG_ERROR("%{public}s", errInfo.c_str());
         return nullptr;
     }
 
     std::string relativePathStr(relativePath);
     if (relativePathStr.find("..") != std::string::npos) {
-        HILOG_ERROR("get relativePath error,relativePath contains .., moduleName:%{public}s", moduleName);
+        MODULEMNG_HILOG_ERROR("failed");
         return nullptr;
     }
 
-    HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
+    MODULEMNG_HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
         moduleName, path, relativePath);
 
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->DiskCheckOnly() &&
         !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
     std::string prefixTmp;
@@ -646,8 +646,8 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     NativeModuleHeadTailStruct cacheHeadTailNativeModule;
 #if defined(ANDROID_PLATFORM)
     if (!GetNativeModulePath(strCutName.c_str(), path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
-        errInfo = "failed to get native file path of module " + std::string(moduleName);
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        errInfo = "failed " + std::string(moduleName);
+        MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
     NativeModule* nativeModule =
@@ -658,14 +658,15 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         prefixTmp = "default";
         if (path && IsExistedPath(path)) {
             prefixTmp = path;
+            MODULEMNG_HILOG_INFO("%{public}s", prefixTmp.c_str());
         }
         key = prefixTmp + '/' + moduleName;
-        HILOG_INFO("key is %{public}s", key.c_str());
+        MODULEMNG_HILOG_DEBUG("%{public}s", key.c_str());
     }
     if (!GetNativeModulePath(moduleName, prefixTmp.c_str(), relativePath, isAppModule, nativeModulePath,
                              NAPI_PATH_MAX)) {
-        errInfo = "failed to get native file path of module " + std::string(moduleName);
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        errInfo = "failed " + std::string(moduleName);
+        MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
 #ifdef ENABLE_HITRACE
@@ -694,19 +695,19 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
             isAppModule_ = isAppModule;
             g_isLoadingModule = true;
 #ifdef ANDROID_PLATFORM
-            HILOG_DEBUG("module '%{public}s' does not in cache", strCutName.c_str());
+            MODULEMNG_HILOG_DEBUG("'%{public}s' not in cache", strCutName.c_str());
             nativeModule = FindNativeModuleByDisk(strCutName.c_str(), path, relativePath, internal, isAppModule,
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #elif defined(IOS_PLATFORM)
             nativeModule =
                 FindNativeModuleByCache(moduleName, nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
             if (nativeModule == nullptr) {
-                HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
+                MODULEMNG_HILOG_DEBUG("'%{public}s' not in cache", moduleName);
                 nativeModule = FindNativeModuleByDisk(moduleName, path, relativePath, internal, isAppModule, errInfo,
                                                       nativeModulePath, cacheNativeModule);
             }
 #else
-            HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
+            MODULEMNG_HILOG_DEBUG("module '%{public}s' does not in cache", moduleName);
             nativeModule = FindNativeModuleByDisk(moduleName, prefix_.c_str(), relativePath, internal, isAppModule,
                                                   errInfo, nativeModulePath, cacheNativeModule);
 #endif
@@ -720,7 +721,7 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #ifdef ENABLE_HITRACE
     FinishTrace(HITRACE_TAG_ACE);
 #endif
-    HILOG_DEBUG("load native module %{public}s", (nativeModule == nullptr) ? "failed" : "success");
+    MODULEMNG_HILOG_DEBUG("load native module %{public}s", (nativeModule == nullptr) ? "failed" : "success");
     return nativeModule;
 }
 
@@ -779,7 +780,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     int32_t lengthOfModuleName = strlen(moduleName);
     char dupModuleName[NAPI_PATH_MAX] = { 0 };
     if (strcpy_s(dupModuleName, NAPI_PATH_MAX, moduleName) != 0) {
-        HILOG_ERROR("strcpy_s moduleName '%{public}s' failed", moduleName);
+        MODULEMNG_HILOG_ERROR("failed");
         return false;
     }
 
@@ -974,14 +975,14 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
 {
     if (strlen(path) == 0) {
-        errInfo += "load module " + moduleKey  + " failed. module path is empty";
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        errInfo += "load module " + moduleKey  + " failed.";
+        MODULEMNG_HILOG_DEBUG("%{public}s", errInfo.c_str());
         return nullptr;
     }
 
     LIBHANDLE lib = nullptr;
 
-    HILOG_DEBUG("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
+    MODULEMNG_HILOG_DEBUG("path: %{public}s, pathKey: %{public}s, isAppModule: %{public}d", path, pathKey, isAppModule);
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, path);
 #endif
@@ -992,8 +993,8 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        errInfo += "load module failed. " + std::to_string(GetLastError());
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        errInfo += "failed " + std::to_string(GetLastError());
+        MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
 #ifndef ANDROID_PLATFORM
@@ -1006,7 +1007,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-        errInfo += "load module failed. " +  std::string(dlerrMsg);
+        errInfo += "failed " +  std::string(dlerrMsg);
     }
 
 #elif defined(IOS_PLATFORM)
@@ -1022,7 +1023,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr :
             "Error loading path " + std::string(path) + ":No such file or directory";
-        errInfo += "load app module failed. " +  std::string(dlerrMsg);
+        errInfo += "failed " +  std::string(dlerrMsg);
     }
 #endif
 #ifdef ENABLE_HITRACE
@@ -1039,14 +1040,14 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     const uint8_t* lib = nullptr;
     std::ifstream inFile(filePath, std::ios::ate | std::ios::binary);
     if (!inFile.is_open()) {
-        HILOG_WARN("%{public}s is not existed.", filePath.c_str());
+        MODULEMNG_HILOG_WARN("failed");
         return lib;
     }
     len = static_cast<size_t>(inFile.tellg());
     std::string abcModuleKey = moduleKey;
     lib = GetBufferHandle(abcModuleKey);
     if (lib != nullptr) {
-        HILOG_DEBUG("get native abc handle success. moduleKey is %{public}s", moduleKey.c_str());
+        MODULEMNG_HILOG_DEBUG("module:%{public}s", moduleKey.c_str());
         inFile.close();
         return lib;
     }
@@ -1063,7 +1064,7 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
 bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
 {
     if (handle == nullptr) {
-        HILOG_WARN("handle is nullptr");
+        MODULEMNG_HILOG_WARN("handle is null");
         return false;
     }
 #if !defined(WINDOWS_PLATFORM) && !defined(IOS_PLATFORM)
@@ -1072,7 +1073,7 @@ bool NativeModuleManager::UnloadModuleLibrary(LIBHANDLE handle)
     }
     char* dlerr = dlerror();
     auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-    HILOG_WARN("dlclose failed: %{public}s", dlerrMsg);
+    MODULEMNG_HILOG_WARN("dlclose failed: %{public}s", dlerrMsg);
 #endif
     return false;
 }
@@ -1094,7 +1095,7 @@ void NativeModuleManager::Napi_onLoadCallback(LIBHANDLE lib, const char* moduleN
     auto onLoadFunc = reinterpret_cast<NapiOnLoadCallback>(LIBSYM(lib, "napi_onLoad"));
     if (onLoadFunc != nullptr) {
         onLoadFunc();
-        HILOG_INFO("napi_onLoad call, moduleName:%{public}s", moduleName);
+        MODULEMNG_HILOG_INFO("napi_onLoad call, module:%{public}s", moduleName);
     }
 }
 
@@ -1105,7 +1106,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
-        HILOG_WARN("%{public}s", errInfo.c_str());
+        MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
 
@@ -1118,24 +1119,24 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 
     // load primary module path first
     char* loadPath = nativeModulePath[0];
-    HILOG_DEBUG("moduleName is %{public}s. get primary module path is %{public}s", moduleName, loadPath);
+    MODULEMNG_HILOG_DEBUG("moduleName:%{public}s. path:%{public}s", moduleName, loadPath);
     uint32_t errReason0 = MODULE_LOAD_SUCCESS;
-    errInfo = "First attempt: ";
+    errInfo = "First: ";
     LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason0);
     if (lib == nullptr) {
-        errInfo += "\nSecond attempt: ";
+        errInfo += "\nSecond: ";
         loadPath = nativeModulePath[1];
-        HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
+        MODULEMNG_HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
         lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason1);
         if (lib == nullptr && errReason0 == MODULE_NOT_EXIST && errReason1 == MODULE_NOT_EXIST) {
-            HILOG_ERROR("%{public}s does not exist, errMsg %{public}s", nativeModulePath[0], errInfo.c_str());
+            MODULEMNG_HILOG_ERROR("Not exist:%{public}s, errMsg:%{public}s", nativeModulePath[0], errInfo.c_str());
         }
     }
 
     //Maintain compatibility
     if (lib == nullptr && cacheNativeModule != nullptr) {
-        HILOG_DEBUG("Maintain compatibility.");
+        MODULEMNG_HILOG_DEBUG("Maintain compatibility.");
         return cacheNativeModule;
     }
 
@@ -1143,11 +1144,11 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     size_t len = 0;
     if (lib == nullptr) {
         loadPath = nativeModulePath[2]; // 2 : Element index value
-        HILOG_DEBUG("try to load abc module path: %{public}s", loadPath);
+        MODULEMNG_HILOG_DEBUG("try to load abc module path: %{public}s", loadPath);
         abcBuffer = GetFileBuffer(loadPath, moduleKey, len);
         if (!abcBuffer) {
-            errInfo += "\ntry to load abc file from " + std::string(loadPath) + " failed";
-            HILOG_WARN("%{public}s", errInfo.c_str());
+            errInfo += "\nload " + std::string(loadPath) + " failed";
+            MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
             return nullptr;
         }
     }
@@ -1160,16 +1161,16 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     if (tailNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
         if (moduleName == nullptr) {
-            HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
+            MODULEMNG_HILOG_ERROR("strdup faied");
             return nullptr;
         }
 
         tailNativeModule_->moduleName = moduleName;
         tailNativeModule_->systemFilePath = strdup(loadPath);
         if (strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
-            HILOG_WARN("mismatch: moduleName is %{public}s, name is %{public}s",
+            MODULEMNG_HILOG_WARN("Name mismatch: %{public}s != %{public}s",
                 tailNativeModule_->moduleName, tailNativeModule_->name);
-            HILOG_DEBUG("suggestion: keep .nm_modname the same as moduleName imported or required");
+            MODULEMNG_HILOG_DEBUG("keep .nm_modname match moduleName");
         }
     }
 
@@ -1180,7 +1181,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
                 LIBFREE(lib);
             }
             errInfo = "sprintf symbol NAPI_" + moduleKey + "_GetABCCode failed";
-            HILOG_ERROR("%{public}s", errInfo.c_str());
+            MODULEMNG_HILOG_ERROR("%{public}s", errInfo.c_str());
             return nullptr;
         }
 
@@ -1195,7 +1196,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         if (lib != nullptr) {
             auto getJSCode = reinterpret_cast<GetJSCodeCallback>(LIBSYM(lib, symbol));
             if (getJSCode == nullptr) {
-                HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
+                MODULEMNG_HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
                 MoveApiAllowListCheckerPtr(apiAllowListChecker, tailNativeModule_);
                 return tailNativeModule_;
             }
@@ -1203,7 +1204,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             int bufLen = 0;
             getJSCode(&buf, &bufLen);
             if (tailNativeModule_) {
-                HILOG_DEBUG("get js code from module: bufLen: %{public}d", bufLen);
+                MODULEMNG_HILOG_DEBUG("get js code from module: bufLen: %{public}d", bufLen);
                 tailNativeModule_->jsCode = buf;
                 tailNativeModule_->jsCodeLen = bufLen;
             }
@@ -1215,7 +1216,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     if (tailNativeModule_) {
         tailNativeModule_->moduleLoaded = true;
         if (tailNativeModule_->name && tailNativeModule_->moduleName) {
-            HILOG_DEBUG("last native info: name is %{public}s, moduleName is %{public}s",
+            MODULEMNG_HILOG_DEBUG("last native info: name is %{public}s, moduleName is %{public}s",
                 tailNativeModule_->name, tailNativeModule_->moduleName);
         }
         MoveApiAllowListCheckerPtr(apiAllowListChecker, tailNativeModule_);
@@ -1225,21 +1226,21 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 
 void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const uint8_t* abcBuffer, size_t len)
 {
-    HILOG_DEBUG("native module name is '%{public}s'", moduleKey.c_str());
+    MODULEMNG_HILOG_DEBUG("native module name is '%{public}s'", moduleKey.c_str());
     if (!CreateTailNativeModule()) {
-        HILOG_ERROR("create tail nativeModule failed");
+        MODULEMNG_HILOG_ERROR("failed");
         return;
     }
 
     char *moduleName = strdup(moduleKey.c_str());
     if (moduleName == nullptr) {
-        HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleKey.c_str());
+        MODULEMNG_HILOG_ERROR("failed");
         return;
     }
     tailNativeModule_->moduleName = moduleName;
     tailNativeModule_->name = strdup(moduleName);
     if (tailNativeModule_->name == nullptr) {
-        HILOG_ERROR("strdup failed. moduleKey is %{public}s", moduleName);
+        MODULEMNG_HILOG_ERROR("failed");
         free(moduleName);
         tailNativeModule_->moduleName = nullptr;
         return;
@@ -1248,14 +1249,14 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
     tailNativeModule_->jsCodeLen = static_cast<int32_t>(len);
     tailNativeModule_->next = nullptr;
 
-    HILOG_INFO("Module name is '%{public}s'", tailNativeModule_->moduleName);
+    MODULEMNG_HILOG_INFO("Module:%{public}s", tailNativeModule_->moduleName);
 }
 
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)
 {
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     if (headNativeModule_ == nullptr) {
-        HILOG_WARN("NativeModule list is empty");
+        MODULEMNG_HILOG_WARN("Module list empty");
         return false;
     }
     NativeModule* nativeModule = headNativeModule_;
@@ -1275,7 +1276,7 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
             free(const_cast<char *>(nativeModule->systemFilePath));
         }
         delete nativeModule;
-        HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
+        MODULEMNG_HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
         return true;
     }
     bool moduleDeleted = false;
@@ -1298,7 +1299,7 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
                 free(const_cast<char *>(curr->systemFilePath));
             }
             delete curr;
-            HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
+            MODULEMNG_HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
             moduleDeleted = true;
             break;
         }
@@ -1330,7 +1331,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
                 result = temp;
                 break;
             } else {
-                HILOG_WARN("moduleName '%{public}s' is in different path", moduleName);
+                MODULEMNG_HILOG_WARN("Module path conflict: %{public}s", moduleName);
                 cacheNativeModule = temp;
             }
         }
@@ -1343,16 +1344,16 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
 
 bool NativeModuleManager::IsExistedPath(const char* pathKey) const
 {
-    HILOG_DEBUG("pathKey is '%{public}s'", pathKey);
+    MODULEMNG_HILOG_DEBUG("path:'%{public}s'", pathKey);
     std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
 }
 
 void NativeModuleManager::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)
 {
-    HILOG_DEBUG("enter");
+    MODULEMNG_HILOG_DEBUG("enter");
     if (!moduleLoadChecker_) {
-        HILOG_ERROR("SetModuleLoadChecker failed, moduleLoadChecker_ is nullptr");
+        MODULEMNG_HILOG_ERROR("Checker is null");
         return;
     }
     moduleLoadChecker_->SetDelegate(moduleCheckerDelegate);
@@ -1360,6 +1361,6 @@ void NativeModuleManager::SetModuleLoadChecker(const std::shared_ptr<ModuleCheck
 
 void NativeModuleManager::SetPreviewSearchPath(const std::string& previewSearchPath)
 {
-    HILOG_DEBUG("previewSearchPath is '%{public}s'", previewSearchPath.c_str());
+    MODULEMNG_HILOG_DEBUG("previewSearchPath is '%{public}s'", previewSearchPath.c_str());
     previewSearchPath_ = previewSearchPath;
 }
