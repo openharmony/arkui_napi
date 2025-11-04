@@ -58,6 +58,7 @@ static constexpr uint64_t TASKID = 0;
 static int g_currentExeId = 0;
 static int g_currentCptId = 0;
 
+static constexpr size_t SMALL_STRING_SIZE = 16;
 static constexpr double TEST_DOUBLE = 1.1;
 static constexpr char TEST_STRING[5] = "test";
 static constexpr char TEST_PROP[9] = "property";
@@ -739,6 +740,143 @@ HWTEST_F(NapiBasicTest, ExternalStringTest008, testing::ext::TestSize.Level1)
     panda::JSNApi::TriggerGC(engine_->GetEcmaVm(),
                              panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
     ASSERT_EQ(hintNum, 1);
+}
+
+/**
+ * @tc.name: StringTest006
+ * @tc.desc: Test short valid UTF-8 string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "中文Eng123!@#$%";
+    size_t testStrLength = strlen(testStr);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8_with_replacement(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+    ASSERT_GT(bufferSize, static_cast<size_t>(0));
+    buffer = new char[bufferSize + 1]{ 0 };
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STREQ(testStr, buffer);
+    ASSERT_EQ(testStrLength, strLength);
+    delete []buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringTest007
+ * @tc.desc: Test short invalid UTF-8 string.
+ * @tc.type: FUNC
+ */
+
+HWTEST_F(NapiBasicTest, StringTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "prefix\xCC\x5Csuffix";
+    size_t testStrLength = strlen(testStr);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8_with_replacement(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+    ASSERT_EQ(bufferSize, static_cast<size_t>(16));
+
+    buffer = new char[bufferSize + 1]{0};
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+
+    const char expectedStr[] = "prefix�\\suffix";
+    ASSERT_STREQ(expectedStr, buffer);
+    ASSERT_EQ(strLength, static_cast<size_t>(16));
+
+    const char* replacementPos = buffer + strlen("prefix");
+    ASSERT_EQ(static_cast<uint8_t>(replacementPos[0]), 0xEF);
+    ASSERT_EQ(static_cast<uint8_t>(replacementPos[1]), 0xBF);
+    ASSERT_EQ(static_cast<uint8_t>(replacementPos[2]), 0xBD);
+
+    const char* backslashPos = replacementPos + 3;
+    ASSERT_EQ(static_cast<uint8_t>(backslashPos[0]), 0x5C);
+
+    delete[] buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringTest008
+ * @tc.desc: Test long valid UTF-8 string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "长合法字符串:abcdefyz123456!@#$%"; 
+    size_t testStrLength = strlen(testStr);
+    ASSERT_GE(testStrLength, SMALL_STRING_SIZE);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8_with_replacement(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+    ASSERT_EQ(bufferSize, testStrLength);
+
+    buffer = new char[bufferSize + 1]{0};
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+    ASSERT_STREQ(testStr, buffer);
+    ASSERT_EQ(strLength, testStrLength);
+
+    delete[] buffer;
+    buffer = nullptr;
+}
+
+/**
+ * @tc.name: StringTest009_LongInvalidUtf8
+ * @tc.desc: Test long invalid UTF-8 string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, StringTest009, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    const char testStr[] = "simple_long_str123:\xCC\x5Ctest"; 
+    size_t testStrLength = strlen(testStr);
+    ASSERT_GE(testStrLength, SMALL_STRING_SIZE);
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8_with_replacement(env, testStr, testStrLength, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+
+    char* buffer = nullptr;
+    size_t bufferSize = 0;
+    size_t strLength = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, nullptr, 0, &bufferSize));
+
+    ASSERT_EQ(bufferSize, static_cast<size_t>(27));
+
+    buffer = new char[bufferSize + 1]{0};
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, bufferSize + 1, &strLength));
+
+    const char expectedStr[] = "simple_long_str123:�\\test";
+    ASSERT_STREQ(expectedStr, buffer);
+    ASSERT_EQ(strLength, static_cast<size_t>(27));
+    ASSERT_EQ(strLength, bufferSize);
+
+    const char* rep = buffer + strlen("simple_long_str123:");
+    ASSERT_EQ(static_cast<uint8_t>(rep[0]), 0xEF);
+    ASSERT_EQ(static_cast<uint8_t>(rep[1]), 0xBF);
+    ASSERT_EQ(static_cast<uint8_t>(rep[2]), 0xBD);
+
+    delete[] buffer;
+    buffer = nullptr;
 }
 
 /**

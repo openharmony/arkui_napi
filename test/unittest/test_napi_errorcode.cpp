@@ -14,6 +14,7 @@
  */
 
 #include "test.h"
+#include "napi/native_node_api.h"
 #include "napi/native_api.h"
 
 static constexpr int INT_ZERO = 0;
@@ -2017,4 +2018,37 @@ HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest004, testing::ext::TestSize
     napi_create_function(env, funcName, NAPI_AUTO_LENGTH, funcCallback, nullptr, &fun);
     status = napi_create_strong_sendable_reference(env, fun, &sRef);
     ASSERT_EQ(status, napi_object_expected);
+}
+
+HWTEST_F(NapiErrorCodeTest, CreateStringUtf8WithReplacementTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = nullptr;
+    const char* str = "test";
+    size_t length = strlen(str);
+    napi_value result = nullptr;
+
+    napi_status status = napi_create_string_utf8_with_replacement(env, str, length, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiErrorCodeTest, CreateStringUtf8WithReplacementTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* str = nullptr;
+    size_t length = 5;
+    napi_value result = nullptr;
+
+    napi_status status = napi_create_string_utf8_with_replacement(env, str, length, &result);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+HWTEST_F(NapiErrorCodeTest, CreateStringUtf8WithReplacementTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* str = "test";
+    size_t length = strlen(str);
+    napi_value* result = nullptr;
+
+    napi_status status = napi_create_string_utf8_with_replacement(env, str, length, result);
+    ASSERT_EQ(status, napi_invalid_arg);
 }

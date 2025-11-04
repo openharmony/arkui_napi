@@ -23,6 +23,7 @@ using panda::StringRef;
 using panda::ObjectRef;
 
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
+static constexpr size_t SMALL_STRING_SIZE = 16;
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
 {
@@ -643,4 +644,26 @@ NAPI_EXTERN napi_status napi_set_module_validate_callback(napi_module_validate_c
         return napi_ok;
     }
     return napi_generic_failure;
+}
+
+NAPI_EXTERN napi_status napi_create_string_utf8_with_replacement(napi_env env,
+                                                                 const char* str,
+                                                                 size_t length,
+                                                                 napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, str);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    if (length < SMALL_STRING_SIZE) {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8WithoutStringTableReplacement(vm, str, length);
+        *result = JsValueFromLocalValue(object);
+    } else {
+        Local<panda::StringRef> object = panda::StringRef::NewFromUtf8Replacement(
+            vm, str, (length == NAPI_AUTO_LENGTH) ? strlen(str) : length);
+        *result = JsValueFromLocalValue(object);
+    }
+
+    return GET_RETURN_STATUS(env);
 }
