@@ -33,6 +33,10 @@
 #include "memory_trace.h"
 #endif
 #include "ark_native_engine.h"
+#ifdef RESOURCE_SCHEDULE_SERVICE_ENABLE
+#include "res_sched_client.h"
+#include "res_type.h"
+#endif
 
 namespace panda::ecmascript {
 #if defined(ENABLE_EVENT_HANDLER)
@@ -41,6 +45,8 @@ static constexpr uint64_t IDLE_GC_TIME_MAX = 10000;
 uint64_t ArkIdleMonitor::gIdleMonitoringInterval = ArkIdleMonitor::GetIdleMonitoringInterval();
 bool ArkIdleMonitor::gEnableIdleGC =
     OHOS::system::GetBoolParameter("persist.ark.enableidlegc", true);
+bool ArkIdleMonitor::gEnableDeferFreeze =
+    OHOS::system::GetBoolParameter("persist.ark.deferfreeze", true);
 #else
 uint64_t ArkIdleMonitor::gIdleMonitoringInterval = 1000; // ms
 #endif
@@ -267,10 +273,13 @@ void ArkIdleMonitor::NotifyMainThreadTryCompressGCByBackground()
         mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     };
+    isSwitchToBackgroundTask_.store(true, std::memory_order_relaxed);
     auto task = [this]() {
         JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::FULL_GC);
         if (CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_CHECK_TASK_COUNT_BACKGROUND)) {
             JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+        } else {
+            NotifyNeedFreeze(true);
         }
     };
     if (IsIdleState()) {
@@ -289,6 +298,33 @@ void ArkIdleMonitor::SetStartTimerCallback()
             started_ = true;
         }
     });
+}
+
+void ArkIdleMonitor::NotifyNeedFreeze(bool needFreeze)
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    if (!gEnableDeferFreeze || !isSwitchToBackgroundTask_.load()) {
+        return;
+    }
+    if (!needFreeze) {
+        if (!deferfreeze_.load(std::memory_order_relaxed)) {
+            deferfreeze_.store(true, std::memory_order_relaxed);
+            ReportDataToRSS(false);
+        } else {
+            // The delay in freezing has been notified
+            HILOG_DEBUG("ArkIdleMonitor: NotifyFreeze Abandoned message");
+        }
+    } else {
+        if (deferfreeze_.load(std::memory_order_relaxed)) {
+            deferfreeze_.store(false, std::memory_order_relaxed);
+            isSwitchToBackgroundTask_.store(false, std::memory_order_relaxed);
+            ReportDataToRSS(true);
+        } else {
+            // It is not in a delayed freeze state, so there is no need to notify the freeze
+            HILOG_DEBUG("ArkIdleMonitor: NotifyFreeze Abandoned message");
+        }
+    }
+#endif
 }
 
 void ArkIdleMonitor::PostLooperTriggerIdleGCTask()
@@ -337,6 +373,9 @@ void ArkIdleMonitor::EnableIdleGC(NativeEngine *engine)
         });
         SetStartTimerCallback();
         PostLooperTriggerIdleGCTask();
+        JSNApi::SetNotifyDeferFreezeCallback([this](bool needFreeze) {
+            NotifyNeedFreeze(needFreeze);
+        });
     } else {
         RegisterWorkerEnv(reinterpret_cast<napi_env>(engine));
     }
@@ -585,6 +624,22 @@ void ArkIdleMonitor::StopIdleMonitorTimerTaskAndPostSleepTask()
         waitForStopTimerHandler_ = -1;
     }
     PostMonitorTask(SLEEP_MONITORING_INTERVAL);
+#endif
+}
+
+void ArkIdleMonitor::ReportDataToRSS(bool needFreeze)
+{
+    auto pid = getpid();
+    auto bundleName = JSNApi::GetBundleName(mainVM_);
+    HILOG_INFO("ArkIdleMonitor: ReportDataToRSS %{public}d, pid: %{public}d, bundleName: %{public}s",
+        needFreeze, pid, bundleName.c_str());
+#ifdef RESOURCE_SCHEDULE_SERVICE_ENABLE
+    uint32_t resType = OHOS::ResourceSchedule::ResType::RES_TYPE_GC_EVENT;
+    std::unordered_map<std::string, std::string> eventParams {
+        { "pid", std::to_string(pid) },
+        { "bundleName", bundleName }
+    };
+    OHOS::ResourceSchedule::ResSchedClient::GetInstance().ReportData(resType, needFreeze, eventParams);
 #endif
 }
 

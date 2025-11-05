@@ -408,3 +408,4 @@ HWTEST_F(NativeEngineTest, SetRawHeapTrimLevelTest001, testing::ext::TestSize.Le
 
     engine_->SetRawHeapTrimLevel(1); // test value
 }
+

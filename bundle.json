@@ -42,7 +42,9 @@
                 "bounds_checking_function",
                 "init",
                 "runtime_core",
-                "ace_engine"
+                "ace_engine",
+                "resource_schedule_service",
+                "samgr"
             ],
             "third_party": [
                 "jerryscript"
