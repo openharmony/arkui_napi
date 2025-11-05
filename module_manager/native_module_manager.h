@@ -108,6 +108,14 @@ public:
      */
     void SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate);
 
+    /**
+     * @brief Set the Ld permitted path for Namespace
+     *
+     * @param nsName The namespace
+     * @param ldPermittedPath The Ld permitted path
+     */
+    void SetLdPermittedPathsForNamespace(const std::string& nsName, const std::string& ldPermittedPath);
+
     inline bool CheckModuleRestricted(const std::string& moduleName)
     {
         const std::string whiteList[] = {

@@ -1363,3 +1363,51 @@ void NativeModuleManager::SetPreviewSearchPath(const std::string& previewSearchP
     HILOG_DEBUG("previewSearchPath is '%{public}s'", previewSearchPath.c_str());
     previewSearchPath_ = previewSearchPath;
 }
+
+void NativeModuleManager::SetLdPermittedPathsForNamespace(const std::string& nsName,
+    const std::string& ldPermittedPath)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    HILOG_DEBUG("nsName is '%{public}s', ldPermittedPath is '%{public}s'", nsName.c_str(), ldPermittedPath.c_str());
+    Dl_namespace ns;
+    if (dlns_get(nsName.c_str(), &ns) != 0) {
+        HILOG_ERROR("dlns_get  '%{public}s' failed", nsName.c_str());
+        return;
+    };
+    if (ldPermittedPath.empty()) {
+        HILOG_ERROR("ldPermittedPath empty");
+        return;
+    }
+    std::string resLdPermittedPath;
+    std::stringstream ss(ldPermittedPath);
+    std::string part;
+    bool isFirst = true;
+    while (std::getline(ss, part, ':')) {
+        if (part.empty()) {
+            continue;
+        }
+        size_t end = part.size();
+        while (end > 0 && part[end - 1] == '/') {
+            end--;
+        }
+        if (!isFirst) {
+            resLdPermittedPath += ":";
+        }
+        isFirst = false;
+        resLdPermittedPath += part.substr(0, end);
+    }
+    HILOG_DEBUG("resldPermittedPath is '%{public}s'", resLdPermittedPath.c_str());
+    char* tmpLdPermittedPath = new char[resLdPermittedPath.size() + 1];
+    if (strcpy_s(tmpLdPermittedPath, resLdPermittedPath.size() + 1, resLdPermittedPath.c_str()) != 0) {
+        HILOG_ERROR("strcpy_s ldPermittedPath '%{public}s' failed", resLdPermittedPath.c_str());
+        delete[] tmpLdPermittedPath;
+        return;
+    }
+    if (dlns_set_ld_permitted_path(tmpLdPermittedPath, &ns) != 0) {
+        HILOG_ERROR("dlns_set_ld_permitted_path failed, ldPermittedPath = '%{public}s', nsName = '%{public}s'",
+            tmpLdPermittedPath, nsName.c_str());
+    }
+    delete[] tmpLdPermittedPath;
+#endif
+}
