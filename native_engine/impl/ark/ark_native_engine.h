@@ -278,6 +278,7 @@ public:
     bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
         override;
     void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) override;
+    void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) override;
 
     bool DeleteWorker(NativeEngine* workerEngine) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
