@@ -14367,7 +14367,7 @@ HWTEST_F(NapiBasicTest, NapiEnvCleanupTest001, testing::ext::TestSize.Level1)
         &engine));
     LoggerCollector collector(LogLevel::LOG_DEBUG);
     engine->RunCleanup();
-    ASSERT_TRUE(collector.Includes("CleanupHandles, request waiting:"));
+    ASSERT_TRUE(collector.Includes("request waiting:"));
     ASSERT_TRUE(workDone);
 }
 
