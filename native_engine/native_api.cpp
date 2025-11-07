@@ -445,7 +445,7 @@ NAPI_EXTERN napi_status napi_create_external_string_utf16(napi_env env,
         vm, str, char16length, finalize_callback, finalize_hint);
     if (object.IsEmpty()) {
         HILOG_ERROR("napi_create_external_string_utf16 failed");
-        return napi_set_last_error(env, napi_generic_failure);
+        return GET_RETURN_STATUS(env);
     }
     *result = JsValueFromLocalValue(object);
     return GET_RETURN_STATUS(env);
@@ -471,7 +471,7 @@ NAPI_EXTERN napi_status napi_create_external_string_ascii(napi_env env,
         vm, str, charlength, finalize_callback, finalize_hint);
     if (object.IsEmpty()) {
         HILOG_ERROR("napi_create_external_string_ascii failed");
-        return napi_set_last_error(env, napi_generic_failure);
+        return GET_RETURN_STATUS(env);
     }
     *result = JsValueFromLocalValue(object);
     return GET_RETURN_STATUS(env);
