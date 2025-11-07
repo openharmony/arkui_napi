@@ -26,6 +26,7 @@ napi_sources = [
   "native_engine/impl/ark/ark_native_engine.cpp",
   "native_engine/impl/ark/ark_native_reference.cpp",
   "native_engine/impl/ark/ark_native_timer.cpp",
+  "native_engine/impl/ark/ark_sendable_native_reference.cpp",
   "native_engine/impl/ark/cj_support.cpp",
   "native_engine/native_api.cpp",
   "native_engine/native_async_work.cpp",
