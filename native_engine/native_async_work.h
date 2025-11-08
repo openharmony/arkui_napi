@@ -70,6 +70,10 @@ public:
         }
         return nullptr;
     }
+    virtual std::string GetTaskName() const
+    {
+        return taskName_;
+    }
 
 private:
     static void AsyncWorkCallback(uv_work_t* req);
@@ -84,6 +88,7 @@ private:
     std::mutex workAsyncMutex_;
     std::queue<NativeAsyncWorkDataPointer> asyncWorkRecvData_;
     std::string traceDescription_;
+    std::string taskName_;
 #ifdef ENABLE_CONTAINER_SCOPE
     int32_t containerScopeId_;
 #endif

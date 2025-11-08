@@ -2429,6 +2429,105 @@ HWTEST_F(NapiBasicTest, AsyncWorkTest006, testing::ext::TestSize.Level1)
     RUN_EVENT_LOOP(env);
 }
 
+HWTEST_F(NapiBasicTest, AsyncWorkTestAddTaskname001, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_status status1 = napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    if (status1 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    napi_status status2 = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env env, void* data) {},
+        [](napi_env env, napi_status status, void* data) {},
+        nullptr, &asyncWorkContext->work);
+    if (status2 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    ASSERT_EQ(reinterpret_cast<NativeAsyncWork *>(asyncWorkContext->work)->GetTaskName(),
+              std::string(TEST_CHAR_ASYNCWORK));
+}
+
+HWTEST_F(NapiBasicTest, AsyncWorkTestAddTaskname002, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = (napi_env)engine_;
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_status status1 = napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    if (status1 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    napi_status status2 = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            napi_status deleteStatus = napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+            ASSERT_EQ(deleteStatus, napi_ok);
+        },
+        asyncWorkContext, &asyncWorkContext->work);
+    if (status2 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    ASSERT_EQ(reinterpret_cast<NativeAsyncWork *>(asyncWorkContext->work)->GetTaskName(),
+              std::string(TEST_CHAR_ASYNCWORK));
+    napi_status status3 = napi_queue_async_work(env, asyncWorkContext->work);
+    if (status3 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    RUN_EVENT_LOOP(env);
+}
+
+HWTEST_F(NapiBasicTest, AsyncWorkTestAddTaskname003, testing::ext::TestSize.Level1)
+{
+    struct AsyncWorkContext {
+        napi_async_work work = nullptr;
+    };
+    napi_env env = (napi_env)engine_;
+    auto asyncWorkContext = new AsyncWorkContext();
+    napi_value resourceName = nullptr;
+    napi_status status1 = napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName);
+    if (status1 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    napi_status status2 = napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
+            AsyncWorkContext* asyncWorkContext = (AsyncWorkContext*)data;
+            napi_status deleteStatus = napi_delete_async_work(env, asyncWorkContext->work);
+            delete asyncWorkContext;
+            ASSERT_EQ(deleteStatus, napi_ok);
+        },
+        asyncWorkContext, &asyncWorkContext->work);
+    if (status2 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    ASSERT_EQ(reinterpret_cast<NativeAsyncWork *>(asyncWorkContext->work)->GetTaskName(),
+              std::string(TEST_CHAR_ASYNCWORK));
+    napi_status status3 = napi_queue_async_work_with_qos(env, asyncWorkContext->work, napi_qos_default);
+    if (status3 != napi_ok) {
+        delete asyncWorkContext;
+        ASSERT_TRUE(false);
+    }
+    RUN_EVENT_LOOP(env);
+}
+
 /**
  * @tc.name: ObjectWrapperTest001
  * @tc.desc: Test object wrapper.
