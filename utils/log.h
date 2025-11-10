@@ -50,6 +50,10 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 #define HILOG_WARN(fmt, ...) HILOG_PRINT(Warn, fmt, ##__VA_ARGS__)
 #define HILOG_INFO(fmt, ...) HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
 #define HILOG_DEBUG(fmt, ...) HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
+#define MODULEMNG_HILOG_ERROR(fmt, ...) HILOG_PRINT(Error, fmt, ##__VA_ARGS__)
+#define MODULEMNG_HILOG_WARN(fmt, ...) HILOG_PRINT(Warn, fmt, ##__VA_ARGS__)
+#define MODULEMNG_HILOG_INFO(fmt, ...) HILOG_PRINT(Info, fmt, ##__VA_ARGS__)
+#define MODULEMNG_HILOG_DEBUG(fmt, ...) HILOG_PRINT(Debug, fmt, ##__VA_ARGS__)
 
 #else
 
@@ -62,6 +66,10 @@ NAPI_EXPORT void PrintLog(LogLevel level, const char* fmt, ...);
 #undef HILOG_WARN
 #undef HILOG_INFO
 #undef HILOG_DEBUG
+#undef MODULEMNG_HILOG_ERROR
+#undef MODULEMNG_HILOG_WARN
+#undef MODULEMNG_HILOG_INFO
+#undef MODULEMNG_HILOG_DEBUG
 
 #define LOG_DOMAIN 0xD003F01
 #define LOG_TAG "NAPI"
@@ -91,6 +99,19 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LOG_LABEL = { LOG_CORE, LOG_DOMAIN,
     ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
     "[(%{public}s:%{public}d)(%{public}s)] " fmt, __FILENAME__, __LINE__, __FUNCTION__, ##__VA_ARGS__))
 
+#define MODULEMNG_HILOG_ERROR(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, \
+    "[NMM:%{public}d]" fmt, __LINE__, ##__VA_ARGS__))
+#define MODULEMNG_HILOG_WARN(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, \
+    "[NMM:%{public}d]" fmt, __LINE__, ##__VA_ARGS__))
+#define MODULEMNG_HILOG_INFO(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, \
+    "[NMM:%{public}d]" fmt, __LINE__, ##__VA_ARGS__))
+#define MODULEMNG_HILOG_DEBUG(fmt, ...) \
+    ((void)HILOG_IMPL(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, \
+    "[NMM:%{public}d]" fmt, __LINE__, ##__VA_ARGS__))
+    
 #endif /* MAC_PLATFORM */
 
 #endif /* FOUNDATION_ACE_NAPI_UTILS_LOG_H */
