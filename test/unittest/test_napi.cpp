@@ -2584,6 +2584,22 @@ HWTEST_F(NapiBasicTest, CreateRuntimeTest001, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: DestroyRuntimeTest001
+ * @tc.desc: Test destroy runtime.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, DestroyRuntimeTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_env newEnv = nullptr;
+    napi_status status = napi_create_runtime(env, &newEnv);
+    ASSERT_EQ(status, napi_ok);
+    status = napi_destroy_runtime(newEnv);
+    ASSERT_EQ(status, napi_ok);
+}
+
+/**
  * @tc.name: SerializeDeSerializeTest001
  * @tc.desc: Test serialize & deserialize.
  * @tc.type: FUNC
