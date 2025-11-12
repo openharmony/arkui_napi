@@ -570,18 +570,12 @@ HWTEST_F(NapiBasicTest, StringTest005, testing::ext::TestSize.Level1)
     ASSERT_EQ(copied, 3);
 }
 
-/**
- * @tc.name: ExternalStringTest001
- * @tc.desc: Test string type.
- * @tc.type: FUNC
- */
 HWTEST_F(NapiBasicTest, ExternalStringTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    const char16_t testStr[] = u"123456"; // 123456: test numbers
-    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
+    size_t testStrLength = std::char_traits<char16_t>::length(TEST_CHAR16_STRING);
     char16_t *str = new char16_t[testStrLength + 1];
-    std::copy(testStr, testStr + testStrLength + 1, str);
+    std::copy(TEST_CHAR16_STRING, TEST_CHAR16_STRING + testStrLength + 1, str);
     napi_value result = nullptr;
     ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, NAPI_AUTO_LENGTH, nullptr, nullptr, &result));
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
@@ -591,23 +585,17 @@ HWTEST_F(NapiBasicTest, ExternalStringTest001, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, testStrLength + 1, &copied));
     ASSERT_EQ(copied, testStrLength);
     for (size_t i = 0; i < copied; i++) {
-        ASSERT_TRUE(testStr[i] == buffer[i]);
+        ASSERT_TRUE(TEST_CHAR16_STRING[i] == buffer[i]);
     }
     delete[] str;
 }
 
-/**
- * @tc.name: ExternalStringTest002
- * @tc.desc: Test string type.
- * @tc.type: FUNC
- */
 HWTEST_F(NapiBasicTest, ExternalStringTest002, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    const char16_t testStr[] = u"123456"; // 123456: test numbers
-    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
+    size_t testStrLength = std::char_traits<char16_t>::length(TEST_CHAR16_STRING);
     char16_t *str = new char16_t[testStrLength];
-    std::copy(testStr, testStr + testStrLength, str);
+    std::copy(TEST_CHAR16_STRING, TEST_CHAR16_STRING + testStrLength, str);
     napi_value result = nullptr;
     ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, testStrLength, nullptr, nullptr, &result));
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
@@ -617,23 +605,17 @@ HWTEST_F(NapiBasicTest, ExternalStringTest002, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_value_string_utf16(env, result, buffer, testStrLength + 1, &copied));
     ASSERT_EQ(copied, testStrLength);
     for (size_t i = 0; i < copied; i++) {
-        ASSERT_TRUE(testStr[i] == buffer[i]);
+        ASSERT_TRUE(TEST_CHAR16_STRING[i] == buffer[i]);
     }
     delete[] str;
 }
 
-/**
- * @tc.name: ExternalStringTest003
- * @tc.desc: Test string type.
- * @tc.type: FUNC
- */
 HWTEST_F(NapiBasicTest, ExternalStringTest003, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    const char testStr[] = "123456"; // 123456: test numbers
-    size_t testStrLength = std::char_traits<char>::length(testStr);
+    size_t testStrLength = std::char_traits<char>::length(TEST_CHAR_STRING);
     char *str = new char[testStrLength + 1];
-    std::copy(testStr, testStr + testStrLength + 1, str);
+    std::copy(TEST_CHAR_STRING, TEST_CHAR_STRING + testStrLength + 1, str);
     napi_value result = nullptr;
     ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, NAPI_AUTO_LENGTH, nullptr, nullptr, &result));
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
@@ -643,23 +625,17 @@ HWTEST_F(NapiBasicTest, ExternalStringTest003, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, testStrLength + 1, &copied));
     ASSERT_EQ(copied, testStrLength);
     for (size_t i = 0; i < copied; i++) {
-        ASSERT_TRUE(testStr[i] == buffer[i]);
+        ASSERT_TRUE(TEST_CHAR_STRING[i] == buffer[i]);
     }
     delete[] str;
 }
 
-/**
- * @tc.name: ExternalStringTest004
- * @tc.desc: Test string type.
- * @tc.type: FUNC
- */
 HWTEST_F(NapiBasicTest, ExternalStringTest004, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    const char testStr[] = "123456"; // 123456: test numbers
-    size_t testStrLength = std::char_traits<char>::length(testStr);
+    size_t testStrLength = std::char_traits<char>::length(TEST_CHAR_STRING);
     char *str = new char[testStrLength];
-    std::copy(testStr, testStr + testStrLength, str);
+    std::copy(TEST_CHAR_STRING, TEST_CHAR_STRING + testStrLength, str);
     napi_value result = nullptr;
     ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, testStrLength, nullptr, nullptr, &result));
     ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
@@ -669,9 +645,100 @@ HWTEST_F(NapiBasicTest, ExternalStringTest004, testing::ext::TestSize.Level1)
     ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, result, buffer, testStrLength + 1, &copied));
     ASSERT_EQ(copied, testStrLength);
     for (size_t i = 0; i < copied; i++) {
-        ASSERT_TRUE(testStr[i] == buffer[i]);
+        ASSERT_TRUE(TEST_CHAR_STRING[i] == buffer[i]);
     }
     delete[] str;
+}
+
+HWTEST_F(NapiBasicTest, ExternalStringTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [] (void* data, void* hint) {
+        delete[] static_cast<char16_t *>(data);
+        *reinterpret_cast<int *>(hint) += 1;
+    };
+    int hintNum = 0;
+    size_t testStrLength = std::char_traits<char16_t>::length(TEST_CHAR16_STRING);
+    char16_t *str = new char16_t[testStrLength];
+    std::copy(TEST_CHAR16_STRING, TEST_CHAR16_STRING + testStrLength, str);
+    {
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, testStrLength, callback, &hintNum, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    }
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(),
+                             panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
+    ASSERT_EQ(hintNum, 1);
+}
+
+
+HWTEST_F(NapiBasicTest, ExternalStringTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [] (void* data, void* hint) {
+        delete[] static_cast<char *>(data);
+        *reinterpret_cast<int *>(hint) += 1;
+    };
+    int hintNum = 0;
+    size_t testStrLength = std::char_traits<char>::length(TEST_CHAR_STRING);
+    char *str = new char[testStrLength];
+    std::copy(TEST_CHAR_STRING, TEST_CHAR_STRING + testStrLength, str);
+    {
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, testStrLength, callback, &hintNum, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    }
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(),
+                             panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
+    ASSERT_EQ(hintNum, 1);
+}
+
+HWTEST_F(NapiBasicTest, ExternalStringTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [] (void* data, void* hint) {
+        delete[] static_cast<char16_t *>(data);
+        *reinterpret_cast<int *>(hint) += 1;
+    };
+    int hintNum = 0;
+    size_t testStrLength = std::char_traits<char16_t>::length(TEST_CHAR16_STRING);
+    char16_t *str = new char16_t[testStrLength + 1];
+    std::copy(TEST_CHAR16_STRING, TEST_CHAR16_STRING + testStrLength, str);
+    str[testStrLength] = u'\0';
+    {
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_external_string_utf16(env, str, NAPI_AUTO_LENGTH, callback, &hintNum, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    }
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(),
+                             panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
+    ASSERT_EQ(hintNum, 1);
+}
+
+HWTEST_F(NapiBasicTest, ExternalStringTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [] (void* data, void* hint) {
+        delete[] static_cast<char *>(data);
+        *reinterpret_cast<int *>(hint) += 1;
+    };
+    int hintNum = 0;
+    size_t testStrLength = std::char_traits<char>::length(TEST_CHAR_STRING);
+    char *str = new char[testStrLength + 1];
+    std::copy(TEST_CHAR_STRING, TEST_CHAR_STRING + testStrLength, str);
+    str[testStrLength] = '\0';
+    {
+        panda::LocalScope scope(engine_->GetEcmaVm());
+        napi_value result = nullptr;
+        ASSERT_CHECK_CALL(napi_create_external_string_ascii(env, str, NAPI_AUTO_LENGTH, callback, &hintNum, &result));
+        ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
+    }
+    panda::JSNApi::TriggerGC(engine_->GetEcmaVm(),
+                             panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
+    ASSERT_EQ(hintNum, 1);
 }
 
 /**
