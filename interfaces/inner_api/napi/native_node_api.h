@@ -55,6 +55,7 @@ NAPI_EXTERN napi_status napi_create_limit_runtime(napi_env env, napi_env* result
 NAPI_EXTERN void napi_module_with_js_register(napi_module_with_js* mod);
 NAPI_EXTERN napi_status napi_is_callable(napi_env env, napi_value value, bool* result);
 NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env);
+NAPI_EXTERN napi_status napi_destroy_runtime(napi_env env);
 NAPI_EXTERN napi_status napi_serialize_inner(napi_env env,
                                              napi_value object,
                                              napi_value transfer_list,
