@@ -24,7 +24,7 @@ using namespace OHOS;
 using namespace OHOS::HiviewDFX;
 
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003901, "CJ-FFIBindNative" };
+constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003F03, "CJ-FFIBindNative" };
 } // namespace
 
 FFIDataManager* FFIDataManager::GetInstance()

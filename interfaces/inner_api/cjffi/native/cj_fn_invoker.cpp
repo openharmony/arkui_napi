@@ -23,7 +23,7 @@ using namespace OHOS;
 using namespace OHOS::HiviewDFX;
 
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003901, "CJ-FFIFuncs" };
+constexpr HiLogLabel LABEL = { LOG_CORE, 0xD003F03, "CJ-FFIFuncs" };
 } // namespace
 
 CJFFIFnInvoker* CJFFIFnInvoker::GetInstance()
