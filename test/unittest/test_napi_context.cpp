@@ -24,6 +24,8 @@
 #include "test_common.h"
 #include "utils/log.h"
 
+using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
+
 constexpr const char TEST_ERROR_CODE[] = "500";
 constexpr const char TEST_ERROR_MESSAGE[] = "Common error";
 constexpr const char SENDABLE_CLASS_NAME[] = "MY_CLASS";
@@ -4736,4 +4738,185 @@ HWTEST_F(NapiContextTest, CoerceToBoolWithMultiContext001, testing::ext::TestSiz
     bool ret = false;
     napi_get_value_bool(env, result, &ret);
     ASSERT_EQ(ret, true);
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest001
+ * @tc.desc: Test idle Monitor deferfreeze
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(true);
+    ASSERT_TRUE(arkIdleMonitor->IsInBackground());
+    sleep(1);
+
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+
+    arkIdleMonitor->NotifyChangeBackgroundState(false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
+
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest002
+ * @tc.desc: ban persist.ark.enableidlegc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest002, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->SetEnableDeferFreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsEnableDeferFreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest002
+ * @tc.desc: Normal function
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest003, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    ASSERT_TRUE(arkIdleMonitor->IsEnableDeferFreeze());
+
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+    
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: Turn it on multiple times
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest004, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    ASSERT_TRUE(arkIdleMonitor->IsEnableDeferFreeze());
+
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: Closed multiple times
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest005, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    ASSERT_TRUE(arkIdleMonitor->IsEnableDeferFreeze());
+
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: The background switch task has not been enabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest006, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    ASSERT_TRUE(arkIdleMonitor->IsEnableDeferFreeze());
+
+    arkIdleMonitor->SetSwitchToBackgroundTask(false);
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
 }
