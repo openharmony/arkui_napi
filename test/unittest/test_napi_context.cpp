@@ -4741,6 +4741,33 @@ HWTEST_F(NapiContextTest, CoerceToBoolWithMultiContext001, testing::ext::TestSiz
 }
 
 /**
+ * @tc.name: SendableRefWithMultiContext
+ * @tc.desc: Test napi_sendable_ref when context is sub context.
+ *           interface.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, SendableRefWithMultiContext, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(multiContextEngine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(multiContextEngine_);
+
+    napi_sendable_ref sRef = nullptr;
+    napi_value doubleValue = nullptr;
+    ASSERT_CHECK_CALL(napi_create_double(env, TEST_DOUBLE, &doubleValue));
+    napi_status status = napi_create_strong_sendable_reference(env, doubleValue, &sRef);
+    ASSERT_EQ(status, napi_invalid_arg);
+    napi_value retValue = nullptr;
+
+     // 0x1 is an invalid pointer, only to ensure that sRef is not a null pointer
+    sRef = reinterpret_cast<napi_sendable_ref>(0x1);
+    status = napi_get_strong_sendable_reference_value(env, sRef, &retValue);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    status = napi_delete_strong_sendable_reference(env, sRef);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
  * @tc.name: IdleMonitorDeferfreezeTest001
  * @tc.desc: Test idle Monitor deferfreeze
  * @tc.type: FUNC
