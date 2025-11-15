@@ -26,7 +26,7 @@
 #include "utils/log.h"
 
 static constexpr size_t TEST_STR_LENGTH = 30;
-
+static constexpr int32_t TEST_INT32 = 1000; // 1000 is test number
 class NapiSendableTest : public NativeEngineTest {
 public:
     static void SetUpTestCase()
@@ -2298,4 +2298,341 @@ HWTEST_F(NapiSendableTest, SendableReferenceTest002, testing::ext::TestSize.Leve
     CheckSendableReferenceValue(env, ref);
 
     ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
+}
+
+void CreateGetAndDeleteSendableRef(napi_env env, napi_value sObj)
+{
+    napi_sendable_ref sRef = nullptr;
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &sRef));
+
+    napi_value sRet = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(env, sRef, &sRet));
+    ASSERT_CHECK_VALUE_TYPE(env, sRet, napi_object);
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, sRef));
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value sArr1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_array(env, &sArr1));
+    CreateGetAndDeleteSendableRef(env, sArr1);
+
+    napi_value sArr2 = nullptr;
+    size_t len = 10; // 10 is sendable array's length
+    ASSERT_CHECK_CALL(napi_create_sendable_array_with_length(env, len, &sArr2));
+    CreateGetAndDeleteSendableRef(env, sArr2);
+
+    napi_value sendableClass = GetSendableClass(env);
+    napi_value sendableInstance = nullptr;
+    ASSERT_CHECK_CALL(napi_new_instance(env, sendableClass, 0, nullptr, &sendableInstance));
+    bool isInstanceOf = false;
+    ASSERT_CHECK_CALL(napi_instanceof(env, sendableInstance, sendableClass, &isInstanceOf));
+    ASSERT_TRUE(isInstanceOf);
+    ASSERT_CHECK_CALL(napi_create_sendable_array_with_length(env, len, &sArr2));
+    CreateGetAndDeleteSendableRef(env, sendableInstance);
+
+    napi_value numVale = nullptr;
+    uint32_t value = 1000; // 1000 is test number
+    ASSERT_CHECK_CALL(napi_create_uint32(env, value, &numVale));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("a", numVale),
+    };
+    napi_value sObj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &sObj));
+    CreateGetAndDeleteSendableRef(env, sObj);
+
+    size_t byteLength = 10; // 10 is buffer byte length
+    void *data = nullptr;
+    napi_value sArrayBuffer = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_arraybuffer(env, byteLength, &data, &sArrayBuffer));
+    CreateGetAndDeleteSendableRef(env, sArrayBuffer);
+
+    size_t typeArrayLength = 10; // 10 is typedArray's length
+    napi_value sTypedArray = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_typedarray(env, napi_int8_array, typeArrayLength,
+                                                      sArrayBuffer, 0, &sTypedArray));
+    CreateGetAndDeleteSendableRef(env, sTypedArray);
+}
+
+void CheckTypeWithSendableRef(napi_env env, napi_value value, napi_valuetype type)
+{
+    napi_sendable_ref sRef = nullptr;
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, value, &sRef));
+    napi_value ret = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(env, sRef, &ret));
+    ASSERT_CHECK_VALUE_TYPE(env, ret, type);
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, sRef));
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value nullValue = nullptr;
+    napi_get_null(env, &nullValue);
+    CheckTypeWithSendableRef(env, nullValue, napi_null);
+
+    napi_value undefinedValue = nullptr;
+    napi_get_undefined(env, &undefinedValue);
+    CheckTypeWithSendableRef(env, undefinedValue, napi_undefined);
+
+    napi_value stringValue = nullptr;
+    napi_create_string_utf8(env, "TestString", NAPI_AUTO_LENGTH, &stringValue);
+    CheckTypeWithSendableRef(env, stringValue, napi_string);
+
+    int32_t testInt32 = -10; // -10 is test number
+    napi_value int32Value = nullptr;
+    napi_create_int32(env, testInt32, &int32Value);
+    CheckTypeWithSendableRef(env, int32Value, napi_number);
+
+    double testDouble = 10.5; // 10.5 is test number
+    napi_value doubleValue = nullptr;
+    napi_create_double(env, testDouble, &doubleValue);
+    CheckTypeWithSendableRef(env, doubleValue, napi_number);
+
+    int64_t testInt64 = -10; // -10 is test number
+    napi_value int64Value = nullptr;
+    napi_create_int64(env, testInt64, &int64Value);
+    CheckTypeWithSendableRef(env, int64Value, napi_number);
+
+    uint32_t testUint32 = 10; // 10 is test number
+    napi_value uint32Value = nullptr;
+    napi_create_uint32(env, testUint32, &uint32Value);
+    CheckTypeWithSendableRef(env, uint32Value, napi_number);
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value trueValue = nullptr;
+    napi_get_boolean(env, true, &trueValue);
+    CheckTypeWithSendableRef(env, trueValue, napi_boolean);
+
+    napi_value falseValue = nullptr;
+    napi_get_boolean(env, false, &falseValue);
+    CheckTypeWithSendableRef(env, falseValue, napi_boolean);
+
+    napi_value bigInt64Value = nullptr;
+    int64_t testInt64 = -10; // -10 is test number
+    napi_create_bigint_int64(env, testInt64, &bigInt64Value);
+    CheckTypeWithSendableRef(env, bigInt64Value, napi_bigint);
+
+    napi_value bigUint64Value = nullptr;
+    uint64_t testUint64 = 10; // 10 is test number
+    napi_create_bigint_uint64(env, testUint64, &bigUint64Value);
+    CheckTypeWithSendableRef(env, bigUint64Value, napi_bigint);
+
+    int signBit = 0;
+    size_t wordCount = 4;
+    uint64_t words[] = { 0xFFFFFFFFFFFFFFFF, 34ULL, 56ULL, 0xFFFFFFFFFFFFFFFF };
+    napi_value bigIntWordValue = nullptr;
+    napi_create_bigint_words(env, signBit, wordCount, words, &bigIntWordValue);
+    CheckTypeWithSendableRef(env, bigIntWordValue, napi_bigint);
+}
+
+void ThreadDCallback(napi_sendable_ref sRef1, napi_sendable_ref sRef2)
+{
+    // Delete napi_sendable_ref in thread D.
+    // Create js thread
+    panda::RuntimeOption options;
+    options.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
+    EcmaVM* vm = panda::JSNApi::CreateJSVM(options);
+    if (!vm) {
+        HILOG_ERROR("create EcmaVM failed");
+        return;
+    }
+    auto engine = new ArkNativeEngine(vm, nullptr);
+    if (!engine) {
+        HILOG_ERROR("alloc ArkEngine failed");
+        panda::JSNApi::DestroyJSVM(vm);
+        return;
+    }
+    napi_env envD = reinterpret_cast<napi_env>(engine);
+
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(envD, &scope));
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(envD, sRef1));
+    ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(envD, sRef2));
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(envD, scope));
+
+    // Destroy js thread
+    delete engine;
+    engine = nullptr;
+    panda::JSNApi::DestroyJSVM(vm);
+}
+
+void ThreadCCallback(napi_sendable_ref sRef1, napi_sendable_ref sRef2)
+{
+    // Obtain the sendable object through sRef2 in thread C and check.
+    // Create js thread
+    panda::RuntimeOption options;
+    options.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
+    EcmaVM* vm = panda::JSNApi::CreateJSVM(options);
+    if (!vm) {
+        HILOG_ERROR("create EcmaVM failed");
+        return;
+    }
+    auto engine = new ArkNativeEngine(vm, nullptr);
+    if (!engine) {
+        HILOG_ERROR("alloc ArkEngine failed");
+        panda::JSNApi::DestroyJSVM(vm);
+        return;
+    }
+    napi_env envC = reinterpret_cast<napi_env>(engine);
+
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(envC, &scope));
+    napi_value sValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(envC, sRef1, &sValue));
+    ASSERT_CHECK_VALUE_TYPE(envC, sValue, napi_object);
+
+    napi_value numberValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(envC, sValue, "num", &numberValue));
+    int32_t getNumber = -1;
+    ASSERT_CHECK_CALL(napi_get_value_int32(envC, numberValue, &getNumber));
+    ASSERT_EQ(getNumber, (TEST_INT32 * 2)); // 2 is double factor
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(envC, scope));
+
+    // Destroy js thread
+    delete engine;
+    engine = nullptr;
+    panda::JSNApi::DestroyJSVM(vm);
+
+    std::thread tD([sRef1, sRef2] () {
+        ThreadDCallback(sRef1, sRef2);
+    });
+    tD.join();
+}
+
+void ThreadBCallback(napi_sendable_ref sRef1, napi_sendable_ref sRef2)
+{
+    // Obtain the sendable object through sRef1 in thread B and modify the object.
+    // Create js thread
+    panda::RuntimeOption options;
+    options.SetLogLevel(panda::RuntimeOption::LOG_LEVEL::INFO);
+    EcmaVM* vm = panda::JSNApi::CreateJSVM(options);
+    if (!vm) {
+        HILOG_ERROR("create EcmaVM failed");
+        return;
+    }
+    auto engine = new ArkNativeEngine(vm, nullptr);
+    if (!engine) {
+        HILOG_ERROR("alloc ArkEngine failed");
+        panda::JSNApi::DestroyJSVM(vm);
+        return;
+    }
+    napi_env envB = reinterpret_cast<napi_env>(engine);
+
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(envB, &scope));
+    napi_value sValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(envB, sRef1, &sValue));
+    ASSERT_CHECK_VALUE_TYPE(envB, sValue, napi_object);
+
+    // check sendable object
+    napi_value numberValue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_named_property(envB, sValue, "num", &numberValue));
+    int32_t getNumber = -1;
+    ASSERT_CHECK_CALL(napi_get_value_int32(envB, numberValue, &getNumber));
+    ASSERT_EQ(getNumber, TEST_INT32);
+
+    // modify sendable object
+    napi_value newNumberValue = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(envB, TEST_INT32 * 2, &newNumberValue)); // 2 is double factor
+    ASSERT_CHECK_CALL(napi_set_named_property(envB, sValue, "num", newNumberValue));
+
+    // check and modify nativeObject
+    void *nativeObject = nullptr;
+    napi_unwrap_sendable(envB, sValue, &nativeObject);
+    int *intNativeObject = reinterpret_cast<int*>(nativeObject);
+    ASSERT_EQ(*intNativeObject, TEST_INT32);
+    *intNativeObject = TEST_INT32 * 2; // 2 is double factor
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(envB, scope));
+
+    // Destroy js thread
+    delete engine;
+    engine = nullptr;
+    panda::JSNApi::DestroyJSVM(vm);
+
+    std::thread tC([sRef1, sRef2] () {
+        ThreadCCallback(sRef1, sRef2);
+    });
+    tC.join();
+}
+
+void FinalizeCB(napi_env env, void* finalizeData, void* finalizeHint)
+{
+    int* nativeObject = reinterpret_cast<int*>(finalizeData);
+    ASSERT_EQ(*nativeObject, (TEST_INT32 * 2)); // 2 is double factor
+    delete nativeObject;
+    nativeObject = nullptr;
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value numVale = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32, &numVale));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("num", numVale),
+    };
+    napi_value sObj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &sObj));
+    napi_sendable_ref sRef1 = nullptr;
+    napi_sendable_ref sRef2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &sRef1));
+    ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &sRef2));
+    int *nativeObject = new int(TEST_INT32);
+    ASSERT_CHECK_CALL(napi_wrap_sendable(env, sObj, nativeObject, FinalizeCB, nullptr));
+
+    std::thread tB([sRef1, sRef2] () {
+        ThreadBCallback(sRef1, sRef2);
+    });
+    tB.join();
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value numVale = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32, &numVale));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("num", numVale),
+    };
+    napi_value sObj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &sObj));
+
+    const int maxSendableRefCount = 51200;
+    napi_sendable_ref refStorage[maxSendableRefCount] = {nullptr};
+    for (int i = 0; i < maxSendableRefCount; ++i) {
+        ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &refStorage[i]));
+    }
+
+    for (int i = 0; i < maxSendableRefCount; ++i) {
+        napi_value sValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(env, refStorage[i], &sValue));
+        ASSERT_CHECK_VALUE_TYPE(env, sValue, napi_object);
+
+        napi_value numberValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, sValue, "num", &numberValue));
+        int32_t getNumber = -1;
+        ASSERT_CHECK_CALL(napi_get_value_int32(env, numberValue, &getNumber));
+        ASSERT_EQ(getNumber, (TEST_INT32) + i);
+
+        napi_value newNumberValue = nullptr;
+        ASSERT_CHECK_CALL(napi_create_int32(env, getNumber + 1, &newNumberValue));
+        ASSERT_CHECK_CALL(napi_set_named_property(env, sValue, "num", newNumberValue));
+    }
+
+    for (int i = 0; i < maxSendableRefCount; ++i) {
+        ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, refStorage[i]));
+    }
 }

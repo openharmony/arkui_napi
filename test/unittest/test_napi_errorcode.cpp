@@ -1999,3 +1999,22 @@ HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest003, testing::ext::TestSize
 
     ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, ref));
 }
+
+HWTEST_F(NapiErrorCodeTest, NapiSendableReferenceTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value obj = nullptr;
+    napi_create_object(env, &obj);
+    napi_sendable_ref sRef = nullptr;
+    napi_status status = napi_create_strong_sendable_reference(env, obj, &sRef);
+    ASSERT_EQ(status, napi_object_expected);
+
+    napi_value fun = nullptr;
+    const char* funcName = "funcName";
+    auto funcCallback = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_create_function(env, funcName, NAPI_AUTO_LENGTH, funcCallback, nullptr, &fun);
+    status = napi_create_strong_sendable_reference(env, fun, &sRef);
+    ASSERT_EQ(status, napi_object_expected);
+}
