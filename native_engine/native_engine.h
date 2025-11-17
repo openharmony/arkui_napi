@@ -285,6 +285,8 @@ public:
         = 0;
     virtual void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) = 0;
     virtual void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) = 0;
+    virtual void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
+                                  bool defaultCloneSendable, void** result) = 0;
     virtual bool DeleteWorker(NativeEngine* workerEngine) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
     virtual bool StopHeapTracking(const std::string &filePath) = 0;
