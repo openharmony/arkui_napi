@@ -50,7 +50,7 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
     : work_({ 0 }), engine_(engine), engineId_(engine->GetId()), execute_(execute), complete_(complete), data_(data)
 {
     work_.data = this;
-    (void)asyncResourceName;
+    taskName_ = asyncResourceName;
 #ifdef ENABLE_HITRACE
     if (!g_ParamUpdated.load()) {
         char napiTraceIdEnabled[TRACEID_PARAM_SIZE] = {0};
@@ -114,7 +114,7 @@ bool NativeAsyncWork::Queue(NativeEngine* engine)
     HiTraceId taskId = taskTraceId_;
     HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE.c_str());
 #endif
-    int status = uv_queue_work(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback);
+    int status = uv_queue_work_internal(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback, taskName_.c_str());
 #ifdef ENABLE_HITRACE
     HiTraceChain::Tracepoint(HITRACE_TP_CR, taskId, "%s", TRACE_POINT_QUEUE.c_str());
     FinishTrace(HITRACE_TAG_ACE);
@@ -149,7 +149,8 @@ bool NativeAsyncWork::QueueWithQos(NativeEngine* engine, napi_qos_t qos)
     HiTraceId taskId = taskTraceId_;
     HiTraceChain::Tracepoint(HITRACE_TP_CS, taskId, "%s", TRACE_POINT_QUEUE_WITH_QOS.c_str());
 #endif
-    int status = uv_queue_work_with_qos(loop, &work_, AsyncWorkCallback, AsyncAfterWorkCallback, uv_qos_t(qos));
+    int status = uv_queue_work_with_qos_internal(loop, &work_, AsyncWorkCallback,
+        AsyncAfterWorkCallback, uv_qos_t(qos), taskName_.c_str());
 #ifdef ENABLE_HITRACE
     HiTraceChain::Tracepoint(HITRACE_TP_CR, taskId, "%s", TRACE_POINT_QUEUE_WITH_QOS.c_str());
     FinishTrace(HITRACE_TAG_ACE);
