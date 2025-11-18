@@ -908,7 +908,8 @@ void NativeEngine::CleanupHandles()
     }
 
     while (requestWaiting_.load() > 0) {
-        HILOG_INFO("request waiting:%{public}d.", requestWaiting_.load(std::memory_order_relaxed));
+        HILOG_INFO("request waiting:%{public}d.",
+            requestWaiting_.load(std::memory_order_relaxed));
         uv_run(loop_, UV_RUN_ONCE);
     }
 }
