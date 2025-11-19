@@ -151,7 +151,7 @@ void NativeEngine::Init()
 
 void NativeEngine::Deinit()
 {
-    HILOG_INFO("NativeEngine::Deinit");
+    HILOG_INFO("NativeEngine");
     if (loop_ != nullptr) {
         NativeEvent::DestoryDefaultFunction(true, defaultFunc_, eventMutex_);
         uv_sem_destroy(&uvSem_);
