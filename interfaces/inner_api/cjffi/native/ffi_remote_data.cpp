@@ -42,7 +42,7 @@ void FFIDataManager::StoreFFIData(const sptr<FFIData>& data)
         HiLog::Fatal(LABEL, "FFIData store invalid key");
         return;
     }
-    HiLog::Info(LABEL, "FFIData store_ key put in: %{public}" PRId64, id);
+    HiLog::Debug(LABEL, "FFIData store_ key put in: %{public}" PRId64, id);
     ffiDataStore_[id] = data;
 }
 
@@ -72,7 +72,7 @@ int64_t FFIDataManager::NewFFIDataId()
         // 0 represents invalid status in CJ RemoteData, will be handled by CJ Exception
         return 0;
     }
-    HiLog::Info(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}zu", curFFIDataId_,
+    HiLog::Debug(LABEL, "FFIDataManager new ID : %{public}" PRId64 ", cache size: %{public}zu", curFFIDataId_,
         ffiDataStore_.size());
     return curFFIDataId_;
 }
