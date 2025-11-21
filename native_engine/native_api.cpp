@@ -2591,6 +2591,30 @@ NAPI_EXTERN napi_status napi_throw_error(napi_env env, const char* code, const c
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_throw_business_error(napi_env env, int32_t code, const char* msg)
+{
+    CHECK_ENV(env);
+    RETURN_STATUS_IF_FALSE(
+        (env),
+        (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
+        napi_pending_exception);
+    CHECK_ARG(env, msg);
+
+    SWITCH_CONTEXT(env);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    Local<panda::JSValueRef> error(panda::JSValueRef::Undefined(vm));
+    error = panda::Exception::Error(vm, StringRef::NewFromUtf8(vm, msg));
+
+    Local<panda::JSValueRef> codeKey = panda::StringRef::NewFromUtf8(vm, "code");
+    Local<panda::JSValueRef> codeValue = panda::NumberRef::New(vm, code);
+    Local<panda::ObjectRef> errorObj(error);
+    errorObj->Set(vm, codeKey, codeValue);
+
+    panda::JSNApi::ThrowException(vm, error);
+    return napi_clear_last_error(env);
+}
+
 NAPI_EXTERN napi_status napi_throw_type_error(napi_env env, const char* code, const char* msg)
 {
     CHECK_ENV(env);
