@@ -32,6 +32,9 @@
 #include "utils/log.h"
 
 #define NDK "ndk"
+#define PASS_THROUGH "passthrough"
+#define PASSTHROUGH_INDIRECT "passthrough_indirect"
+#define VENDOR "vendor"
 #define ALLOW_ALL_SHARED_LIBS "allow_all_shared_libs"
 
 namespace {
@@ -487,6 +490,10 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
             dlns_inherit(&current_ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
         }
+        Dl_namespace passthrough_ns;
+        if (dlns_get(PASS_THROUGH, &passthrough_ns) == 0 && strlen(passthrough_ns.name) > 0) {
+            dlns_inherit(&ns, &passthrough_ns, ALLOW_ALL_SHARED_LIBS);
+        }
     } else {
         dlns_create2(&ns, lib_ld_path, 0);
         // Performs a namespace check on the full path passed directly or the full path converted after setting rpath.
@@ -507,6 +514,19 @@ void NativeModuleManager::CreateLdNamespace(const std::string moduleName, const 
             dlns_inherit(&ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&ndk_ns, &current_ns, ALLOW_ALL_SHARED_LIBS);
             dlns_inherit(&current_ns, &ndk_ns, ALLOW_ALL_SHARED_LIBS);
+        }
+        Dl_namespace passthrough_ns;
+        if (dlns_get(PASS_THROUGH, &passthrough_ns) == 0 && strlen(passthrough_ns.name) > 0) {
+            dlns_inherit(&ns, &passthrough_ns, sharedLibsSonames_);
+        }
+        Dl_namespace passthrough_indirect_ns;
+        if (dlns_get(PASSTHROUGH_INDIRECT, &passthrough_indirect_ns) == 0 &&
+            strlen(passthrough_indirect_ns.name) > 0) {
+            dlns_inherit(&ns, &passthrough_indirect_ns, sharedLibsSonames_);
+        }
+        Dl_namespace vendor_ns;
+        if (dlns_get(VENDOR, &vendor_ns) == 0 && strlen(vendor_ns.name) > 0) {
+            dlns_inherit(&ns, &vendor_ns, sharedLibsSonames_);
         }
     }
 
