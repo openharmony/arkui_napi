@@ -254,6 +254,11 @@ typedef struct {
 } ARKTS_CycleFreeCallback;
 EXPORT void ARKTS_RegisterCycleFreeCallback(ARKTS_CycleFreeCallback callback);
 EXPORT ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env);
+typedef enum ARKTS_ModuleKind_ {
+    ARKTS_NativeModule,
+    ARKTS_NormalModule,
+} ARKTS_ModuleKind;
+EXPORT ARKTS_Value ARKTS_RequireArkModule(ARKTS_Env env, const char* path, size_t pathLen, ARKTS_ModuleKind kind);
 
 DECL_END
 

@@ -77,6 +77,9 @@ void ARKTS_SetCJModuleCallback(ARKTS_ModuleCallbacks* callback)
 panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName)
 {
     LOGD("ARKTS_LoadCJModule start: %{public}s", dllName);
+    static std::mutex globalMutex;
+    std::lock_guard lock(globalMutex);
+    panda::JsiFastNativeScope fastNativeScope(reinterpret_cast<panda::EcmaVM*>(env));
     // HandleScope
     auto scope = ARKTS_OpenScope(env);
 
