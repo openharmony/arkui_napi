@@ -140,9 +140,9 @@ NativeSafeAsyncWork::~NativeSafeAsyncWork()
         delete asyncResourceRef_;
         asyncResourceRef_ = nullptr;
     }
-    if (asyncResourceName != nullptr) {
-        delete asyncResourceName;
-        asyncResourceName = nullptr;
+    if (asyncResourceNameRef_ != nullptr) {
+        delete asyncResourceNameRef_;
+        asyncResourceNameRef_ = nullptr;
     }
     engine_->DecreaseActiveTsfnCounter();
 }
