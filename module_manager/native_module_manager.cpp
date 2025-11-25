@@ -324,7 +324,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         headNativeModule_->getABCCode = nativeModule->getABCCode;
         headNativeModule_->moduleLoaded = true;
         headNativeModule_->systemFilePath = "";
-        MODULEMNG_HILOG_INFO("Head module name:%{public}s, isApp:%{public}d",
+        MODULEMNG_HILOG_INFO("Head:%{public}s, isApp:%{public}d",
             headNativeModule_->name, isAppModule_);
     }
 }
@@ -688,7 +688,6 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
         prefixTmp = "default";
         if (path && IsExistedPath(path)) {
             prefixTmp = path;
-            MODULEMNG_HILOG_INFO("%{public}s", prefixTmp.c_str());
         }
         key = prefixTmp + '/' + moduleName;
         MODULEMNG_HILOG_DEBUG("%{public}s", key.c_str());
@@ -1052,7 +1051,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr :
-            "Error loading path " + std::string(path) + ":No such file or directory";
+            std::string(path) + " not exist";
         errInfo += "failed " +  std::string(dlerrMsg);
     }
 #endif
@@ -1070,7 +1069,7 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     const uint8_t* lib = nullptr;
     std::ifstream inFile(filePath, std::ios::ate | std::ios::binary);
     if (!inFile.is_open()) {
-        MODULEMNG_HILOG_WARN("failed");
+        MODULEMNG_HILOG_DEBUG("failed");
         return lib;
     }
     len = static_cast<size_t>(inFile.tellg());
@@ -1154,13 +1153,14 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     errInfo = "First: ";
     LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason0);
     if (lib == nullptr) {
-        errInfo += "\nSecond: ";
+        errInfo += ".Second: ";
         loadPath = nativeModulePath[1];
         MODULEMNG_HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
         lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, errInfo, errReason1);
         if (lib == nullptr && errReason0 == MODULE_NOT_EXIST && errReason1 == MODULE_NOT_EXIST) {
-            MODULEMNG_HILOG_ERROR("Not exist:%{public}s, errMsg:%{public}s", nativeModulePath[0], errInfo.c_str());
+            MODULEMNG_HILOG_DEBUG("Not exist:%{public}s, %{public}s errMsg:%{public}s", nativeModulePath[0],
+                isAppModule ? ("key:" + moduleKey).c_str() : "", errInfo.c_str());
         }
     }
 
@@ -1177,8 +1177,9 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         MODULEMNG_HILOG_DEBUG("try to load abc module path: %{public}s", loadPath);
         abcBuffer = GetFileBuffer(loadPath, moduleKey, len);
         if (!abcBuffer) {
-            errInfo += "\nload " + std::string(loadPath) + " failed";
-            MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
+            errInfo += ".load " + std::string(loadPath) + " failed";
+            MODULEMNG_HILOG_WARN("%{public}s %{public}s", isAppModule ? ("key:" + moduleKey).c_str() : "",
+                errInfo.c_str());
             return nullptr;
         }
     }
@@ -1198,8 +1199,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         tailNativeModule_->moduleName = moduleName;
         tailNativeModule_->systemFilePath = strdup(loadPath);
         if (strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
-            MODULEMNG_HILOG_WARN("Name mismatch: %{public}s != %{public}s",
-                tailNativeModule_->moduleName, tailNativeModule_->name);
+            MODULEMNG_HILOG_WARN("%{public}s Name mismatch: %{public}s != %{public}s",
+                isAppModule ? "app module:" : "", tailNativeModule_->moduleName, tailNativeModule_->name);
             MODULEMNG_HILOG_DEBUG("keep .nm_modname match moduleName");
         }
     }
