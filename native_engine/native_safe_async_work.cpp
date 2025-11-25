@@ -92,13 +92,11 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 {
     asyncContext_.napiAsyncResource = asyncResource;
     asyncContext_.napiAsyncResourceName = asyncResourceName;
-
+    uint32_t initialRefcount = 1;
     if (asyncResource != nullptr) {
-        uint32_t initialRefcount = 1;
         asyncResourceRef_ = engine->CreateReference(asyncResource, initialRefcount);
     }
     if (asyncResourceName != nullptr) {
-        uint32_t initialRefcount = 1;
         asyncResourceNameRef_ = engine->CreateReference(asyncResourceName, initialRefcount);
     }
 
@@ -110,7 +108,6 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
     }
 
     if (func != nullptr) {
-        uint32_t initialRefcount = 1;
         ref_ = engine->CreateReference(func, initialRefcount);
     }
 
