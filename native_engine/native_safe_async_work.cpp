@@ -93,6 +93,15 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
     asyncContext_.napiAsyncResource = asyncResource;
     asyncContext_.napiAsyncResourceName = asyncResourceName;
 
+    if (asyncResource != nullptr) {
+        uint32_t initialRefcount = 1;
+        asyncResourceRef_ = engine->CreateReference(asyncResource, initialRefcount);
+    }
+    if (asyncResourceName != nullptr) {
+        uint32_t initialRefcount = 1;
+        asyncResourceNameRef_ = engine->CreateReference(asyncResourceName, initialRefcount);
+    }
+
     errno_t err = EOK;
     err = memset_s(&asyncHandler_, sizeof(asyncHandler_), 0, sizeof(asyncHandler_));
     if (err != EOK) {
@@ -127,7 +136,14 @@ NativeSafeAsyncWork::~NativeSafeAsyncWork()
         delete ref_;
         ref_ = nullptr;
     }
-
+    if (asyncResourceRef_ != nullptr) {
+        delete asyncResourceRef_;
+        asyncResourceRef_ = nullptr;
+    }
+    if (asyncResourceName != nullptr) {
+        delete asyncResourceName;
+        asyncResourceName = nullptr;
+    }
     engine_->DecreaseActiveTsfnCounter();
 }
 
