@@ -2369,62 +2369,100 @@ void CheckTypeWithSendableRef(napi_env env, napi_value value, napi_valuetype typ
 HWTEST_F(NapiSendableTest, SendableReferenceTest004, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-
     napi_value nullValue = nullptr;
     napi_get_null(env, &nullValue);
     CheckTypeWithSendableRef(env, nullValue, napi_null);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     napi_value undefinedValue = nullptr;
     napi_get_undefined(env, &undefinedValue);
     CheckTypeWithSendableRef(env, undefinedValue, napi_undefined);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     napi_value stringValue = nullptr;
     napi_create_string_utf8(env, "TestString", NAPI_AUTO_LENGTH, &stringValue);
     CheckTypeWithSendableRef(env, stringValue, napi_string);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     int32_t testInt32 = -10; // -10 is test number
     napi_value int32Value = nullptr;
     napi_create_int32(env, testInt32, &int32Value);
     CheckTypeWithSendableRef(env, int32Value, napi_number);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     double testDouble = 10.5; // 10.5 is test number
     napi_value doubleValue = nullptr;
     napi_create_double(env, testDouble, &doubleValue);
     CheckTypeWithSendableRef(env, doubleValue, napi_number);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest009, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     int64_t testInt64 = -10; // -10 is test number
     napi_value int64Value = nullptr;
     napi_create_int64(env, testInt64, &int64Value);
     CheckTypeWithSendableRef(env, int64Value, napi_number);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest010, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     uint32_t testUint32 = 10; // 10 is test number
     napi_value uint32Value = nullptr;
     napi_create_uint32(env, testUint32, &uint32Value);
     CheckTypeWithSendableRef(env, uint32Value, napi_number);
 }
 
-HWTEST_F(NapiSendableTest, SendableReferenceTest005, testing::ext::TestSize.Level1)
+HWTEST_F(NapiSendableTest, SendableReferenceTest011, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-
     napi_value trueValue = nullptr;
     napi_get_boolean(env, true, &trueValue);
     CheckTypeWithSendableRef(env, trueValue, napi_boolean);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest012, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     napi_value falseValue = nullptr;
     napi_get_boolean(env, false, &falseValue);
     CheckTypeWithSendableRef(env, falseValue, napi_boolean);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest013, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     napi_value bigInt64Value = nullptr;
     int64_t testInt64 = -10; // -10 is test number
     napi_create_bigint_int64(env, testInt64, &bigInt64Value);
     CheckTypeWithSendableRef(env, bigInt64Value, napi_bigint);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest014, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     napi_value bigUint64Value = nullptr;
     uint64_t testUint64 = 10; // 10 is test number
     napi_create_bigint_uint64(env, testUint64, &bigUint64Value);
     CheckTypeWithSendableRef(env, bigUint64Value, napi_bigint);
+}
 
+HWTEST_F(NapiSendableTest, SendableReferenceTest015, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
     int signBit = 0;
     size_t wordCount = 4;
     uint64_t words[] = { 0xFFFFFFFFFFFFFFFF, 34ULL, 56ULL, 0xFFFFFFFFFFFFFFFF };
@@ -2574,7 +2612,7 @@ void FinalizeCB(napi_env env, void* finalizeData, void* finalizeHint)
     nativeObject = nullptr;
 }
 
-HWTEST_F(NapiSendableTest, SendableReferenceTest006, testing::ext::TestSize.Level1)
+HWTEST_F(NapiSendableTest, SendableReferenceTest016, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
 
@@ -2598,7 +2636,7 @@ HWTEST_F(NapiSendableTest, SendableReferenceTest006, testing::ext::TestSize.Leve
     tB.join();
 }
 
-HWTEST_F(NapiSendableTest, SendableReferenceTest007, testing::ext::TestSize.Level1)
+HWTEST_F(NapiSendableTest, SendableReferenceTest017, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
 
@@ -2633,6 +2671,41 @@ HWTEST_F(NapiSendableTest, SendableReferenceTest007, testing::ext::TestSize.Leve
     }
 
     for (int i = 0; i < maxSendableRefCount; ++i) {
+        ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, refStorage[i]));
+    }
+}
+
+HWTEST_F(NapiSendableTest, SendableReferenceTest018, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value numVale = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32, &numVale));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("num", numVale),
+    };
+    napi_value sObj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &sObj));
+
+    const int maxSendableRefCount = 100000;
+    napi_sendable_ref refStorage[maxSendableRefCount] = {nullptr};
+    for (int i = 0; i < maxSendableRefCount; ++i) {
+        ASSERT_CHECK_CALL(napi_create_strong_sendable_reference(env, sObj, &refStorage[i]));
+
+        napi_value sValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_strong_sendable_reference_value(env, refStorage[i], &sValue));
+        ASSERT_CHECK_VALUE_TYPE(env, sValue, napi_object);
+
+        napi_value numberValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_named_property(env, sValue, "num", &numberValue));
+        int32_t getNumber = -1;
+        ASSERT_CHECK_CALL(napi_get_value_int32(env, numberValue, &getNumber));
+        ASSERT_EQ(getNumber, (TEST_INT32) + i);
+
+        napi_value newNumberValue = nullptr;
+        ASSERT_CHECK_CALL(napi_create_int32(env, getNumber + 1, &newNumberValue));
+        ASSERT_CHECK_CALL(napi_set_named_property(env, sValue, "num", newNumberValue));
+
         ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, refStorage[i]));
     }
 }
