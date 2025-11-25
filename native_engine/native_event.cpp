@@ -200,6 +200,8 @@ void NativeEvent::CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_funct
         return;
     }
     napi_env env = reinterpret_cast<napi_env>(eng);
+    auto vm = eng->GetEcmaVm();
+    panda::LocalScope scope(vm);
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "call_default_threadsafe_function", NAPI_AUTO_LENGTH, &resourceName);
 
@@ -313,8 +315,8 @@ napi_status NativeEvent::SendEventByEventHandler(const std::function<void()> &ta
     std::string res = (postRes ? "ok" : "fail");
     auto evt = TraceLogClass(
         "eventHandler Send task: " + std::string(name) +
-        " | handleId: " + std::to_string(eventId) +
-        " | postRes: " + res
+        " | handleId:" + std::to_string(eventId) +
+        " | postRes:" + res
     );
     if (postRes) {
         *handleId = eventId;
