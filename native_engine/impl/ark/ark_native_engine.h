@@ -398,6 +398,7 @@ public:
     int GetProcessStartRealTime() override;
 
     static bool napiProfilerEnabled;
+    static int napiApiTraceEnabled;
     static std::string tempModuleName_;
 
     static void* GetNativePtrCallBack(void* data);
