@@ -652,6 +652,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     }
     NativeModule* nativeModule =
         FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+    if (nativeModule == nullptr) {
+        nativeModule =
+            FindNativeModuleByCache(strCutName.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+    }
 #else
     std::string key(moduleName);
     if (isAppModule) {
@@ -683,6 +687,10 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
 #ifdef ANDROID_PLATFORM
             nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule,
                                                    cacheHeadTailNativeModule);
+            if (nativeModule == nullptr) {
+                nativeModule = FindNativeModuleByCache(strCutName.c_str(), nativeModulePath, cacheNativeModule,
+                    cacheHeadTailNativeModule);
+            }
 #else
             nativeModule =
                 FindNativeModuleByCache(key.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
