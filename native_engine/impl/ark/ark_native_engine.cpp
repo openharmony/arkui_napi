@@ -3353,7 +3353,7 @@ void ArkNativeEngine::RegisterAllPromiseCallback(NapiAllPromiseRejectCallback ca
     allPromiseRejectCallback_ = callback;
     std::string checkCallbackName = "GlobalRejectionHandledCheck";
     panda::JsiFastNativeScope fastNativeScope(vm_);
-    panda::EscapeLocalScope scope(vm_);
+    panda::LocalScope scope(vm_);
     auto cb = reinterpret_cast<NapiNativeCallback>(
         NapiErrorManager::GetInstance()->GetGlobalUnhandledRejectionCheckCallback());
     NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
