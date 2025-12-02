@@ -70,6 +70,7 @@ static constexpr int32_t TEST_INT32_10 = 10;
 static constexpr int32_t TEST_INT32_20 = 20;
 static constexpr int32_t TEST_INT32_500 = 500;
 static constexpr uint32_t TEST_UINT32_1000 = 1000;
+static constexpr int32_t TEST_INT32_BUSINESS_ERROR_VALID_CODE = 100;
 static constexpr int64_t MAX_SAFE_INTEGER = 9007199254740991;
 static constexpr int64_t TEST_INT64_NEGATIVE = -987654321;
 static constexpr int TEST_NUM = 95;
@@ -81,6 +82,7 @@ static constexpr const char16_t TEST_CHAR16_STRING[] = u"TestString";
 static constexpr const char TEST_CHAR_ERROR_CODE[] = "500";
 static constexpr const char TEST_CHAR_ERROR_MESSAGE[] = "Common error";
 static constexpr const char TEST_CHAR_TEST_FUNC[] = "testFunc";
+static constexpr const char TEST_ERROR_MESSAGE[] = "business error test";
 constexpr const char16_t TEST_STR_UTF16[] = u"中文,English,123456,!@#$%$#^%&12345";
 
 class NapiBasicTest : public NativeEngineTest {
@@ -766,7 +768,6 @@ HWTEST_F(NapiBasicTest, StringTest006, testing::ext::TestSize.Level1)
     ASSERT_STREQ(testStr, buffer);
     ASSERT_EQ(testStrLength, strLength);
     delete []buffer;
-    buffer = nullptr;
 }
 
 /**
@@ -806,7 +807,6 @@ HWTEST_F(NapiBasicTest, StringTest007, testing::ext::TestSize.Level1)
     ASSERT_EQ(static_cast<uint8_t>(backslashPos[0]), 0x5C);
 
     delete[] buffer;
-    buffer = nullptr;
 }
 
 /**
@@ -837,7 +837,6 @@ HWTEST_F(NapiBasicTest, StringTest008, testing::ext::TestSize.Level1)
     ASSERT_EQ(strLength, testStrLength);
 
     delete[] buffer;
-    buffer = nullptr;
 }
 
 /**
@@ -876,7 +875,6 @@ HWTEST_F(NapiBasicTest, StringTest009, testing::ext::TestSize.Level1)
     ASSERT_EQ(static_cast<uint8_t>(rep[2]), 0xBD);
 
     delete[] buffer;
-    buffer = nullptr;
 }
 
 /**
@@ -10207,6 +10205,107 @@ HWTEST_F(NapiBasicTest, NapiThrowErrorTest001, testing::ext::TestSize.Level1)
     // call napi_throw_error interface with nullptr msg
     auto res = napi_throw_error(env, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiThrowBusinessErrorTest
+ * @tc.desc: Test interface of napi_throw_business_error
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiThrowBusinessErrorTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    // call napi_throw_business_error interface with nullptr msg
+    auto res = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiThrowBusinessErrorTest002
+ * @tc.desc: Test napi_throw_business_error when env is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiThrowBusinessErrorTest002, testing::ext::TestSize.Level1)
+{
+    napi_env null_env = nullptr;
+    auto res = napi_throw_business_error(null_env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiThrowBusinessErrorTest003
+ * @tc.desc: Test napi_throw_business_error when there is a pending exception before call
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiThrowBusinessErrorTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    ASSERT_NE(vm, nullptr);
+
+    Local<panda::JSValueRef> errMsg = panda::StringRef::NewFromUtf8(vm, "pre-existing exception");
+    Local<panda::JSValueRef> exceptionObj = panda::Exception::Error(vm, errMsg);
+
+    engine_->lastException_ = exceptionObj;
+    ASSERT_FALSE(engine_->lastException_.IsEmpty());
+
+    auto res = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
+    ASSERT_EQ(res, napi_pending_exception);
+
+    engine_->lastException_.Empty();
+    bool isPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isPending));
+    if (isPending) {
+        ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, nullptr));
+    }
+}
+
+/**
+ * @tc.name: NapiThrowBusinessErrorTest004
+ * @tc.desc: Test napi_throw_business_error with valid args and no pending exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiThrowBusinessErrorTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_FALSE(isExceptionPending);
+
+    auto res = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
+
+    ASSERT_EQ(res, napi_ok);
+
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
+
+    napi_value pending_error = nullptr;
+    ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, &pending_error));
+    if (pending_error != nullptr) {
+        napi_value code_key = nullptr;
+        napi_value code_value = nullptr;
+        ASSERT_CHECK_CALL(napi_create_string_utf8(env, "code", NAPI_AUTO_LENGTH, &code_key));
+        ASSERT_CHECK_CALL(napi_get_property(env, pending_error, code_key, &code_value));
+        
+        int32_t codeVal = 0;
+        ASSERT_CHECK_CALL(napi_get_value_int32(env, code_value, &codeVal));
+        ASSERT_EQ(codeVal, TEST_INT32_BUSINESS_ERROR_VALID_CODE);
+
+        napi_value msg_key = nullptr;
+        napi_value msg_value = nullptr;
+        ASSERT_CHECK_CALL(napi_create_string_utf8(env, "message", NAPI_AUTO_LENGTH, &msg_key));
+        ASSERT_CHECK_CALL(napi_get_property(env, pending_error, msg_key, &msg_value));
+        
+        char msgBuf[1024] = {0};
+        size_t msgLen = 0;
+        ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, msg_value, msgBuf, sizeof(msgBuf), &msgLen));
+        ASSERT_STREQ(msgBuf, TEST_ERROR_MESSAGE);
+    }
 }
 
 /**
