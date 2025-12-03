@@ -950,3 +950,22 @@ ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env)
     auto exception = JSNApi::GetAndClearUncaughtException(vm);
     return ARKTS_FromHandle(exception);
 }
+
+ARKTS_Value ARKTS_RequireArkModule(ARKTS_Env env, const char* path, size_t pathLen, ARKTS_ModuleKind kind)
+{
+    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(path, "path is null");
+    ARKTS_ASSERT_P(kind >= ARKTS_NativeModule && kind <= ARKTS_NormalModule, "module kind is invalid");
+
+    auto vm = P_CAST(env, EcmaVM*);
+    std::string srcPath(path, pathLen);
+    Local<JSValueRef> result;
+    // special native api provided by ace(like: @native:ohos.curves).
+    if (kind == ARKTS_NativeModule) {
+        result = JSNApi::ExecuteNativeModule(vm, srcPath);
+    } else {
+        result = JSNApi::GetModuleNameSpaceFromFile(vm, srcPath);
+    }
+    ARKTSInner_ReportJSErrors(env, false);
+    return ARKTS_FromHandle(result);
+}
