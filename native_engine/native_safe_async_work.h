@@ -98,8 +98,6 @@ protected:
     NativeEngine* engine_ = nullptr;
     uint64_t engineId_ = 0;
     NativeReference* ref_ = nullptr;
-    NativeReference* asyncResourceRef_ = nullptr;
-    NativeReference* asyncResourceNameRef_ = nullptr;
     size_t maxQueueSize_ = 0;
     size_t threadCount_ = 0;
     void* finalizeData_ = nullptr;

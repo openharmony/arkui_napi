@@ -10246,21 +10246,15 @@ HWTEST_F(NapiBasicTest, NapiThrowBusinessErrorTest003, testing::ext::TestSize.Le
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     ASSERT_NE(vm, nullptr);
 
-    Local<panda::JSValueRef> errMsg = panda::StringRef::NewFromUtf8(vm, "pre-existing exception");
-    Local<panda::JSValueRef> exceptionObj = panda::Exception::Error(vm, errMsg);
+    napi_status res1 = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
+    ASSERT_EQ(res1, napi_ok);
 
-    engine_->lastException_ = exceptionObj;
-    ASSERT_FALSE(engine_->lastException_.IsEmpty());
+    bool isExceptionPending = false;
+    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isExceptionPending));
+    ASSERT_TRUE(isExceptionPending);
 
-    auto res = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
-    ASSERT_EQ(res, napi_pending_exception);
-
-    engine_->lastException_.Empty();
-    bool isPending = false;
-    ASSERT_CHECK_CALL(napi_is_exception_pending(env, &isPending));
-    if (isPending) {
-        ASSERT_CHECK_CALL(napi_get_and_clear_last_exception(env, nullptr));
-    }
+    napi_status res2 = napi_throw_business_error(env, TEST_INT32_BUSINESS_ERROR_VALID_CODE, TEST_ERROR_MESSAGE);
+    ASSERT_EQ(res2, napi_pending_exception);
 }
 
 /**
