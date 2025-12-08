@@ -2433,7 +2433,7 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
         }
     }
     if (env->promiseRejectCallbackRef_ == nullptr || env->checkCallbackRef_ == nullptr) {
-        HILOG_ERROR("promiseRejectCallbackRef or checkCallbackRef is nullptr");
+        HILOG_DEBUG("promiseRejectCallbackRef or checkCallbackRef is nullptr");
         return;
     }
     napi_value promiseNapiRejectCallback = env->promiseRejectCallbackRef_->Get(env);
