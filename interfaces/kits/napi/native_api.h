@@ -155,7 +155,7 @@ NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
                                           void* finalize_hint,
                                           size_t native_binding_size,
                                           napi_ref* result);
-NAPI_EXTERN napi_status napi_throw_business_error(napi_env env, int32_t code, const char* msg);
+NAPI_EXTERN napi_status napi_throw_business_error(napi_env env, int32_t errorCode, const char* msg);
 // ======================================= sendable api begin ======================================= //
 NAPI_EXTERN napi_status napi_define_sendable_class(napi_env env,
                                                    const char* utf8name,
