@@ -77,6 +77,7 @@ struct NativeModule {
 struct NativeModuleHeadTailStruct {
     NativeModule* headNativeModule = nullptr;
     NativeModule* tailNativeModule = nullptr;
+    NativeModule* matchLoadingNativeModule = nullptr;
 };
 class NAPI_EXPORT NativeModuleManager {
 public:
@@ -148,7 +149,8 @@ private:
     NativeModule* FindNativeModuleByCache(const char* moduleName,
                                           char nativeModulePath[][NAPI_PATH_MAX],
                                           NativeModule*& cacheNativeModule,
-                                          NativeModuleHeadTailStruct& cacheHeadTailStruct);
+                                          NativeModuleHeadTailStruct& cacheHeadTailStruct,
+                                          bool checkLoadingNativeModule = false);
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
         const bool isAppModule, std::string& errInfo, uint32_t& errReason);
@@ -168,10 +170,13 @@ private:
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool RemoveNativeModule(const std::string& moduleKey);
-    bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule);
+    bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule,
+        const NativeModule* matchLoadingNativeModule);
     void MoveApiAllowListCheckerPtr(
         std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule);
     void Napi_onLoadCallback(LIBHANDLE lib, const char* moduleName);
+    void SetLoadingNativeModuleKey(const char *moduleName);
+    std::string GetLoadingNativeModuleKey();
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();
@@ -183,6 +188,7 @@ private:
     std::mutex nativeModuleListMutex_;
     NativeModule* headNativeModule_ = nullptr;
     NativeModule* tailNativeModule_ = nullptr;
+    std::string loadingModuleKey_;
 
     static NativeModuleManager *instance_;
     pthread_mutex_t mutex_;

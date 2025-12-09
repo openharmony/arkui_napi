@@ -248,7 +248,7 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
         return loadPath;
     }
     NativeModule* cacheNativeModule = nullptr;
-    NativeModuleHeadTailStruct cacheHeadTailNativeModule;
+    NativeModuleHeadTailStruct cacheHeadTailNativeModule = { nullptr, nullptr, nullptr };
     NativeModule* module =
         FindNativeModuleByCache(name.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
     if (module == nullptr) {
@@ -262,6 +262,19 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
     }
     MODULEMNG_HILOG_ERROR("failed");
     return loadPath;
+}
+
+void NativeModuleManager::SetLoadingNativeModuleKey(const char *moduleName)
+{
+    if (moduleName == nullptr) {
+        return;
+    }
+    loadingModuleKey_ = std::string(moduleName);
+}
+
+std::string NativeModuleManager::GetLoadingNativeModuleKey()
+{
+    return loadingModuleKey_;
 }
 
 void NativeModuleManager::Register(NativeModule* nativeModule)
@@ -292,6 +305,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
             free(moduleName);
             return;
         }
+        SetLoadingNativeModuleKey(moduleName);
         tailNativeModule_->version = nativeModule->version;
         tailNativeModule_->fileName = nativeModule->fileName;
         tailNativeModule_->isAppModule = isAppModule_;
@@ -674,18 +688,18 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     nativeModulePath[1][0] = 0;
     nativeModulePath[2][0] = 0; // 2 : Element index value
     NativeModule* cacheNativeModule = nullptr;
-    NativeModuleHeadTailStruct cacheHeadTailNativeModule;
+    NativeModuleHeadTailStruct cacheHeadTailNativeModule = { nullptr, nullptr, nullptr };
 #if defined(ANDROID_PLATFORM)
     if (!GetNativeModulePath(strCutName.c_str(), path, relativePath, isAppModule, nativeModulePath, NAPI_PATH_MAX)) {
         errInfo = "failed " + std::string(moduleName);
         MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
         return nullptr;
     }
-    NativeModule* nativeModule =
-        FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+    NativeModule* nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule,
+        cacheHeadTailNativeModule, true);
     if (nativeModule == nullptr) {
-        nativeModule =
-            FindNativeModuleByCache(strCutName.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+        nativeModule = FindNativeModuleByCache(strCutName.c_str(), nativeModulePath, cacheNativeModule,
+            cacheHeadTailNativeModule, true);
     }
 #else
     std::string key(moduleName);
@@ -707,13 +721,13 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     StartTrace(HITRACE_TAG_ACE, moduleName);
 #endif
     NativeModule* nativeModule =
-        FindNativeModuleByCache(key.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule);
+        FindNativeModuleByCache(key.c_str(), nativeModulePath, cacheNativeModule, cacheHeadTailNativeModule, true);
 #endif
     if (nativeModule == nullptr) {
         (void)pthread_mutex_lock(&mutex_);
 #ifndef IOS_PLATFORM
         if (CheckNativeListChanged(cacheHeadTailNativeModule.headNativeModule,
-                                   cacheHeadTailNativeModule.tailNativeModule)) {
+            cacheHeadTailNativeModule.tailNativeModule, cacheHeadTailNativeModule.matchLoadingNativeModule)) {
 #ifdef ANDROID_PLATFORM
             nativeModule = FindNativeModuleByCache(strModule.c_str(), nativeModulePath, cacheNativeModule,
                                                    cacheHeadTailNativeModule);
@@ -763,11 +777,12 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     return nativeModule;
 }
 
-bool NativeModuleManager::CheckNativeListChanged(
-    const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule)
+bool NativeModuleManager::CheckNativeListChanged(const NativeModule* cacheHeadNativeModule,
+    const NativeModule* cacheTailNativeModule, const NativeModule* matchLoadingNativeModule)
 {
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
-    if (!cacheHeadNativeModule || !cacheTailNativeModule || !headNativeModule_ || !tailNativeModule_) {
+    if (!cacheHeadNativeModule || !cacheTailNativeModule || !headNativeModule_ || !tailNativeModule_ ||
+        (matchLoadingNativeModule != nullptr)) {
         return true;
     }
     if (strcmp(cacheHeadNativeModule->name, headNativeModule_->name) != 0 ||
@@ -1202,6 +1217,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         const char* moduleName = strdup(moduleKey.c_str());
         if (moduleName == nullptr) {
             MODULEMNG_HILOG_ERROR("strdup faied");
+            SetLoadingNativeModuleKey("");
             return nullptr;
         }
 
@@ -1222,6 +1238,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             }
             errInfo = "sprintf symbol NAPI_" + moduleKey + "_GetABCCode failed";
             MODULEMNG_HILOG_ERROR("%{public}s", errInfo.c_str());
+            SetLoadingNativeModuleKey("");
             return nullptr;
         }
 
@@ -1238,6 +1255,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             if (getJSCode == nullptr) {
                 MODULEMNG_HILOG_DEBUG("ignore: no %{public}s in %{public}s", symbol, loadPath);
                 MoveApiAllowListCheckerPtr(apiAllowListChecker, tailNativeModule_);
+                SetLoadingNativeModuleKey("");
                 return tailNativeModule_;
             }
             const char* buf = nullptr;
@@ -1253,6 +1271,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             tailNativeModule_->systemFilePath = strdup(loadPath);
         }
     }
+    SetLoadingNativeModuleKey("");
     if (tailNativeModule_) {
         tailNativeModule_->moduleLoaded = true;
         if (tailNativeModule_->name && tailNativeModule_->moduleName) {
@@ -1352,12 +1371,17 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
 NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleName,
                                                            char nativeModulePath[][NAPI_PATH_MAX],
                                                            NativeModule*& cacheNativeModule,
-                                                           NativeModuleHeadTailStruct& cacheHeadTailStruct)
+                                                           NativeModuleHeadTailStruct& cacheHeadTailStruct,
+                                                           bool checkLoadingNativeModule)
 {
     NativeModule* result = nullptr;
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
     cacheNativeModule = nullptr;
+    if (!checkLoadingNativeModule && cacheHeadTailStruct.matchLoadingNativeModule) {
+        MODULEMNG_HILOG_DEBUG("module: %{public}s match second", moduleName);
+        return cacheHeadTailStruct.matchLoadingNativeModule;
+    }
     for (NativeModule* temp = headNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
             || !strcasecmp(temp->name, moduleName)) {
@@ -1375,6 +1399,17 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
                 cacheNativeModule = temp;
             }
         }
+    }
+    std::string loadingNativeModuleKey = GetLoadingNativeModuleKey();
+    if (result && checkLoadingNativeModule && !strcasecmp(loadingNativeModuleKey.c_str(), moduleName)) {
+        MODULEMNG_HILOG_DEBUG("Module is loading: %{public}s, not use", moduleName);
+#if defined(ANDROID_PLATFORM)
+        cacheHeadTailStruct.matchLoadingNativeModule = cacheHeadTailStruct.matchLoadingNativeModule ?
+            cacheHeadTailStruct.matchLoadingNativeModule : result;
+#else
+        cacheHeadTailStruct.matchLoadingNativeModule = result;
+#endif
+        result = nullptr;
     }
     cacheHeadTailStruct.headNativeModule = headNativeModule_;
     cacheHeadTailStruct.tailNativeModule = tailNativeModule_;
