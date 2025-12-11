@@ -2605,6 +2605,29 @@ void ArkNativeEngine::GetHybridStackTraceForCrash(napi_env env, std::string &sta
     DFXJSNApi::GetHybridStackTrace(vm, stackTraceStr);
 }
 
+void ArkNativeEngine::SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
+                                       bool defaultCloneSendable, void** result)
+{
+    if (env == nullptr) {
+        HILOG_ERROR("env == nullptr");
+        return;
+    }
+    if (object == nullptr) {
+        HILOG_ERROR("object == nullptr");
+        return;
+    }
+    if (result == nullptr) {
+        HILOG_ERROR("result == nullptr");
+        return;
+    }
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    auto nativeValue = LocalValueFromJsValue(object);
+    auto undefRef = JSValueRef::Undefined(vm);
+    *result =
+        panda::JSNApi::SerializeValue(vm, nativeValue, undefRef, undefRef, defaultTransfer,
+                                      defaultCloneSendable, true);
+}
+
 bool ArkNativeEngine::DeleteWorker(NativeEngine* workerEngine)
 {
     if (workerEngine != nullptr) {
