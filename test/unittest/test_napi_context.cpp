@@ -25,6 +25,7 @@
 #include "utils/log.h"
 
 using ArkIdleMonitor = panda::ecmascript::ArkIdleMonitor;
+using panda::RuntimeOption;
 
 constexpr const char TEST_ERROR_CODE[] = "500";
 constexpr const int32_t TEST_ERROR_CODE_INT = 500;
@@ -4964,4 +4965,197 @@ HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest006, testing::ext::TestSize
     arkIdleMonitor->NotifyNeedFreeze(true);
     ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
     ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: in background trigger NotifyNextCompressGC
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest007, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: not in background trigger NotifyNextCompressGC but not trigger next gc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest008, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(true);
+    ASSERT_TRUE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(false, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    arkIdleMonitor->NotifyNextCompressGC(false, true);
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: trigger next gc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest009, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(true);
+    ASSERT_TRUE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    arkIdleMonitor->NotifyNextCompressGC(false, true);
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: not in bacnground and dont trigger next gc to trigger shared gc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest010, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    RuntimeOption option;
+    option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;  // 16M
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    auto workerVM1 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM2 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM3 = panda::JSNApi::CreateJSVM(option);
+    ArkNativeEngine *workerEngine1 = new ArkNativeEngine(workerVM1, nullptr);
+    ArkNativeEngine *workerEngine2 = new ArkNativeEngine(workerVM2, nullptr);
+    ArkNativeEngine *workerEngine3 = new ArkNativeEngine(workerVM3, nullptr);
+
+    NativeEngine* engine1 = reinterpret_cast<NativeEngine*>(workerEngine1);
+    NativeEngine* engine2 = reinterpret_cast<NativeEngine*>(workerEngine2);
+    NativeEngine* engine3 = reinterpret_cast<NativeEngine*>(workerEngine3);
+
+    for (int i = 0; i < 10; i++) {
+        engine1->GetWorkerThreadState()->NoityTaskStart();
+        engine2->GetWorkerThreadState()->NoityTaskStart();
+        engine3->GetWorkerThreadState()->NoityTaskStart();
+        engine1->GetWorkerThreadState()->NotifyTaskEnd();
+        engine2->GetWorkerThreadState()->NotifyTaskEnd();
+        engine3->GetWorkerThreadState()->NotifyTaskEnd();
+    }
+
+    arkIdleMonitor->NotifyChangeBackgroundState(false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    delete workerEngine1;
+    delete workerEngine2;
+    delete workerEngine3;
+}
+
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: not in bacnground and dont trigger next gc to trigger shared gc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest011, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    RuntimeOption option;
+    option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;  // 16M
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    auto workerVM1 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM2 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM3 = panda::JSNApi::CreateJSVM(option);
+    ArkNativeEngine *workerEngine1 = new ArkNativeEngine(workerVM1, nullptr);
+    ArkNativeEngine *workerEngine2 = new ArkNativeEngine(workerVM2, nullptr);
+    ArkNativeEngine *workerEngine3 = new ArkNativeEngine(workerVM3, nullptr);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    delete workerEngine1;
+    delete workerEngine2;
+    delete workerEngine3;
+}
+
+/**
+ * @tc.name: IdleMonitorDeferfreezeTest003
+ * @tc.desc: not in bacnground and dont trigger next gc to trigger shared gc
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, IdleMonitorDeferfreezeTest012, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    RuntimeOption option;
+    option.SetGcType(RuntimeOption::GC_TYPE::GEN_GC);
+    const int64_t poolSize = 0x1000000;  // 16M
+    option.SetGcPoolSize(poolSize);
+    option.SetLogLevel(RuntimeOption::LOG_LEVEL::ERROR);
+    option.SetDebuggerLibraryPath("");
+    auto workerVM1 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM2 = panda::JSNApi::CreateJSVM(option);
+    auto workerVM3 = panda::JSNApi::CreateJSVM(option);
+    ArkNativeEngine *workerEngine1 = new ArkNativeEngine(workerVM1, nullptr);
+    ArkNativeEngine *workerEngine2 = new ArkNativeEngine(workerVM2, nullptr);
+    ArkNativeEngine *workerEngine3 = new ArkNativeEngine(workerVM3, nullptr);
+
+    arkIdleMonitor->NotifyChangeBackgroundState(false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
+
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+    arkIdleMonitor->NotifyNextCompressGC(true, false);
+
+    delete workerEngine1;
+    delete workerEngine2;
+    delete workerEngine3;
 }
