@@ -23,7 +23,7 @@ bool ModuleLoadChecker::CheckModuleLoadable(
     std::shared_lock lock(moduleCheckerDelegateMutex_);
     apiAllowListChecker = nullptr;
     if (!moduleCheckerDelegate_) {
-        HILOG_DEBUG("Not check moduleLoadable, moduleCheckerDelegate_ not set");
+        MODULEMNG_HILOG_DEBUG("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
     }
     return moduleCheckerDelegate_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule);
@@ -33,7 +33,7 @@ bool ModuleLoadChecker::DiskCheckOnly()
 {
     std::shared_lock lock(moduleCheckerDelegateMutex_);
     if (!moduleCheckerDelegate_) {
-        HILOG_DEBUG("Not check moduleLoadable, moduleCheckerDelegate_ not set");
+        MODULEMNG_HILOG_DEBUG("Not check moduleLoadable, moduleCheckerDelegate_ not set");
         return true;
     }
     return moduleCheckerDelegate_->DiskCheckOnly();
