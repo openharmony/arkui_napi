@@ -284,6 +284,7 @@ public:
     virtual bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
         = 0;
     virtual void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) = 0;
+    virtual void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) = 0;
     virtual void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) = 0;
     virtual void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
                                   bool defaultCloneSendable, void** result) = 0;
