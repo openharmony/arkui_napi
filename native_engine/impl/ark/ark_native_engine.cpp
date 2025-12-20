@@ -2599,6 +2599,12 @@ void ArkNativeEngine::GetMainThreadStackTrace(napi_env env, std::string &stackTr
     DFXJSNApi::GetMainThreadStackTrace(vm, stackTraceStr);
 }
 
+void ArkNativeEngine::SetMultithreadingDetectionEnabled(napi_env env, bool enabled)
+{
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    DFXJSNApi::SetMultithreadingDetectionEnabled(vm, enabled);
+}
+
 void ArkNativeEngine::GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr)
 {
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
