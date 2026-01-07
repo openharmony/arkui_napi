@@ -108,11 +108,11 @@ NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
     Local<panda::ObjectRef> object = JSValueRef::Undefined(vm);
     switch (ref_direction) {
         case NapiXRefDirection::NAPI_DIRECTION_DYNAMIC_TO_STATIC:
-            object = panda::ObjectRef::NewJSXRefObject(vm);
+            object = panda::ObjectRef::NewJSXRefWrappedNapiObject(vm);
             ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
             break;
         case NapiXRefDirection::NAPI_DIRECTION_STATIC_TO_DYNAMIC:
-            object = panda::ObjectRef::New(vm);
+            object = panda::ObjectRef::NewWrappedNapiObject(vm);
             ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
             break;
         case NapiXRefDirection::NAPI_DIRECTION_HYBRID:
@@ -290,7 +290,7 @@ NAPI_EXTERN napi_status napi_mark_attach_with_xref(napi_env env,
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
     size_t nativeBindingSize = 0;
     Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
-    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefObject(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefWrappedNapiObject(vm);
     // Create strong reference now, will update to weak reference after interop support
     panda::JSNApi::XRefBindingInfo* data = panda::JSNApi::XRefBindingInfo::CreateNewInstance();
     if (data == nullptr) {
@@ -369,7 +369,7 @@ NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetProxyNapiWrapperString(vm);
     NativeReference* ref = nullptr;
-    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefObject(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewJSXRefWrappedNapiObject(vm);
     // Create strong reference now, will update to weak reference after interop support
     ref = engine->CreateXRefReference(js_object, 1, false, callback, native_object);
     *reference = ref;

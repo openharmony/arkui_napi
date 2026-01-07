@@ -1578,7 +1578,7 @@ panda::Local<panda::ObjectRef> ArkNativeEngine::LoadModuleByName(const std::stri
             instanceValue->Delete(vm_, key);
             delete ref;
         } else {
-            Local<ObjectRef> object = ObjectRef::New(vm_);
+            Local<ObjectRef> object = ObjectRef::NewWrappedNapiObject(vm_);
             NativeReference* ref = nullptr;
             Local<JSValueRef> value(instanceValue);
             ref = new ArkNativeReference(this, value, 0, true, nullptr, instance, nullptr);
