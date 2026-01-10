@@ -29,6 +29,11 @@
 #define TEST_NAPI_UNCLOSED_CRITICAL_LOG "napi cannot invoke under critical scope, id: "
 #define TEST_UNCLOSED_CRITICAL_CALLBACK_LOG "critical scope still open after user callback"
 
+static const napi_type_tag wrapTypeTag = {
+    0xd1fde94f10374a13,
+    0x8c5a8462a7be826d
+};
+
 class NapiCriticalTest : public NativeEngineTest {
 public:
     NapiCriticalTest() : NativeEngineTest(), runner_(engine_) {}
@@ -2148,6 +2153,63 @@ HWTEST_F(NapiCriticalTest, NapiNonCriticalTest092, testing::ext::TestSize.Level1
 
         napi_throw(env, object);
         napi_close_critical_scope(env, scope);
+    });
+    deathTest.AssertSignal(SIGABRT).AssertError(TEST_NAPI_UNCLOSED_CRITICAL_LOG);
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
+/**
+ * @tc.name: NapiNonCriticalTest093
+ * @tc.desc: Test interface cannot invoke while critical scope is opening.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, NapiNonCriticalTest093, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy env;
+        napi_value object {};
+        napi_status status = napi_create_object(env, &object);
+        ASSERT_EQ(status, napi_ok);
+        // test case would crash, no need release after test
+        auto data = new int { 1 };
+        napi_critical_scope scope {};
+        status = napi_open_critical_scope(env, &scope);
+        ASSERT_EQ(status, napi_ok);
+
+        status = napi_wrap_enhance_s(env, object, data, FinalizeCallback<int>,
+            true, nullptr, 0, &wrapTypeTag, nullptr);
+        ASSERT_EQ(status, napi_ok);
+
+        status = napi_close_critical_scope(env, scope);
+        ASSERT_EQ(status, napi_ok);
+    });
+    deathTest.AssertSignal(SIGABRT).AssertError(TEST_NAPI_UNCLOSED_CRITICAL_LOG);
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
+/**
+ * @tc.name: NapiNonCriticalTest094
+ * @tc.desc: Test interface cannot invoke while critical scope is opening.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, NapiNonCriticalTest094, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy env;
+        napi_value object {};
+        napi_status status = napi_create_object(env, &object);
+        ASSERT_EQ(status, napi_ok);
+
+        napi_critical_scope scope {};
+        status = napi_open_critical_scope(env, &scope);
+        ASSERT_EQ(status, napi_ok);
+
+        void* result {};
+        status = napi_get_value_external_s(env, object, &wrapTypeTag, &result);
+        ASSERT_EQ(status, napi_ok);
+
+        status = napi_close_critical_scope(env, scope);
+        ASSERT_EQ(status, napi_ok);
     });
     deathTest.AssertSignal(SIGABRT).AssertError(TEST_NAPI_UNCLOSED_CRITICAL_LOG);
     ASSERT_TRUE(deathTest.GetResult());

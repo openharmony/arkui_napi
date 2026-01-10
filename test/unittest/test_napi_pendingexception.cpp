@@ -27,6 +27,12 @@ static constexpr const char TEST_CHAR_ERROR_MESSAGE[] = "Common error";
 static constexpr const char TEST_CHAR_ERROR_CODE[] = "500";
 static constexpr const char TEST_CHAR_ERROR_CODE_KEY[] = "code";
 static constexpr const char TEST_CHAR_ERROR_MESSAGE_KEY[] = "message";
+static constexpr const char TEST_STRING[5] = "test";
+
+static const napi_type_tag wrapTypeTag = {
+    0xd1fde94f10374a13,  // lower
+    0x8c5a8462a7be826d   // upper
+};
 
 class NapiPendingExceptionTest : public NativeEngineTest {
 public:
@@ -603,4 +609,129 @@ HWTEST_F(NapiPendingExceptionTest, NapiGetAndClearLastException002, testing::ext
     ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, messageValue, testMessage, BUFF_SIZE, &length));
     ASSERT_EQ(length, strlen(TEST_CHAR_ERROR_MESSAGE));
     ASSERT_STREQ(TEST_CHAR_ERROR_MESSAGE, testMessage);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiWrapSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_ref result;
+
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    ConstructionException();
+    napi_status res = napi_wrap_s(env, obj, (void *)TEST_STRING,
+        [](napi_env, void* data, void* hint) {}, nullptr, &wrapTypeTag, &result);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiUnWrapSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    char *testStr = nullptr;
+
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    ConstructionException();
+    napi_status res = napi_unwrap_s(env, obj, &wrapTypeTag, (void **)&testStr);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiWrapSendableSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value valTrue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &valTrue));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", valTrue),
+    };
+
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &obj));
+
+    ConstructionException();
+    napi_status res = napi_wrap_sendable_s(env, obj, (void*)TEST_STRING,
+                                   [](napi_env env, void* data, void* hint) {},
+                                   nullptr, &wrapTypeTag);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiUnWrapSendableSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value valTrue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &valTrue));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", valTrue),
+    };
+
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &obj));
+
+    ConstructionException();
+    char* tmpTestStr = nullptr;
+    napi_status res = napi_unwrap_sendable_s(env, obj, &wrapTypeTag, (void**)&tmpTestStr);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiWrapEnhanceSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    size_t size = sizeof(*TEST_STRING) / sizeof(char);
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    ConstructionException();
+    napi_status res = napi_wrap_enhance_s(
+        env, obj, (void*)TEST_STRING,
+        [](napi_env env, void* data, void* hint) {}, false, nullptr, size,
+        &wrapTypeTag, nullptr);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiCreateExternalSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    static const napi_type_tag externalTypeTag = wrapTypeTag;
+
+    napi_value external = nullptr;
+
+    ConstructionException();
+    napi_status res = napi_create_external_s(
+        env, (void*)TEST_STRING,
+        [](napi_env env, void* data, void* hint) { ASSERT_STREQ((const char*)data, (const char*)hint); },
+        (void*)TEST_STRING, &externalTypeTag, &external);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
+}
+
+HWTEST_F(NapiPendingExceptionTest, NapiGetValueExternalSTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    static const napi_type_tag externalTypeTag = wrapTypeTag;
+
+    napi_value external;
+    ASSERT_CHECK_CALL(napi_create_external_s(env, (void*)TEST_STRING, nullptr, nullptr, &externalTypeTag, &external));
+
+    void* result = nullptr;
+    ConstructionException();
+    napi_status res = napi_get_value_external_s(env, external, &externalTypeTag, &result);
+    DestructionException();
+    ASSERT_EQ(res, napi_pending_exception);
 }
