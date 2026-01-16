@@ -2906,6 +2906,41 @@ HWTEST_F(NapiBasicTest, ObjectWrapperTest006, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: ObjectWrapperTest007
+ * @tc.desc: Test object wrapper.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, ObjectWrapperTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testClass = nullptr;
+    napi_define_class(
+        env, "TestClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &testClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testClass, 0, nullptr, &instanceValue);
+
+    const char* testStr = "default";
+    napi_wrap(
+        env, instanceValue, (void*)testStr, [](napi_env env, void* data, void* hint) {}, nullptr, nullptr);
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::ObjectRef> nativeObj(LocalValueFromJsValue(instanceValue));
+    Local<panda::ObjectRef> wrappedObject(nativeObj->Get(vm, key));
+    ASSERT_TRUE(wrappedObject->IsWrappedNapiObject(vm));
+    int32_t nativePointersCount = wrappedObject->GetNativePointerFieldCount(vm);
+    ASSERT_EQ(nativePointersCount, 1); // 1: default count of native pointers.
+}
+
+/**
  * @tc.name: StrictEqualsTest001
  * @tc.desc: Test date type.
  * @tc.type: FUNC
@@ -3742,6 +3777,43 @@ HWTEST_F(NapiBasicTest, WrapEnhanceTest002, testing::ext::TestSize.Level1)
     char* tempTestStr1 = nullptr;
     napi_remove_wrap(env, instanceValue, (void**)&tempTestStr1);
     ASSERT_STREQ(testWrapStr, tempTestStr1);
+}
+
+/**
+ * @tc.name: WrapEnhanceTest003
+ * @tc.desc: Test jstype of the wrapped object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, WrapEnhanceTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value testWrapClass = nullptr;
+    napi_define_class(
+        env, "TestWrapClass", NAPI_AUTO_LENGTH,
+        [](napi_env env, napi_callback_info info) -> napi_value {
+            napi_value thisVar = nullptr;
+            napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+
+            return thisVar;
+        },
+        nullptr, 0, nullptr, &testWrapClass);
+
+    napi_value instanceValue = nullptr;
+    napi_new_instance(env, testWrapClass, 0, nullptr, &instanceValue);
+
+    const char* testWrapStr = "WrapEnhance";
+    size_t size = sizeof(*testWrapStr) / sizeof(char);
+    napi_wrap_enhance(
+        env, instanceValue, (void*)testWrapStr, [](napi_env env, void* data, void* hint) {}, true, nullptr, size,
+        nullptr);
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::ObjectRef> nativeObj(LocalValueFromJsValue(instanceValue));
+    Local<panda::ObjectRef> wrappedObject(nativeObj->Get(vm, key));
+    ASSERT_TRUE(wrappedObject->IsWrappedNapiObject(vm));
+    int32_t nativePointersCount = wrappedObject->GetNativePointerFieldCount(vm);
+    ASSERT_EQ(nativePointersCount, 1); // 1: default count of native pointers.
 }
 
 /**

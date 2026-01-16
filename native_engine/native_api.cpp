@@ -2027,7 +2027,7 @@ NAPI_EXTERN napi_status napi_wrap(napi_env env,
     if (nativeObject->Has(vm, key)) {
         HILOG_DEBUG("napi_wrap: current js_object has been wrapped.");
     }
-    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWrappedNapiObject(vm);
     NativeReference* ref = nullptr;
     if (reference != nullptr) {
         ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
@@ -2064,7 +2064,7 @@ NAPI_EXTERN napi_status napi_wrap_enhance(napi_env env,
     CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
     auto reference = reinterpret_cast<NativeReference**>(result);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
-    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWrappedNapiObject(vm);
     NativeReference* ref = nullptr;
     if (!async_finalizer) {
         if (reference != nullptr) {
@@ -2115,7 +2115,7 @@ NAPI_EXTERN napi_status napi_wrap_async_finalizer(napi_env env,
     if (nativeObject->Has(vm, key)) {
         HILOG_DEBUG("napi_wrap_async_finalizer: current js_object has been wrapped.");
     }
-    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWrappedNapiObject(vm);
     NativeReference* ref = nullptr;
     if (reference != nullptr) {
         ref = engine->CreateAsyncReference(js_object, 1, false, callback, native_object, finalize_hint);
@@ -2154,7 +2154,7 @@ NAPI_EXTERN napi_status napi_wrap_with_size(napi_env env,
     if (nativeObject->Has(vm, key)) {
         HILOG_DEBUG("napi_wrap_with_size: current js_object has been wrapped.");
     }
-    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    Local<panda::ObjectRef> object = panda::ObjectRef::NewWrappedNapiObject(vm);
     NativeReference* ref = nullptr;
     if (reference != nullptr) {
         ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint,
@@ -2222,7 +2222,7 @@ NAPI_EXTERN napi_status napi_remove_wrap(napi_env env, napi_value js_object, voi
         nativeObject->Delete(vm, key);
         delete ref;
     } else {
-        Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+        Local<panda::ObjectRef> object = panda::ObjectRef::NewWrappedNapiObject(vm);
         NativeReference* ref = nullptr;
         ref = engine->CreateReference(js_object, 0, true, nullptr, nullptr, nullptr);
         object->SetNativePointerFieldCount(vm, 1);
