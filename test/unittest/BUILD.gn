@@ -55,6 +55,10 @@ test_ark_unittest("base") {
   ]
 }
 
+test_ark_unittest("idle_monitor") {
+  sources = [ "test_ark_idle_monitor.cpp" ]
+}
+
 test_ark_unittest("threadsafe") {
   sources = [ "test_napi_threadsafe.cpp" ]
 }
@@ -116,6 +120,7 @@ group("unittest") {
     ":test_ark_unittest_base",
     ":test_ark_unittest_critical",
     ":test_ark_unittest_errorcode",
+    ":test_ark_unittest_idle_monitor",
     ":test_ark_unittest_threadsafe",
     ":test_unittest_sendevent",
     ":test_worker_manager",
