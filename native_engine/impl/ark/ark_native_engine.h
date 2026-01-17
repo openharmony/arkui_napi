@@ -252,6 +252,8 @@ public:
     // Set RawHeap Trim Level
     void SetRawHeapTrimLevel(uint32_t level) override;
 
+    void SetProcDumpInSharedOOM(bool enable) override;
+
     // Detect performance to obtain cpuprofiler file
     void StartCpuProfiler(const std::string& fileName = "") override;
     void StopCpuProfiler() override;

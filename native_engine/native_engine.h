@@ -260,6 +260,7 @@ public:
     virtual void SetJsDumpThresholds(size_t thresholds) = 0;
     virtual void SetAppFreezeFilterCallback(AppFreezeFilterCallback callback) = 0;
     virtual void SetRawHeapTrimLevel(uint32_t level) = 0;
+    virtual void SetProcDumpInSharedOOM(bool enable) = 0;
 
     virtual void StartCpuProfiler(const std::string& fileName = "") = 0;
     virtual void StopCpuProfiler() = 0;
