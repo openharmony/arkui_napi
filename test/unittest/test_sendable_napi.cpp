@@ -21,12 +21,28 @@
 #include "gtest/gtest.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_api_internal.h"
+#include "native_engine/native_utils.h"
 #include "napi/native_common.h"
 #include "securec.h"
 #include "utils/log.h"
 
 static constexpr size_t TEST_STR_LENGTH = 30;
 static constexpr int32_t TEST_INT32 = 1000; // 1000 is test number
+static constexpr int32_t INT_ARG_2 = 2;
+static constexpr const char TEST_STR[] = "Test";
+
+
+static const napi_type_tag wrapTypeTag = {
+    0xd1fde94f10374a13,  // lower
+    0x8c5a8462a7be826d   // upper
+};
+
+static const napi_type_tag unWrapTypeTag = {
+    0x8111455d128d4e2d,  // lower
+    0x9297e80a58cf0a9c   // upper
+};
+
 class NapiSendableTest : public NativeEngineTest {
 public:
     static void SetUpTestCase()
@@ -2708,4 +2724,158 @@ HWTEST_F(NapiSendableTest, SendableReferenceTest018, testing::ext::TestSize.Leve
 
         ASSERT_CHECK_CALL(napi_delete_strong_sendable_reference(env, refStorage[i]));
     }
+}
+
+HWTEST_F(NapiSendableTest, WrapSendableSTest001, testing::ext::TestSize.Level1)
+{
+    // napi_wrap_sendable && napi_unwrap_sendable normal function
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value valTrue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &valTrue));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", valTrue),
+    };
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &obj));
+
+    res = napi_wrap_sendable_s(env, obj, (void*)TEST_STR,
+        [](napi_env env, void* data, void* hint) {}, nullptr, &wrapTypeTag);
+    ASSERT_EQ(res, napi_ok);
+
+    char* tmpTestStr = nullptr;
+    res = napi_unwrap_sendable_s(env, obj, &wrapTypeTag, (void**)&tmpTestStr);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_STREQ(TEST_STR, tmpTestStr);
+
+    char* tmpTestStr1 = nullptr;
+    res = napi_remove_wrap_sendable(env, obj, (void**)&tmpTestStr1);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_STREQ(TEST_STR, tmpTestStr1);
+}
+
+HWTEST_F(NapiSendableTest, WrapSendableSTest002, testing::ext::TestSize.Level1)
+{
+    // different type_tag
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_status res = napi_ok;
+
+    napi_value valTrue = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &valTrue));
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", valTrue),
+    };
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 1, desc, &obj));
+
+    res = napi_wrap_sendable_s(env, obj, (void*)TEST_STR,
+        [](napi_env env, void* data, void* hint) {}, nullptr, &wrapTypeTag);
+    ASSERT_EQ(res, napi_ok);
+
+    char* tmpTestStr = nullptr;
+    res = napi_unwrap_sendable_s(env, obj, &unWrapTypeTag, (void**)&tmpTestStr);
+    ASSERT_EQ(res, napi_invalid_arg);
+
+    char* tmpTestStr1 = nullptr;
+    res = napi_remove_wrap_sendable(env, obj, (void**)&tmpTestStr1);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_STREQ(TEST_STR, tmpTestStr1);
+}
+
+HWTEST_F(NapiSendableTest, WrapSendableSTest003, testing::ext::TestSize.Level1)
+{
+    // GC test
+    UVLoopRunner runner(engine_);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const EcmaVM* vm = reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm();
+
+    static bool finalizeCalled = false;
+    auto finalizeCb = [](napi_env env, void* data, void* hint) {
+        finalizeCalled = true;
+    };
+
+    {
+        napi_handle_scope scope = nullptr;
+        napi_status status = napi_open_handle_scope(env, &scope);
+        ASSERT_EQ(status, napi_ok);
+
+        napi_value val_true;
+        status = napi_get_boolean(env, true, &val_true);
+        ASSERT_EQ(status, napi_ok);
+
+        napi_property_descriptor desc[] = {
+            DECLARE_NAPI_DEFAULT_PROPERTY("x", val_true),
+        };
+
+        napi_value obj;
+        status = napi_create_sendable_object_with_properties(env, 1, desc, &obj);
+        ASSERT_EQ(status, napi_ok);
+
+        status = napi_wrap_sendable_s(env, obj, (void*)TEST_STR, finalizeCb, nullptr, &wrapTypeTag);
+        ASSERT_EQ(status, napi_ok);
+
+        status = napi_close_handle_scope(env, scope);
+        ASSERT_EQ(status, napi_ok);
+    }
+
+    panda::JSNApi::TriggerGC(vm, panda::ecmascript::GCReason::OTHER, panda::JSNApi::TRIGGER_GC_TYPE::SHARED_FULL_GC);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    runner.Run();
+    ASSERT_TRUE(finalizeCalled);
+}
+
+HWTEST_F(NapiSendableTest, WrapSendableSTest004, testing::ext::TestSize.Level1)
+{
+    // napi_wrap_sendable && napi_unwrap_sendable_s
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_value val_true;
+    napi_status status = napi_get_boolean(env, true, &val_true);
+    ASSERT_EQ(status, napi_ok);
+
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_DEFAULT_PROPERTY("x", val_true),
+    };
+
+    napi_value obj;
+    status = napi_create_sendable_object_with_properties(env, 1, desc, &obj);
+    ASSERT_EQ(status, napi_ok);
+
+
+    status = napi_wrap_sendable(env, obj, (void*)TEST_STR,
+        [](napi_env env, void* data, void* hint) {}, nullptr);
+    ASSERT_EQ(status, napi_ok);
+    
+    char* tmpTestStr = nullptr;
+    status = napi_unwrap_sendable_s(env, obj, &wrapTypeTag, (void**)&tmpTestStr);
+    ASSERT_EQ(status, napi_invalid_arg);
+
+    char* tmpTestStr1 = nullptr;
+    status = napi_remove_wrap_sendable(env, obj, (void**)&tmpTestStr1);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_STREQ(TEST_STR, tmpTestStr1);
+}
+
+HWTEST_F(NapiSendableTest, WrapSendableSTest005, testing::ext::TestSize.Level1)
+{
+    // napi_generic_failure
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+
+    napi_value sendableObj = nullptr;
+    napi_status status = napi_create_sendable_object_with_properties(env, 0, nullptr, &sendableObj);
+    ASSERT_EQ(status, napi_ok);
+
+    auto nativeValue = LocalValueFromJsValue(sendableObj);
+    Local<panda::ObjectRef> nativeObject(nativeValue);
+
+    nativeObject->SetNativePointerFieldCount(vm, INT_ARG_2);
+    nativeObject->SetNativePointerField(vm, 0, (void*)TEST_STR, nullptr, nullptr);
+    nativeObject->SetNativePointerField(vm, 1, nullptr, nullptr, nullptr);
+
+    char* tmpTestStr = nullptr;
+    status = napi_unwrap_sendable_s(env, sendableObj, &wrapTypeTag, (void**)&tmpTestStr);
+    ASSERT_EQ(status, napi_generic_failure);
 }

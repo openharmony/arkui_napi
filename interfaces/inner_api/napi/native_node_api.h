@@ -98,6 +98,46 @@ NAPI_EXTERN napi_status napi_create_external_with_size(napi_env env,
                                                        void* finalize_hint,
                                                        napi_value* result,
                                                        size_t native_binding_size);
+NAPI_EXTERN napi_status napi_wrap_s(napi_env env,
+                                    napi_value js_object,
+                                    void* native_object,
+                                    napi_finalize finalize_cb,
+                                    void* finalize_hint,
+                                    const napi_type_tag* type_tag,
+                                    napi_ref* result);
+NAPI_EXTERN napi_status napi_unwrap_s(napi_env env,
+                                      napi_value js_object,
+                                      const napi_type_tag* type_tag,
+                                      void** result);
+NAPI_EXTERN napi_status napi_wrap_sendable_s(napi_env env,
+                                             napi_value js_object,
+                                             void* native_object,
+                                             napi_finalize finalize_cb,
+                                             void* finalize_hint,
+                                             const napi_type_tag* type_tag);
+NAPI_EXTERN napi_status napi_unwrap_sendable_s(napi_env env,
+                                               napi_value js_object,
+                                               const napi_type_tag* type_tag,
+                                               void** result);
+NAPI_EXTERN napi_status napi_wrap_enhance_s(napi_env env,
+                                            napi_value js_object,
+                                            void* native_object,
+                                            napi_finalize finalize_cb,
+                                            bool async_finalizer,
+                                            void* finalize_hint,
+                                            size_t native_binding_size,
+                                            const napi_type_tag* type_tag,
+                                            napi_ref* result);
+NAPI_EXTERN napi_status napi_create_external_s(napi_env env,
+                                               void* data,
+                                               napi_finalize finalize_cb,
+                                               void* finalize_hint,
+                                               const napi_type_tag* type_tag,
+                                               napi_value* result);
+NAPI_EXTERN napi_status napi_get_value_external_s(napi_env env,
+                                                  napi_value value,
+                                                  const napi_type_tag* type_tag,
+                                                  void** result);
 NAPI_EXTERN napi_status napi_set_promise_rejection_callback(napi_env env, napi_ref ref, napi_ref checkRef);
 
 NAPI_EXTERN napi_status napi_is_arguments_object(napi_env env, napi_value value, bool* result);

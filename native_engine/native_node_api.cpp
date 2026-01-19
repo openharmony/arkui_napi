@@ -24,6 +24,13 @@ using panda::ObjectRef;
 
 static constexpr int32_t MAX_THREAD_SAFE_COUNT = 128;
 static constexpr size_t SMALL_STRING_SIZE = 16;
+static constexpr size_t INT_ARG_2 = 2;
+
+struct WrapperData {
+    void* data;
+    napi_type_tag type_tag;
+    napi_finalize finalize_cb;
+};
 
 NAPI_EXTERN void napi_module_register(napi_module* mod)
 {
@@ -670,5 +677,271 @@ NAPI_EXTERN napi_status napi_create_string_utf8_with_replacement(napi_env env,
         *result = JsValueFromLocalValue(object);
     }
 
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_wrap_s(napi_env env,
+                                    napi_value js_object,
+                                    void* native_object,
+                                    napi_finalize finalize_cb,
+                                    void* finalize_hint,
+                                    const napi_type_tag* type_tag,
+                                    napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, finalize_cb);
+    CHECK_ARG(env, type_tag);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    SWITCH_CONTEXT(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    size_t nativeBindingSize = 0;
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    if (nativeObject->Has(vm, key)) {
+        HILOG_ERROR("napi_wrap_s: current js_object has been wrapped.");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    NativeReference* ref = nullptr;
+    if (reference != nullptr) {
+        ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint);
+        *reference = ref;
+    } else {
+        ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint);
+    }
+    object->SetNativePointerFieldCount(vm, INT_ARG_2);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, nativeBindingSize);
+    object->SetNativePointerField(vm, 1, const_cast<napi_type_tag*>(type_tag), nullptr, nullptr, nativeBindingSize);
+    panda::PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_unwrap_s(napi_env env, napi_value js_object, const napi_type_tag* type_tag, void** result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, type_tag);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    SWITCH_CONTEXT(env);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
+    *result = nullptr;
+    if (val->IsObjectWithoutSwitchState(vm)) {
+        Local<panda::ObjectRef> ext(val);
+        size_t fieldCount = ext->GetNativePointerFieldCount(vm);
+        if (fieldCount != INT_ARG_2) {
+            HILOG_ERROR("napi_unwrap_s: expected  2 native fields");
+            return napi_set_last_error(env, napi_invalid_arg);
+        }
+        napi_type_tag* tag = static_cast<napi_type_tag*>(ext->GetNativePointerField(vm, 1));
+        if (tag == nullptr) {
+            HILOG_ERROR("napi_unwrap_s: tag is nullptr");
+            return napi_set_last_error(env, napi_generic_failure);
+        } else {
+            if (tag->lower != type_tag->lower ||tag->upper != type_tag->upper) {
+                HILOG_ERROR("napi_unwrap_s: type tag mismatch");
+                return napi_set_last_error(env, napi_invalid_arg);
+            }
+            auto ref = reinterpret_cast<NativeReference*>(ext->GetNativePointerField(vm, 0));
+            *result = ref != nullptr ? ref->GetData() : nullptr;
+        }
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_wrap_enhance_s(napi_env env,
+                                            napi_value js_object,
+                                            void* native_object,
+                                            napi_finalize finalize_cb,
+                                            bool async_finalizer,
+                                            void* finalize_hint,
+                                            size_t native_binding_size,
+                                            const napi_type_tag* type_tag,
+                                            napi_ref* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, type_tag);
+
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<NapiNativeFinalize>(finalize_cb);
+    SWITCH_CONTEXT(env);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    auto reference = reinterpret_cast<NativeReference**>(result);
+    Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
+    if (nativeObject->Has(vm, key)) {
+        HILOG_ERROR("napi_wrap_enhance_s: current js_object has been wrapped.");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    Local<panda::ObjectRef> object = panda::ObjectRef::New(vm);
+    NativeReference* ref = nullptr;
+    if (!async_finalizer) {
+        if (reference != nullptr) {
+            ref = engine->CreateReference(js_object, 1, false, callback, native_object, finalize_hint,
+                                          native_binding_size);
+            *reference = ref;
+        } else {
+            ref = engine->CreateReference(js_object, 0, true, callback, native_object, finalize_hint,
+                                          native_binding_size);
+        }
+    } else {
+        if (reference != nullptr) {
+            ref = engine->CreateAsyncReference(js_object, 1, false, callback, native_object, finalize_hint);
+            *reference = ref;
+        } else {
+            ref = engine->CreateAsyncReference(js_object, 0, true, callback, native_object, finalize_hint);
+        }
+    }
+    object->SetNativePointerFieldCount(vm, INT_ARG_2);
+    object->SetNativePointerField(vm, 0, ref, nullptr, nullptr, native_binding_size);
+    object->SetNativePointerField(vm, 1, const_cast<napi_type_tag*>(type_tag), nullptr, nullptr, native_binding_size);
+
+    panda::PropertyAttribute attr(object, true, false, true);
+    nativeObject->DefineProperty(vm, key, attr);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_wrap_sendable_s(napi_env env,
+                                             napi_value js_object,
+                                             void* native_object,
+                                             napi_finalize finalize_cb,
+                                             void* finalize_hint,
+                                             const napi_type_tag* type_tag)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, native_object);
+    CHECK_ARG(env, type_tag);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto callback = reinterpret_cast<panda::NativePointerCallback>(finalize_cb);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
+    Local<ObjectRef> nativeObject(nativeValue);
+    nativeObject->SetNativePointerFieldCount(vm, INT_ARG_2);
+    nativeObject->SetNativePointerField(vm, 0, native_object, callback, finalize_hint);
+    nativeObject->SetNativePointerField(vm, 1, const_cast<napi_type_tag*>(type_tag), nullptr, nullptr);
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_unwrap_sendable_s(napi_env env,
+                                               napi_value js_object,
+                                               const napi_type_tag* type_tag,
+                                               void** result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, js_object);
+    CHECK_ARG(env, result);
+    CHECK_ARG(env, type_tag);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    if (!engine->IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support sendable feature");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    auto nativeValue = LocalValueFromJsValue(js_object);
+    auto vm = engine->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsSendableObject(vm), napi_object_expected);
+    Local<ObjectRef> nativeObject(nativeValue);
+    size_t fieldCount = nativeObject->GetNativePointerFieldCount(vm);
+    if (fieldCount != INT_ARG_2) {
+        HILOG_ERROR("napi_unwrap_sendable_s: expected 2 native fields");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+    napi_type_tag* tag = reinterpret_cast<napi_type_tag*>(nativeObject->GetNativePointerField(vm, 1));
+    if (tag == nullptr) {
+        HILOG_ERROR("napi_unwrap_sendable_s: tag is nullptr");
+        return napi_set_last_error(env, napi_generic_failure);
+    } else {
+        if (tag->lower != type_tag->lower || tag->upper != type_tag->upper) {
+            HILOG_ERROR("napi_unwrap_sendable_s: type tag mismatch");
+            return napi_set_last_error(env, napi_invalid_arg);
+        }
+        void* val = nativeObject->GetNativePointerField(vm, 0);
+        *result = val;
+    }
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_create_external_s(napi_env env,
+                                               void* data,
+                                               napi_finalize finalize_cb,
+                                               void* finalize_hint,
+                                               const napi_type_tag* type_tag,
+                                               napi_value* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, type_tag);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+
+    WrapperData *wrapperData = new WrapperData{ data, *type_tag, finalize_cb };
+    auto wrapperCallback = [](napi_env env, void* data, void* hint) {
+        WrapperData *wrapperData = reinterpret_cast<WrapperData*>(data);
+        if (wrapperData) {
+            if (wrapperData->finalize_cb) {
+                wrapperData->finalize_cb(static_cast<napi_env>(env), wrapperData->data, hint);
+            }
+            HILOG_DEBUG("Delete wrapperData.");
+            delete wrapperData;
+        }
+    };
+    Local<panda::NativePointerRef> object = panda::NativePointerRef::NewWrapperData(vm,
+        wrapperData, nullptr, nullptr, 0);
+    *result = JsValueFromLocalValue(object);
+    engine->CreateReference(*result, 0, true, wrapperCallback, wrapperData, finalize_hint);
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_get_value_external_s(napi_env env,
+                                                  napi_value value,
+                                                  const napi_type_tag* type_tag,
+                                                  void** result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, type_tag);
+    CHECK_ARG(env, result);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    bool isNativePointer = false;
+    bool isWrapperData = false;
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    void* ret = nativeValue->GetNativePointerWrapperDataValue(vm, isNativePointer, isWrapperData);
+    RETURN_STATUS_IF_FALSE(env, isNativePointer&&isWrapperData, napi_invalid_arg);
+    WrapperData *wrapperData = reinterpret_cast<WrapperData*>(ret);
+    if (wrapperData->type_tag.lower != type_tag->lower ||
+        wrapperData->type_tag.upper != type_tag->upper) {
+        HILOG_ERROR("napi_get_value_external_s: type tag mismatch");
+        return napi_set_last_error(env, napi_invalid_arg);
+    }
+
+    *result = wrapperData->data;
     return GET_RETURN_STATUS(env);
 }
