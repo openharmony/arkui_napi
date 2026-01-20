@@ -62,13 +62,21 @@ public:
     void StoreRemoteData(const sptr<RemoteData>& data);
     void RemoveFFIData(int64_t id)
     {
-        std::lock_guard<std::recursive_mutex> lock(mtx);
-        ffiDataStore_.erase(id);
+        [[maybe_unused]] sptr<FFIData> keepAlive = nullptr;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mtx);
+            keepAlive = ffiDataStore_[id];
+            ffiDataStore_.erase(id);
+        }
     }
     void RemoveRemoteData(int64_t id)
     {
-        std::lock_guard<std::recursive_mutex> lock(mtx);
-        remoteDataStore_.erase(id);
+        [[maybe_unused]] sptr<FFIData> keepAlive = nullptr;
+        {
+            std::lock_guard<std::recursive_mutex> lock(mtx);
+            keepAlive = remoteDataStore_[id];
+            remoteDataStore_.erase(id);
+        }
     }
 
     int64_t NewFFIDataId();
