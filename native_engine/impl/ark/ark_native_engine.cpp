@@ -2301,6 +2301,11 @@ void ArkNativeEngine::SetRawHeapTrimLevel(uint32_t level)
     DFXJSNApi::SetJsRawHeapCropLevel(static_cast<panda::CropLevel>(level));
 }
 
+void ArkNativeEngine::SetProcDumpInSharedOOM(bool enable)
+{
+    DFXJSNApi::SetProcDumpInSharedOOM(enable);
+}
+
 void ArkNativeEngine::StartCpuProfiler(const std::string& fileName)
 {
     JSNApi::SetNativePtrGetter(vm_, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
