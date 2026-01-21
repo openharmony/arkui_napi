@@ -626,7 +626,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
 void NativeModuleManager::MoveApiAllowListCheckerPtr(
     std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule)
 {
-    if (apiAllowListChecker != nullptr) {
+    if (apiAllowListChecker != nullptr && nativeModule) {
         nativeModule->apiAllowListChecker.reset(apiAllowListChecker.release());
     }
 }
@@ -1223,7 +1223,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 
         tailNativeModule_->moduleName = moduleName;
         tailNativeModule_->systemFilePath = strdup(loadPath);
-        if (strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
+        if (tailNativeModule_->name && strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
             MODULEMNG_HILOG_WARN("%{public}s Name mismatch: %{public}s != %{public}s",
                 isAppModule ? "app module:" : "", tailNativeModule_->moduleName, tailNativeModule_->name);
             MODULEMNG_HILOG_DEBUG("keep .nm_modname match moduleName");
