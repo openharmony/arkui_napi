@@ -19,7 +19,13 @@
 #include <cstdint>
 #include <string>
 
+#ifndef FFI_EXPORT
+#ifndef WINDOWS_PLATFORM
 #define FFI_EXPORT __attribute__((visibility("default")))
+#else
+#define FFI_EXPORT __declspec(dllexport)
+#endif
+#endif
 
 extern "C" {
 const int32_t SUCCESS_CODE = 0;
