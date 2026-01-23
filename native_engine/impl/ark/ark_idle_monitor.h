@@ -26,6 +26,7 @@
 #include <queue>
 #include <unordered_set>
 #include <set>
+#include <condition_variable>
 
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
@@ -47,11 +48,19 @@ class SharedMemController;
 class ArkIdleMonitor {
 using Clock = std::chrono::high_resolution_clock;
 using TRIGGER_IDLE_GC_TYPE = panda::JSNApi::TRIGGER_IDLE_GC_TYPE;
+using ReportDataFunc = void (*)(uint32_t resType, int64_t value,
+    const std::unordered_map<std::string, std::string>& payload);
 public:
     ArkIdleMonitor(){};
     ~ArkIdleMonitor();
 
     static std::shared_ptr<ArkIdleMonitor> GetInstance();
+
+    void GCTaskFinishedCallback()
+    {
+        std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
+        gcFinishCV_.notify_one();
+    }
 
     void SetEnableDeferFreeze(bool state)
     {
@@ -143,16 +152,43 @@ public:
         mainVM_ = vm;
     }
 
+    void RegisterSentTaskWorkerEnv(napi_env workerEnv)
+    {
+        std::lock_guard<std::mutex> lock(sentTaskMutex_);
+        sentTaskWorkerEnvSet_.insert(workerEnv);
+    }
+
+    bool IsSentTask(napi_env workerEnv)
+    {
+        std::lock_guard<std::mutex> lock(sentTaskMutex_);
+        if (sentTaskWorkerEnvSet_.find(workerEnv) != sentTaskWorkerEnvSet_.end()) {
+            return true;
+        }
+        return false;
+    }
+
+    void UnRegisterSentTaskWorkerEnv(napi_env workerEnv)
+    {
+        std::lock_guard<std::mutex> lock(sentTaskMutex_);
+        sentTaskWorkerEnvSet_.erase(workerEnv);
+    }
+
     void RegisterWorkerEnv(napi_env workerEnv)
     {
-        std::lock_guard<std::mutex> lock(envSetMutex_);
-        workerEnvSet_.insert(workerEnv);
+        std::lock_guard<std::mutex> lock(envVectorMutex_);
+        workerEnvVector_.push_back(workerEnv);
     }
 
     void UnregisterWorkerEnv(napi_env workerEnv)
     {
-        std::lock_guard<std::mutex> lock(envSetMutex_);
-        workerEnvSet_.erase(workerEnv);
+        std::lock_guard<std::mutex> lock(envVectorMutex_);
+        for (auto it = workerEnvVector_.begin(); it != workerEnvVector_.end();) {
+            if (*it == workerEnv) {
+                it = workerEnvVector_.erase(it);
+            } else {
+                ++it;
+            }
+        }
     }
 
     template<typename T, int N>
@@ -209,7 +245,7 @@ public:
     void EnableIdleGC(NativeEngine *engine);
     void UnregisterEnv(NativeEngine *engine);
     void NotifyNeedFreeze(bool needFreeze);
-    void NotifyNextCompressGC(bool isNeedNextGC, bool isNeedFreeze);
+    ReportDataFunc LoadReportDataFunc();
 
 private:
     double GetCpuUsage() const;
@@ -218,10 +254,10 @@ private:
     bool CheckLowRunningDurationState() const;
     bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
     bool CheckWorkerEnvQueueAllInIdle(uint32_t idleCount);
+    bool CheckIfInBackgroundInCompressGC();
     void SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration);
     void IntervalMonitor();
     void NotifyMainThreadTryCompressGC();
-    void NotifyMainThreadTryCompressGCByBackground();
     void ClearIdleStats();
     void TryTriggerGC(TriggerGCType gcType);
     void PostIdleCheckTask();
@@ -231,6 +267,7 @@ private:
     void CheckShortIdleTask(int64_t timestamp, int idleTime);
     void PostSwitchBackgroundGCTask();
     void ReportDataToRSS(bool isGCStart);
+    void TryTriggerCompressGCOfProcess();
     static uint64_t GetIdleMonitoringInterval();
 
     static std::shared_ptr<ArkIdleMonitor> instance_;
@@ -255,6 +292,8 @@ private:
     static constexpr uint32_t IDLE_WORKER_TRIGGER_COUNT = 1; // it needs over IDLE_INBACKGROUND_CHECK_LENGTH
     static constexpr uint32_t IDLE_WORKER_CHECK_TASK_COUNT = 4;
     static constexpr uint32_t IDLE_WORKER_CHECK_TASK_COUNT_BACKGROUND = 1;
+    // It needs to be synchronized with ResType in the res_type.h file.
+    static constexpr uint32_t RES_TYPE_GC_EVENT = 185;
     static constexpr size_t IDLE_MIN_EXPECT_RECLAIM_SIZE = 1_MB;
 
     std::atomic<bool> idleState_ {false};
@@ -283,9 +322,10 @@ private:
     RingBuffer<int64_t, IDLE_CHECK_INTERVAL_LENGTH> recordedIdleNotifyInterval_;
     RingBuffer<int64_t, IDLE_CHECK_INTERVAL_LENGTH> recordedRunningNotifyInterval_;
     std::mutex timerMutex_;
-    std::mutex envSetMutex_;
-    std::set<napi_env> workerEnvSet_;
-    std::set<napi_env> performedGCThreadSet_;
+    std::mutex envVectorMutex_;
+    std::mutex sentTaskMutex_;
+    std::set<napi_env> sentTaskWorkerEnvSet_;
+    std::vector<napi_env> workerEnvVector_;
     static uint64_t gIdleMonitoringInterval;
     static uint64_t gDelayOverTime;
 #if defined(ENABLE_EVENT_HANDLER)
@@ -293,6 +333,11 @@ private:
     static bool gEnableIdleGC;
 #endif
     static bool gEnableDeferFreeze;
+    void* dynamicLoadHandle_ {nullptr};
+    ReportDataFunc reportDataFunc_ {nullptr};
+
+    std::mutex waitGCFinishjedMutex_;
+    std::condition_variable gcFinishCV_;
 };
 
 }

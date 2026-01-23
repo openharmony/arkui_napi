@@ -59,6 +59,7 @@ using JSValueRef = panda::JSValueRef;
 using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
+using GCTaskFinishedCallback = std::function<void()>;
 
 typedef bool (*NapiModuleValidateCallback)(const char* moduleName);
 
@@ -326,7 +327,7 @@ public:
 
     void PostFinalizeTasks();
     void PostAsyncTask(panda::AsyncNativeCallbacksPack *callbacksPack);
-    void PostTriggerGCTask(panda::TriggerGCData& data) override;
+    void PostTriggerGCTask(panda::TriggerGCData& data, GCTaskFinishedCallback callback = nullptr) override;
 
     ArkFinalizersPack &GetArkFinalizersPack()
     {

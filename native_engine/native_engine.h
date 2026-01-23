@@ -136,6 +136,7 @@ using NapiAllUnhandledRejectionCallback = std::function<bool(napi_env env,
 using NapiAllPromiseRejectCallback = std::function<void(napi_value* args)>;
 using NapiHasOnErrorCallback = std::function<bool()>;
 using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
+using GCTaskFinishedCallback = std::function<void()>;
 
 // Define method to load counter values of different types
 #define NAPI_COUNTER_ATOMIC_LOAD(storage) (storage).load()
@@ -486,7 +487,7 @@ public:
     virtual std::string GetBundleName() = 0;
     virtual bool IsExecuteModuleInAbcFile(std::string bundleName, std::string moduleName, std::string ohmurl) = 0;
     virtual int GetProcessStartRealTime() = 0;
-    virtual void PostTriggerGCTask(panda::TriggerGCData& data) = 0;
+    virtual void PostTriggerGCTask(panda::TriggerGCData& data, GCTaskFinishedCallback callback = nullptr) = 0;
     // run script by path
     napi_value RunScriptForAbc(const char* path, char* entryPoint = nullptr);
     napi_value RunScript(const char* path, char* entryPoint = nullptr);

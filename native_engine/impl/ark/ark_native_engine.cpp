@@ -2196,14 +2196,29 @@ void ArkNativeEngine::PostAsyncTask(AsyncNativeCallbacksPack *callBacksPack)
     }
 }
 
-void ArkNativeEngine::PostTriggerGCTask(TriggerGCData& data)
+class TriggerGCTithCallbackData {
+public:
+    TriggerGCTithCallbackData(TriggerGCData *data, GCTaskFinishedCallback callback)
+        : data_(data), callback_(callback) {}
+
+    TriggerGCData *data_ {nullptr};
+    GCTaskFinishedCallback callback_ {nullptr};
+};
+
+void ArkNativeEngine::PostTriggerGCTask(TriggerGCData& data, GCTaskFinishedCallback callback)
 {
     TriggerGCData *triggerGCData = new TriggerGCData(data);
+    TriggerGCTithCallbackData *callbackData = new TriggerGCTithCallbackData(triggerGCData, callback);
     uv_work_t *syncWork = new uv_work_t;
-    syncWork->data = reinterpret_cast<void *>(triggerGCData);
+    syncWork->data = reinterpret_cast<void *>(callbackData);
     int ret = uv_queue_work_with_qos(GetUVLoop(), syncWork, [](uv_work_t *) {}, [](uv_work_t *syncWork, int32_t) {
-            auto triggerGCData = reinterpret_cast<TriggerGCData *>(syncWork->data);
+            auto callbackData = reinterpret_cast<TriggerGCTithCallbackData *>(syncWork->data);
+            auto triggerGCData = reinterpret_cast<TriggerGCData *>(callbackData->data_);
             RunCallbacks(triggerGCData);
+            if (callbackData->callback_ != nullptr) {
+                callbackData->callback_();
+            }
+            delete callbackData;
             delete syncWork;
             delete triggerGCData;
         }, uv_qos_t(napi_qos_user_initiated));
