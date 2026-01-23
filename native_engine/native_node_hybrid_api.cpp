@@ -233,7 +233,7 @@ NAPI_EXTERN napi_status napi_mark_from_object_for_cmc(napi_env env,
     CHECK_ARG(env, ref);
     ArkNativeReference* reference = reinterpret_cast<ArkNativeReference*>(ref);
     reference->MarkFromObject(visitor);
-    return napi_clear_last_error(env);
+    return GET_RETURN_STATUS(env);
 }
 
 NAPI_EXTERN napi_status napi_is_alive_object(napi_env env, napi_ref ref, bool* result)
