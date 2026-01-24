@@ -14,9 +14,9 @@
  */
 
 #include "ark_native_engine.h"
+
+#include <cinttypes>
 #include <cstdint>
-#include "ecmascript/napi/include/jsnapi_expo.h"
-#include "utils/log.h"
 
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
@@ -32,7 +32,7 @@
 #include "cj_support.h"
 #include "securec.h"
 #include "utils/file.h"
-#include <cinttypes>
+#include "utils/log.h"
 #if !defined(PREVIEW) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 #include "parameters.h"
 #include <uv.h>
@@ -53,6 +53,7 @@
 #include "musl_preinit_common.h"
 #include "memory_trace.h"
 #include "ecmascript/base/config.h"
+#include "ecmascript/napi/include/jsnapi_expo.h"
 
 // LCOV_EXCL_START
 struct alignas(8) HookJsConfig { // 8 is 8 bit
