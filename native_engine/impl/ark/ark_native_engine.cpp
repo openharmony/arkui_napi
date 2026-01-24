@@ -3407,6 +3407,10 @@ void ArkNativeEngine::RegisterAllPromiseCallback(NapiAllPromiseRejectCallback ca
     auto cb = reinterpret_cast<NapiNativeCallback>(
         NapiErrorManager::GetInstance()->GetGlobalUnhandledRejectionCheckCallback());
     NapiFunctionInfo* funcInfo = NapiFunctionInfo::CreateNewInstance();
+    if (funcInfo == nullptr) {
+        HILOG_ERROR("funcInfo is nullptr");
+        return;
+    }
     funcInfo->callback = cb;
     funcInfo->data = nullptr;
     funcInfo->env = reinterpret_cast<napi_env>(this);
