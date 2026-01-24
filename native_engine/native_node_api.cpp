@@ -203,7 +203,6 @@ NAPI_EXTERN napi_status napi_get_uv_event_loop(napi_env env, struct uv_loop_s** 
         return napi_status::napi_generic_failure;
     }
 
-    CHECK_ENV(env);
     if (!engine->IsMainEnvContext()) {
         HILOG_ERROR("multi-context does not support obtain uv looper");
         return napi_set_last_error(env, napi_invalid_arg);
