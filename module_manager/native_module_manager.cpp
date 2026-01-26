@@ -326,6 +326,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
     } else {
         if (!CreateHeadNativeModule()) {
             MODULEMNG_HILOG_ERROR("failed");
+            free(moduleName);
             return;
         }
         headNativeModule_->version = nativeModule->version;
