@@ -147,6 +147,16 @@ public:
         return isSwitchToBackgroundTask_.load(std::memory_order_relaxed);
     }
 
+    void SetDuringBackgroundTask(bool state)
+    {
+        duringBackgroundTask_.store(state);
+    }
+
+    bool IsDuringBackgroundTask()
+    {
+        return duringBackgroundTask_;
+    }
+
     void SetMainThreadEcmaVM(EcmaVM* vm)
     {
         mainVM_ = vm;
@@ -284,7 +294,7 @@ private:
     static constexpr int64_t MAX_TRIGGER_GC_RUNNING_INTERVAL = 1; //ms
     static constexpr double IDLE_RATIO = 0.985f;
     static constexpr double SHORT_IDLE_RATIO = 0.96f;
-    static constexpr double BACKGROUND_IDLE_RATIO = 0.85f;
+    static constexpr double BACKGROUND_IDLE_RATIO = 0.6f;
     static constexpr uint64_t  SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
     static constexpr double IDLE_CPU_USAGE = 0.5f;
     static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.7f;
@@ -338,6 +348,7 @@ private:
 
     std::mutex waitGCFinishjedMutex_;
     std::condition_variable gcFinishCV_;
+    std::atomic<bool> duringBackgroundTask_ {false};
 };
 
 }
