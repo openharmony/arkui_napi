@@ -29,8 +29,9 @@ ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Env env, ARKTS_Value value)
     if (!tag.IsHeapObject()) {
         return false;
     }
-    tag = *P_CAST(value.pointer, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope nativeScope(vm);
+    tag = *P_CAST(value.pointer, JSValueRef*);
     return tag.IsString(vm) || tag.IsSymbol(vm);
 }
 

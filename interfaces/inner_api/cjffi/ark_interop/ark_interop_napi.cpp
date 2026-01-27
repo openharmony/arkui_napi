@@ -132,9 +132,9 @@ ARKTS_ValueType ARKTS_GetValueType(ARKTS_Env env, ARKTS_Value src)
     } else if (value.IsNumber()) {
         return N_NUMBER;
     }
-
-    value = *BIT_CAST(src, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
+    value = *BIT_CAST(src, JSValueRef*);
     if (value.IsNull()) {
         return N_NULL;
     } else if (value.IsString(vm)) {
@@ -300,6 +300,7 @@ bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value)
         return false;
     }
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     tag = *P_CAST(value.pointer, JSValueRef*);
     return tag.IsConstructor(vm);
 }
@@ -368,6 +369,7 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
 
     auto funcHandle = *P_CAST(func.pointer, FunctionRef*);
     auto thisHandle = ARKTS_ToHandle<JSValueRef>(thisArg);
@@ -390,6 +392,7 @@ ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_V
     ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     auto funcHandle = *P_CAST(clazz.pointer, FunctionRef*);
 
     Local<JSValueRef> formattedArgs[MAX_CALL_ARGS];
@@ -419,6 +422,7 @@ ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value*
     ARKTS_ASSERT_P(env, "env is null");
     ARKTS_ASSERT_P(!size || data, "data is null");
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
 
     auto result = ArrayRef::New(vm, size);
     for (uint32_t i = 0;i < size; ++i) {
@@ -434,6 +438,7 @@ uint32_t ARKTS_GetArrayLength(ARKTS_Env env, ARKTS_Value array)
     ARKTS_ASSERT_I(ARKTS_IsArray(env, array), "array is not array");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     auto ref = P_CAST(array.pointer, JSValueRef*);
     if (ref->IsJSArray(vm)) {
         return P_CAST(array.pointer, ArrayRef*)->Length(vm);
@@ -482,8 +487,9 @@ bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value)
     if (!v.IsHeapObject()) {
         return false;
     }
-    v = *P_CAST(value.pointer, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
+    v = *P_CAST(value.pointer, JSValueRef*);
     return v.IsArray(vm);
 }
 
@@ -621,14 +627,19 @@ bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
     if (!prime.IsHeapObject()) {
         return false;
     }
-    auto handle = BIT_CAST(value, JSValueRef*);
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
+    auto handle = BIT_CAST(value, JSValueRef*);
     return handle->IsNativePointer(vm);
 }
 
 int64_t ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(ARKTS_IsExternal(env, value), "value is not external data");
+
+    auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
+
     auto external = *P_CAST(value.pointer, NativePointerRef*);
 
     if constexpr (sizeof(void*) == 8) {
@@ -662,6 +673,7 @@ ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise prom)
     ARKTS_ASSERT_P(prom, "prom is null");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     auto promise = *P_CAST(prom, Global<PromiseCapabilityRef>*);
     auto result = (*promise)->GetPromise(vm);
 
@@ -674,6 +686,7 @@ void ARKTS_PromiseCapabilityResolve(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Val
     ARKTS_ASSERT_V(prom, "prom is null");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     auto promise = P_CAST(prom, Global<PromiseCapabilityRef>*);
     (*promise)->Resolve(vm, ARKTS_ToHandle<JSValueRef>(result));
     promise->FreeGlobalHandleAddr();
@@ -686,6 +699,7 @@ void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Valu
     ARKTS_ASSERT_V(prom, "prom is null");
 
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     auto promise = P_CAST(prom, Global<PromiseCapabilityRef>*);
     (*promise)->Reject(vm, ARKTS_ToHandle<JSValueRef>(result));
     promise->FreeGlobalHandleAddr();
@@ -701,6 +715,7 @@ bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
         return false;
     }
     auto vm = P_CAST(env, EcmaVM*);
+    JsiFastNativeScope fastNativeScope(vm);
     v= *P_CAST(value.pointer, JSValueRef*);
     return v.IsPromise(vm);
 }
