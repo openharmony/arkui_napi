@@ -1214,7 +1214,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     }
 
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
-    if (tailNativeModule_ && !abcBuffer) {
+    if (!tailNativeModule_ && !abcBuffer) {
         const char* moduleName = strdup(moduleKey.c_str());
         if (moduleName == nullptr) {
             MODULEMNG_HILOG_ERROR("strdup faied");
