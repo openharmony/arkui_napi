@@ -511,6 +511,9 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
 void ArkIdleMonitor::PostSwitchBackgroundGCTask()
 {
 #if defined(ENABLE_FFRT)
+    if (IsDuringBackgroundTask()) {
+        return;
+    }
     if (switchBackgroundTimerHandler_ != -1) {
         ffrt_timer_stop(ffrt_qos_user_initiated, switchBackgroundTimerHandler_);
     }
@@ -525,10 +528,12 @@ void ArkIdleMonitor::PostSwitchBackgroundGCTask()
             return;
         }
         std::get<0>(*tuple)->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
+        std::get<0>(*tuple)->SetDuringBackgroundTask(false);
         delete tuple;
     };
     switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, gIdleMonitoringInterval,
         reinterpret_cast<void*>(data), task, false);
+    SetDuringBackgroundTask(true);
 #endif
 }
 
@@ -771,7 +776,6 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
         mainThreadHandler_->PostTask(mainThreadSharedTask, "ARKTS_IDLE_SHARED_COMPRESS", 0,
             OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
-        gcFinishCV_.wait(lock);
     } else {
         NotifyNeedFreeze(true);
         HILOG_WARN("ArkIdleMonitor: app is not in idle or in background.");
