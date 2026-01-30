@@ -1269,7 +1269,11 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             }
         } else {
             RegisterByBuffer(moduleKey, abcBuffer, len);
-            tailNativeModule_->systemFilePath = strdup(loadPath);
+            if (tailNativeModule_) {
+                tailNativeModule_->systemFilePath = strdup(loadPath);
+            } else {
+                MODULEMNG_HILOG_ERROR("tailNativeModule_ is nullptr");
+            }
         }
     }
     SetLoadingNativeModuleKey("");
