@@ -701,15 +701,6 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
     }
 #endif
 
-    // cancel gc if in high cpu usage.
-    double cpuUsage = GetCpuUsage();
-    if (cpuUsage > IDLE_BACKGROUND_CPU_USAGE) {
-        NotifyNeedFreeze(true);
-        SetSwitchToBackgroundTask(false);
-        HILOG_INFO("ArkIdleMonitor: cancel process gc because high cpu usage:%{public}.2f", cpuUsage);
-        return ;
-    }
-
     bool isAllInIdle = true;
 
     // Traverse all threads to attempt to trigger the compression GC
@@ -739,6 +730,11 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
             continue;
         }
 
+        if (arkNativeEngine->IsNativeThread()) {
+            HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u is native thread.", arkNativeEngine->GetSysTid());
+            continue;
+        }
+
         size_t expectedSize = JSNApi::GetEcmaVMExpectedMemoryReclamationSize(arkNativeEngine->GetEcmaVm());
         HILOG_DEBUG("ArkIdleMonitor:checkcount:%{public}d,expectedSize:%{public}zu,threadid:%{public}u",
             arkNativeEngine->GetWorkerThreadState()->GetCheckCount(), expectedSize, arkNativeEngine->GetSysTid());
@@ -759,8 +755,29 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
             RegisterSentTaskWorkerEnv(it);
             arkNativeEngine->PostTriggerGCTask(data, callbackTask);
             vectorLock.unlock();
-            gcFinishCV_.wait_for(lock, std::chrono::milliseconds(SHORT_IDLE_DELAY_INTERVAL));
+            gcFinishCV_.wait_for(lock, std::chrono::milliseconds(WAIT_GC_FINISH_INTERVAL));
+            auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+            if (nowTimestamp - triggerTaskStartTimestamp_ > WAIT_LOCAL_GC_INTERVAL) {
+                NotifyNeedFreeze(true);
+                HILOG_INFO("ArkIdleMonitor: cancel shared gc because over time.");
+                return;
+            }
         }
+    }
+
+    // cancel gc if in high cpu usage or not all in idle.
+    if (!isAllInIdle) {
+        NotifyNeedFreeze(true);
+        HILOG_INFO("ArkIdleMonitor: cancel shared gc because not all in idle");
+        return;
+    }
+    double cpuUsage = GetCpuUsage();
+    if (cpuUsage > IDLE_BACKGROUND_CPU_USAGE) {
+        NotifyNeedFreeze(true);
+        SetSwitchToBackgroundTask(false);
+        HILOG_INFO("ArkIdleMonitor: cancel process gc because high cpu usage:%{public}.2f", cpuUsage);
+        return;
     }
 
 #ifdef ENABLE_EVENT_HANDLER
@@ -771,7 +788,7 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
         gcFinishCV_.notify_one();
     };
-    if (isAllInIdle && CheckIfInBackgroundInCompressGC()) {
+    if (CheckIfInBackgroundInCompressGC()) {
         TraceScope trace("TriggerMainThreadSharedGC");
         std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
         mainThreadHandler_->PostTask(mainThreadSharedTask, "ARKTS_IDLE_SHARED_COMPRESS", 0,

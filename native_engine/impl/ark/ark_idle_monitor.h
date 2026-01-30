@@ -295,7 +295,9 @@ private:
     static constexpr double IDLE_RATIO = 0.985f;
     static constexpr double SHORT_IDLE_RATIO = 0.96f;
     static constexpr double BACKGROUND_IDLE_RATIO = 0.6f;
-    static constexpr uint64_t  SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
+    static constexpr uint64_t SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
+    static constexpr uint64_t WAIT_GC_FINISH_INTERVAL = 200; //ms;
+    static constexpr int64_t WAIT_LOCAL_GC_INTERVAL = 1000; //ms;
     static constexpr double IDLE_CPU_USAGE = 0.5f;
     static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.7f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
