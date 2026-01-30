@@ -1274,7 +1274,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             } else {
                 MODULEMNG_HILOG_ERROR("tailNativeModule_ is nullptr");
             }
-            
         }
     }
     SetLoadingNativeModuleKey("");
