@@ -16812,3 +16812,357 @@ HWTEST_F(NapiBasicTest, ExternalSTest007, testing::ext::TestSize.Level1)
     runner.Run();
     ASSERT_TRUE(finalizeCalled);
 }
+
+static bool ByteArraysEqual(const char* a, size_t lenA, const char* b, size_t lenB) {
+    return (lenA == lenB) && (memcmp(a, b, lenA) == 0);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest001
+ * @tc.desc: Test interface napi_create_string_utf8_with_replacement.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest002
+ * @tc.desc: Test valid ASCII with control chars including \\0 and \\177.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = {
+        'H','e','l','l','o',',',' ','O','p','e','n','H','a','r','m','o','n','y','!',
+        '\a','\b','\f','\n','\r','\t','\v','\\','\'','"','\0','\177','\x5c'
+    };
+    size_t length = sizeof(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_TRUE(ByteArraysEqual(input, length, output, copied));
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest003
+ * @tc.desc: Test printable ASCII string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}～";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest004
+ * @tc.desc: Test shorter printable ASCII string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}～";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest005
+ * @tc.desc: Test string with literal \\uXXXX sequences (as ASCII chars).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!\\ud83d\\udc46\\ud83d\\udc7f\\ud83d\\udc40\\ud83d\\udcaf\\ud83c\\udf85 \
+                         \\ud83d\\ude3c\\ud83d\\udd27\\ud83d\\udc87\\ud83e\\udd3c\\u200d\\u2642 \
+                          \\ufe0f\\ud83d\\udee2\\ud83c\\udc04\\ud83c\\udff4";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest006
+ * @tc.desc: Test string with reversed surrogate-like \\u sequences (as ASCII).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!\\udc04\\ud83d\\udff4";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest007
+ * @tc.desc: Test string with \\x41 (valid ASCII 'A').
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char* input = "Hello, OpenHarmony!\x41";
+    size_t length = strlen(input);
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_STREQ(input, output);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest008
+ * @tc.desc: Test string with \\x80 (isolated continuation byte - invalid).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    std::string expected = "Hello, OpenHarmony!";
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    size_t expectedLen = expected.size();
+ 
+    char* output = new char[expectedLen + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, expectedLen + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, expectedLen);
+ 
+    ASSERT_TRUE(memcmp(output, expected.data(), expectedLen) == 0);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest009
+ * @tc.desc: Test string with \\xC2\\x80 (valid 2-byte UTF-8 for U+0080).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest009, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xC2\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_TRUE(ByteArraysEqual(input, length, output, copied));
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest010
+ * @tc.desc: Test string with \\xCC\\x5C (invalid: 0xCC followed by non-continuation).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest010, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xCC\x5C";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    std::string expected = "Hello, OpenHarmony!";
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    expected += '\x5C';
+    size_t expectedLen = expected.size();
+ 
+    char* output = new char[expectedLen + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, expectedLen + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, expectedLen);
+ 
+    ASSERT_TRUE(memcmp(output, expected.data(), expectedLen) == 0);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest011
+ * @tc.desc: Test string with \\xE0\\xA0\\x80 (valid 3-byte UTF-8 for U+0800).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest011, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xE0\xA0\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_TRUE(ByteArraysEqual(input, length, output, copied));
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest012
+ * @tc.desc: Test string with \\xE0\\x7F\\x80 (invalid: second byte not continuation).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest012, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xE0\x7F\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+
+    std::string expected = "Hello, OpenHarmony!";
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    expected += '\x7F';
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    size_t expectedLen = expected.size();
+ 
+    char* output = new char[expectedLen + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, expectedLen + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, expectedLen);
+ 
+ 
+    ASSERT_TRUE(memcmp(output, expected.data(), expectedLen) == 0);
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest013
+ * @tc.desc: Test string with \\xF0\\x90\\x80\\x80 (valid 4-byte UTF-8 for U+10000).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest013, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xF0\x90\x80\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    char* output = new char[length + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, length + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, length);
+ 
+    ASSERT_TRUE(ByteArraysEqual(input, length, output, copied));
+}
+ 
+/**
+ * @tc.name: Utf8StringReplacementTest014
+ * @tc.desc: Test string with \\xF0\\x7F\\x80\\x80 (invalid: second byte not continuation).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, Utf8StringReplacementTest014, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    const char input[] = "Hello, OpenHarmony!\xF0\x7F\x80\x80";
+    size_t length = sizeof(input) - 1;
+    napi_value result = nullptr;
+    napi_status status = napi_create_string_utf8_with_replacement(env, input, length, &result);
+    ASSERT_EQ(status, napi_ok);
+ 
+    std::string expected = "Hello, OpenHarmony!";
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    expected += '\x7F';
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    expected += std::string("\xEF\xBF\xBD", INT_THREE);
+    size_t expectedLen = expected.size();
+ 
+    char* output = new char[expectedLen + 1];
+    size_t copied = 0;
+    status = napi_get_value_string_utf8(env, result, output, expectedLen + 1, &copied);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_EQ(copied, expectedLen);
+ 
+    ASSERT_TRUE(memcmp(output, expected.data(), expectedLen) == 0);
+}
