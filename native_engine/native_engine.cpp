@@ -246,6 +246,14 @@ bool NativeEngine::ReinitUVLoop()
     }
 
     if (loop_ != nullptr) {
+        auto const ensureClosing = [](uv_handle_t *handle, void *arg) {
+            if (!uv_is_closing(handle)) {
+                uv_close(handle, nullptr);
+            }
+        };
+        uv_walk(loop_, ensureClosing, nullptr);
+        while (uv_run(loop_, UV_RUN_DEFAULT) != 0) {};
+        uv_loop_close(loop_);
         delete loop_;  // only free mem due to uv_loop is invalid
         loop_ = nullptr;
     }
