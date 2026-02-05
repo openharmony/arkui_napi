@@ -2632,6 +2632,16 @@ void ArkNativeEngine::GetHybridStackTraceForCrash(napi_env env, std::string &sta
     DFXJSNApi::GetHybridStackTrace(vm, stackTraceStr);
 }
 
+void ArkNativeEngine::GetJsonExtraInfoForCrash(napi_env env, std::string &jsonStr, uint32_t &position)
+{
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    constexpr uint32_t JSON_PARSING_FAILED_STRING_WIDTH = 15;
+    auto res = DFXJSNApi::GetAnonymizeExtraErrorMessage(vm, JSON_PARSING_FAILED_STRING_WIDTH);
+    jsonStr = res.first;
+    position = res.second;
+    DFXJSNApi::ClearExtraErrorMessage(vm);
+}
+
 void ArkNativeEngine::SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
                                        bool defaultCloneSendable, void** result)
 {
