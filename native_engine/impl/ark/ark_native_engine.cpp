@@ -2275,7 +2275,7 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
         return nullptr;
     }
     // worker adaptation mergeabc
-    const EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVm();
+    const EcmaVM* hostVM = reinterpret_cast<ArkNativeEngine*>(engine)->GetEcmaVmCritical();
     JSNApi::SynchronizVMInfo(vm, hostVM);
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine, isLimitedWorker);
     // init callback

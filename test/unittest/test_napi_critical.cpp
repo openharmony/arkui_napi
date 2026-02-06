@@ -2214,3 +2214,13 @@ HWTEST_F(NapiCriticalTest, NapiNonCriticalTest094, testing::ext::TestSize.Level1
     deathTest.AssertSignal(SIGABRT).AssertError(TEST_NAPI_UNCLOSED_CRITICAL_LOG);
     ASSERT_TRUE(deathTest.GetResult());
 }
+
+HWTEST_F(NapiCriticalTest, NapiCreateRuntimeInCriticalScope, testing::ext::TestSize.Level1)
+{
+    auto env = reinterpret_cast<napi_env>(engine_);
+    napi_critical_scope scope{};
+    napi_open_critical_scope(env, &scope);
+    napi_env newEnv {};
+    ASSERT_EQ(napi_create_runtime(env, &newEnv), napi_ok);
+    napi_close_critical_scope(env, scope);
+}
