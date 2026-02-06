@@ -3639,8 +3639,8 @@ NAPI_EXTERN napi_status napi_create_runtime(napi_env env, napi_env* result_env)
     }
     *result_env = reinterpret_cast<napi_env>(result);
 
-    auto hostVM = engine->GetEcmaVm();
-    auto workerVM = reinterpret_cast<NativeEngine*>(result)->GetEcmaVm();
+    auto hostVM = engine->GetEcmaVmCritical();
+    auto workerVM = reinterpret_cast<NativeEngine*>(result)->GetEcmaVmCritical();
     JSNApi::RegisterUncatchableErrorHandler(const_cast<EcmaVM*>(workerVM),
         JSNApi::GetUncatchableErrorHandler(hostVM));
 
