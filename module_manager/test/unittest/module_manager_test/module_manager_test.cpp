@@ -15,6 +15,9 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
+#include "dlsym_mock_guard.h"
 #include "mock_native_module_manager.h"
 #include "module_load_checker.h"
 
@@ -23,6 +26,8 @@ using namespace testing::ext;
 namespace {
     constexpr static int32_t NATIVE_PATH_NUMBER = 3;
     constexpr static int32_t IS_APP_MODULE_FLAGS = 100;
+    constexpr char GREYLIST_CONFIG_PATH_LT[] =
+        "/data/service/el0/public/musl_namespace_config/greylist.json";
 };
 
 class ModuleManagerTest : public testing::Test {
@@ -924,4 +929,344 @@ HWTEST_F(ModuleManagerTest, CheckNativeListChanged_ShouldReturnFalseWhenAllNameM
     delete moduleManager.tailNativeModule_;
     moduleManager.tailNativeModule_ = nullptr;
     GTEST_LOG_(INFO) << "CheckNativeListChanged_ShouldReturnFalseWhenAllNameMatch end";
+}
+
+/*
+ * Link-time Mock based test cases for Greylist configuration
+ * These tests use the --wrap linker option to mock file operations
+ * without modifying real files on the filesystem
+ */
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_EmptyFile
+ * @tc.desc: test LoadGreylistConfig when greylist config file is empty using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_EmptyFile, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_EmptyFile starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_EmptyFile end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_InvalidFormat
+ * @tc.desc: test LoadGreylistConfig when greylist config has invalid JSON format using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_InvalidFormat, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_InvalidFormat starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "invalid json content");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_InvalidFormat end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_MergeLibraries
+ * @tc.desc: test CreateSharedLibsSonames correctly merges greylist libraries using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_MergeLibraries, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MergeLibraries starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT,
+        "[\"libcustom1.z.so\", \"libcustom2.z.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libace_napi.z.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libcustom1.z.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libcustom2.z.so"), std::string::npos);
+
+    size_t pos = 0;
+    int libCount = 0;
+    while ((pos = sonames.find(':', pos)) != std::string::npos) {
+        libCount++;
+        pos++;
+    }
+    EXPECT_GT(libCount, 0);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MergeLibraries end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_InvalidLibNames
+ * @tc.desc: test LoadGreylistConfig rejects library names not ending with .so using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_InvalidLibNames, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_InvalidLibNames starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT,
+        "[\"libvalid1.z.so\", \"libinvalid\", \"libvalid2.so\", \"libinvalid.dll\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libvalid1.z.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libvalid2.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("\"libinvalid\","), std::string::npos);
+    EXPECT_EQ(sonames.find("libinvalid.dll"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_InvalidLibNames end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_SpecialCharacters
+ * @tc.desc: test LoadGreylistConfig accepts library names with special characters using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_SpecialCharacters, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_SpecialCharacters starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT,
+        "[\"lib-test.so\", \"lib_test.so\", \"lib.test.so\", \"lib测试.so\", \"libvalid.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("lib-test.so"), std::string::npos);
+    EXPECT_NE(sonames.find("lib_test.so"), std::string::npos);
+    EXPECT_NE(sonames.find("lib.test.so"), std::string::npos);
+    EXPECT_NE(sonames.find("lib测试.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libvalid.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_SpecialCharacters end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_EmptyArray
+ * @tc.desc: test LoadGreylistConfig when greylist config is empty array using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_EmptyArray, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_EmptyArray starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "[]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+    EXPECT_NE(moduleManager->sharedLibsSonames_[0], '\0');
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_EmptyArray end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_OnlyOpenBracket
+ * @tc.desc: test LoadGreylistConfig when config has only '[' without ']' using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_OnlyOpenBracket, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_OnlyOpenBracket starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "[\"libtest.so\"");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_OnlyOpenBracket end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_OnlyCloseBracket
+ * @tc.desc: test LoadGreylistConfig when config has only ']' without '[' using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_OnlyCloseBracket, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_OnlyCloseBracket starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "\"libtest.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_OnlyCloseBracket end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_ReversedBrackets
+ * @tc.desc: test LoadGreylistConfig when config has ']' before '[' using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_ReversedBrackets, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_ReversedBrackets starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "][\"libtest.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_ReversedBrackets end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_FileNotExist
+ * @tc.desc: test LoadGreylistConfig when greylist config file does not exist using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_FileNotExist, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_FileNotExist starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileNotExists(GREYLIST_CONFIG_PATH_LT);
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+    EXPECT_NE(moduleManager->sharedLibsSonames_[0], '\0');
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_NE(sonames.find("libace_napi.z.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_FileNotExist end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_MultipleOpenBrackets
+ * @tc.desc: test LoadGreylistConfig when config has multiple '[' brackets using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_MultipleOpenBrackets, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleOpenBrackets starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "[[\"libtest.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleOpenBrackets end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_MultipleCloseBrackets
+ * @tc.desc: test LoadGreylistConfig when config has multiple ']' brackets using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_MultipleCloseBrackets, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleCloseBrackets starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "[\"libtest.so\"]]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleCloseBrackets end";
+}
+
+/*
+ * @tc.name: LoadGreylistConfig_WithMock_MultipleBracketPairs
+ * @tc.desc: test LoadGreylistConfig when config has multiple '[]' pairs using link-time mock
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_MultipleBracketPairs, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleBracketPairs starts";
+
+    DlsymMockGuard mockGuard;
+    mockGuard.SetFileContent(GREYLIST_CONFIG_PATH_LT, "[\"libtest.so\"][\"libtest2.so\"]");
+
+    auto moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateSharedLibsSonames();
+    EXPECT_NE(moduleManager->sharedLibsSonames_, nullptr);
+
+    std::string sonames(moduleManager->sharedLibsSonames_);
+    EXPECT_NE(sonames.find("libc.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest.so"), std::string::npos);
+    EXPECT_EQ(sonames.find("libtest2.so"), std::string::npos);
+
+    GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleBracketPairs end";
 }
