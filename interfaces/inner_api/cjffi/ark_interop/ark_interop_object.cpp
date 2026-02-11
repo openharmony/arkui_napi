@@ -37,7 +37,7 @@ ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ObjectRef::New(vm);
@@ -47,7 +47,7 @@ ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
 
 bool ARKTS_IsHeapObject(ARKTS_Value value)
 {
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto v = BIT_CAST(value, JSValueRef);
     return v.IsHeapObject();
 }
@@ -55,7 +55,7 @@ bool ARKTS_IsHeapObject(ARKTS_Value value)
 bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     auto v = BIT_CAST(value, JSValueRef);
@@ -81,10 +81,10 @@ bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 
 ARKTS_Value ARKTS_EnumOwnProperties(ARKTS_Env env, ARKTS_Value jobj)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsHeapObject(jobj), "object is not heap object");
+    ARKTS_ASSERT_U(ARKTS_IsHeapObject(jobj), "object is not heap object");
 
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
     auto result = object->GetOwnEnumerablePropertyNames(vm);
@@ -203,11 +203,11 @@ void ARKTS_SetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_
 
 ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsHeapObject(jobj), "object is not heap object");
-    ARKTS_ASSERT_P(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
+    ARKTS_ASSERT_U(ARKTS_IsHeapObject(jobj), "object is not heap object");
+    ARKTS_ASSERT_U(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
     auto object = BIT_CAST(jobj, Local<ObjectRef>);
     auto key = ARKTS_ToHandle<JSValueRef>(jkey);

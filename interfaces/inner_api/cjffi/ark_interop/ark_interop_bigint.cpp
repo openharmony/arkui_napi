@@ -21,7 +21,7 @@
 
 ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     
     auto vm = P_CAST(env, panda::EcmaVM*);
     auto result = panda::BigIntRef::New(vm, value);
@@ -48,9 +48,9 @@ constexpr int BYTE_BITS = 8;
 
 ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t size, const uint8_t bytes[])
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(size != 0 && size <= int64_t(0xFFFF'FFFF) * WORD_BYTES, "size is invalid");
-    ARKTS_ASSERT_P(bytes, "bytes is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(size != 0 && size <= int64_t(0xFFFF'FFFF) * WORD_BYTES, "size is invalid");
+    ARKTS_ASSERT_U(bytes, "bytes is null");
     
     auto vm = P_CAST(env, panda::EcmaVM*);
     
@@ -81,7 +81,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
 bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto tag = BIT_CAST(value, panda::JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;

@@ -68,11 +68,11 @@ template<typename T>
 ARKTS_INLINE panda::Local<T> ARKTS_ToHandle(ARKTS_Value& value)
 {
     auto v = BIT_CAST(value, panda::JSValueRef);
-    void* addr;
+    ARKTS_Value addr;
     if (v.IsHeapObject()) {
-        addr = value.pointer;
+        addr = value;
     } else {
-        addr = &value;
+        addr.pointer = &value;
     }
     return BIT_CAST(addr, panda::Local<T>);
 }
@@ -95,11 +95,6 @@ ARKTS_INLINE bool operator==(ARKTS_Value lhs, ARKTS_Value rhs)
 ARKTS_INLINE bool operator!=(ARKTS_Value lhs, ARKTS_Value rhs)
 {
     return lhs.value != rhs.value;
-}
-
-ARKTS_INLINE bool operator!(ARKTS_Value value)
-{
-    return value.value == 0;
 }
 
 template<typename T>
@@ -133,8 +128,8 @@ ARKTS_INLINE ARKTS_Result ARKTS_ToResult(panda::EcmaVM* vm, ARKTS_Value value)
         NATIVE_ERROR(error);                                                        \
         return ret;                                                                 \
     }
-#define ARKTS_ASSERT_P(condition, error) ARKTS_ASSERT(condition, error, ARKTS_CreateUndefined())
-#define ARKTS_ASSERT_N(condition, error) ARKTS_ASSERT(condition, error, nullptr)
+#define ARKTS_ASSERT_U(condition, error) ARKTS_ASSERT(condition, error, ARKTS_CreateUndefined())
+#define ARKTS_ASSERT_P(condition, error) ARKTS_ASSERT(condition, error, nullptr)
 #define ARKTS_ASSERT_F(condition, error) ARKTS_ASSERT(condition, error, false)
 #define ARKTS_ASSERT_I(condition, error) ARKTS_ASSERT(condition, error, 0)
 #define ARKTS_ASSERT_V(condition, error) ARKTS_ASSERT(condition, error,)
