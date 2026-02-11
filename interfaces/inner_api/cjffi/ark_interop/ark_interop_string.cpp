@@ -29,8 +29,8 @@ static constexpr int32_t STRING_TABLE_THRESHOLD = 128;
 
 ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(value, "value is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(value, "value is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     Local<JSValueRef> result;
@@ -45,7 +45,7 @@ ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size)
 bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     auto v = BIT_CAST(value, JSValueRef);
@@ -59,7 +59,7 @@ bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
 int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_I(env, "env is null");
-    ARKTS_ASSERT_I(value, "value is null");
+    ARKTS_ASSERT_I(value.value, "value is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
@@ -136,8 +136,8 @@ void ARKTS_StringCopy(ARKTS_Env env, ARKTS_Value value, void* dst, uint32_t leng
 
 ARKTS_Value ARKTS_CreateString(ARKTS_Env env, bool isCompressed, uint32_t length, const void* data)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(data, "data is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(data, "data is null");
 
     auto vm = P_CAST(env, EcmaVM*);
 

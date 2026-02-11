@@ -105,7 +105,7 @@ std::string ARKTSInner_FormatJSError(ARKTS_Env env, ARKTS_Value jsError)
 
 ARKTS_Value ARKTS_GetGlobalConstant(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     auto result = JSNApi::GetGlobalObject(vm);
     return ARKTS_FromHandle(result);
@@ -283,7 +283,7 @@ static void CJLambdaDeleter(void* /* env: napi_env */, void* /*invoker*/, void* 
 
 ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = FunctionRef::New(vm, CJLambdaInvoker, CJLambdaDeleter, new LambdaData {env, lambdaId}, true);
@@ -294,7 +294,7 @@ ARKTS_Value ARKTS_CreateFunc(ARKTS_Env env, int64_t lambdaId)
 bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
@@ -307,7 +307,7 @@ bool ARKTS_IsClass(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
 
@@ -325,8 +325,8 @@ ARKTS_Value ARKTS_CreateClass(ARKTS_Env env, int64_t lambdaId, ARKTS_Value base)
 
 ARKTS_Value ARKTS_GetPrototype(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsClass(env, value), "value is not constructor");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(ARKTS_IsClass(env, value), "value is not constructor");
     auto vm = P_CAST(env, EcmaVM*);
     auto clazz = BIT_CAST(value, Local<FunctionRef>);
     auto result = clazz->GetFunctionPrototype(vm);
@@ -363,10 +363,10 @@ ARKTS_INLINE void FormatArguments(int32_t numArgs, ARKTS_Value args[], Local<JSV
 
 ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int32_t numArgs, ARKTS_Value args[])
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsCallable(env, func), "func is not callable");
-    ARKTS_ASSERT_P(numArgs >= 0, "numArgs must be non-negative");
-    ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(ARKTS_IsCallable(env, func), "func is not callable");
+    ARKTS_ASSERT_U(numArgs >= 0, "numArgs must be non-negative");
+    ARKTS_ASSERT_U(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
@@ -386,10 +386,10 @@ ARKTS_Value ARKTS_Call(ARKTS_Env env, ARKTS_Value func, ARKTS_Value thisArg, int
 
 ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_Value args[])
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(ARKTS_IsClass(env, clazz), "clazz is not class");
-    ARKTS_ASSERT_P(numArgs >= 0, "numArgs must be non-negative");
-    ARKTS_ASSERT_P(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(ARKTS_IsClass(env, clazz), "clazz is not class");
+    ARKTS_ASSERT_U(numArgs >= 0, "numArgs must be non-negative");
+    ARKTS_ASSERT_U(numArgs <= MAX_CALL_ARGS, "too many arguments, 255 most");
 
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
@@ -410,7 +410,7 @@ ARKTS_Value ARKTS_New(ARKTS_Env env, ARKTS_Value clazz, int32_t numArgs, ARKTS_V
 // if capacity grows gap bigger than 1024, will transform to dict mode.
 ARKTS_Value ARKTS_CreateArray(ARKTS_Env env, uint32_t size)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayRef::New(vm, size);
@@ -419,8 +419,8 @@ ARKTS_Value ARKTS_CreateArray(ARKTS_Env env, uint32_t size)
 
 ARKTS_Value ARKTS_CreateArrayWithInit(ARKTS_Env env, uint32_t size, ARKTS_Value* data)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(!size || data, "data is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(!size || data, "data is null");
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
 
@@ -467,12 +467,12 @@ void ARKTS_SetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index, ARKTS_Va
 
 ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsArray(env, array), "array is not array");
+    ARKTS_ASSERT_U(ARKTS_IsArray(env, array), "array is not array");
     auto arr = BIT_CAST(array, Local<ArrayRef>);
-    ARKTS_ASSERT_P(arr->Length(vm) > index, "out of index");
+    ARKTS_ASSERT_U(arr->Length(vm) > index, "out of index");
 
     auto result = ArrayRef::GetValueAt(vm, arr, index);
     ARKTSInner_ReportJSErrors(env, false);
@@ -482,7 +482,7 @@ ARKTS_Value ARKTS_GetElement(ARKTS_Env env, ARKTS_Value array, uint32_t index)
 bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is NULL");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
@@ -495,8 +495,8 @@ bool ARKTS_IsArray(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Value ARKTS_CreateArrayBuffer(ARKTS_Env env, int32_t length)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(length >= 0, "length must be non-negative");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(length >= 0, "length must be non-negative");
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ArrayBufferRef::New(vm, length);
     return ARKTS_FromHandle(result);
@@ -505,9 +505,9 @@ ARKTS_Value ARKTS_CreateArrayBuffer(ARKTS_Env env, int32_t length)
 ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t length,
     int64_t finalizerHint)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(length >= 0, "length must be non-negative");
-    ARKTS_ASSERT_P(buffer, "buffer is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(length >= 0, "length must be non-negative");
+    ARKTS_ASSERT_U(buffer, "buffer is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     if constexpr (sizeof(void*) == 8) {
@@ -530,7 +530,7 @@ ARKTS_Value ARKTS_CreateArrayBufferWithData(ARKTS_Env env, void* buffer, int32_t
 bool ARKTS_IsArrayBuffer(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     auto tag = BIT_CAST(value, JSValueRef);
@@ -562,10 +562,10 @@ int32_t ARKTS_GetArrayBufferLength(ARKTS_Env env, ARKTS_Value value)
 
 void* ARKTS_GetArrayBufferRawPtr(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_N(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
+    ARKTS_ASSERT_P(ARKTS_IsArrayBuffer(env, value), "value is not arrayBuffer");
 
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     if (handle->IsArrayBuffer(vm)) {
@@ -602,7 +602,7 @@ int32_t ARKTS_ArrayBufferReadBytes(ARKTS_Env env, ARKTS_Value buffer, void* dest
 
 ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, int64_t data)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     if constexpr (sizeof(void*) == 8) {
@@ -622,7 +622,7 @@ ARKTS_Value ARKTS_CreateExternal(ARKTS_Env env, int64_t data)
 bool ARKTS_IsExternal(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto prime = BIT_CAST(value, JSValueRef);
     if (!prime.IsHeapObject()) {
         return false;
@@ -657,7 +657,7 @@ int64_t ARKTS_GetExternalData(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Promise ARKTS_CreatePromiseCapability(ARKTS_Env env)
 {
-    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_P(env, "env is null");
 
     auto vm = P_CAST(env, EcmaVM*);
 
@@ -669,8 +669,8 @@ ARKTS_Promise ARKTS_CreatePromiseCapability(ARKTS_Env env)
 
 ARKTS_Value ARKTS_GetPromiseFromCapability(ARKTS_Env env, ARKTS_Promise prom)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(prom, "prom is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(prom, "prom is null");
 
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
@@ -709,7 +709,7 @@ void ARKTS_PromiseCapabilityReject(ARKTS_Env env, ARKTS_Promise prom, ARKTS_Valu
 bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto v = BIT_CAST(value, JSValueRef);
     if (!v.IsHeapObject()) {
         return false;
@@ -722,17 +722,17 @@ bool ARKTS_IsPromise(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFulfilled, ARKTS_Value onRejected)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
-    ARKTS_ASSERT_P(ARKTS_IsCallable(env, onFulfilled), "onFulfilled is not callable");
+    ARKTS_ASSERT_U(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
+    ARKTS_ASSERT_U(ARKTS_IsCallable(env, onFulfilled), "onFulfilled is not callable");
 
     auto promise = *BIT_CAST(prom, PromiseRef*);
     auto onFulfilledFunc = BIT_CAST(onFulfilled, Local<FunctionRef>);
     Local<PromiseRef> result;
     if (!ARKTS_IsUndefined(onRejected)) {
-        ARKTS_ASSERT_P(ARKTS_IsCallable(env, onRejected), "optional arg 'onRejected' is set but not callable");
+        ARKTS_ASSERT_U(ARKTS_IsCallable(env, onRejected), "optional arg 'onRejected' is set but not callable");
         auto onRejectedFunc = BIT_CAST(onRejected, Local<FunctionRef>);
         result = promise.Then(vm, onFulfilledFunc, onRejectedFunc);
     } else {
@@ -743,11 +743,11 @@ ARKTS_Value ARKTS_PromiseThen(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value onFul
 
 ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value callback)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_P(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
-    ARKTS_ASSERT_P(ARKTS_IsCallable(env, callback), "callback is not callable");
+    ARKTS_ASSERT_U(ARKTS_IsPromise(env, prom), "arg is not a JSPromise");
+    ARKTS_ASSERT_U(ARKTS_IsCallable(env, callback), "callback is not callable");
 
     auto promise = BIT_CAST(prom, PromiseRef*);
     auto callbackFunc = BIT_CAST(callback, Local<FunctionRef>);
@@ -757,7 +757,7 @@ ARKTS_Value ARKTS_PromiseCatch(ARKTS_Env env, ARKTS_Value prom, ARKTS_Value call
 
 ARKTS_Scope ARKTS_OpenScope(ARKTS_Env env)
 {
-    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     return CJ::ARKTS_ScopeManager::OpenScope(vm);
 }
@@ -765,7 +765,7 @@ ARKTS_Scope ARKTS_OpenScope(ARKTS_Env env)
 ARKTS_Result ARKTS_Return(ARKTS_Env env, ARKTS_Scope scope, ARKTS_Value value)
 {
     ARKTS_ASSERT(env, "env is null", {});
-    ARKTS_ASSERT(value, "value is invalid", {});
+    ARKTS_ASSERT(value.value, "value is invalid", {});
 
     auto vm = P_CAST(env, EcmaVM*);
     if (!CJ::ARKTS_ScopeManager::CloseScope(scope)) {
@@ -835,16 +835,16 @@ uint32_t ARKTS_GetArgCount(ARKTS_CallInfo info)
 
 ARKTS_Value ARKTS_GetArg(ARKTS_CallInfo info, uint32_t index)
 {
-    ARKTS_ASSERT_P(info, "info is null");
+    ARKTS_ASSERT_U(info, "info is null");
     auto runInfo = P_CAST(info, JsiRuntimeCallInfo*);
-    ARKTS_ASSERT_P(runInfo->GetArgsNumber() > index, "out of index");
+    ARKTS_ASSERT_U(runInfo->GetArgsNumber() > index, "out of index");
     auto result = runInfo->GetCallArgRef(index);
     return ARKTS_FromHandle(result);
 }
 
 ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info)
 {
-    ARKTS_ASSERT_P(info, "info is null");
+    ARKTS_ASSERT_U(info, "info is null");
     auto runInfo = P_CAST(info, JsiRuntimeCallInfo*);
     auto result = runInfo->GetThisRef();
     return ARKTS_FromHandle(result);
@@ -852,7 +852,7 @@ ARKTS_Value ARKTS_GetThisArg(ARKTS_CallInfo info)
 
 void* ARKTS_GetGlobalNapiEnv(ARKTS_Env env)
 {
-    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     return JSNApi::GetEnv(vm);
 }
@@ -918,7 +918,7 @@ static void CycleFreeFuncReleaser(void* /*env*/, void* /*data*/, void* hint)
 
 ARKTS_Value ARKTS_CreateCycleFreeFunc(ARKTS_Env env, int64_t id)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     auto data = new (std::nothrow) LambdaData {env, id};
     if (!data) {
@@ -944,7 +944,7 @@ static void CycleFreeObjectReleaser(void* /*env*/, void* nativePointer, void* /*
 
 ARKTS_Value ARKTS_CreateCycleFreeExtern(ARKTS_Env env, int64_t id)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
 
     if constexpr (sizeof (void*) == 8) {
@@ -960,7 +960,7 @@ ARKTS_Value ARKTS_CreateCycleFreeExtern(ARKTS_Env env, int64_t id)
 
 ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     auto exception = JSNApi::GetAndClearUncaughtException(vm);
     return ARKTS_FromHandle(exception);
@@ -968,9 +968,9 @@ ARKTS_Value ARKTS_GetExceptionAndClear(ARKTS_Env env)
 
 ARKTS_Value ARKTS_RequireArkModule(ARKTS_Env env, const char* path, size_t pathLen, ARKTS_ModuleKind kind)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(path, "path is null");
-    ARKTS_ASSERT_P(kind >= ARKTS_NativeModule && kind <= ARKTS_NormalModule, "module kind is invalid");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(path, "path is null");
+    ARKTS_ASSERT_U(kind >= ARKTS_NativeModule && kind <= ARKTS_NormalModule, "module kind is invalid");
 
     auto vm = P_CAST(env, EcmaVM*);
     std::string srcPath(path, pathLen);
