@@ -21,7 +21,7 @@ using namespace panda::ecmascript;
 
 ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t length)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
 
     panda::Local<panda::JSValueRef> object;
@@ -39,7 +39,7 @@ ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t l
 bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
 {
     ARKTS_ASSERT_F(env, "env is null");
-    ARKTS_ASSERT_F(value, "value is null");
+    ARKTS_ASSERT_F(value.value, "value is null");
     auto tag = BIT_CAST(value, JSValueRef);
     if (!tag.IsHeapObject()) {
         return false;
@@ -52,7 +52,7 @@ bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
 
 const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_N(ARKTS_IsSymbol(env, value), "value is not a symbol");
+    ARKTS_ASSERT_P(ARKTS_IsSymbol(env, value), "value is not a symbol");
 
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);

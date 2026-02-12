@@ -235,10 +235,10 @@ GlobalManager::~GlobalManager()
 // assume value is object
 ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_N(env, "env is null");
+    ARKTS_ASSERT_P(env, "env is null");
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
-    ARKTS_ASSERT_N(ARKTS_IsHeapObject(value), "value is not heap object");
+    ARKTS_ASSERT_P(ARKTS_IsHeapObject(value), "value is not heap object");
 
     auto handle = BIT_CAST(value, Local<JSValueRef>);
     auto result = new ARKTS_Global_(vm, handle);
@@ -248,7 +248,7 @@ ARKTS_Global ARKTS_CreateGlobal(ARKTS_Env env, ARKTS_Value value)
 
 ARKTS_Value ARKTS_GetGlobalValue(ARKTS_Global global)
 {
-    ARKTS_ASSERT_P(global, "global is null");
+    ARKTS_ASSERT_U(global, "global is null");
 
     return global->GetValue();
 }
@@ -291,8 +291,8 @@ constexpr uint64_t GLOBAL_MASK = 0x0000'FFFF'FFFF'FFFF;
 
 ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
 {
-    ARKTS_ASSERT_P(env, "env is null");
-    ARKTS_ASSERT_P(global, "global is null");
+    ARKTS_ASSERT_U(env, "env is null");
+    ARKTS_ASSERT_U(global, "global is null");
 
     auto value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(global)) & GLOBAL_MASK;
     value = value | GLOBAL_TAG;
@@ -302,12 +302,12 @@ ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
 
 ARKTS_Global ARKTS_GlobalFromValue(ARKTS_Env env, ARKTS_Value value)
 {
-    ARKTS_ASSERT_N(env, "env is null");
-    ARKTS_ASSERT_N(ARKTS_IsNumber(value), "value is a number");
+    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_P(ARKTS_IsNumber(value), "value is a number");
 
     auto dValue = ARKTS_GetValueNumber(value);
     auto iValue = static_cast<uint64_t>(dValue);
-    ARKTS_ASSERT_N((iValue & GLOBAL_TAG) == GLOBAL_TAG, "invalid tag value");
+    ARKTS_ASSERT_P((iValue & GLOBAL_TAG) == GLOBAL_TAG, "invalid tag value");
     iValue = iValue & GLOBAL_MASK;
     return BIT_CAST(iValue, ARKTS_Global);
 }
