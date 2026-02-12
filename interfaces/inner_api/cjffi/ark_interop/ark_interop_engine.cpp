@@ -183,7 +183,7 @@ ARKTS_Engine ARKTS_CreateEngine()
 
 void* ARKTS_GetNAPIEnv(ARKTS_Engine engine)
 {
-    ARKTS_ASSERT_N(engine, "engine is null");
+    ARKTS_ASSERT_P(engine, "engine is null");
     return engine->engine;
 }
 
@@ -217,7 +217,7 @@ void ARKTS_DestroyEngine(ARKTS_Engine engine)
 
 ARKTS_Env ARKTS_GetContext(ARKTS_Engine engine)
 {
-    ARKTS_ASSERT_N(engine, "engine is null");
+    ARKTS_ASSERT_P(engine, "engine is null");
     return P_CAST(engine->vm, ARKTS_Env);
 }
 
@@ -253,9 +253,9 @@ bool ARKTS_LoadEntryFromAbc(ARKTS_Engine engine, const char* filePath, const cha
 
 ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryPoint, const char* importName)
 {
-    ARKTS_ASSERT_P(engine, "engine is null");
-    ARKTS_ASSERT_P(entryPoint, "entryPoint is null");
-    ARKTS_ASSERT_P(importName, "importName is null");
+    ARKTS_ASSERT_U(engine, "engine is null");
+    ARKTS_ASSERT_U(entryPoint, "entryPoint is null");
+    ARKTS_ASSERT_U(importName, "importName is null");
 
     if (engine->loadedAbcs.find(entryPoint) == engine->loadedAbcs.end()) {
         return ARKTS_CreateUndefined();
@@ -273,21 +273,21 @@ ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryPoint, c
 ARKTS_Value ARKTS_Require(
     ARKTS_Env env, const char* target, bool isNativeModule, bool isAppModule, const char* relativePath)
 {
-    ARKTS_ASSERT_P(env, "env is null");
+    ARKTS_ASSERT_U(env, "env is null");
 
     auto global = ARKTS_GetGlobalConstant(env);
     auto targetValue = ARKTS_CreateUtf8(env, target, -1);
 
-    ARKTS_ASSERT_P(ARKTS_IsHeapObject(global), "js global is null");
+    ARKTS_ASSERT_U(ARKTS_IsHeapObject(global), "js global is null");
     if (!isNativeModule) {
         auto funcName = ARKTS_CreateUtf8(env, "requireInternal", -1);
         auto funcValue = ARKTS_GetProperty(env, global, funcName);
-        ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcValue), "global func requireInternal is undefined");
+        ARKTS_ASSERT_U(ARKTS_IsCallable(env, funcValue), "global func requireInternal is undefined");
         return ARKTS_Call(env, funcValue, ARKTS_CreateUndefined(), 1, &targetValue);
     }
     auto funcName = ARKTS_CreateUtf8(env, "requireNapi", -1);
     auto funcValue = ARKTS_GetProperty(env, global, funcName);
-    ARKTS_ASSERT_P(ARKTS_IsCallable(env, funcValue), "global func requireNapi is undefined");
+    ARKTS_ASSERT_U(ARKTS_IsCallable(env, funcValue), "global func requireNapi is undefined");
 
     if (relativePath) {
         ARKTS_Value args[] = { targetValue, ARKTS_CreateBool(isAppModule), ARKTS_CreateUndefined(),
