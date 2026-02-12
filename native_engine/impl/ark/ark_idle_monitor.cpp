@@ -16,8 +16,8 @@
 #include "ark_idle_monitor.h"
 
 #if defined(LINUX_PLATFORM) || defined(OHOS_PLATFORM)
-#include <signal.h>
 #include <dlfcn.h>
+#include <signal.h>
 #endif
 #include "utils/log.h"
 #if defined(ENABLE_FFRT)
@@ -379,7 +379,8 @@ void ArkIdleMonitor::UnregisterEnv(NativeEngine *engine)
 uint64_t ArkIdleMonitor::GetIdleMonitoringInterval()
 {
 #if defined(ENABLE_EVENT_HANDLER)
-    uint64_t value = OHOS::system::GetIntParameter("const.arkui.idle_monitoring_interval", 1000); // ms
+    uint64_t value =
+        static_cast<uint64_t>(OHOS::system::GetIntParameter("const.arkui.idle_monitoring_interval", 1000)); // ms
     if (value < IDLE_GC_TIME_MIN) {
         value = IDLE_GC_TIME_MIN;
     }
@@ -614,7 +615,7 @@ void ArkIdleMonitor::ReportDataToRSS(bool needFreeze)
         HILOG_WARN("ArkIdleMonitor: ReportDataToRSS func is nullptr.");
     }
 #else
-    HILOG_INFO("ArkIdleMonitor: Only linux supports LoadReportDataFunc");
+    HILOG_WARN("ArkIdleMonitor: Only linux supports LoadReportDataFunc");
 #endif
 }
 
@@ -705,6 +706,10 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
 
     // Traverse all threads to attempt to trigger the compression GC
     for (uint32_t index = 0; index < workerEnvVector_.size(); index++) {
+        if (!gEnableDeferFreeze) {
+            isAllInIdle = CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_TRIGGER_COUNT);
+            break;
+        }
         std::unique_lock<std::mutex> vectorLock(envVectorMutex_);
         auto it = workerEnvVector_.at(index);
         if (!CheckIfInBackgroundInCompressGC()) {
