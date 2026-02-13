@@ -283,6 +283,9 @@ public:
     void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) override;
     void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer, bool defaultCloneSendable,
                           void** result) override;
+    void SerializeJSErrorWithError(napi_env env, napi_value object, bool defaultTransfer,
+                                   bool defaultCloneSendable, void** result,
+                                   std::string& error) override;
     bool DeleteWorker(NativeEngine* workerEngine) override;
     bool StartHeapTracking(double timeInterval, bool isVmMode = true) override;
     bool StopHeapTracking(const std::string& filePath) override;
