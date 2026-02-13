@@ -56,6 +56,18 @@ public:
 
     static std::shared_ptr<ArkIdleMonitor> GetInstance();
 
+#if defined(ENABLE_EVENT_HANDLER)
+    static void SetEnableIdleGC(bool enable)
+    {
+        gEnableIdleGC = enable;
+    }
+
+    static bool IsEnableIdleGC()
+    {
+        return gEnableIdleGC;
+    }
+#endif
+
     void GCTaskFinishedCallback()
     {
         std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
@@ -276,7 +288,7 @@ private:
     void StopIdleMonitorTimerTaskAndPostSleepTask();
     void CheckShortIdleTask(int64_t timestamp, int idleTime);
     void PostSwitchBackgroundGCTask();
-    void ReportDataToRSS(bool isGCStart);
+    void ReportDataToRSS(bool needFreeze);
     void TryTriggerCompressGCOfProcess();
     static uint64_t GetIdleMonitoringInterval();
 
@@ -296,10 +308,10 @@ private:
     static constexpr double SHORT_IDLE_RATIO = 0.96f;
     static constexpr double BACKGROUND_IDLE_RATIO = 0.6f;
     static constexpr uint64_t SHORT_IDLE_DELAY_INTERVAL = 50; // ms;
-    static constexpr uint64_t WAIT_GC_FINISH_INTERVAL = 200; //ms;
-    static constexpr int64_t WAIT_LOCAL_GC_INTERVAL = 1000; //ms;
+    static constexpr uint64_t WAIT_GC_FINISH_INTERVAL = 500; //ms;
+    static constexpr int64_t WAIT_LOCAL_GC_INTERVAL = 2000; //ms;
     static constexpr double IDLE_CPU_USAGE = 0.5f;
-    static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.7f;
+    static constexpr double IDLE_BACKGROUND_CPU_USAGE = 0.8f;
     static constexpr int DOUBLE_INTERVAL_CHECK = 2;
     static constexpr uint32_t IDLE_WORKER_TRIGGER_COUNT = 1; // it needs over IDLE_INBACKGROUND_CHECK_LENGTH
     static constexpr uint32_t IDLE_WORKER_CHECK_TASK_COUNT = 4;
