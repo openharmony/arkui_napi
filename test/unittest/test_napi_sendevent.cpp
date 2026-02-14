@@ -77,6 +77,24 @@ HWTEST_F(NapiSendEventTest, SendEventTest003, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: SendEventTest003b
+ * @tc.desc: Test napi_send_event invalid option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest003b, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high, g_testName,
+        static_cast<napi_event_barrier_option>(-1));
+    EXPECT_EQ(status, napi_status::napi_invalid_arg);
+    status = napi_send_event(env, cb, napi_eprio_high, g_testName,
+        static_cast<napi_event_barrier_option>(3));
+    EXPECT_EQ(status, napi_status::napi_invalid_arg);
+}
+
+/**
  * @tc.name: SendEventTest004
  * @tc.desc: Test napi_send_event sendEventByHandler
  * @tc.type:FUNC
@@ -144,6 +162,48 @@ HWTEST_F(NapiSendEventTest, SendEventTest007, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: SendEventTest008
+ * @tc.desc: Test napi_send_event with NO_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest008, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high, g_testName, napi_barrier_none);
+    EXPECT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendEventTest009
+ * @tc.desc: Test napi_send_event with NEED_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest009, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high, g_testName, napi_barrier_need);
+    EXPECT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendEventTest010
+ * @tc.desc: Test napi_send_event with FORCE_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendEventTest010, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    const std::function<void()> cb = []() -> void {};
+    auto status = napi_send_event(env, cb, napi_eprio_high, g_testName, napi_barrier_force);
+    EXPECT_EQ(status, napi_status::napi_ok);
+}
+
+/**
  * @tc.name: SendCancelableEent001
  * @tc.desc: Test napi_send_cancelable_event invalidParams
  * @tc.type:FUNC
@@ -164,6 +224,24 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent001, testing::ext::TestSize.Level1
     EXPECT_EQ(status, napi_status::napi_invalid_arg);
 }
 
+
+/**
+ * @tc.name: SendCancelableEent001b
+ * @tc.desc: Test napi_send_cancelable_event invalid option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendCancelableEent001b, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    uint64_t handleId = 0;
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName,
+        static_cast<napi_event_barrier_option>(-1));
+    EXPECT_EQ(status, napi_status::napi_invalid_arg);
+    status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName,
+        static_cast<napi_event_barrier_option>(3));
+    EXPECT_EQ(status, napi_status::napi_invalid_arg);
+}
 /**
  * @tc.name: SendCancelableEent002
  * @tc.desc: Test napi_send_cancelable_event sendEventByHandler
@@ -193,10 +271,73 @@ HWTEST_F(NapiSendEventTest, SendCancelableEent003, testing::ext::TestSize.Level1
 {
     ASSERT_NE(engine_, nullptr);
     napi_env env = (napi_env)engine_;
-    
+
     uint64_t handleId = 0;
     eventHandler_ = nullptr;
     auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId, g_defaultName);
+    ASSERT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendCancelableEent004
+ * @tc.desc: Test napi_send_cancelable_event with NO_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendCancelableEent004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    uint64_t handleId = 0;
+    if (eventHandler_ == nullptr) {
+        auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
+        ASSERT_NE(runner, nullptr);
+        eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+        ASSERT_NE(eventHandler_, nullptr);
+    }
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId,
+        g_defaultName, napi_barrier_none);
+    ASSERT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendCancelableEent005
+ * @tc.desc: Test napi_send_cancelable_event with NEED_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendCancelableEent005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    uint64_t handleId = 0;
+    if (eventHandler_ == nullptr) {
+        auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
+        ASSERT_NE(runner, nullptr);
+        eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+        ASSERT_NE(eventHandler_, nullptr);
+    }
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId,
+        g_defaultName, napi_barrier_need);
+    ASSERT_EQ(status, napi_status::napi_ok);
+}
+
+/**
+ * @tc.name: SendCancelableEent006
+ * @tc.desc: Test napi_send_cancelable_event with FORCE_BARRIER option
+ * @tc.type:FUNC
+ */
+HWTEST_F(NapiSendEventTest, SendCancelableEent006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = (napi_env)engine_;
+    uint64_t handleId = 0;
+    if (eventHandler_ == nullptr) {
+        auto runner = OHOS::AppExecFwk::EventRunner::Create(false);
+        ASSERT_NE(runner, nullptr);
+        eventHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(runner);
+        ASSERT_NE(eventHandler_, nullptr);
+    }
+    auto status = napi_send_cancelable_event(env, Task, g_defaultData, napi_eprio_high, &handleId,
+        g_defaultName, napi_barrier_force);
     ASSERT_EQ(status, napi_status::napi_ok);
 }
 

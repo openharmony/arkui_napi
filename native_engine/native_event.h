@@ -42,7 +42,8 @@ public:
                                             void* data,
                                             int32_t priority,
                                             const char* name,
-                                            uint64_t* handleId);
+                                            uint64_t* handleId,
+                                            int32_t option = 0);
     virtual napi_status CancelEvent(const char* name, uint64_t handleId);
     virtual SafeAsyncCode UvCancelEvent(uint64_t handleId);
     static void CreateDefaultFunction(NativeEngine* eng, napi_threadsafe_function &defaultFunc,
@@ -54,7 +55,8 @@ protected:
     std::atomic<uint64_t> sequence_;
     uint64_t GenerateUniqueID();
     napi_status SendEventByEventHandler(const std::function<void()> &task, uint64_t eventId,
-                                        int32_t priority, const char* name, uint64_t* handleId);
+                                        int32_t priority, const char* name, uint64_t* handleId,
+                                        int32_t option = 0);
     napi_status SendEventByUv(const std::function<void()> &task, uint64_t eventId,
                               const char* name, uint64_t* handleId);
     napi_status SendConvertStatus2NapiStatus(void* data, NativeThreadSafeFunctionCallMode mode);
