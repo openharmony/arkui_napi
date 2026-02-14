@@ -244,6 +244,33 @@ NAPI_EXTERN napi_status napi_create_external_string_ascii(napi_env env,
                                                           napi_finalize_callback finalize_callback,
                                                           void* finalize_hint,
                                                           napi_value* result);
+
+// ================================== callsite IC for property access ================================== //
+typedef struct napi_callsite_info__* napi_callsite_info;
+
+// Create a per-callsite IC cache. Must be released with napi_delete_callsite_info.
+NAPI_EXTERN napi_status napi_create_callsite_info(napi_env env,
+                                                  napi_callsite_info* result);
+// Release a callsite IC cache.
+NAPI_EXTERN napi_status napi_delete_callsite_info(napi_env env,
+                                                  napi_callsite_info info);
+// Get a property using callsite IC. Fallback to napi_get_property
+// |hit| (nullable): set to true if the IC cache was used, false on miss.
+NAPI_EXTERN napi_status napi_get_property_with_callsite_info(napi_env env,
+                                                             napi_value object,
+                                                             napi_value key,
+                                                             napi_callsite_info info,
+                                                             napi_value* result,
+                                                             bool* hit);
+// Set a property using callsite IC. Fallback to napi_set_property
+// |hit| (nullable): set to true if the IC cache was used, false on miss.
+NAPI_EXTERN napi_status napi_set_property_with_callsite_info(napi_env env,
+                                                             napi_value object,
+                                                             napi_value key,
+                                                             napi_value value,
+                                                             napi_callsite_info info,
+                                                             bool* hit);
+
 #ifdef __cplusplus
 }
 #endif
