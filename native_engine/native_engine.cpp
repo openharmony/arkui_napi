@@ -1121,7 +1121,13 @@ void NativeEngine::GetInstanceData(void** data)
 void NativeEngine::FinalizerInstanceData(void)
 {
     if (instanceDataInfo_.engine != nullptr && instanceDataInfo_.callback != nullptr) {
-        instanceDataInfo_.callback(instanceDataInfo_.engine, instanceDataInfo_.nativeObject, instanceDataInfo_.hint);
+        if (isInDestructor_ || IsCrossThreadCheckEnabled()) {
+            ExecuteCallback(__FUNCTION__, instanceDataInfo_.callback, instanceDataInfo_.engine,
+                            instanceDataInfo_.nativeObject, instanceDataInfo_.hint);
+        } else {
+            instanceDataInfo_.callback(instanceDataInfo_.engine, instanceDataInfo_.nativeObject,
+                                       instanceDataInfo_.hint);
+        }
     }
     instanceDataInfo_.engine = nullptr;
     instanceDataInfo_.callback = nullptr;

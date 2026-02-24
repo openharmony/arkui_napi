@@ -283,7 +283,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     // Don't use that after complete
     auto complete = that->complete_;
     auto description = that->GetTraceDescription();
-    that->complete_(engine, nstatus, that->data_);
+    NativeEngine::ExecuteCallback(__FUNCTION__, that->complete_, engine, nstatus, that->data_);
     if (engine->HasCriticalScope()) {
         HILOG_FATAL("critical scope still open after user callback (ID: %{public}" PRIuPTR
                     ") returned, task description: %{public}s",
