@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1951,7 +1951,8 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
     return JsValueFromLocalValue(scope.Escape(exportObj));
 }
 
-napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path, const char* module_info)
+napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path, const char* module_info,
+                                                               const char* ohmurl)
 {
     if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
@@ -1962,9 +1963,14 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path,
     Local<ObjectRef> exportObj(undefObj);
     std::string inputPath(path);
     std::string modulePath;
+    std::string ohmurlStr(ohmurl);
     if (module_info != nullptr) {
-        modulePath = module_info;
-        exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfoForHybridApp(vm_, inputPath, modulePath);
+        if (panda::JSNApi::IsCrossBundleHsp(ohmurl)) {
+            exportObj = panda::JSNApi::GetModuleNameSpaceWithOhmurlForHybridApp(vm_, ohmurlStr);
+        } else {
+            modulePath = module_info;
+            exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfoForHybridApp(vm_, inputPath, modulePath);
+        }
     } else {
         exportObj = NapiLoadNativeModule(inputPath);
     }

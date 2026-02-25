@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14366,7 +14366,7 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Le
  */
 HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest001, testing::ext::TestSize.Level1)
 {
-    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr);
+    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -14380,7 +14380,7 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest002, testing::ext:
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr);
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -14395,8 +14395,64 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext:
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     napi_value result = nullptr;
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, &result);
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, &result);
     ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid with ohmurl parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    const char* path = "@ohos.test_module";
+    const char* moduleInfo = "test_module_info";
+    const char* ohmurl = "@normalized:N&FLayoutCore&com.test.hmsapp.f&@test/path&";
+
+    auto res = napi_load_module_with_info_hybrid(env, path, moduleInfo, ohmurl, &result);
+    ASSERT_NE(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid with empty ohmurl
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    const char* path = "@ohos.test_module";
+    const char* moduleInfo = "test_module_info";
+    const char* ohmurl = "";
+
+    auto res = napi_load_module_with_info_hybrid(env, path, moduleInfo, ohmurl, &result);
+    ASSERT_NE(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
+ * @tc.desc: Test interface of napi_load_module_with_info_hybrid with null ohmurl
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_value result = nullptr;
+    const char* path = "@ohos.test_module";
+    const char* moduleInfo = "test_module_info";
+
+    auto res = napi_load_module_with_info_hybrid(env, path, moduleInfo, nullptr, &result);
+    ASSERT_NE(res, napi_invalid_arg);
 }
 
 /**

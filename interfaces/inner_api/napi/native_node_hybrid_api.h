@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,6 +53,7 @@ using NapiAppStateCallback = void (*)(int state, int64_t timestamp);
 NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
+                                                          const char* ohmurl,
                                                           napi_value* result);
 NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env,
                                                              const char* request_name,
