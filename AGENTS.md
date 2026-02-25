@@ -2,61 +2,83 @@
 
 This file provides guidance to agents when working with code in repository.
 
-## 构建系统
+## Build System
 
-- 使用 GN (Generate Ninja) 构建系统，不是传统的 Make 或 CMake
-- 主要构建文件: BUILD.gn (根目录) 和 napi.gni (配置文件)
-- 构建目标: `//foundation/arkui/napi:napi_packages`
-- 测试目标: `//foundation/arkui/napi:napi_packages_test`
-- 编译命令：
-   编译命令需要严格按照目录结构进行选择
+- Use GN (Generate Ninja) build system, not traditional Make or CMake
+- Main build files: BUILD.gn (root directory) and napi.gni (configuration file)
+- Build target: `//foundation/arkui/napi:napi_packages`
+- Test target: `//foundation/arkui/napi:napi_packages_test`
+- Build commands:
+   Build commands must be selected strictly according to the directory structure
 
-   > 注意事项
+   > Note
    >
-   > 若无特殊说明，如下命令工作目录均为gn根目录
+   > Unless otherwise specified, the working directory for the following commands is the gn root directory
    >
-   > 注: target-cpu 需要询问用户，可选值为 arm 和 arm64
+   > Note: target-cpu needs to be asked from the user, available values are arm and arm64
 
-   - 若 `//foundation/arkui` 目录下仅存在 `//foundation/arkui/napi` 文件夹
-      ```bash
-      # 更新依赖
-      bash ./build/prebuilts_config.sh
+   - If only the `//foundation/arkui/napi` folder exists under the `//foundation/arkui` directory
+     In this case, we called it `indenpendicy project`
 
-      # 运行编译命令
-      # 注: 若未 hb 工具安装，可以路径 //build/hb 进行安装
-      # 不编译测试用例
-      hb build napi -i --target-cpu arm64 # 编译除测试用例外所有构建目标
-      # 编译所有目标
-      hb build napi -t --target-cpu arm64 # 编译所有构建目标, 含测试用例
-      ```
-   - 其余情况除可使用上述命令进行编译时，还可以使用下列命令进行编译
-      ```bash
-      # 更新依赖
-      bash ./build/prebuilts_download.sh
-      # 编译命令
-      ./build.sh --product-name rk3568 --target-cpu arm64 --build-target ace_napi # 若需编译测试套，则将编译目标修改为 napi_packages_test
-      ```
+     ```bash
+     # Update dependencies
+     bash ./build/prebuilts_config.sh
 
-## 测试命令
+     # Run build commands
+     # Note: If hb tool is not installed, you can install it via path //build/hb
+     # Do not compile test cases
+     hb build napi -i # Compile all build targets except test cases
+     # Compile all targets
+     hb build napi -t # Compile all targets, including test cases
+     ```
+   - For other cases, in addition to using the above commands for compilation, you can also use the following commands
 
-- 单元测试: `//foundation/arkui/napi/test/unittest:unittest`
-- 模糊测试: `//foundation/arkui/napi/test/fuzztest:fuzztest`
+     ```bash
+     # Update dependencies
+     bash ./build/prebuilts_download.sh
+     # Build command
+     ./build.sh --product-name rk3568 --target-cpu arm64 --build-target ace_napi # If you need to compile the test suite, change the build target to napi_packages_test
+     ```
+
+## Run Test
+
+Run test suits command.
+
+Path must be replace to physisc path in project root. `//` means project root.
+
+ohos-sdk path maybe need update if not exist.
+
+you may need to make a link //out/standard/test to //out/rk3568 if `indenpendicy project` detected.
+
+replace `-t UT` to `to FUZZ` to run fuzz test suit.
 
 
-## 关键实现细节
+```bash
+env -C //test/testfwk/developer_test/src \
+    PATH="//prebuilts/ohos-sdk/linux/23/toolchains:\
+    /usr/local/sbin:\
+    /usr/local/bin:\
+    /usr/sbin:\
+    /usr/bin:\
+    /sbin:\
+    /bin" \
+    //prebuilts/python/linux-x86/current/bin/python3 -m main run -t UT -p rk3568 -ss napi
+```
 
-- Ark JS 引擎实现位于 `native_engine/impl/ark/` 目录
-- 支持多平台: OHOS、Linux、Windows、macOS、iOS、Android
-- 支持多架构: ARM64、ARM32、x86_64、x86
-- 数据保护功能在 ARM64 OHOS 平台上自动启用
+## Key Implementation Details
 
-## 开发注意事项
+- Ark JS engine implementation is located in the `native_engine/impl/ark/` directory
+- Supports multiple platforms: OHOS, Linux, Windows, macOS, iOS, Android
+- Supports multiple architectures: ARM64, ARM32, x86_64, x86
+- Data protection feature is automatically enabled on ARM64 OHOS platform
 
-- 新模块需要注册到 napi.gni 的 napi_sources 列表中
-- 平台特定代码使用条件编译指令 (如 #ifdef OHOS_PLATFORM)
-- 错误处理使用 NativeErrorExtendedInfo 结构体
-- 异步操作使用 NativeAsyncWork 和 NativeSafeAsyncWork
-- 线程安全操作使用适当的同步机制
-- 需要与 JSValueRef 等虚拟机对象交互的接口, 需要调用方确保线程安全
-- 对于线程安全的 api 接口, 需要在返回错误码时, 调用 `napi_set_last_error` 或 `napi_clear_last_error` 更新异常信息并返回
-- 公开 api 接口应该声明到 `interfaces/kits/napi/native_api.h`, 内部接口 (供系统其余模块使用) 应当声明到 `interfaces/inner_api/napi/native_node_api.h`
+## Development Notes
+
+- New modules need to be registered in the napi_sources list in napi.gni
+- Platform-specific code uses conditional compilation directives (e.g., #ifdef OHOS_PLATFORM)
+- Error handling uses NativeErrorExtendedInfo structure
+- Async operations use NativeAsyncWork and NativeSafeAsyncWork
+- Thread-safe operations use appropriate synchronization mechanisms
+- Interfaces that need to interact with VM objects like JSValueRef require the caller to ensure thread safety
+- For thread-safe API interfaces, when returning error codes, call `napi_set_last_error` or `napi_clear_last_error` to update exception information and return
+- Public API interfaces should be declared in `interfaces/kits/napi/native_api.h`, internal interfaces (for use by other system modules) should be declared in `interfaces/inner_api/napi/native_node_api.h`
