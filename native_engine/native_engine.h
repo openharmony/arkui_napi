@@ -275,12 +275,13 @@ public:
 
     virtual void DumpHeapSnapshot(const std::string &path, bool isVmMode = true,
         DumpFormat dumpFormat = DumpFormat::JSON, bool isPrivate = false,
-        bool captureNumericValue = false, bool isJSLeakWatcher = false) = 0;
+        bool captureNumericValue = false, bool isJSLeakWatcher = false,
+        bool isClearNodeIdCache = false) = 0;
     virtual void DumpHeapSnapshot(bool isFullGC, const std::string &path,
-        const std::function<void(uint8_t)> &callback) = 0;
+        const std::function<void(uint8_t)> &callback, bool isClearNodeIdCache = false) = 0;
     virtual void DumpCpuProfile() = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
-        bool isPrivate = false, bool isFullGC = true) = 0;
+        bool isPrivate = false, bool isFullGC = true, bool isClearNodeIdCache = false) = 0;
     virtual bool BuildNativeAndJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackTrace(std::string &stackTraceStr) = 0;
     virtual bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)

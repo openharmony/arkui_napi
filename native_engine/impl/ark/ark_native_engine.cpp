@@ -2520,11 +2520,13 @@ void ArkNativeEngine::PromiseRejectCallback(void* info)
 }
 
 void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, DumpFormat dumpFormat,
-                                       bool isPrivate, bool captureNumericValue, bool isJSLeakWatcher)
+                                       bool isPrivate, bool captureNumericValue, bool isJSLeakWatcher,
+                                       bool isClearNodeIdCache)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = isVmMode;
     dumpOption.isSync = true;
+    dumpOption.isClearNodeIdCache = isClearNodeIdCache;
     if (dumpFormat == DumpFormat::JSON) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
         dumpOption.isPrivate = isPrivate;
@@ -2545,13 +2547,15 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, D
 }
 
 void ArkNativeEngine::DumpHeapSnapshot(bool isFullGC, const std::string &path,
-                                       const std::function<void(uint8_t)> &callback)
+                                       const std::function<void(uint8_t)> &callback,
+                                       bool isClearNodeIdCache)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = true;
     dumpOption.isPrivate = false;
     dumpOption.isFullGC = isFullGC;
     dumpOption.isSync = false;
+    dumpOption.isClearNodeIdCache = isClearNodeIdCache;
     dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
     DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption, callback);
 }
@@ -2561,13 +2565,15 @@ void ArkNativeEngine::DumpCpuProfile()
     DFXJSNApi::DumpCpuProfile(vm_);
 }
 
-void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC)
+void ArkNativeEngine::DumpHeapSnapshot(bool isVmMode, DumpFormat dumpFormat, bool isPrivate, bool isFullGC,
+                                       bool isClearNodeIdCache)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = isVmMode;
     dumpOption.isPrivate = isPrivate;
     dumpOption.isFullGC = isFullGC;
     dumpOption.isSync = false;
+    dumpOption.isClearNodeIdCache = isClearNodeIdCache;
     if (dumpFormat == DumpFormat::JSON) {
         dumpOption.dumpFormat = panda::ecmascript::DumpFormat::JSON;
         DFXJSNApi::DumpHeapSnapshot(vm_, dumpOption);
