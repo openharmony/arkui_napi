@@ -284,6 +284,7 @@ public:
     void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) override;
     void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) override;
     std::vector<HeapMemoryInfo> GetAllVMHeapMemoryInfo() override;
+    bool EnableLocalHandleDetection() override;
     void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) override;
     void GetJsonExtraInfoForCrash(napi_env env, std::string &jsonStr, uint32_t &position) override;
     void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer, bool defaultCloneSendable,

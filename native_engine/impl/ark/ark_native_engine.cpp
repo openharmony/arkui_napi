@@ -2641,6 +2641,49 @@ std::vector<panda::ecmascript::HeapMemoryInfo> ArkNativeEngine::GetAllVMHeapMemo
     return JSNApi::GetAllVMHeapMemoryInfo();
 }
 
+void OpenHandleScopeCb(void* eng, void** localHandle)
+{
+    napi_env env = reinterpret_cast<napi_env>(eng);
+    napi_handle_scope* result = reinterpret_cast<napi_handle_scope*>(localHandle);
+    napi_status status = napi_open_handle_scope(env, result);
+    if (status != napi_ok) {
+        HILOG_ERROR("failed to open handle scope");
+    }
+}
+
+void CloseHandleScopeCb(void* eng, void* localHandle)
+{
+    napi_env env = reinterpret_cast<napi_env>(eng);
+    napi_handle_scope result = reinterpret_cast<napi_handle_scope>(localHandle);
+    napi_status status = napi_close_handle_scope(env, result);
+    if (status != napi_ok) {
+        HILOG_ERROR("failed to close handle scope");
+    }
+}
+
+bool ArkNativeEngine::EnableLocalHandleDetection()
+{
+    if (!IsMainEnvContext()) {
+        HILOG_ERROR("multi-context does not support handle detection feature");
+        return false;
+    }
+#if defined(ENABLE_EVENT_HANDLER)
+    // register callback to event handler
+    std::shared_ptr<OHOS::AppExecFwk::EventRunner> runner = OHOS::AppExecFwk::EventRunner::Current();
+    if (runner != nullptr) {
+        runner->RegisterLocalHandleCallback(OpenHandleScopeCb, CloseHandleScopeCb);
+    }
+#endif
+    //register callback to uv
+    int ret = uv_register_scope_to_loop(loop_, reinterpret_cast<void*>(this), OpenHandleScopeCb, CloseHandleScopeCb);
+    if (ret != 0) {
+        HILOG_ERROR("failed to register scope callback to uv loop, ret = %{public}d", ret);
+        return false;
+    }
+    HILOG_DEBUG("register scope callback successfully");
+    return true;
+}
+
 void ArkNativeEngine::GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr)
 {
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();

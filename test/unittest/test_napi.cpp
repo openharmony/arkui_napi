@@ -17166,3 +17166,35 @@ HWTEST_F(NapiBasicTest, Utf8StringReplacementTest014, testing::ext::TestSize.Lev
  
     ASSERT_TRUE(memcmp(output, expected.data(), expectedLen) == 0);
 }
+
+HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    bool result = engine_->EnableLocalHandleDetection();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest002, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env contextEnv = nullptr;
+    napi_status status = napi_create_ark_context(reinterpret_cast<napi_env>(engine_), &contextEnv);
+    ASSERT_EQ(status, napi_ok);
+
+    NativeEngine* contextEngine = reinterpret_cast<NativeEngine*>(contextEnv);
+    bool result = contextEngine->EnableLocalHandleDetection();
+    ASSERT_FALSE(result);
+
+    status = napi_destroy_ark_context(contextEnv);
+    ASSERT_EQ(status, napi_ok);
+}
+
+HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest003, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    uv_loop_t* originalLoop = engine_->loop_;
+    engine_->loop_ = nullptr;
+    bool result = engine_->EnableLocalHandleDetection();
+    ASSERT_FALSE(result);
+    engine_->loop_ = originalLoop;
+}
