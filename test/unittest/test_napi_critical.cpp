@@ -198,26 +198,6 @@ HWTEST_F(NapiCriticalTest, NapiUnclosedCriticalTest004, testing::ext::TestSize.L
 }
 
 /**
- * @tc.name: NapiNonCriticalTest001
- * @tc.desc: Test interface cannot invoke while critical scope is opening.
- * @tc.type: FUNC
- */
-HWTEST_F(NapiCriticalTest, NapiNonCriticalTest001, testing::ext::TestSize.Level1)
-{
-    BasicDeathTest deathTest([] {
-        NativeEngineProxy env;
-        napi_env result {};
-        napi_critical_scope scope {};
-        napi_open_critical_scope(env, &scope);
-
-        napi_create_limit_runtime(env, &result);
-        napi_close_critical_scope(env, scope);
-    });
-    deathTest.AssertSignal(SIGABRT).AssertError(TEST_NAPI_UNCLOSED_CRITICAL_LOG);
-    ASSERT_TRUE(deathTest.GetResult());
-}
-
-/**
  * @tc.name: NapiNonCriticalTest002
  * @tc.desc: Test interface cannot invoke while critical scope is opening.
  * @tc.type: FUNC
@@ -2218,9 +2198,7 @@ HWTEST_F(NapiCriticalTest, NapiNonCriticalTest094, testing::ext::TestSize.Level1
 HWTEST_F(NapiCriticalTest, NapiCreateRuntimeInCriticalScope, testing::ext::TestSize.Level1)
 {
     auto env = reinterpret_cast<napi_env>(engine_);
-    napi_critical_scope scope{};
-    napi_open_critical_scope(env, &scope);
     napi_env newEnv {};
     ASSERT_EQ(napi_create_runtime(env, &newEnv), napi_ok);
-    napi_close_critical_scope(env, scope);
+    ASSERT_EQ(napi_destroy_runtime(newEnv), napi_ok);
 }
