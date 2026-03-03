@@ -1965,7 +1965,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path,
     std::string modulePath;
     std::string ohmurlStr(ohmurl);
     if (module_info != nullptr) {
-        if (panda::JSNApi::IsCrossBundleHsp(ohmurl)) {
+        if (panda::JSNApi::IsCrossBundleHsp(vm_, ohmurl)) {
             exportObj = panda::JSNApi::GetModuleNameSpaceWithOhmurlForHybridApp(vm_, ohmurlStr);
         } else {
             modulePath = module_info;
