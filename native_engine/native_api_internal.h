@@ -164,7 +164,7 @@ inline bool EnableContainerScope(napi_env env)
         panda::Local<panda::JSValueRef> envContext = engine->GetContext();          \
         if (!(envContext == panda::JSNApi::GetCurrentContext(vm))) {                \
             napi_status status = engine->SwitchContext();                           \
-            if (status != napi_ok) {                                                \
+            if (status == napi_generic_failure) {                                   \
                 return napi_set_last_error(env, status);                            \
             }                                                                       \
         }                                                                           \

@@ -3407,13 +3407,15 @@ void ArkNativeEngine::EnableNapiProfiler()
 
 napi_status ArkNativeEngine::SwitchContext()
 {
-    if (context_.IsEmpty()) {
+    int res = panda::JSNApi::SwitchContext(vm_, context_.ToLocal(vm_));
+    if (res == static_cast<int>(panda::SwitchContextResult::FAILED)) {
+        return napi_pending_exception;
+    } else if (res == static_cast<int>(panda::SwitchContextResult::EMPTY)) {
         HILOG_ERROR("no env context exists");
         return napi_generic_failure;
+    } else {
+        return napi_ok;
     }
-
-    panda::JSNApi::SwitchContext(vm_, context_.ToLocal(vm_));
-    return napi_ok;
 }
 
 napi_status ArkNativeEngine::DestroyContext()

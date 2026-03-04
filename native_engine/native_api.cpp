@@ -4688,7 +4688,9 @@ NAPI_EXTERN napi_status napi_create_ark_context(napi_env env, napi_env* newEnv)
 
 NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
 {
-    NAPI_PREAMBLE(env);
+    CHECK_ENV((env));
+    RETURN_STATUS_IF_FALSE((env), (reinterpret_cast<NativeEngine*>(env))->lastException_.IsEmpty(),
+        napi_pending_exception); napi_clear_last_error((env));
     auto nativeEngine = reinterpret_cast<NativeEngine*>(env);
     // worker and taskpool will support multi-context later
     if (!nativeEngine->IsMainThread()) {
@@ -4701,8 +4703,8 @@ NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
         return napi_set_last_error(env, status);
     } else {
         HILOG_DEBUG("switch context successfully");
+        return napi_ok;
     }
-    return GET_RETURN_STATUS(env);
 }
 
 NAPI_EXTERN napi_status napi_destroy_ark_context(napi_env env)
