@@ -73,10 +73,10 @@ NativeModuleManager::~NativeModuleManager()
         while (nativeModule != nullptr) {
             nativeModule = nativeModule->next;
             if (headNativeModule_->name) {
-                delete[] headNativeModule_->name;
+                free(const_cast<char *>(headNativeModule_->name));
             }
             if (headNativeModule_->moduleName) {
-                delete[] headNativeModule_->moduleName;
+                free(const_cast<char *>(headNativeModule_->moduleName));
             }
             if (headNativeModule_->jsABCCode) {
                 delete[] headNativeModule_->jsABCCode;
@@ -99,7 +99,7 @@ NativeModuleManager::~NativeModuleManager()
 #endif
     appLibPathMapMutex_.lock();
     for (const auto& item : appLibPathMap_) {
-        delete[] item.second;
+        free(item.second);
     }
     std::map<std::string, char*>().swap(appLibPathMap_);
     appLibPathMapMutex_.unlock();
@@ -727,7 +727,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
 
     std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     if (appLibPathMap_[moduleName] != nullptr) {
-        delete[] appLibPathMap_[moduleName];
+        free(appLibPathMap_[moduleName]);
     }
     appLibPathMap_[moduleName] = tmp;
     CreateLdNamespace(moduleName, tmp, isSystemApp);
@@ -1471,6 +1471,11 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
         MODULEMNG_HILOG_ERROR("failed");
         return;
     }
+    if (tailNativeModule_ == nullptr) {
+        MODULEMNG_HILOG_ERROR("failed");
+        free(moduleName);
+        return;
+    }
     tailNativeModule_->moduleName = moduleName;
     tailNativeModule_->name = strdup(moduleName);
     if (tailNativeModule_->name == nullptr) {
@@ -1494,14 +1499,14 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
         return false;
     }
     NativeModule* nativeModule = headNativeModule_;
-    if (!strcasecmp(nativeModule->moduleName, moduleKey.c_str())) {
+    if (nativeModule->moduleName && !strcasecmp(nativeModule->moduleName, moduleKey.c_str())) {
         if (headNativeModule_ == tailNativeModule_) {
             tailNativeModule_ = nullptr;
         }
         headNativeModule_ = headNativeModule_->next;
-        delete[] nativeModule->name;
+        free(const_cast<char *>(nativeModule->name));
         if (nativeModule->moduleName) {
-            delete[] nativeModule->moduleName;
+            free(const_cast<char *>(nativeModule->moduleName));
         }
         if (nativeModule->jsABCCode) {
             delete[] nativeModule->jsABCCode;
@@ -1517,14 +1522,14 @@ bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey
     NativeModule* prev = headNativeModule_;
     NativeModule* curr = prev->next;
     while (curr != nullptr) {
-        if (!strcasecmp(curr->moduleName, moduleKey.c_str())) {
+        if (curr->moduleName && !strcasecmp(curr->moduleName, moduleKey.c_str())) {
             if (curr == tailNativeModule_) {
                 tailNativeModule_ = prev;
             }
             prev->next = curr->next;
-            delete[] curr->name;
+            free(const_cast<char *>(curr->name));
             if (curr->moduleName) {
-                delete[] curr->moduleName;
+                free(const_cast<char *>(curr->moduleName));
             }
             if (curr->jsABCCode) {
                 delete[] curr->jsABCCode;

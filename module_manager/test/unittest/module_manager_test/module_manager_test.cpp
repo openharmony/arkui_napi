@@ -1391,3 +1391,185 @@ HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_005, TestSize.Level1)
 
     GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_005 end";
 }
+
+/*
+ * @tc.name: SetAppLibPath_ShouldFreeOldPathWhenSetTwice
+ * @tc.desc: test SetAppLibPath should free old path when set twice
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, SetAppLibPath_ShouldFreeOldPathWhenSetTwice, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SetAppLibPath_ShouldFreeOldPathWhenSetTwice starts";
+    std::string moduleName = "moduleName_setpath_twice";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::vector<std::string> appLibPath1 = { "/path/first" };
+    std::vector<std::string> appLibPath2 = { "/path/second" };
+
+    moduleManager->SetAppLibPath(moduleName, appLibPath1, false);
+    moduleManager->SetAppLibPath(moduleName, appLibPath2, false);
+
+    EXPECT_NE(moduleManager->appLibPathMap_[moduleName], nullptr);
+    EXPECT_STREQ(moduleManager->appLibPathMap_[moduleName], "/path/second");
+    GTEST_LOG_(INFO) << "SetAppLibPath_ShouldFreeOldPathWhenSetTwice end";
+}
+
+/*
+ * @tc.name: RemoveNativeModuleByCache_ShouldHandleNullModuleName
+ * @tc.desc: test RemoveNativeModuleByCache should handle null moduleName
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldHandleNullModuleName, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName starts";
+    NativeModuleManager moduleManager;
+
+    NativeModule* module = new NativeModule();
+    module->name = strdup("testModule");
+    module->moduleName = nullptr;
+    module->next = nullptr;
+    moduleManager.headNativeModule_ = module;
+    moduleManager.tailNativeModule_ = module;
+
+    bool result = moduleManager.RemoveNativeModuleByCache("testModule");
+    EXPECT_FALSE(result);
+
+    delete module;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName end";
+}
+
+/*
+ * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead
+ * @tc.desc: test RemoveNativeModuleByCache should free memory when remove head node
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead starts";
+    NativeModuleManager moduleManager;
+
+    NativeModule* module = new NativeModule();
+    std::string moduleName = "headModule";
+    module->name = strdup(moduleName.c_str());
+    module->moduleName = strdup(moduleName.c_str());
+    module->next = nullptr;
+    moduleManager.headNativeModule_ = module;
+    moduleManager.tailNativeModule_ = module;
+
+    bool result = moduleManager.RemoveNativeModuleByCache(moduleName);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(moduleManager.headNativeModule_, nullptr);
+    EXPECT_EQ(moduleManager.tailNativeModule_, nullptr);
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead end";
+}
+
+/*
+ * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail
+ * @tc.desc: test RemoveNativeModuleByCache should free memory when remove tail node
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail starts";
+    NativeModuleManager moduleManager;
+
+    NativeModule* headModule = new NativeModule();
+    headModule->name = strdup("headModule");
+    headModule->moduleName = strdup("headModule");
+    headModule->next = nullptr;
+
+    NativeModule* tailModule = new NativeModule();
+    tailModule->name = strdup("tailModule");
+    tailModule->moduleName = strdup("tailModule");
+    tailModule->next = nullptr;
+
+    headModule->next = tailModule;
+    moduleManager.headNativeModule_ = headModule;
+    moduleManager.tailNativeModule_ = tailModule;
+
+    bool result = moduleManager.RemoveNativeModuleByCache("tailModule");
+    EXPECT_TRUE(result);
+    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
+    EXPECT_EQ(moduleManager.tailNativeModule_, headModule);
+
+    free(const_cast<char*>(headModule->name));
+    free(const_cast<char*>(headModule->moduleName));
+    delete headModule;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail end";
+}
+
+/*
+ * @tc.name: Destructor_ShouldFreeAppLibPathMapMemory
+ * @tc.desc: test destructor should free appLibPathMap_ memory correctly
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, Destructor_ShouldFreeAppLibPathMapMemory, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "Destructor_ShouldFreeAppLibPathMapMemory starts";
+    {
+        NativeModuleManager moduleManager;
+        std::vector<std::string> appLibPath = { "/test/path" };
+        moduleManager.SetAppLibPath("module1", appLibPath, false);
+        moduleManager.SetAppLibPath("module2", appLibPath, false);
+        EXPECT_EQ(moduleManager.appLibPathMap_.size(), 2);
+    }
+    GTEST_LOG_(INFO) << "Destructor_ShouldFreeAppLibPathMapMemory end";
+}
+
+/*
+ * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle
+ * @tc.desc: test RemoveNativeModuleByCache should free memory when remove middle node
+ * @tc.type: FUNC
+ * @tc.require: issue
+ */
+HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle starts";
+    NativeModuleManager moduleManager;
+
+    NativeModule* headModule = new NativeModule();
+    headModule->name = strdup("headModule");
+    headModule->moduleName = strdup("headModule");
+    headModule->next = nullptr;
+
+    NativeModule* middleModule = new NativeModule();
+    middleModule->name = strdup("middleModule");
+    middleModule->moduleName = strdup("middleModule");
+    middleModule->next = nullptr;
+
+    NativeModule* tailModule = new NativeModule();
+    tailModule->name = strdup("tailModule");
+    tailModule->moduleName = strdup("tailModule");
+    tailModule->next = nullptr;
+
+    headModule->next = middleModule;
+    middleModule->next = tailModule;
+    moduleManager.headNativeModule_ = headModule;
+    moduleManager.tailNativeModule_ = tailModule;
+
+    bool result = moduleManager.RemoveNativeModuleByCache("middleModule");
+    EXPECT_TRUE(result);
+    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
+    EXPECT_EQ(moduleManager.tailNativeModule_, tailModule);
+    EXPECT_EQ(headModule->next, tailModule);
+
+    free(const_cast<char*>(headModule->name));
+    free(const_cast<char*>(headModule->moduleName));
+    delete headModule;
+    free(const_cast<char*>(tailModule->name));
+    free(const_cast<char*>(tailModule->moduleName));
+    delete tailModule;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle end";
+}
