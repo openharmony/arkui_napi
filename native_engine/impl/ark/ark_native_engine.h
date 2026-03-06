@@ -358,7 +358,7 @@ public:
     napi_value NapiLoadModule(const char* path) override;
     napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) override;
     napi_value NapiLoadModuleWithInfoForHybridApp(
-        const char* path, const char* module_info, const char* ohmurl) override;
+        const char* path, const char* module_info, const char* ohmurl, const char* abcFilePath) override;
     std::string GetOhmurl(std::string str);
     Local<JSValueRef> NapiLoadNativeModule(std::string path);
     NativeReference* GetPromiseRejectCallBackRef()

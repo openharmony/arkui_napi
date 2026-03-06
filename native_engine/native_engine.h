@@ -540,7 +540,7 @@ public:
     virtual napi_value NapiLoadModule(const char* path) = 0;
     virtual napi_value NapiLoadModuleWithInfo(const char* path, const char* module_info) = 0;
     virtual napi_value NapiLoadModuleWithInfoForHybridApp(const char* path, const char* module_info,
-                                                          const char* ohmurl) = 0;
+                                                          const char* ohmurl, const char* abcFilePath) = 0;
     virtual std::string GetPkgName(const std::string &moduleName) = 0;
 
     double NewAsyncId()

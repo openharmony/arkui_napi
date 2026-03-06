@@ -1952,7 +1952,7 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfo(const char* path, const char*
 }
 
 napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path, const char* module_info,
-                                                               const char* ohmurl)
+                                                               const char* ohmurl, const char* abcFilePath)
 {
     if (path == nullptr) {
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
@@ -1961,17 +1961,21 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path,
     panda::EscapeLocalScope scope(vm_);
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     Local<ObjectRef> exportObj(undefObj);
-    std::string inputPath(path);
-    std::string modulePath;
     std::string ohmurlStr(ohmurl);
+    std::string abcFilePathStr(abcFilePath);
     if (module_info != nullptr) {
-        if (panda::JSNApi::IsCrossBundleHsp(vm_, ohmurl)) {
+        if (!abcFilePathStr.empty()) {
+            exportObj = panda::JSNApi::GetModuleNameSpaceWithOhmurlForHybridApp(vm_, ohmurlStr, abcFilePathStr);
+        } else if (panda::JSNApi::IsCrossBundleHsp(vm_, ohmurl)) {
             exportObj = panda::JSNApi::GetModuleNameSpaceWithOhmurlForHybridApp(vm_, ohmurlStr);
         } else {
-            modulePath = module_info;
+            auto [path, module_info] = panda::JSNApi::ResolveOhmUrl(ohmurl);
+            std::string inputPath(path);
+            std::string modulePath(module_info);
             exportObj = panda::JSNApi::GetModuleNameSpaceWithModuleInfoForHybridApp(vm_, inputPath, modulePath);
         }
     } else {
+        std::string inputPath(path);
         exportObj = NapiLoadNativeModule(inputPath);
     }
 
