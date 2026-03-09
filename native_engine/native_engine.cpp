@@ -242,7 +242,7 @@ ThreadId NativeEngine::GetCurSysTid()
 bool NativeEngine::ReinitUVLoop()
 {
     if (defaultFunc_ != nullptr) {
-        NativeEvent::DestoryDefaultFunction(false, defaultFunc_, eventMutex_);
+        NativeEvent::DestoryDefaultFunction(true, defaultFunc_, eventMutex_);
     }
 
     if (loop_ != nullptr) {
