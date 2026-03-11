@@ -96,7 +96,7 @@ public:
 
     bool IsInBackground() const
     {
-        return inBackground_.load(std::memory_order_relaxed);
+        return inBackground_.load(std::memory_order_acquire);
     }
 
     void AddIdleNotifyCount()
