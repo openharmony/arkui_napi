@@ -164,6 +164,13 @@ using GCTaskFinishedCallback = std::function<void()>;
     XX(int64_t, NonCallbackRef, nonCallbackRefCounter_, NAPI_COUNTER_INT32_LOAD)    \
     XX(int64_t, RuntimeOwnedRef, runtimeOwnedRefCounter_, NAPI_COUNTER_INT32_LOAD)
 
+// Heap memory threshold configuration
+struct HeapMemoryThreshold {
+    double localHeapThreshold;
+    double sharedHeapThreshold;
+    double processHeapThreshold;
+};
+
 class NAPI_EXPORT NativeEngine {
 public:
     explicit NativeEngine(void* jsEngine);
@@ -288,6 +295,9 @@ public:
     virtual bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
         = 0;
     virtual void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) = 0;
+    virtual bool OnVMHeapMemoryPressure(napi_env env, HeapMemoryThreshold heapMemoryThreshold,
+                                        napi_value callback) = 0;
+    virtual void OffVMHeapMemoryPressure(napi_env env) = 0;
     virtual void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) = 0;
     virtual std::vector<HeapMemoryInfo> GetAllVMHeapMemoryInfo() = 0;
     virtual bool EnableLocalHandleDetection() = 0;

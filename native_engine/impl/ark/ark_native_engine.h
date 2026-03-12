@@ -282,6 +282,9 @@ public:
     bool BuildJsStackInfoListWithCustomDepth(std::vector<JsFrameInfo>& jsFrames)
         override;
     void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) override;
+    bool OnVMHeapMemoryPressure(napi_env env, HeapMemoryThreshold heapMemoryThreshold,
+                                napi_value callback) override;
+    void OffVMHeapMemoryPressure(napi_env env) override;
     void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) override;
     std::vector<HeapMemoryInfo> GetAllVMHeapMemoryInfo() override;
     bool EnableLocalHandleDetection() override;
