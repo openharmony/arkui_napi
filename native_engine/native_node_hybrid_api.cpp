@@ -36,16 +36,18 @@ NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           const char* path,
                                                           const char* module_info,
                                                           const char* ohmurl,
+                                                          const char* abcFilePath,
                                                           napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, result);
     auto engine = reinterpret_cast<NativeEngine*>(env);
-    *result = engine->NapiLoadModuleWithInfoForHybridApp(path, module_info, ohmurl);
+    *result = engine->NapiLoadModuleWithInfoForHybridApp(path, module_info, ohmurl, abcFilePath);
     return GET_RETURN_STATUS(env);
 }
 
-NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const char* request_name, napi_value* result)
+NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const char* request_name,
+                                                             const char* abcFilePath, napi_value* result)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, request_name);
@@ -53,8 +55,7 @@ NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const
 
     if (request_name[0] == NAME_SPACE_TAG) {
         // load module with OhmUrl
-        auto [path, module_info] = panda::JSNApi::ResolveOhmUrl(request_name);
-        napi_load_module_with_info_hybrid(env, path.c_str(), module_info.c_str(), request_name, result);
+        napi_load_module_with_info_hybrid(env, "", "", request_name, abcFilePath, result);
     } else {
         napi_load_module_with_path(env, request_name, result);
     }
