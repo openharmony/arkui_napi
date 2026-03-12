@@ -290,6 +290,7 @@ public:
     virtual void GetMainThreadStackTrace(napi_env env, std::string &stackTraceStr) = 0;
     virtual void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) = 0;
     virtual std::vector<HeapMemoryInfo> GetAllVMHeapMemoryInfo() = 0;
+    virtual bool EnableLocalHandleDetection() = 0;
     virtual void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) = 0;
     virtual void GetJsonExtraInfoForCrash(napi_env env, std::string &jsonStr, uint32_t &position) = 0;
     virtual void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
