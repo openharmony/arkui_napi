@@ -14366,7 +14366,7 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Le
  */
 HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest001, testing::ext::TestSize.Level1)
 {
-    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -14380,7 +14380,7 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest002, testing::ext:
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr, nullptr);
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr);
     ASSERT_EQ(res, napi_invalid_arg);
 }
 
@@ -14395,7 +14395,7 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext:
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     napi_value result = nullptr;
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr, &result);
+    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, &result);
     ASSERT_EQ(res, napi_ok);
 }
 
