@@ -41,6 +41,26 @@ namespace panda::ecmascript {
 const std::string RES_SCHED_CLIENT_SO = "libressched_client.z.so";
 using ReportDataFunc = void (*)(uint32_t resType, int64_t value,
     const std::unordered_map<std::string, std::string>& payload);
+
+class CallbackTimerScope {
+public:
+    static constexpr int64_t CALLBACK_TIMEOUT_THRESHOLD_MS = 100;
+    explicit CallbackTimerScope(const char* name, int64_t thresholdMs = CALLBACK_TIMEOUT_THRESHOLD_MS)
+        : name_(name), thresholdMs_(thresholdMs), startTime_(std::chrono::steady_clock::now()) {}
+    ~CallbackTimerScope()
+    {
+        auto endTime = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime_).count();
+        if (duration > thresholdMs_) {
+            HILOG_WARN("ArkIdleMonitor: %{public}s timeout", name_);
+        }
+    }
+private:
+    const char* name_;
+    int64_t thresholdMs_;
+    std::chrono::steady_clock::time_point startTime_;
+};
+
 #if defined(ENABLE_EVENT_HANDLER)
 static constexpr uint64_t IDLE_GC_TIME_MIN = 1000;
 static constexpr uint64_t IDLE_GC_TIME_MAX = 10000;
@@ -299,6 +319,12 @@ void ArkIdleMonitor::NotifyNeedFreeze(bool needFreeze)
         if (deferfreeze_.load(std::memory_order_relaxed)) {
             deferfreeze_.store(false, std::memory_order_relaxed);
             SetSwitchToBackgroundTask(false);
+            if (externalClearCallback_) {
+                TraceScope trace("ArkIdleMonitor:ExternalClearCallback");
+                HILOG_DEBUG("ArkIdleMonitor: External Clear Callback.");
+                CallbackTimerScope timeScope("External Clear Callback");
+                externalClearCallback_();
+            }
             ReportDataToRSS(true);
         } else {
             // It is not in a delayed freeze state, so there is no need to notify the freeze
@@ -656,12 +682,10 @@ ArkIdleMonitor::~ArkIdleMonitor()
 #endif
 }
 
-
-std::shared_ptr<ArkIdleMonitor> ArkIdleMonitor::instance_ = std::make_shared<ArkIdleMonitor>();
-
 std::shared_ptr<ArkIdleMonitor> ArkIdleMonitor::GetInstance()
 {
-    return instance_;
+    static std::shared_ptr<ArkIdleMonitor> instance = std::make_shared<ArkIdleMonitor>();
+    return instance;
 }
 
 bool ArkIdleMonitor::CheckIfInBackgroundInCompressGC()

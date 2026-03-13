@@ -486,6 +486,134 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest002, testing::ext
 }
 #endif
 
+/**
+ * @tc.name: IdleMonitorSetExternalClearCallbackTest001
+ * @tc.desc: Test SetExternalClearCallback callback functionality
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetExternalClearCallbackTest001, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    bool callbackCalled = false;
+    auto callback = [&callbackCalled]() {
+        callbackCalled = true;
+    };
+
+    arkIdleMonitor->SetExternalClearCallback(std::move(callback));
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    arkIdleMonitor->SetDeferfreeze(false);
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorSetExternalClearCallbackTest002
+ * @tc.desc: Test SetExternalClearCallback with null callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetExternalClearCallbackTest002, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    std::function<void()> nullCallback = nullptr;
+    arkIdleMonitor->SetExternalClearCallback(std::move(nullCallback));
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    arkIdleMonitor->SetDeferfreeze(false);
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
+}
+
+/**
+ * @tc.name: IdleMonitorSetExternalClearCallbackTest003
+ * @tc.desc: Test SetExternalClearCallback callback functionality
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetExternalClearCallbackTest003, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    bool callbackCalled = false;
+    auto callback = [&callbackCalled]() {
+        callbackCalled = true;
+    };
+
+    arkIdleMonitor->SetExternalClearCallback(std::move(callback));
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(false);
+    ASSERT_TRUE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    ASSERT_FALSE(callbackCalled);
+}
+
+/**
+ * @tc.name: IdleMonitorSetExternalClearCallbackTest004
+ * @tc.desc: Test SetExternalClearCallback callback functionality
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetExternalClearCallbackTest004, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+    EcmaVM *vm = const_cast<EcmaVM*>(reinterpret_cast<ArkNativeEngine*>(engine_)->GetEcmaVm());
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    arkIdleMonitor->SetMainThreadEcmaVM(vm);
+
+    bool callbackCalled = false;
+    auto callback = [&callbackCalled]() {
+        callbackCalled = true;
+    };
+
+    arkIdleMonitor->SetExternalClearCallback(std::move(callback));
+
+    arkIdleMonitor->SetEnableDeferFreeze(true);
+    arkIdleMonitor->SetSwitchToBackgroundTask(true);
+    arkIdleMonitor->SetDeferfreeze(false);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+
+    arkIdleMonitor->NotifyNeedFreeze(true);
+    ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
+    ASSERT_TRUE(arkIdleMonitor->IsSwitchToBackgroundTask());
+    ASSERT_FALSE(callbackCalled);
+}
+
 #if defined(LINUX_PLATFORM) || defined(OHOS_PLATFORM)
 /**
  * @tc.name: NapiArkIdleMonitorLoadReportDataFuncTest001

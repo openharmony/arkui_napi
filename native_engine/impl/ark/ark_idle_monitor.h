@@ -213,6 +213,11 @@ public:
         }
     }
 
+    void SetExternalClearCallback(std::function<void()>&& func)
+    {
+        externalClearCallback_ = std::move(func);
+    }
+
     template<typename T, int N>
     class RingBuffer {
     public:
@@ -292,8 +297,6 @@ private:
     void TryTriggerCompressGCOfProcess();
     static uint64_t GetIdleMonitoringInterval();
 
-    static std::shared_ptr<ArkIdleMonitor> instance_;
-
     EcmaVM* mainVM_;
 
     static constexpr uint32_t IDLE_CHECK_LENGTH = 15;
@@ -359,7 +362,7 @@ private:
     static bool gEnableDeferFreeze;
     void* dynamicLoadHandle_ {nullptr};
     ReportDataFunc reportDataFunc_ {nullptr};
-
+    std::function<void()> externalClearCallback_;
     std::mutex waitGCFinishjedMutex_;
     std::condition_variable gcFinishCV_;
     std::atomic<bool> duringBackgroundTask_ {false};
