@@ -402,6 +402,7 @@ if (!ark_standalone_build) {
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
         "sample/native_module_storage:storage",
+        "sample/native_module_array_suite:array_suite",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
