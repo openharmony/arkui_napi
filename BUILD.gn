@@ -407,6 +407,7 @@ if (!ark_standalone_build) {
         "sample/native_module_boolean_suite:boolean_suite",
         "sample/native_module_buffer_suite:buffer_suite",
         "sample/native_module_callback_suite:callback_suite",
+        "sample/native_module_date_suite:date_suite",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
