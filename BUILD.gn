@@ -404,6 +404,7 @@ if (!ark_standalone_build) {
         "sample/native_module_calc:number",
         "sample/native_module_number_suite:number_suite",
         "sample/native_module_callback:callback",
+        "sample/native_module_console:console",
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
         "sample/native_module_reference:reference",
