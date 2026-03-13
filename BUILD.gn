@@ -396,6 +396,7 @@ if (!ark_standalone_build) {
       testonly = true
 
       deps = [
+        "sample/native_module_array:array",
         "sample/native_module_bigint:bigint",
         "sample/native_module_buffer:buffer",
         "sample/native_module_calc:calc",
@@ -415,6 +416,9 @@ if (!ark_standalone_build) {
         "sample/native_module_math_suite:math_suite",
         "sample/native_module_object_suite:object_suite",
         "sample/native_module_string_suite:string_suite",
+        "sample/native_module_string:string",
+        "sample/native_module_function:function",
+        "sample/native_module_error:error",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
