@@ -396,11 +396,14 @@ if (!ark_standalone_build) {
       testonly = true
 
       deps = [
+        "sample/native_module_bigint:bigint",
+        "sample/native_module_buffer:buffer",
         "sample/native_module_calc:calc",
         "sample/native_module_calc:number",
         "sample/native_module_callback:callback",
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
+        "sample/native_module_reference:reference",
         "sample/native_module_storage:storage",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
