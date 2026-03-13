@@ -34,7 +34,17 @@ static const uint32_t BASE64_MASK_3F = 0x3F;
 static const uint32_t BASE64_MASK_FF = 0xFF;
 static const int HEX_CHARS_PER_BYTE = 2;
 static const int HEX_SHIFT_4 = 4;
+static const int HEX_MASK_0F = 0x0F;
 static const int HEX_VALUE_OFFSET = 10;
+static const int INDEX_OFFSET_1 = 1;
+static const int INDEX_OFFSET_2 = 2;
+static const int INDEX_OFFSET_3 = 3;
+static const int DJB2_SHIFT_BITS = 5;
+static const int MD5_WORD_SIZE = 4;
+static const int MD5_BYTE_SHIFT_8 = 8;
+static const int MD5_BYTE_SHIFT_16 = 16;
+static const int MD5_BYTE_SHIFT_24 = 24;
+static const int HEX_MASK_NIBBLE = 0xF;
 static const uint32_t DJB2_INIT_HASH = 5381;
 static const int DJB2_HASH_BITS = 28;
 static const int DJB2_NIBBLE_BITS = 4;
@@ -100,10 +110,10 @@ std::string Base64Encode(const std::string& input)
     }
 
     if (len % BASE64_GROUP_SIZE >= 1) {
-        result[result.length() - 1] = '=';
+        result[result.length() - INDEX_OFFSET_1] = '=';
     }
     if (len % BASE64_GROUP_SIZE == 1) {
-        result[result.length() - 2] = '=';
+        result[result.length() - INDEX_OFFSET_2] = '=';
     }
 
     return result;
@@ -118,18 +128,18 @@ std::string Base64Decode(const std::string& input)
     }
 
     size_t padding = 0;
-    if (len >= 1 && input[len - 1] == '=') {
+    if (len >= INDEX_OFFSET_1 && input[len - INDEX_OFFSET_1] == '=') {
         padding++;
     }
-    if (len >= 2 && input[len - 2] == '=') {
+    if (len >= INDEX_OFFSET_2 && input[len - INDEX_OFFSET_2] == '=') {
         padding++;
     }
 
     for (size_t i = 0; i < len; i += BASE64_OUTPUT_SIZE) {
         int v0 = Base64CharValue(input[i]);
-        int v1 = (i + 1 < len) ? Base64CharValue(input[i + 1]) : 0;
-        int v2 = (i + 2 < len && input[i + 2] != '=') ? Base64CharValue(input[i + 2]) : 0;
-        int v3 = (i + 3 < len && input[i + 3] != '=') ? Base64CharValue(input[i + 3]) : 0;
+        int v1 = (i + INDEX_OFFSET_1 < len) ? Base64CharValue(input[i + INDEX_OFFSET_1]) : 0;
+        int v2 = (i + INDEX_OFFSET_2 < len && input[i + INDEX_OFFSET_2] != '=') ? Base64CharValue(input[i + INDEX_OFFSET_2]) : 0;
+        int v3 = (i + INDEX_OFFSET_3 < len && input[i + INDEX_OFFSET_3] != '=') ? Base64CharValue(input[i + INDEX_OFFSET_3]) : 0;
 
         if (v0 < 0 || v1 < 0 || v2 < 0 || v3 < 0) {
             continue;
@@ -188,7 +198,7 @@ std::string HexDecode(const std::string& input)
 
     for (size_t i = 0; i < input.length(); i += HEX_CHARS_PER_BYTE) {
         int hi = HexCharValue(input[i]);
-        int lo = HexCharValue(input[i + 1]);
+        int lo = HexCharValue(input[i + INDEX_OFFSET_1]);
         if (hi < 0 || lo < 0) {
             continue;
         }
@@ -224,12 +234,12 @@ std::string SimpleHash(const std::string& input)
     uint32_t hash = DJB2_INIT_HASH;
 
     for (char c : input) {
-        hash = ((hash << 5) + hash) + static_cast<uint8_t>(c);
+        hash = ((hash << DJB2_SHIFT_BITS) + hash) + static_cast<uint8_t>(c);
     }
 
     std::string result;
     for (int i = DJB2_HASH_BITS; i >= 0; i -= DJB2_NIBBLE_BITS) {
-        result += hexChars[(hash >> i) & 0xF];
+        result += hexChars[(hash >> i) & HEX_MASK_NIBBLE];
     }
 
     return result;
@@ -257,7 +267,7 @@ std::string ReverseString(const std::string& input)
     return std::string(input.rbegin(), input.rend());
 }
 
-static uint32_t crc32Table[CRC32_TABLE_SIZE];
+static uint32_t g_crc32Table[CRC32_TABLE_SIZE];
 static bool crc32TableInit = false;
 
 static void InitCrc32Table()
@@ -275,7 +285,7 @@ static void InitCrc32Table()
                 crc >>= 1;
             }
         }
-        crc32Table[i] = crc;
+        g_crc32Table[i] = crc;
     }
     crc32TableInit = true;
 }
@@ -288,7 +298,7 @@ uint32_t Crc32(const std::string& input)
 
     for (char c : input) {
         uint8_t byte = static_cast<uint8_t>(c);
-        crc = (crc >> CRC32_BITS_PER_BYTE) ^ crc32Table[(crc ^ byte) & BASE64_MASK_FF];
+        crc = (crc >> CRC32_BITS_PER_BYTE) ^ g_crc32Table[(crc ^ byte) & BASE64_MASK_FF];
     }
 
     return crc ^ CRC32_INIT_VALUE;
@@ -429,15 +439,10 @@ bool PasswordVerify(const std::string& password, const std::string& salt, const 
     return PasswordHash(password, salt) == hash;
 }
 
-std::string SimpleMd5(const std::string& input)
+static std::string Md5PadMessage(const std::string& input, size_t& origLen)
 {
-    uint32_t a0 = 0x67452301;
-    uint32_t b0 = 0xefcdab89;
-    uint32_t c0 = 0x98badcfe;
-    uint32_t d0 = 0x10325476;
-
     std::string message = input;
-    size_t origLen = message.length();
+    origLen = message.length();
 
     message += static_cast<char>(0x80);
     while ((message.length() % MD5_BLOCK_SIZE) != MD5_LENGTH_OFFSET) {
@@ -449,6 +454,65 @@ std::string SimpleMd5(const std::string& input)
         message += static_cast<char>((bitLen >> (i * CRC32_BITS_PER_BYTE)) & BASE64_MASK_FF);
     }
 
+    return message;
+}
+
+static void Md5ProcessBlock(const std::string& message, size_t chunk, uint32_t& a0, uint32_t& b0,
+                            uint32_t& c0, uint32_t& d0, const uint32_t* k)
+{
+    uint32_t M[MD5_WORD_COUNT];
+    for (int i = 0; i < MD5_WORD_COUNT; i++) {
+        M[i] = static_cast<uint8_t>(message[chunk + i * MD5_WORD_SIZE]) |
+               (static_cast<uint8_t>(message[chunk + i * MD5_WORD_SIZE + INDEX_OFFSET_1]) << MD5_BYTE_SHIFT_8) |
+               (static_cast<uint8_t>(message[chunk + i * MD5_WORD_SIZE + INDEX_OFFSET_2]) << MD5_BYTE_SHIFT_16) |
+               (static_cast<uint8_t>(message[chunk + i * MD5_WORD_SIZE + INDEX_OFFSET_3]) << MD5_BYTE_SHIFT_24);
+    }
+
+    uint32_t a = a0;
+    uint32_t b = b0;
+    uint32_t c = c0;
+    uint32_t d = d0;
+
+    for (int i = 0; i < MD5_WORD_COUNT; i++) {
+        uint32_t f = (b & c) | ((~b) & d);
+        f = f + a + k[i] + M[i];
+        a = d;
+        d = c;
+        c = b;
+        b = b + ((f << MD5_ROTATE_LEFT_7) | (f >> MD5_ROTATE_RIGHT_25));
+    }
+
+    a0 += a;
+    b0 += b;
+    c0 += c;
+    d0 += d;
+}
+
+static std::string Md5ToHex(uint32_t a0, uint32_t b0, uint32_t c0, uint32_t d0)
+{
+    std::string result;
+    uint32_t values[MD5_WORD_SIZE] = {a0, b0, c0, d0};
+
+    for (int j = 0; j < MD5_WORD_SIZE; j++) {
+        for (int i = 0; i < HEX_CHARS_PER_BYTE; i++) {
+            result += hexChars[(values[j] >> (i * CRC32_BITS_PER_BYTE + HEX_SHIFT_4)) & HEX_MASK_NIBBLE];
+            result += hexChars[(values[j] >> (i * CRC32_BITS_PER_BYTE)) & HEX_MASK_NIBBLE];
+        }
+    }
+
+    return result;
+}
+
+std::string SimpleMd5(const std::string& input)
+{
+    uint32_t a0 = 0x67452301;
+    uint32_t b0 = 0xefcdab89;
+    uint32_t c0 = 0x98badcfe;
+    uint32_t d0 = 0x10325476;
+
+    size_t origLen = 0;
+    std::string message = Md5PadMessage(input, origLen);
+
     static const uint32_t k[MD5_WORD_COUNT] = {
         0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
         0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
@@ -457,53 +521,10 @@ std::string SimpleMd5(const std::string& input)
     };
 
     for (size_t chunk = 0; chunk < message.length(); chunk += MD5_BLOCK_SIZE) {
-        uint32_t M[MD5_WORD_COUNT];
-        for (int i = 0; i < MD5_WORD_COUNT; i++) {
-            M[i] = static_cast<uint8_t>(message[chunk + i * HEX_CHARS_PER_BYTE]) |
-                   (static_cast<uint8_t>(message[chunk + i * HEX_CHARS_PER_BYTE + 1]) << MD5_BYTE_SHIFT_8) |
-                   (static_cast<uint8_t>(message[chunk + i * HEX_CHARS_PER_BYTE + 2]) << MD5_BYTE_SHIFT_16) |
-                   (static_cast<uint8_t>(message[chunk + i * HEX_CHARS_PER_BYTE + 3]) << MD5_BYTE_SHIFT_24);
-        }
-
-        uint32_t A = a0;
-        uint32_t B = b0;
-        uint32_t C = c0;
-        uint32_t D = d0;
-
-        for (int i = 0; i < MD5_WORD_COUNT; i++) {
-            uint32_t F = (B & C) | ((~B) & D);
-            F = F + A + k[i] + M[i];
-            A = D;
-            D = C;
-            C = B;
-            B = B + ((F << MD5_ROTATE_LEFT_7) | (F >> MD5_ROTATE_RIGHT_25));
-        }
-
-        a0 += A;
-        b0 += B;
-        c0 += C;
-        d0 += D;
+        Md5ProcessBlock(message, chunk, a0, b0, c0, d0, k);
     }
 
-    std::string result;
-    for (int i = 0; i < HEX_CHARS_PER_BYTE; i++) {
-        result += hexChars[(a0 >> (i * CRC32_BITS_PER_BYTE + HEX_SHIFT_4)) & 0xF];
-        result += hexChars[(a0 >> (i * CRC32_BITS_PER_BYTE)) & 0xF];
-    }
-    for (int i = 0; i < HEX_CHARS_PER_BYTE; i++) {
-        result += hexChars[(b0 >> (i * CRC32_BITS_PER_BYTE + HEX_SHIFT_4)) & 0xF];
-        result += hexChars[(b0 >> (i * CRC32_BITS_PER_BYTE)) & 0xF];
-    }
-    for (int i = 0; i < HEX_CHARS_PER_BYTE; i++) {
-        result += hexChars[(c0 >> (i * CRC32_BITS_PER_BYTE + HEX_SHIFT_4)) & 0xF];
-        result += hexChars[(c0 >> (i * CRC32_BITS_PER_BYTE)) & 0xF];
-    }
-    for (int i = 0; i < HEX_CHARS_PER_BYTE; i++) {
-        result += hexChars[(d0 >> (i * CRC32_BITS_PER_BYTE + HEX_SHIFT_4)) & 0xF];
-        result += hexChars[(d0 >> (i * CRC32_BITS_PER_BYTE)) & 0xF];
-    }
-
-    return result;
+    return Md5ToHex(a0, b0, c0, d0);
 }
 
 }
