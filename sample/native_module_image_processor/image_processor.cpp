@@ -247,7 +247,7 @@ std::unique_ptr<ImageData> ApplyInvert(const ImageData* source)
         return nullptr;
     }
 
-    for (size_t i& : result->pixels) {
+    for (uint8_t& i : result->pixels) {
         i = 255 - i;
     }
 
@@ -294,7 +294,7 @@ void ExecuteImageProcess(napi_env env, void* data)
 
 void CompleteImageProcess(napi_env env, napi_status status, void* data)
 {
-    auto context = = static_cast<ImageProcessContext*>(data);
+    auto context = static_cast<ImageProcessContext*>(data);
 
     napi_value undefined;
     napi_get_undefined(env, &undefined);
@@ -319,7 +319,7 @@ void CompleteImageProcess(napi_env env, napi_status status, void* data)
         napi_value pixelsArray;
         void* arrayData = nullptr;
         napi_create_arraybuffer(env, context->outputImage->pixels.size(), &arrayData, &pixelsArray);
-        memcpy(arrayData, context->outputImage->pixels.data(), context->outputImage->pixels.size());
+        std::copy(context->outputImage->pixels.begin(), context->outputImage->pixels.end(), static_cast<uint8_t*>(arrayData));
         napi_set_named_property(env, resultObj, "pixels", pixelsArray);
     }
 
@@ -383,7 +383,7 @@ std::unique_ptr<ImageData> ParseImageFromNAPI(napi_env env, napi_value imageObj)
     }
 
     int32_t format = 0;
-    if (napi_get_value_int32(env, formatValue, &format) != napi) {
+    if (napi_get_value_int32(env, formatValue, &format) != napi_ok) {
         return nullptr;
     }
 
@@ -403,7 +403,7 @@ std::unique_ptr<ImageData> ParseImageFromNAPI(napi_env env, napi_value imageObj)
         return nullptr;
     }
 
-    auto image = CreateImageariwidth, height, static_cast<ImageFormat>(format));
+    auto image = CreateImage(width, height, static_cast<ImageFormat>(format));
     if (!image) {
         return nullptr;
     }
@@ -668,7 +668,7 @@ napi_value Create(napi_env env, napi_callback_info info)
     napi_value pixelsArray;
     void* arrayData = nullptr;
     napi_create_arraybuffer(env, image->pixels.size(), &arrayData, &pixelsArray);
-    memcpy(arrayData, image->pixels.data(), image->pixels.size());
+    std::copy(image->pixels.begin(), image->pixels.end(), static_cast<uint8_t*>(arrayData));
     napi_set_named_property(env, resultObj, "pixels", pixelsArray);
 
     return resultObj;

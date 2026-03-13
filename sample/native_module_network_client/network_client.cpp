@@ -164,7 +164,7 @@ void ExecuteHttpRequest(napi_env env, void* data)
 
 void CompleteHttpRequest(napi_env env, napi_status status, void* data)
 {
-    auto context = static_cast_castHttpRequestContext*>(data);
+    auto context = static_cast<HttpRequestContext*>(data);
 
     napi_value undefined;
     napi_get_undefined(env, &undefined);
@@ -178,7 +178,7 @@ void CompleteHttpRequest(napi_env env, napi_status status, void* data)
 
     napi_value dataValue;
     napi_create_string_utf8(env, context->responseData.c_str(),
-                           context->responseData.length(), &data);
+                           context->responseData.length(), &dataValue);
     napi_set_named_property(env, resultObj, "data", dataValue);
 
     napi_value successValue;
@@ -249,7 +249,7 @@ napi_value HttpGet(napi_env env, napi_callback_info info)
         napi_valuetype type;
         if (napi_typeof(env, argv[1], &type) == napi_ok && type == napi_function) {
             context->useCallback = true;
-            napi_create_reference_1(env, argv[1], 1, &context->callback);
+            napi_create_reference(env, argv[1], 1, &context->callback);
             napi_get_undefined(env, &promise);
         } else if (type == napi_object) {
             ParseHeaders(env, argv[1], context->headers);

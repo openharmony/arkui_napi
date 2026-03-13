@@ -20,6 +20,13 @@
 #include <queue>
 #include <memory>
 
+constexpr int CALLBACK_REF_COUNT = 1;
+constexpr int ARGV_COUNT_THREE = 3;
+constexpr int ARGV_COUNT_ONE = 1;
+constexpr int MESSAGE_BUFFER_SIZE = 256;
+constexpr int MODULE_VERSION = 1;
+constexpr int MODULE_FLAGS = 0;
+
 struct EventData {
     int type;
     std::string message;
@@ -58,7 +65,10 @@ public:
         if (callbackRef_) {
             napi_delete_reference(env, callbackRef_);
         }
-        napi_create_reference(env, callback, 1, &callbackRef_);
+        napi_status status = napi_create_reference(env, callback, CALLBACK_REF_COUNT, &callbackRef_);
+        if (status != napi_ok) {
+            callbackRef_ = nullptr;
+        }
     }
     
     void EmitEvent(int type, const std::string& message, int value) {
@@ -90,18 +100,37 @@ private:
             
             if (callbackRef_) {
                 napi_handle_scope scope;
-                napi_open_handle_scope(env_, &scope);
+                napi_status status = napi_open_handle_scope(env_, &scope);
+                if (status != napi_ok) {
+                    continue;
+                }
                 
                 napi_value callback;
-                napi_get_reference_value(env_, callbackRef_, &callback);
+                status = napi_get_reference_value(env_, callbackRef_, &callback);
+                if (status != napi_ok) {
+                    napi_close_handle_scope(env_, scope);
+                    continue;
+                }
                 
-                napi_value argv[3];
-                napi_create_int32(env_, event.type, &argv[0]);
-                napi_create_string_utf8(env_, event.message.c_str(), event.message.length(), &argv[1]);
-                napi_create_int32(env_, event.value, &argv[2]);
+                napi_value argv[ARGV_COUNT_THREE];
+                status = napi_create_int32(env_, event.type, &argv[0]);
+                if (status != napi_ok) {
+                    napi_close_handle_scope(env_, scope);
+                    continue;
+                }
+                status = napi_create_string_utf8(env_, event.message.c_str(), event.message.length(), &argv[1]);
+                if (status != napi_ok) {
+                    napi_close_handle_scope(env_, scope);
+                    continue;
+                }
+                status = napi_create_int32(env_, event.value, &argv[2]);
+                if (status != napi_ok) {
+                    napi_close_handle_scope(env_, scope);
+                    continue;
+                }
                 
                 napi_value result;
-                napi_call_function(env_, nullptr, callback, 3, argv, &result);
+                napi_call_function(env_, nullptr, callback, ARGV_COUNT_THREE, argv, &result);
                 
                 napi_close_handle_scope(env_, scope);
             }
@@ -120,18 +149,22 @@ private:
 static EventNotifier g_eventNotifier;
 
 static napi_value StartEventNotifier(napi_env env, napi_callback_info info) {
-    size_t argc = 1;
-    napi_value args[1];
-    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    size_t argc = ARGV_COUNT_ONE;
+    napi_value args[ARGV_COUNT_ONE];
+    napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to get callback info");
+        return nullptr;
+    }
     
-    if (argc < 1) {
+    if (argc < ARGV_COUNT_ONE) {
         napi_throw_error(env, nullptr, "Expected 1 argument (callback)");
         return nullptr;
     }
     
     napi_valuetype valuetype;
-    napi_typeof(env, args[0], &valuetype);
-    if (valuetype != napi_function) {
+    status = napi_typeof(env, args[0], &valuetype);
+    if (status != napi_ok || valuetype != napi_function) {
         napi_throw_error(env, nullptr, "First argument must be a function");
         return nullptr;
     }
@@ -140,7 +173,10 @@ static napi_value StartEventNotifier(napi_env env, napi_callback_info info) {
     g_eventNotifier.Start();
     
     napi_value result;
-    napi_get_undefined(env, &result);
+    status = napi_get_undefined(env, &result);
+    if (status != napi_ok) {
+        return nullptr;
+    }
     return result;
 }
 
@@ -148,32 +184,55 @@ static napi_value StopEventNotifier(napi_env env, napi_callback_info info) {
     g_eventNotifier.Stop();
     
     napi_value result;
-    napi_get_undefined(env, &result);
+    napi_status status = napi_get_undefined(env, &result);
+    if (status != napi_ok) {
+        return nullptr;
+    }
     return result;
 }
 
 static napi_value EmitEvent(napi_env env, napi_callback_info info) {
-    size_t argc = 3;
-    napi_value args[3];
-    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    size_t argc = ARGV_COUNT_THREE;
+    napi_value args[ARGV_COUNT_THREE];
+    napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to get callback info");
+        return nullptr;
+    }
     
-    if (argc < 3) {
+    if (argc < ARGV_COUNT_THREE) {
         napi_throw_error(env, nullptr, "Expected 3 arguments (type, message, value)");
         return nullptr;
     }
     
-    int32_t type, value;
+    int32_t type;
+    int32_t value;
     size_t length;
-    char message[256];
+    char message[MESSAGE_BUFFER_SIZE];
     
-    napi_get_value_int32(env, args[0], &type);
-    napi_get_value_string_utf8(env, args[1], message, sizeof(message), &length);
-    napi_get_value_int32(env, args[2], &value);
+    status = napi_get_value_int32(env, args[0], &type);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to get type");
+        return nullptr;
+    }
+    status = napi_get_value_string_utf8(env, args[1], message, sizeof(message), &length);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to get message");
+        return nullptr;
+    }
+    status = napi_get_value_int32(env, args[2], &value);
+    if (status != napi_ok) {
+        napi_throw_error(env, nullptr, "Failed to get value");
+        return nullptr;
+    }
     
     g_eventNotifier.EmitEvent(type, std::string(message, length), value);
     
     napi_value result;
-    napi_get_undefined(env, &result);
+    status = napi_get_undefined(env, &result);
+    if (status != napi_ok) {
+        return nullptr;
+    }
     return result;
 }
 
@@ -191,8 +250,8 @@ napi_value Init(napi_env env, napi_value exports) {
 EXTERN_C_END
 
 static napi_module demoModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+    .nm_version = MODULE_VERSION,
+    .nm_flags = MODULE_FLAGS,
     .nm_filename = nullptr,
     .nm_register_func = Init,
     .nm_modname = "event_notification",

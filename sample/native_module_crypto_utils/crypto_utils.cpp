@@ -30,6 +30,20 @@ constexpr uint32_t NO_MODULE_FLAGS = 0;
 constexpr int AES_BLOCK_SIZE = 16;
 constexpr int SHA256_DIGEST_SIZE = 32;
 constexpr int MD5_DIGEST_SIZE = 16;
+constexpr int BASE64_TABLE_SIZE = 64;
+constexpr int HEX_TABLE_SIZE = 16;
+constexpr int MD5_BUFFER_SIZE = 64;
+constexpr int SHA256_BUFFER_SIZE = 64;
+constexpr int MD5_STATE_SIZE = 4;
+constexpr int SHA256_STATE_SIZE = 8;
+constexpr int BYTES_PER_INT32 = 4;
+constexpr int BITS_PER_BYTE = 8;
+constexpr int MD5_ROUNDS = 64;
+constexpr int SHA256_ROUNDS = 64;
+constexpr int SHA256_PADDING_56 = 56;
+constexpr int SHA256_PADDING_120 = 120;
+constexpr int BASE64_CHUNK_SIZE = 3;
+constexpr int BASE64_OUTPUT_SIZE = 4;
 
 static const char BASE64_CHARS[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -128,7 +142,7 @@ void MD5Init(MD5Context* ctx)
     ctx->state[3] = 0x10325476;
     ctx->count[0] = 0;
     ctx->count[1] = 0;
-    memset(ctx->buffer, 0, sizeof(ctx->buffer));
+    std::fill(ctx->buffer, ctx->buffer + MD5_BUFFER_SIZE, 0);
 }
 
 #define MD5_F(x, y, z) (((x) & (y)) | (~(x) & (z)))
@@ -220,12 +234,12 @@ void MD5Update(MD5Context* ctx, const uint8_t* data, size_t length)
     }
     ctx->count[1] += static_cast<uint32_t>(length >> 29);
 
-    size_t partLen = 64 - i;
+    size_t partLen = MD5_BUFFER_SIZE - i;
 
     if (length >= partLen) {
-        memcpy(&ctx->buffer[i], data, partLen);
+        std::copy(data, data + partLen, ctx->buffer + i);
         MD5Transform(ctx->state, ctx->buffer);
-        for (size_t j = partLen; j + 64 <= length; j += 64) {
+        for (size_t j = partLen; j + MD5_BUFFER_SIZE <= length; j += MD5_BUFFER_SIZE) {
             MD5Transform(ctx->state, data + j);
         }
         i = 0;
@@ -233,7 +247,7 @@ void MD5Update(MD5Context* ctx, const uint8_t* data, size_t length)
         partLen = 0;
     }
 
-    memcpy(&ctx->buffer[i], data + partLen, length - partLen);
+    std::copy(data + partLen, data + length, ctx->buffer + i);
 }
 
 void MD5Final(uint8_t digest[16], MD5Context* ctx)
@@ -291,7 +305,7 @@ void SHA256Init(SHA256Context* ctx)
     ctx->state[6] = 0x1f83d9ab;
     ctx->state[7] = 0x5be0cd19;
     ctx->count = 0;
-    memset(ctx->buffer, 0, sizeof(ctx->buffer));
+    std::fill(ctx->buffer, ctx->buffer + SHA256_BUFFER_SIZE, 0);
 }
 
 #define SHA256_ROTRIGHT(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
@@ -364,12 +378,12 @@ void SHA256Update(SHA256Context* ctx, const uint8_t* data, size_t length)
     size_t index = (ctx->count & 0x3F);
     ctx->count += length;
 
-    size_t partLen = 64 - index;
+    size_t partLen = SHA256_BUFFER_SIZE - index;
 
     if (length >= partLen) {
-        memcpy(&ctx->buffer[index], data, partLen);
+        std::copy(data, data + partLen, ctx->buffer + index);
         SHA256Transform(ctx, ctx->buffer);
-        for (size_t j = partLen; j + 64 <= length; j += 64) {
+        for (size_t j = partLen; j + SHA256_BUFFER_SIZE <= length; j += SHA256_BUFFER_SIZE) {
             SHA256Transform(ctx, data + j);
         }
         index = 0;
@@ -377,14 +391,14 @@ void SHA256Update(SHA256Context* ctx, const uint8_t* data, size_t length)
         partLen = 0;
     }
 
-    memcpy(&ctx->buffer[index], data + partLen, length - partLen);
+    std::copy(data + partLen, data + length, ctx->buffer + index);
 }
 
 void SHA256Final(uint8_t digest[32], SHA256Context* ctx)
 {
-    uint8_t bits[8];
+    uint8_t bits[SHA256_STATE_SIZE];
     size_t index = (ctx->count & 0x3F);
-    size_t padLen = (index < 56) ? (56 - index) : (120 - index);
+    size_t padLen = (index < SHA256_PADDING_56) ? (SHA256_PADDING_56 - index) : (SHA256_PADDING_120 - index);
 
     SHA256Update(ctx, reinterpret_cast<const uint8_t*>("\x80"), 1);
 
@@ -392,17 +406,17 @@ void SHA256Final(uint8_t digest[32], SHA256Context* ctx)
         SHA256Update(ctx, reinterpret_cast<const uint8_t*>("\0"), 1);
     }
 
-    for (int i = 0; i < 8; i++) {
-        bits[i] = static_cast<uint8_t>((ctx->count >> (56 - i * 8)) & 0xFF);
+    for (int i = 0; i < SHA256_STATE_SIZE; i++) {
+        bits[i] = static_cast<uint8_t>((ctx->count >> (56 - i * BITS_PER_BYTE)) & 0xFF);
     }
 
-    SHA256Update(ctx, bits, 8);
+    SHA256Update(ctx, bits, SHA256_STATE_SIZE);
 
-    for (int i = 0; i < 8; i++) {
-        digest[i * 4] = static_cast<uint8_t>((ctx->state[i] >> 24) & 0xFF);
-        digest[i * 4 + 1] = static_cast<uint8_t>((ctx->state[i] >> 16) & 0xFF);
-        digest[i * 4 + 2] = static_cast<uint8_t>((ctx->state[i] >> 8) & 0xFF);
-        digest[i * 4 + 3] = static_cast<uint8_t>(ctx->state[i] & 0xFF);
+    for (int i = 0; i < SHA256_STATE_SIZE; i++) {
+        digest[i * BYTES_PER_INT32] = static_cast<uint8_t>((ctx->state[i] >> 24) & 0xFF);
+        digest[i * BYTES_PER_INT32 + 1] = static_cast<uint8_t>((ctx->state[i] >> 16) & 0xFF);
+        digest[i * BYTES_PER_INT32 + 2] = static_cast<uint8_t>((ctx->state[i] >> 8) & 0xFF);
+        digest[i * BYTES_PER_INT32 + 3] = static_cast<uint8_t>(ctx->state[i] & 0xFF);
     }
 }
 
