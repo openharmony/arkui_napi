@@ -58,8 +58,8 @@ NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
                                                           napi_value* result);
 NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env,
                                                              const char* request_name,
-                                                             const char* abcFilePath,
-                                                             napi_value* result);
+                                                             napi_value* result,
+                                                             const char* abcFilePath = nullptr);
 NAPI_EXTERN napi_status napi_set_stackinfo(napi_env env, NapiStackInfo* napi_info);
 NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, NapiStackInfo* result);
 

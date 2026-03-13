@@ -47,7 +47,7 @@ NAPI_EXTERN napi_status napi_load_module_with_info_hybrid(napi_env env,
 }
 
 NAPI_EXTERN napi_status napi_load_module_with_module_request(napi_env env, const char* request_name,
-                                                             const char* abcFilePath, napi_value* result)
+                                                             napi_value* result, const char* abcFilePath)
 {
     NAPI_PREAMBLE(env);
     CHECK_ARG(env, request_name);
