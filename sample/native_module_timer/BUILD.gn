@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Copyright (c) 2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,6 +26,26 @@ ohos_shared_library("timer") {
   deps = [ "../..:ace_napi" ]
 
   external_deps = [ "bounds_checking_function:libsec_shared" ]
+
+  relative_install_dir = "module"
+
+  subsystem_name = "arkui"
+  part_name = "napi"
+}
+
+ohos_shared_library("timer_utils") {
+  include_dirs = []
+
+  sources = [
+    "timer_utils.cpp",
+  ]
+
+  deps = [ "../..:ace_napi" ]
+
+  if ("${current_os}_${current_cpu}" != "mingw_x86_64" &&
+      "${current_os}_${current_cpu}" != "mac_x64") {
+    external_deps = [ "hilog:libhilog" ]
+  }
 
   relative_install_dir = "module"
 
