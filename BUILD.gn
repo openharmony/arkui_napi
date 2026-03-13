@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -402,6 +402,16 @@ if (!ark_standalone_build) {
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
         "sample/native_module_storage:storage",
+        "sample/native_module_array_suite:array_suite",
+        "sample/native_module_async_suite:async_suite",
+        "sample/native_module_boolean_suite:boolean_suite",
+        "sample/native_module_buffer_suite:buffer_suite",
+        "sample/native_module_callback_suite:callback_suite",
+        "sample/native_module_date_suite:date_suite",
+        "sample/native_module_error_suite:error_suite",
+        "sample/native_module_math_suite:math_suite",
+        "sample/native_module_object_suite:object_suite",
+        "sample/native_module_string_suite:string_suite",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
