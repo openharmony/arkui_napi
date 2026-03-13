@@ -13,163 +13,67 @@
  * limitations under the License.
  */
 
+#include <array>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
 namespace {
 
+constexpr size_t K_BOOLEAN_CASE_COUNT = 20;
+constexpr size_t K_BOOLEAN_ARG_COUNT = 3;
+constexpr size_t K_FIRST_CASE_NUMBER = 1;
+constexpr size_t K_FIRST_BOOLEAN_ARG_INDEX = 0;
+constexpr size_t K_SECOND_BOOLEAN_ARG_INDEX = 1;
+constexpr size_t K_THIRD_BOOLEAN_ARG_INDEX = 2;
+constexpr int K_CASE_NUMBER_WIDTH = 2;
+constexpr int32_t K_FIRST_BOOL_WEIGHT = 4;
+constexpr int32_t K_SECOND_BOOL_WEIGHT = 2;
+constexpr int32_t K_THIRD_BOOL_WEIGHT = 1;
+constexpr int32_t K_PASS_THRESHOLD = 3;
+constexpr uint32_t K_MODULE_VERSION = 1;
+constexpr uint32_t K_NO_MODULE_FLAGS = 0;
+
+constexpr std::array<const char*, 4> K_ROUTE_NAMES = {
+    "beta",
+    "gamma",
+    "delta",
+    "alpha",
+};
+
 struct BooleanCaseSpec {
-    const char* name;
+    std::string name;
     bool invertFirst;
     bool invertSecond;
     bool invertThird;
     const char* route;
 };
 
-static const BooleanCaseSpec g_booleanCaseSpecs[] = {
-    {
-        "booleanCase01",
-        true,
-        false,
-        false,
-        "beta",
-    },
-    {
-        "booleanCase02",
-        false,
-        false,
-        false,
-        "gamma",
-    },
-    {
-        "booleanCase03",
-        true,
-        true,
-        false,
-        "delta",
-    },
-    {
-        "booleanCase04",
-        false,
-        false,
-        true,
-        "alpha",
-    },
-    {
-        "booleanCase05",
-        true,
-        false,
-        false,
-        "beta",
-    },
-    {
-        "booleanCase06",
-        false,
-        true,
-        false,
-        "gamma",
-    },
-    {
-        "booleanCase07",
-        true,
-        false,
-        false,
-        "delta",
-    },
-    {
-        "booleanCase08",
-        false,
-        false,
-        true,
-        "alpha",
-    },
-    {
-        "booleanCase09",
-        true,
-        true,
-        false,
-        "beta",
-    },
-    {
-        "booleanCase10",
-        false,
-        false,
-        false,
-        "gamma",
-    },
-    {
-        "booleanCase11",
-        true,
-        false,
-        false,
-        "delta",
-    },
-    {
-        "booleanCase12",
-        false,
-        true,
-        true,
-        "alpha",
-    },
-    {
-        "booleanCase13",
-        true,
-        false,
-        false,
-        "beta",
-    },
-    {
-        "booleanCase14",
-        false,
-        false,
-        false,
-        "gamma",
-    },
-    {
-        "booleanCase15",
-        true,
-        true,
-        false,
-        "delta",
-    },
-    {
-        "booleanCase16",
-        false,
-        false,
-        true,
-        "alpha",
-    },
-    {
-        "booleanCase17",
-        true,
-        false,
-        false,
-        "beta",
-    },
-    {
-        "booleanCase18",
-        false,
-        true,
-        false,
-        "gamma",
-    },
-    {
-        "booleanCase19",
-        true,
-        false,
-        false,
-        "delta",
-    },
-    {
-        "booleanCase20",
-        false,
-        false,
-        true,
-        "alpha",
-    },
-};
+std::string BuildIndexedName(const char* prefix, size_t caseNumber)
+{
+    std::string suffix = std::to_string(caseNumber);
+    if (suffix.size() < static_cast<size_t>(K_CASE_NUMBER_WIDTH)) {
+        suffix.insert(0, static_cast<std::string::size_type>(K_CASE_NUMBER_WIDTH - suffix.size()), '0');
+    }
+    return std::string(prefix) + suffix;
+}
+
+size_t GetCaseIndex(void* data) { return static_cast<size_t>(reinterpret_cast<uintptr_t>(data)); }
+
+BooleanCaseSpec GetBooleanCaseSpec(size_t caseIndex)
+{
+    const size_t caseNumber = caseIndex + K_FIRST_CASE_NUMBER;
+    return {
+        BuildIndexedName("booleanCase", caseNumber),
+        caseIndex % 2 == 0,
+        caseIndex % 3 == 2,
+        caseIndex % K_ROUTE_NAMES.size() == K_ROUTE_NAMES.size() - 1,
+        K_ROUTE_NAMES[caseIndex % K_ROUTE_NAMES.size()],
+    };
+}
 
 bool ReadBool(napi_env env, napi_value value, const char* message, bool* result)
 {
@@ -222,727 +126,73 @@ napi_value CreateBooleanSummary(napi_env env, const char* name, const char* rout
     return result;
 }
 
-static napi_value TestBooleanCase01(napi_env env, napi_callback_info info)
+static napi_value RunBooleanCase(napi_env env, napi_callback_info info)
 {
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+    void* data = nullptr;
+    size_t argc = K_BOOLEAN_ARG_COUNT;
+    napi_value args[K_BOOLEAN_ARG_COUNT] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, &data));
+
+    const size_t caseIndex = GetCaseIndex(data);
+    if (caseIndex >= K_BOOLEAN_CASE_COUNT) {
+        napi_throw_error(env, nullptr, "invalid boolean case");
+        return nullptr;
+    }
 
     bool first = false;
     bool second = false;
     bool third = false;
-    if (argc < 3) {
+    if (argc < K_BOOLEAN_ARG_COUNT) {
         napi_throw_type_error(env, nullptr, "three boolean values are required");
         return nullptr;
     }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
+    if (!ReadBool(env, args[K_FIRST_BOOLEAN_ARG_INDEX], "first must be a boolean", &first)) {
         return nullptr;
     }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
+    if (!ReadBool(env, args[K_SECOND_BOOLEAN_ARG_INDEX], "second must be a boolean", &second)) {
         return nullptr;
     }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
+    if (!ReadBool(env, args[K_THIRD_BOOLEAN_ARG_INDEX], "third must be a boolean", &third)) {
         return nullptr;
     }
 
-    const auto& spec = g_booleanCaseSpecs[0];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
+    const auto spec = GetBooleanCaseSpec(caseIndex);
+    const bool normalizedFirst = spec.invertFirst ? !first : first;
+    const bool normalizedSecond = spec.invertSecond ? !second : second;
+    const bool normalizedThird = spec.invertThird ? !third : third;
+    const int32_t score = static_cast<int32_t>(normalizedFirst) * K_FIRST_BOOL_WEIGHT +
+                          static_cast<int32_t>(normalizedSecond) * K_SECOND_BOOL_WEIGHT +
+                          static_cast<int32_t>(normalizedThird) * K_THIRD_BOOL_WEIGHT;
 
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase02(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[1];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase03(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[2];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase04(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[3];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase05(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[4];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase06(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[5];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase07(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[6];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase08(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[7];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase09(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[8];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase10(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[9];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase11(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[10];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase12(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[11];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase13(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[12];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase14(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[13];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase15(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[14];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase16(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[15];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase17(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[16];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase18(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[17];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase19(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[18];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
-}
-
-static napi_value TestBooleanCase20(napi_env env, napi_callback_info info)
-{
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    bool first = false;
-    bool second = false;
-    bool third = false;
-    if (argc < 3) {
-        napi_throw_type_error(env, nullptr, "three boolean values are required");
-        return nullptr;
-    }
-    if (!ReadBool(env, args[0], "first must be a boolean", &first)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[1], "second must be a boolean", &second)) {
-        return nullptr;
-    }
-    if (!ReadBool(env, args[2], "third must be a boolean", &third)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_booleanCaseSpecs[19];
-    bool normalizedFirst = spec.invertFirst ? !first : first;
-    bool normalizedSecond = spec.invertSecond ? !second : second;
-    bool normalizedThird = spec.invertThird ? !third : third;
-    int32_t score = static_cast<int32_t>(normalizedFirst) * 4 + static_cast<int32_t>(normalizedSecond) * 2 +
-                    static_cast<int32_t>(normalizedThird);
-    bool passed = score >= 3;
-
-    return CreateBooleanSummary(env, spec.name, spec.route, score, passed);
+    return CreateBooleanSummary(env, spec.name.c_str(), spec.route, score, score >= K_PASS_THRESHOLD);
 }
 
 }  // namespace
 
-static napi_value InitBranch05Boolean(napi_env env, napi_value exports)
+static napi_value InitBooleanSuite(napi_env env, napi_value exports)
 {
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testBooleanCase01", TestBooleanCase01),
-        DECLARE_NAPI_FUNCTION("testBooleanCase02", TestBooleanCase02),
-        DECLARE_NAPI_FUNCTION("testBooleanCase03", TestBooleanCase03),
-        DECLARE_NAPI_FUNCTION("testBooleanCase04", TestBooleanCase04),
-        DECLARE_NAPI_FUNCTION("testBooleanCase05", TestBooleanCase05),
-        DECLARE_NAPI_FUNCTION("testBooleanCase06", TestBooleanCase06),
-        DECLARE_NAPI_FUNCTION("testBooleanCase07", TestBooleanCase07),
-        DECLARE_NAPI_FUNCTION("testBooleanCase08", TestBooleanCase08),
-        DECLARE_NAPI_FUNCTION("testBooleanCase09", TestBooleanCase09),
-        DECLARE_NAPI_FUNCTION("testBooleanCase10", TestBooleanCase10),
-        DECLARE_NAPI_FUNCTION("testBooleanCase11", TestBooleanCase11),
-        DECLARE_NAPI_FUNCTION("testBooleanCase12", TestBooleanCase12),
-        DECLARE_NAPI_FUNCTION("testBooleanCase13", TestBooleanCase13),
-        DECLARE_NAPI_FUNCTION("testBooleanCase14", TestBooleanCase14),
-        DECLARE_NAPI_FUNCTION("testBooleanCase15", TestBooleanCase15),
-        DECLARE_NAPI_FUNCTION("testBooleanCase16", TestBooleanCase16),
-        DECLARE_NAPI_FUNCTION("testBooleanCase17", TestBooleanCase17),
-        DECLARE_NAPI_FUNCTION("testBooleanCase18", TestBooleanCase18),
-        DECLARE_NAPI_FUNCTION("testBooleanCase19", TestBooleanCase19),
-        DECLARE_NAPI_FUNCTION("testBooleanCase20", TestBooleanCase20),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+    std::vector<std::string> exportNames;
+    std::vector<napi_property_descriptor> descriptors(K_BOOLEAN_CASE_COUNT);
+    exportNames.reserve(K_BOOLEAN_CASE_COUNT);
+    for (size_t caseIndex = 0; caseIndex < K_BOOLEAN_CASE_COUNT; caseIndex++) {
+        exportNames.emplace_back(BuildIndexedName("testBooleanCase", caseIndex + K_FIRST_CASE_NUMBER));
+        descriptors[caseIndex] = napi_property_descriptor{exportNames.back().c_str(), nullptr, RunBooleanCase, nullptr,
+            nullptr, nullptr, napi_default, reinterpret_cast<void*>(static_cast<uintptr_t>(caseIndex))};
+    }
+    NAPI_CALL(env, napi_define_properties(env, exports, descriptors.size(), descriptors.data()));
     return exports;
 }
 
-static napi_module g_branch05BooleanModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+static napi_module g_booleanSuiteModule = {
+    .nm_version = K_MODULE_VERSION,
+    .nm_flags = K_NO_MODULE_FLAGS,
     .nm_filename = nullptr,
-    .nm_register_func = InitBranch05Boolean,
+    .nm_register_func = InitBooleanSuite,
     .nm_modname = "boolean_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterBranch05BooleanModule(void)
+extern "C" __attribute__((constructor)) void RegisterBooleanSuiteModule(void)
 {
-    napi_module_register(&g_branch05BooleanModule);
+    napi_module_register(&g_booleanSuiteModule);
 }

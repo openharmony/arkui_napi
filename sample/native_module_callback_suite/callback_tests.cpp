@@ -14,141 +14,57 @@
  */
 
 #include <cstdint>
+#include <string>
+#include <vector>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
 namespace {
 
+constexpr size_t K_CALLBACK_CASE_COUNT = 20;
+constexpr size_t K_CALLBACK_ARG_COUNT = 2;
+constexpr size_t K_CALLBACK_INVOKE_ARG_COUNT = 3;
+constexpr size_t K_FIRST_CASE_NUMBER = 1;
+constexpr size_t K_CALLBACK_FUNCTION_ARG_INDEX = 0;
+constexpr size_t K_CALLBACK_INPUT_ARG_INDEX = 1;
+constexpr size_t K_CALLBACK_LEFT_VALUE_INDEX = 0;
+constexpr size_t K_CALLBACK_RIGHT_VALUE_INDEX = 1;
+constexpr size_t K_CALLBACK_CALL_INDEX_VALUE_INDEX = 2;
+constexpr int K_CASE_NUMBER_WIDTH = 2;
+constexpr int32_t K_RIGHT_MULTIPLIER = 2;
+constexpr int32_t K_CALLS_CYCLE = 4;
+constexpr uint32_t K_MODULE_VERSION = 1;
+constexpr uint32_t K_NO_MODULE_FLAGS = 0;
+
 struct CallbackCaseSpec {
-    const char* name;
+    std::string name;
     int32_t left;
     int32_t right;
     int32_t calls;
 };
 
-static const CallbackCaseSpec g_callbackCaseSpecs[] = {
-    {
-        "callbackCase01",
-        1,
-        2,
-        2,
-    },
-    {
-        "callbackCase02",
-        2,
-        4,
-        3,
-    },
-    {
-        "callbackCase03",
-        3,
-        6,
-        4,
-    },
-    {
-        "callbackCase04",
-        4,
-        8,
-        1,
-    },
-    {
-        "callbackCase05",
-        5,
-        10,
-        2,
-    },
-    {
-        "callbackCase06",
-        6,
-        12,
-        3,
-    },
-    {
-        "callbackCase07",
-        7,
-        14,
-        4,
-    },
-    {
-        "callbackCase08",
-        8,
-        16,
-        1,
-    },
-    {
-        "callbackCase09",
-        9,
-        18,
-        2,
-    },
-    {
-        "callbackCase10",
-        10,
-        20,
-        3,
-    },
-    {
-        "callbackCase11",
-        11,
-        22,
-        4,
-    },
-    {
-        "callbackCase12",
-        12,
-        24,
-        1,
-    },
-    {
-        "callbackCase13",
-        13,
-        26,
-        2,
-    },
-    {
-        "callbackCase14",
-        14,
-        28,
-        3,
-    },
-    {
-        "callbackCase15",
-        15,
-        30,
-        4,
-    },
-    {
-        "callbackCase16",
-        16,
-        32,
-        1,
-    },
-    {
-        "callbackCase17",
-        17,
-        34,
-        2,
-    },
-    {
-        "callbackCase18",
-        18,
-        36,
-        3,
-    },
-    {
-        "callbackCase19",
-        19,
-        38,
-        4,
-    },
-    {
-        "callbackCase20",
-        20,
-        40,
-        1,
-    },
-};
+std::string BuildIndexedName(const char* prefix, size_t caseNumber)
+{
+    std::string suffix = std::to_string(caseNumber);
+    if (suffix.size() < static_cast<size_t>(K_CASE_NUMBER_WIDTH)) {
+        suffix.insert(0, static_cast<std::string::size_type>(K_CASE_NUMBER_WIDTH - suffix.size()), '0');
+    }
+    return std::string(prefix) + suffix;
+}
+
+size_t GetCaseIndex(void* data) { return static_cast<size_t>(reinterpret_cast<uintptr_t>(data)); }
+
+CallbackCaseSpec GetCallbackCaseSpec(size_t caseIndex)
+{
+    const size_t caseNumber = caseIndex + K_FIRST_CASE_NUMBER;
+    return {
+        BuildIndexedName("callbackCase", caseNumber),
+        static_cast<int32_t>(caseNumber),
+        static_cast<int32_t>(caseNumber) * K_RIGHT_MULTIPLIER,
+        static_cast<int32_t>(caseNumber % K_CALLS_CYCLE) + 1,
+    };
+}
 
 bool ReadFunction(napi_env env, napi_value value)
 {
@@ -194,16 +110,16 @@ bool SetNamedInt32(napi_env env, napi_value object, const char* name, int32_t va
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-bool SetNamedString(napi_env env, napi_value object, const char* name, const char* value)
+bool SetNamedString(napi_env env, napi_value object, const char* name, const std::string& value)
 {
     napi_value napiValue = nullptr;
-    if (napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &napiValue) != napi_ok) {
+    if (napi_create_string_utf8(env, value.c_str(), value.size(), &napiValue) != napi_ok) {
         return false;
     }
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-napi_value CreateCallbackSummary(napi_env env, const char* name, int32_t calls, napi_value outputs)
+napi_value CreateCallbackSummary(napi_env env, const std::string& name, int32_t calls, napi_value outputs)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
@@ -213,718 +129,43 @@ napi_value CreateCallbackSummary(napi_env env, const char* name, int32_t calls, 
     return result;
 }
 
-static napi_value TestCallbackCase01(napi_env env, napi_callback_info info)
+static napi_value RunCallbackCase(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+    void* data = nullptr;
+    size_t argc = K_CALLBACK_ARG_COUNT;
+    napi_value args[K_CALLBACK_ARG_COUNT] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, &data));
+
+    const size_t caseIndex = GetCaseIndex(data);
+    if (caseIndex >= K_CALLBACK_CASE_COUNT) {
+        napi_throw_error(env, nullptr, "invalid callback case");
+        return nullptr;
+    }
 
     int32_t input = 0;
-    if (argc < 2) {
+    if (argc < K_CALLBACK_ARG_COUNT) {
         napi_throw_type_error(env, nullptr, "callback and input are required");
         return nullptr;
     }
-    if (!ReadFunction(env, args[0])) {
+    if (!ReadFunction(env, args[K_CALLBACK_FUNCTION_ARG_INDEX])) {
         return nullptr;
     }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
+    if (!ReadInt32(env, args[K_CALLBACK_INPUT_ARG_INDEX], "input must be a number", &input)) {
         return nullptr;
     }
 
-    const auto& spec = g_callbackCaseSpecs[0];
+    const auto spec = GetCallbackCaseSpec(caseIndex);
     napi_value outputs = nullptr;
     NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
     for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
+        napi_value callbackArgs[K_CALLBACK_INVOKE_ARG_COUNT] = {nullptr};
         napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase02(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[1];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase03(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[2];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase04(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[3];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase05(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[4];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase06(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[5];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase07(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[6];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase08(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[7];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase09(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[8];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase10(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[9];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase11(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[10];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase12(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[11];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase13(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[12];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase14(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[13];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase15(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[14];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase16(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[15];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase17(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[16];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase18(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[17];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase19(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[18];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
-            return nullptr;
-        }
-        NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
-    }
-
-    return CreateCallbackSummary(env, spec.name, spec.calls, outputs);
-}
-
-static napi_value TestCallbackCase20(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t input = 0;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "callback and input are required");
-        return nullptr;
-    }
-    if (!ReadFunction(env, args[0])) {
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[1], "input must be a number", &input)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_callbackCaseSpecs[19];
-    napi_value outputs = nullptr;
-    NAPI_CALL(env, napi_create_array_with_length(env, static_cast<size_t>(spec.calls), &outputs));
-    for (int32_t callIndex = 0; callIndex < spec.calls; callIndex++) {
-        napi_value callbackArgs[3] = {nullptr};
-        napi_value callbackResult = nullptr;
-        NAPI_CALL(env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[0]));
-        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[1]));
-        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[2]));
-        if (!CallFunction(env, args[0], 3, callbackArgs, &callbackResult)) {
+        NAPI_CALL(
+            env, napi_create_int32(env, input + spec.left + callIndex, &callbackArgs[K_CALLBACK_LEFT_VALUE_INDEX]));
+        NAPI_CALL(env, napi_create_int32(env, spec.right + callIndex, &callbackArgs[K_CALLBACK_RIGHT_VALUE_INDEX]));
+        NAPI_CALL(env, napi_create_int32(env, callIndex, &callbackArgs[K_CALLBACK_CALL_INDEX_VALUE_INDEX]));
+        if (!CallFunction(env, args[K_CALLBACK_FUNCTION_ARG_INDEX], K_CALLBACK_INVOKE_ARG_COUNT, callbackArgs,
+            &callbackResult)) {
             return nullptr;
         }
         NAPI_CALL(env, napi_set_element(env, outputs, static_cast<uint32_t>(callIndex), callbackResult));
@@ -935,45 +176,30 @@ static napi_value TestCallbackCase20(napi_env env, napi_callback_info info)
 
 }  // namespace
 
-static napi_value InitBranch08Callback(napi_env env, napi_value exports)
+static napi_value InitCallbackSuite(napi_env env, napi_value exports)
 {
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testCallbackCase01", TestCallbackCase01),
-        DECLARE_NAPI_FUNCTION("testCallbackCase02", TestCallbackCase02),
-        DECLARE_NAPI_FUNCTION("testCallbackCase03", TestCallbackCase03),
-        DECLARE_NAPI_FUNCTION("testCallbackCase04", TestCallbackCase04),
-        DECLARE_NAPI_FUNCTION("testCallbackCase05", TestCallbackCase05),
-        DECLARE_NAPI_FUNCTION("testCallbackCase06", TestCallbackCase06),
-        DECLARE_NAPI_FUNCTION("testCallbackCase07", TestCallbackCase07),
-        DECLARE_NAPI_FUNCTION("testCallbackCase08", TestCallbackCase08),
-        DECLARE_NAPI_FUNCTION("testCallbackCase09", TestCallbackCase09),
-        DECLARE_NAPI_FUNCTION("testCallbackCase10", TestCallbackCase10),
-        DECLARE_NAPI_FUNCTION("testCallbackCase11", TestCallbackCase11),
-        DECLARE_NAPI_FUNCTION("testCallbackCase12", TestCallbackCase12),
-        DECLARE_NAPI_FUNCTION("testCallbackCase13", TestCallbackCase13),
-        DECLARE_NAPI_FUNCTION("testCallbackCase14", TestCallbackCase14),
-        DECLARE_NAPI_FUNCTION("testCallbackCase15", TestCallbackCase15),
-        DECLARE_NAPI_FUNCTION("testCallbackCase16", TestCallbackCase16),
-        DECLARE_NAPI_FUNCTION("testCallbackCase17", TestCallbackCase17),
-        DECLARE_NAPI_FUNCTION("testCallbackCase18", TestCallbackCase18),
-        DECLARE_NAPI_FUNCTION("testCallbackCase19", TestCallbackCase19),
-        DECLARE_NAPI_FUNCTION("testCallbackCase20", TestCallbackCase20),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+    std::vector<std::string> exportNames;
+    std::vector<napi_property_descriptor> descriptors(K_CALLBACK_CASE_COUNT);
+    exportNames.reserve(K_CALLBACK_CASE_COUNT);
+    for (size_t caseIndex = 0; caseIndex < K_CALLBACK_CASE_COUNT; caseIndex++) {
+        exportNames.emplace_back(BuildIndexedName("testCallbackCase", caseIndex + K_FIRST_CASE_NUMBER));
+        descriptors[caseIndex] = napi_property_descriptor{exportNames.back().c_str(), nullptr, RunCallbackCase, nullptr,
+            nullptr, nullptr, napi_default, reinterpret_cast<void*>(static_cast<uintptr_t>(caseIndex))};
+    }
+    NAPI_CALL(env, napi_define_properties(env, exports, descriptors.size(), descriptors.data()));
     return exports;
 }
 
-static napi_module g_branch08CallbackModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+static napi_module g_callbackSuiteModule = {
+    .nm_version = K_MODULE_VERSION,
+    .nm_flags = K_NO_MODULE_FLAGS,
     .nm_filename = nullptr,
-    .nm_register_func = InitBranch08Callback,
+    .nm_register_func = InitCallbackSuite,
     .nm_modname = "callback_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterBranch08CallbackModule(void)
+extern "C" __attribute__((constructor)) void RegisterCallbackSuiteModule(void)
 {
-    napi_module_register(&g_branch08CallbackModule);
+    napi_module_register(&g_callbackSuiteModule);
 }

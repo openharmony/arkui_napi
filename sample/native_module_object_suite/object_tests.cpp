@@ -15,135 +15,53 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
 namespace {
 
+constexpr size_t K_OBJECT_CASE_COUNT = 19;
+constexpr size_t K_OBJECT_ARG_COUNT = 1;
+constexpr size_t K_FIRST_CASE_NUMBER = 1;
+constexpr int K_CASE_NUMBER_WIDTH = 2;
+constexpr size_t K_NULL_TERMINATOR_SIZE = 1;
+constexpr int32_t K_DELTA_STEP = 3;
+constexpr int32_t K_DELTA_OFFSET = 20;
+constexpr int32_t K_MULTIPLIER_CYCLE = 4;
+constexpr int32_t K_THRESHOLD_OFFSET = 40;
+constexpr uint32_t K_MODULE_VERSION = 1;
+constexpr uint32_t K_NO_MODULE_FLAGS = 0;
+
 struct ObjectCaseSpec {
-    const char* name;
+    std::string name;
     int32_t delta;
     int32_t multiplier;
     int32_t threshold;
 };
 
-static const ObjectCaseSpec g_objectCaseSpecs[] = {
-    {
-        "objectCase01",
-        -17,
-        2,
-        41,
-    },
-    {
-        "objectCase02",
-        -14,
-        3,
-        42,
-    },
-    {
-        "objectCase03",
-        -11,
-        4,
-        43,
-    },
-    {
-        "objectCase04",
-        -8,
-        1,
-        44,
-    },
-    {
-        "objectCase05",
-        -5,
-        2,
-        45,
-    },
-    {
-        "objectCase06",
-        -2,
-        3,
-        46,
-    },
-    {
-        "objectCase07",
-        1,
-        4,
-        47,
-    },
-    {
-        "objectCase08",
-        4,
-        1,
-        48,
-    },
-    {
-        "objectCase09",
-        7,
-        2,
-        49,
-    },
-    {
-        "objectCase10",
-        10,
-        3,
-        50,
-    },
-    {
-        "objectCase11",
-        13,
-        4,
-        51,
-    },
-    {
-        "objectCase12",
-        16,
-        1,
-        52,
-    },
-    {
-        "objectCase13",
-        19,
-        2,
-        53,
-    },
-    {
-        "objectCase14",
-        22,
-        3,
-        54,
-    },
-    {
-        "objectCase15",
-        25,
-        4,
-        55,
-    },
-    {
-        "objectCase16",
-        28,
-        1,
-        56,
-    },
-    {
-        "objectCase17",
-        31,
-        2,
-        57,
-    },
-    {
-        "objectCase18",
-        34,
-        3,
-        58,
-    },
-    {
-        "objectCase19",
-        37,
-        4,
-        59,
-    },
-};
+std::string BuildIndexedName(const char* prefix, size_t caseNumber)
+{
+    std::string suffix = std::to_string(caseNumber);
+    if (suffix.size() < static_cast<size_t>(K_CASE_NUMBER_WIDTH)) {
+        suffix.insert(0, static_cast<std::string::size_type>(K_CASE_NUMBER_WIDTH - suffix.size()), '0');
+    }
+    return std::string(prefix) + suffix;
+}
+
+size_t GetCaseIndex(void* data) { return static_cast<size_t>(reinterpret_cast<uintptr_t>(data)); }
+
+ObjectCaseSpec GetObjectCaseSpec(size_t caseIndex)
+{
+    const size_t caseNumber = caseIndex + K_FIRST_CASE_NUMBER;
+    return {
+        BuildIndexedName("objectCase", caseNumber),
+        static_cast<int32_t>(caseNumber) * K_DELTA_STEP - K_DELTA_OFFSET,
+        static_cast<int32_t>(caseNumber % K_MULTIPLIER_CYCLE) + 1,
+        static_cast<int32_t>(caseNumber) + K_THRESHOLD_OFFSET,
+    };
+}
 
 bool ReadUtf8(napi_env env, napi_value value, const char* message, std::string* result)
 {
@@ -160,7 +78,7 @@ bool ReadUtf8(napi_env env, napi_value value, const char* message, std::string* 
     if (napi_get_value_string_utf8(env, value, nullptr, 0, &length) != napi_ok) {
         return false;
     }
-    std::string buffer(length + 1, '\0');
+    std::string buffer(length + K_NULL_TERMINATOR_SIZE, '\0');
     if (napi_get_value_string_utf8(env, value, buffer.data(), buffer.size(), &length) != napi_ok) {
         return false;
     }
@@ -229,11 +147,11 @@ bool SetNamedString(napi_env env, napi_value object, const char* name, const std
 }
 
 napi_value CreateObjectSummary(
-    napi_env env, const char* name, const std::string& label, int32_t actual, int32_t expected, bool elevated)
+    napi_env env, const std::string& name, const std::string& label, int32_t actual, int32_t expected, bool elevated)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
-    SetNamedString(env, result, "name", std::string(name));
+    SetNamedString(env, result, "name", name);
     SetNamedString(env, result, "label", label);
     SetNamedInt32(env, result, "actual", actual);
     SetNamedInt32(env, result, "expected", expected);
@@ -242,15 +160,22 @@ napi_value CreateObjectSummary(
     return result;
 }
 
-static napi_value TestObjectCase01(napi_env env, napi_callback_info info)
+static napi_value RunObjectCase(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+    void* data = nullptr;
+    size_t argc = K_OBJECT_ARG_COUNT;
+    napi_value args[K_OBJECT_ARG_COUNT] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, &data));
+
+    const size_t caseIndex = GetCaseIndex(data);
+    if (caseIndex >= K_OBJECT_CASE_COUNT) {
+        napi_throw_error(env, nullptr, "invalid object case");
+        return nullptr;
+    }
 
     std::string label;
     int32_t score = 0;
-    if (argc < 1) {
+    if (argc < K_OBJECT_ARG_COUNT) {
         napi_throw_type_error(env, nullptr, "record is required");
         return nullptr;
     }
@@ -261,566 +186,8 @@ static napi_value TestObjectCase01(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    const auto& spec = g_objectCaseSpecs[0];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase02(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[1];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase03(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[2];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase04(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[3];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase05(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[4];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase06(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[5];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase07(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[6];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase08(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[7];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase09(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[8];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase10(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[9];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase11(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[10];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase12(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[11];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase13(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[12];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase14(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[13];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase15(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[14];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase16(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[15];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase17(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[16];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase18(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[17];
-    int32_t actual = score * spec.multiplier + spec.delta;
-    int32_t expected = score;
-    for (int32_t step = 0; step < spec.multiplier; step++) {
-        expected += score;
-    }
-    expected -= score;
-    expected += spec.delta;
-
-    return CreateObjectSummary(env, spec.name, label, actual, expected, actual >= spec.threshold);
-}
-
-static napi_value TestObjectCase19(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::string label;
-    int32_t score = 0;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "record is required");
-        return nullptr;
-    }
-    if (!ReadNamedString(env, args[0], "label", &label)) {
-        return nullptr;
-    }
-    if (!ReadNamedInt32(env, args[0], "score", &score)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_objectCaseSpecs[18];
-    int32_t actual = score * spec.multiplier + spec.delta;
+    const auto spec = GetObjectCaseSpec(caseIndex);
+    const int32_t actual = score * spec.multiplier + spec.delta;
     int32_t expected = score;
     for (int32_t step = 0; step < spec.multiplier; step++) {
         expected += score;
@@ -833,44 +200,30 @@ static napi_value TestObjectCase19(napi_env env, napi_callback_info info)
 
 }  // namespace
 
-static napi_value InitBranch04Object(napi_env env, napi_value exports)
+static napi_value InitObjectSuite(napi_env env, napi_value exports)
 {
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testObjectCase01", TestObjectCase01),
-        DECLARE_NAPI_FUNCTION("testObjectCase02", TestObjectCase02),
-        DECLARE_NAPI_FUNCTION("testObjectCase03", TestObjectCase03),
-        DECLARE_NAPI_FUNCTION("testObjectCase04", TestObjectCase04),
-        DECLARE_NAPI_FUNCTION("testObjectCase05", TestObjectCase05),
-        DECLARE_NAPI_FUNCTION("testObjectCase06", TestObjectCase06),
-        DECLARE_NAPI_FUNCTION("testObjectCase07", TestObjectCase07),
-        DECLARE_NAPI_FUNCTION("testObjectCase08", TestObjectCase08),
-        DECLARE_NAPI_FUNCTION("testObjectCase09", TestObjectCase09),
-        DECLARE_NAPI_FUNCTION("testObjectCase10", TestObjectCase10),
-        DECLARE_NAPI_FUNCTION("testObjectCase11", TestObjectCase11),
-        DECLARE_NAPI_FUNCTION("testObjectCase12", TestObjectCase12),
-        DECLARE_NAPI_FUNCTION("testObjectCase13", TestObjectCase13),
-        DECLARE_NAPI_FUNCTION("testObjectCase14", TestObjectCase14),
-        DECLARE_NAPI_FUNCTION("testObjectCase15", TestObjectCase15),
-        DECLARE_NAPI_FUNCTION("testObjectCase16", TestObjectCase16),
-        DECLARE_NAPI_FUNCTION("testObjectCase17", TestObjectCase17),
-        DECLARE_NAPI_FUNCTION("testObjectCase18", TestObjectCase18),
-        DECLARE_NAPI_FUNCTION("testObjectCase19", TestObjectCase19),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+    std::vector<std::string> exportNames;
+    std::vector<napi_property_descriptor> descriptors(K_OBJECT_CASE_COUNT);
+    exportNames.reserve(K_OBJECT_CASE_COUNT);
+    for (size_t caseIndex = 0; caseIndex < K_OBJECT_CASE_COUNT; caseIndex++) {
+        exportNames.emplace_back(BuildIndexedName("testObjectCase", caseIndex + K_FIRST_CASE_NUMBER));
+        descriptors[caseIndex] = napi_property_descriptor{exportNames.back().c_str(), nullptr, RunObjectCase, nullptr,
+            nullptr, nullptr, napi_default, reinterpret_cast<void*>(static_cast<uintptr_t>(caseIndex))};
+    }
+    NAPI_CALL(env, napi_define_properties(env, exports, descriptors.size(), descriptors.data()));
     return exports;
 }
 
-static napi_module g_branch04ObjectModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+static napi_module g_objectSuiteModule = {
+    .nm_version = K_MODULE_VERSION,
+    .nm_flags = K_NO_MODULE_FLAGS,
     .nm_filename = nullptr,
-    .nm_register_func = InitBranch04Object,
+    .nm_register_func = InitObjectSuite,
     .nm_modname = "object_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterBranch04ObjectModule(void)
+extern "C" __attribute__((constructor)) void RegisterObjectSuiteModule(void)
 {
-    napi_module_register(&g_branch04ObjectModule);
+    napi_module_register(&g_objectSuiteModule);
 }

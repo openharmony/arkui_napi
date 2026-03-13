@@ -14,6 +14,7 @@
  */
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "napi/native_api.h"
@@ -21,135 +22,45 @@
 
 namespace {
 
+constexpr size_t K_ARRAY_CASE_COUNT = 20;
+constexpr size_t K_ARRAY_ARG_COUNT = 1;
+constexpr size_t K_FIRST_CASE_NUMBER = 1;
+constexpr int K_CASE_NUMBER_WIDTH = 2;
+constexpr int32_t K_WEIGHT_CYCLE = 5;
+constexpr int32_t K_OFFSET_BASE = 10;
+constexpr int32_t K_THRESHOLD_STEP = 8;
+constexpr int32_t K_EVEN_VALUE_MASK = 1;
+constexpr uint32_t K_MODULE_VERSION = 1;
+constexpr uint32_t K_NO_MODULE_FLAGS = 0;
+
 struct ArrayCaseSpec {
-    const char* name;
+    std::string name;
     int32_t weight;
     int32_t offset;
     int32_t threshold;
 };
 
-static const ArrayCaseSpec g_arrayCaseSpecs[] = {
-    {
-        "arrayCase01",
-        2,
-        -9,
-        8,
-    },
-    {
-        "arrayCase02",
-        3,
-        -8,
-        16,
-    },
-    {
-        "arrayCase03",
-        4,
-        -7,
-        24,
-    },
-    {
-        "arrayCase04",
-        5,
-        -6,
-        32,
-    },
-    {
-        "arrayCase05",
-        1,
-        -5,
-        40,
-    },
-    {
-        "arrayCase06",
-        2,
-        -4,
-        48,
-    },
-    {
-        "arrayCase07",
-        3,
-        -3,
-        56,
-    },
-    {
-        "arrayCase08",
-        4,
-        -2,
-        64,
-    },
-    {
-        "arrayCase09",
-        5,
-        -1,
-        72,
-    },
-    {
-        "arrayCase10",
-        1,
-        0,
-        80,
-    },
-    {
-        "arrayCase11",
-        2,
-        1,
-        88,
-    },
-    {
-        "arrayCase12",
-        3,
-        2,
-        96,
-    },
-    {
-        "arrayCase13",
-        4,
-        3,
-        104,
-    },
-    {
-        "arrayCase14",
-        5,
-        4,
-        112,
-    },
-    {
-        "arrayCase15",
-        1,
-        5,
-        120,
-    },
-    {
-        "arrayCase16",
-        2,
-        6,
-        128,
-    },
-    {
-        "arrayCase17",
-        3,
-        7,
-        136,
-    },
-    {
-        "arrayCase18",
-        4,
-        8,
-        144,
-    },
-    {
-        "arrayCase19",
-        5,
-        9,
-        152,
-    },
-    {
-        "arrayCase20",
-        1,
-        10,
-        160,
-    },
-};
+std::string BuildIndexedName(const char* prefix, size_t caseNumber)
+{
+    std::string suffix = std::to_string(caseNumber);
+    if (suffix.size() < static_cast<size_t>(K_CASE_NUMBER_WIDTH)) {
+        suffix.insert(0, static_cast<std::string::size_type>(K_CASE_NUMBER_WIDTH - suffix.size()), '0');
+    }
+    return std::string(prefix) + suffix;
+}
+
+size_t GetCaseIndex(void* data) { return static_cast<size_t>(reinterpret_cast<uintptr_t>(data)); }
+
+ArrayCaseSpec GetArrayCaseSpec(size_t caseIndex)
+{
+    const size_t caseNumber = caseIndex + K_FIRST_CASE_NUMBER;
+    return {
+        BuildIndexedName("arrayCase", caseNumber),
+        static_cast<int32_t>(caseNumber % K_WEIGHT_CYCLE) + 1,
+        static_cast<int32_t>(caseNumber) - K_OFFSET_BASE,
+        static_cast<int32_t>(caseNumber) * K_THRESHOLD_STEP,
+    };
+}
 
 bool ReadInt32(napi_env env, napi_value value, int32_t* result)
 {
@@ -208,17 +119,17 @@ bool SetNamedBool(napi_env env, napi_value object, const char* name, bool value)
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-bool SetNamedString(napi_env env, napi_value object, const char* name, const char* value)
+bool SetNamedString(napi_env env, napi_value object, const char* name, const std::string& value)
 {
     napi_value napiValue = nullptr;
-    if (napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &napiValue) != napi_ok) {
+    if (napi_create_string_utf8(env, value.c_str(), value.size(), &napiValue) != napi_ok) {
         return false;
     }
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-napi_value CreateArraySummary(napi_env env, const char* name, int32_t length, int32_t weightedSum, int32_t expected,
-    int32_t evenCount, bool thresholdPassed)
+napi_value CreateArraySummary(napi_env env, const std::string& name, int32_t length, int32_t weightedSum,
+    int32_t expected, int32_t evenCount, bool thresholdPassed)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
@@ -232,14 +143,21 @@ napi_value CreateArraySummary(napi_env env, const char* name, int32_t length, in
     return result;
 }
 
-static napi_value TestArrayCase01(napi_env env, napi_callback_info info)
+static napi_value RunArrayCase(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+    void* data = nullptr;
+    size_t argc = K_ARRAY_ARG_COUNT;
+    napi_value args[K_ARRAY_ARG_COUNT] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, &data));
+
+    const size_t caseIndex = GetCaseIndex(data);
+    if (caseIndex >= K_ARRAY_CASE_COUNT) {
+        napi_throw_error(env, nullptr, "invalid array case");
+        return nullptr;
+    }
 
     std::vector<int32_t> values;
-    if (argc < 1) {
+    if (argc < K_ARRAY_ARG_COUNT) {
         napi_throw_type_error(env, nullptr, "array is required");
         return nullptr;
     }
@@ -247,658 +165,12 @@ static napi_value TestArrayCase01(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    const auto& spec = g_arrayCaseSpecs[0];
+    const auto spec = GetArrayCaseSpec(caseIndex);
     int32_t weightedSum = 0;
     int32_t evenCount = 0;
     for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
         weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase02(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[1];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase03(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[2];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase04(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[3];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase05(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[4];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase06(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[5];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase07(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[6];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase08(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[7];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase09(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[8];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase10(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[9];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase11(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[10];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase12(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[11];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase13(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[12];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase14(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[13];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase15(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[14];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase16(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[15];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase17(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[16];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase18(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[17];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase19(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[18];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
-            evenCount++;
-        }
-    }
-
-    int32_t expected = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        expected += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-    }
-
-    return CreateArraySummary(env, spec.name, static_cast<int32_t>(values.size()), weightedSum, expected, evenCount,
-        weightedSum >= spec.threshold);
-}
-
-static napi_value TestArrayCase20(napi_env env, napi_callback_info info)
-{
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    std::vector<int32_t> values;
-    if (argc < 1) {
-        napi_throw_type_error(env, nullptr, "array is required");
-        return nullptr;
-    }
-    if (!ReadInt32Array(env, args[0], &values)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_arrayCaseSpecs[19];
-    int32_t weightedSum = 0;
-    int32_t evenCount = 0;
-    for (size_t itemIndex = 0; itemIndex < values.size(); itemIndex++) {
-        weightedSum += (values[itemIndex] + spec.offset) * static_cast<int32_t>(itemIndex + spec.weight);
-        if ((values[itemIndex] & 1) == 0) {
+        if ((values[itemIndex] & K_EVEN_VALUE_MASK) == 0) {
             evenCount++;
         }
     }
@@ -914,45 +186,30 @@ static napi_value TestArrayCase20(napi_env env, napi_callback_info info)
 
 }  // namespace
 
-static napi_value InitBranch03Array(napi_env env, napi_value exports)
+static napi_value InitArraySuite(napi_env env, napi_value exports)
 {
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testArrayCase01", TestArrayCase01),
-        DECLARE_NAPI_FUNCTION("testArrayCase02", TestArrayCase02),
-        DECLARE_NAPI_FUNCTION("testArrayCase03", TestArrayCase03),
-        DECLARE_NAPI_FUNCTION("testArrayCase04", TestArrayCase04),
-        DECLARE_NAPI_FUNCTION("testArrayCase05", TestArrayCase05),
-        DECLARE_NAPI_FUNCTION("testArrayCase06", TestArrayCase06),
-        DECLARE_NAPI_FUNCTION("testArrayCase07", TestArrayCase07),
-        DECLARE_NAPI_FUNCTION("testArrayCase08", TestArrayCase08),
-        DECLARE_NAPI_FUNCTION("testArrayCase09", TestArrayCase09),
-        DECLARE_NAPI_FUNCTION("testArrayCase10", TestArrayCase10),
-        DECLARE_NAPI_FUNCTION("testArrayCase11", TestArrayCase11),
-        DECLARE_NAPI_FUNCTION("testArrayCase12", TestArrayCase12),
-        DECLARE_NAPI_FUNCTION("testArrayCase13", TestArrayCase13),
-        DECLARE_NAPI_FUNCTION("testArrayCase14", TestArrayCase14),
-        DECLARE_NAPI_FUNCTION("testArrayCase15", TestArrayCase15),
-        DECLARE_NAPI_FUNCTION("testArrayCase16", TestArrayCase16),
-        DECLARE_NAPI_FUNCTION("testArrayCase17", TestArrayCase17),
-        DECLARE_NAPI_FUNCTION("testArrayCase18", TestArrayCase18),
-        DECLARE_NAPI_FUNCTION("testArrayCase19", TestArrayCase19),
-        DECLARE_NAPI_FUNCTION("testArrayCase20", TestArrayCase20),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+    std::vector<std::string> exportNames;
+    std::vector<napi_property_descriptor> descriptors(K_ARRAY_CASE_COUNT);
+    exportNames.reserve(K_ARRAY_CASE_COUNT);
+    for (size_t caseIndex = 0; caseIndex < K_ARRAY_CASE_COUNT; caseIndex++) {
+        exportNames.emplace_back(BuildIndexedName("testArrayCase", caseIndex + K_FIRST_CASE_NUMBER));
+        descriptors[caseIndex] = napi_property_descriptor{exportNames.back().c_str(), nullptr, RunArrayCase, nullptr,
+            nullptr, nullptr, napi_default, reinterpret_cast<void*>(static_cast<uintptr_t>(caseIndex))};
+    }
+    NAPI_CALL(env, napi_define_properties(env, exports, descriptors.size(), descriptors.data()));
     return exports;
 }
 
-static napi_module g_branch03ArrayModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+static napi_module g_arraySuiteModule = {
+    .nm_version = K_MODULE_VERSION,
+    .nm_flags = K_NO_MODULE_FLAGS,
     .nm_filename = nullptr,
-    .nm_register_func = InitBranch03Array,
+    .nm_register_func = InitArraySuite,
     .nm_modname = "array_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterBranch03ArrayModule(void)
+extern "C" __attribute__((constructor)) void RegisterArraySuiteModule(void)
 {
-    napi_module_register(&g_branch03ArrayModule);
+    napi_module_register(&g_arraySuiteModule);
 }

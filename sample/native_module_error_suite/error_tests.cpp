@@ -15,120 +15,49 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
 namespace {
 
+constexpr size_t K_ERROR_CASE_COUNT = 20;
+constexpr size_t K_ERROR_ARG_COUNT = 2;
+constexpr size_t K_FIRST_CASE_NUMBER = 1;
+constexpr int K_CASE_NUMBER_WIDTH = 2;
+constexpr size_t K_NULL_TERMINATOR_SIZE = 1;
+constexpr int32_t K_PARITY_MASK = 1;
+constexpr int32_t K_MINIMUM_VALUE_OFFSET = 18;
+constexpr uint32_t K_MODULE_VERSION = 1;
+constexpr uint32_t K_NO_MODULE_FLAGS = 0;
+
 struct ErrorCaseSpec {
-    const char* name;
+    std::string name;
     int32_t minValue;
     int32_t parity;
 };
 
-static const ErrorCaseSpec g_errorCaseSpecs[] = {
-    {
-        "errorCase01",
-        -17,
-        1,
-    },
-    {
-        "errorCase02",
-        -16,
-        0,
-    },
-    {
-        "errorCase03",
-        -15,
-        1,
-    },
-    {
-        "errorCase04",
-        -14,
-        0,
-    },
-    {
-        "errorCase05",
-        -13,
-        1,
-    },
-    {
-        "errorCase06",
-        -12,
-        0,
-    },
-    {
-        "errorCase07",
-        -11,
-        1,
-    },
-    {
-        "errorCase08",
-        -10,
-        0,
-    },
-    {
-        "errorCase09",
-        -9,
-        1,
-    },
-    {
-        "errorCase10",
-        -8,
-        0,
-    },
-    {
-        "errorCase11",
-        -7,
-        1,
-    },
-    {
-        "errorCase12",
-        -6,
-        0,
-    },
-    {
-        "errorCase13",
-        -5,
-        1,
-    },
-    {
-        "errorCase14",
-        -4,
-        0,
-    },
-    {
-        "errorCase15",
-        -3,
-        1,
-    },
-    {
-        "errorCase16",
-        -2,
-        0,
-    },
-    {
-        "errorCase17",
-        -1,
-        1,
-    },
-    {
-        "errorCase18",
-        0,
-        0,
-    },
-    {
-        "errorCase19",
-        1,
-        1,
-    },
-    {
-        "errorCase20",
-        2,
-        0,
-    },
-};
+std::string BuildIndexedName(const char* prefix, size_t caseNumber)
+{
+    std::string suffix = std::to_string(caseNumber);
+    if (suffix.size() < static_cast<size_t>(K_CASE_NUMBER_WIDTH)) {
+        suffix.insert(0, static_cast<std::string::size_type>(K_CASE_NUMBER_WIDTH - suffix.size()), '0');
+    }
+    return std::string(prefix) + suffix;
+}
+
+size_t GetCaseIndex(void* data) { return static_cast<size_t>(reinterpret_cast<uintptr_t>(data)); }
+
+ErrorCaseSpec GetErrorCaseSpec(size_t caseIndex)
+{
+    const size_t caseNumber = caseIndex + K_FIRST_CASE_NUMBER;
+    return {
+        BuildIndexedName("errorCase", caseNumber),
+        static_cast<int32_t>(caseNumber) - K_MINIMUM_VALUE_OFFSET,
+        static_cast<int32_t>(caseNumber % 2),
+    };
+}
 
 bool ReadInt32(napi_env env, napi_value value, const char* message, int32_t* result)
 {
@@ -158,7 +87,7 @@ bool ReadUtf8(napi_env env, napi_value value, const char* message, std::string* 
     if (napi_get_value_string_utf8(env, value, nullptr, 0, &length) != napi_ok) {
         return false;
     }
-    std::string buffer(length + 1, '\0');
+    std::string buffer(length + K_NULL_TERMINATOR_SIZE, '\0');
     if (napi_get_value_string_utf8(env, value, buffer.data(), buffer.size(), &length) != napi_ok) {
         return false;
     }
@@ -185,25 +114,32 @@ bool SetNamedString(napi_env env, napi_value object, const char* name, const std
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-napi_value CreateErrorSummary(napi_env env, const char* name, int32_t value, const std::string& text)
+napi_value CreateErrorSummary(napi_env env, const std::string& name, int32_t value, const std::string& text)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
-    SetNamedString(env, result, "name", std::string(name));
+    SetNamedString(env, result, "name", name);
     SetNamedInt32(env, result, "value", value);
     SetNamedString(env, result, "text", text);
     return result;
 }
 
-static napi_value TestErrorCase01(napi_env env, napi_callback_info info)
+static napi_value RunErrorCase(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+    void* data = nullptr;
+    size_t argc = K_ERROR_ARG_COUNT;
+    napi_value args[K_ERROR_ARG_COUNT] = {nullptr};
+    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, &data));
+
+    const size_t caseIndex = GetCaseIndex(data);
+    if (caseIndex >= K_ERROR_CASE_COUNT) {
+        napi_throw_error(env, nullptr, "invalid error case");
+        return nullptr;
+    }
 
     int32_t value = 0;
     std::string text;
-    if (argc < 2) {
+    if (argc < K_ERROR_ARG_COUNT) {
         napi_throw_type_error(env, nullptr, "value and text are required");
         return nullptr;
     }
@@ -214,696 +150,12 @@ static napi_value TestErrorCase01(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    const auto& spec = g_errorCaseSpecs[0];
+    const auto spec = GetErrorCaseSpec(caseIndex);
     if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
+        napi_throw_range_error(env, nullptr, spec.name.c_str());
         return nullptr;
     }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase02(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[1];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase03(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[2];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase04(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[3];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase05(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[4];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase06(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[5];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase07(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[6];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase08(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[7];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase09(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[8];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase10(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[9];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase11(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[10];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase12(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[11];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase13(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[12];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase14(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[13];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase15(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[14];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase16(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[15];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase17(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[16];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase18(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[17];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase19(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[18];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
-        napi_throw_error(env, nullptr, "parity check failed");
-        return nullptr;
-    }
-    if (text.empty()) {
-        napi_throw_error(env, nullptr, "text must not be empty");
-        return nullptr;
-    }
-
-    return CreateErrorSummary(env, spec.name, value, text);
-}
-
-static napi_value TestErrorCase20(napi_env env, napi_callback_info info)
-{
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-    int32_t value = 0;
-    std::string text;
-    if (argc < 2) {
-        napi_throw_type_error(env, nullptr, "value and text are required");
-        return nullptr;
-    }
-    if (!ReadInt32(env, args[0], "value must be a number", &value)) {
-        return nullptr;
-    }
-    if (!ReadUtf8(env, args[1], "text must be a string", &text)) {
-        return nullptr;
-    }
-
-    const auto& spec = g_errorCaseSpecs[19];
-    if (value < spec.minValue) {
-        napi_throw_range_error(env, nullptr, spec.name);
-        return nullptr;
-    }
-    if ((value & 1) != spec.parity) {
+    if ((value & K_PARITY_MASK) != spec.parity) {
         napi_throw_error(env, nullptr, "parity check failed");
         return nullptr;
     }
@@ -917,45 +169,30 @@ static napi_value TestErrorCase20(napi_env env, napi_callback_info info)
 
 }  // namespace
 
-static napi_value InitBranch10Error(napi_env env, napi_value exports)
+static napi_value InitErrorSuite(napi_env env, napi_value exports)
 {
-    napi_property_descriptor descriptors[] = {
-        DECLARE_NAPI_FUNCTION("testErrorCase01", TestErrorCase01),
-        DECLARE_NAPI_FUNCTION("testErrorCase02", TestErrorCase02),
-        DECLARE_NAPI_FUNCTION("testErrorCase03", TestErrorCase03),
-        DECLARE_NAPI_FUNCTION("testErrorCase04", TestErrorCase04),
-        DECLARE_NAPI_FUNCTION("testErrorCase05", TestErrorCase05),
-        DECLARE_NAPI_FUNCTION("testErrorCase06", TestErrorCase06),
-        DECLARE_NAPI_FUNCTION("testErrorCase07", TestErrorCase07),
-        DECLARE_NAPI_FUNCTION("testErrorCase08", TestErrorCase08),
-        DECLARE_NAPI_FUNCTION("testErrorCase09", TestErrorCase09),
-        DECLARE_NAPI_FUNCTION("testErrorCase10", TestErrorCase10),
-        DECLARE_NAPI_FUNCTION("testErrorCase11", TestErrorCase11),
-        DECLARE_NAPI_FUNCTION("testErrorCase12", TestErrorCase12),
-        DECLARE_NAPI_FUNCTION("testErrorCase13", TestErrorCase13),
-        DECLARE_NAPI_FUNCTION("testErrorCase14", TestErrorCase14),
-        DECLARE_NAPI_FUNCTION("testErrorCase15", TestErrorCase15),
-        DECLARE_NAPI_FUNCTION("testErrorCase16", TestErrorCase16),
-        DECLARE_NAPI_FUNCTION("testErrorCase17", TestErrorCase17),
-        DECLARE_NAPI_FUNCTION("testErrorCase18", TestErrorCase18),
-        DECLARE_NAPI_FUNCTION("testErrorCase19", TestErrorCase19),
-        DECLARE_NAPI_FUNCTION("testErrorCase20", TestErrorCase20),
-    };
-    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(descriptors) / sizeof(descriptors[0]), descriptors));
+    std::vector<std::string> exportNames;
+    std::vector<napi_property_descriptor> descriptors(K_ERROR_CASE_COUNT);
+    exportNames.reserve(K_ERROR_CASE_COUNT);
+    for (size_t caseIndex = 0; caseIndex < K_ERROR_CASE_COUNT; caseIndex++) {
+        exportNames.emplace_back(BuildIndexedName("testErrorCase", caseIndex + K_FIRST_CASE_NUMBER));
+        descriptors[caseIndex] = napi_property_descriptor{exportNames.back().c_str(), nullptr, RunErrorCase, nullptr,
+            nullptr, nullptr, napi_default, reinterpret_cast<void*>(static_cast<uintptr_t>(caseIndex))};
+    }
+    NAPI_CALL(env, napi_define_properties(env, exports, descriptors.size(), descriptors.data()));
     return exports;
 }
 
-static napi_module g_branch10ErrorModule = {
-    .nm_version = 1,
-    .nm_flags = 0,
+static napi_module g_errorSuiteModule = {
+    .nm_version = K_MODULE_VERSION,
+    .nm_flags = K_NO_MODULE_FLAGS,
     .nm_filename = nullptr,
-    .nm_register_func = InitBranch10Error,
+    .nm_register_func = InitErrorSuite,
     .nm_modname = "error_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterBranch10ErrorModule(void)
+extern "C" __attribute__((constructor)) void RegisterErrorSuiteModule(void)
 {
-    napi_module_register(&g_branch10ErrorModule);
+    napi_module_register(&g_errorSuiteModule);
 }
