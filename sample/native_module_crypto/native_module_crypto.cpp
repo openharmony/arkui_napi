@@ -18,6 +18,14 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 
+namespace {
+    constexpr size_t ARG_COUNT_1 = 1;
+    constexpr size_t ARG_COUNT_2 = 2;
+    constexpr size_t ARG_COUNT_3 = 3;
+    constexpr size_t CALLBACK_ARG_COUNT = 2;
+    constexpr uint32_t REF_COUNT = 1;
+}
+
 static bool GetStringArg(napi_env env, napi_value arg, std::string& result)
 {
     size_t strLen = 0;
@@ -40,10 +48,10 @@ static napi_value CreateStringResult(napi_env env, const std::string& result)
 
 static napi_value Base64Encode(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     napi_valuetype valuetype;
     NAPI_CALL(env, napi_typeof(env, args[0], &valuetype));
@@ -57,10 +65,10 @@ static napi_value Base64Encode(napi_env env, napi_callback_info info)
 
 static napi_value Base64Decode(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -70,10 +78,10 @@ static napi_value Base64Decode(napi_env env, napi_callback_info info)
 
 static napi_value HexEncode(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -83,10 +91,10 @@ static napi_value HexEncode(napi_env env, napi_callback_info info)
 
 static napi_value HexDecode(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -96,10 +104,10 @@ static napi_value HexDecode(napi_env env, napi_callback_info info)
 
 static napi_value XorEncrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     std::string key;
@@ -111,10 +119,10 @@ static napi_value XorEncrypt(napi_env env, napi_callback_info info)
 
 static napi_value XorDecrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     std::string key;
@@ -126,10 +134,10 @@ static napi_value XorDecrypt(napi_env env, napi_callback_info info)
 
 static napi_value SimpleHash(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -139,10 +147,10 @@ static napi_value SimpleHash(napi_env env, napi_callback_info info)
 
 static napi_value Rot13(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -152,10 +160,10 @@ static napi_value Rot13(napi_env env, napi_callback_info info)
 
 static napi_value ReverseString(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -165,10 +173,10 @@ static napi_value ReverseString(napi_env env, napi_callback_info info)
 
 static napi_value Crc32(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -180,10 +188,10 @@ static napi_value Crc32(napi_env env, napi_callback_info info)
 
 static napi_value CaesarEncrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -196,10 +204,10 @@ static napi_value CaesarEncrypt(napi_env env, napi_callback_info info)
 
 static napi_value CaesarDecrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -212,10 +220,10 @@ static napi_value CaesarDecrypt(napi_env env, napi_callback_info info)
 
 static napi_value VigenereEncrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     std::string key;
@@ -227,10 +235,10 @@ static napi_value VigenereEncrypt(napi_env env, napi_callback_info info)
 
 static napi_value VigenereDecrypt(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string input;
     std::string key;
@@ -242,10 +250,10 @@ static napi_value VigenereDecrypt(napi_env env, napi_callback_info info)
 
 static napi_value RandomString(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     int32_t length = 0;
     NAPI_CALL(env, napi_get_value_int32(env, args[0], &length));
@@ -256,10 +264,10 @@ static napi_value RandomString(napi_env env, napi_callback_info info)
 
 static napi_value PasswordHash(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     std::string password;
     std::string salt;
@@ -271,10 +279,10 @@ static napi_value PasswordHash(napi_env env, napi_callback_info info)
 
 static napi_value PasswordVerify(napi_env env, napi_callback_info info)
 {
-    size_t argc = 3;
-    napi_value args[3] = { nullptr };
+    size_t argc = ARG_COUNT_3;
+    napi_value args[ARG_COUNT_3] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 3, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_3, "Wrong number of arguments");
 
     std::string password;
     std::string salt;
@@ -290,10 +298,10 @@ static napi_value PasswordVerify(napi_env env, napi_callback_info info)
 
 static napi_value SimpleMd5(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] = { nullptr };
+    size_t argc = ARG_COUNT_1;
+    napi_value args[ARG_COUNT_1] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_1, "Wrong number of arguments");
 
     std::string input;
     NAPI_ASSERT(env, GetStringArg(env, args[0], input), "Failed to get string");
@@ -341,10 +349,10 @@ static void HashAsyncComplete(napi_env env, napi_status status, void* data)
 
 static napi_value HashAsync(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] = { nullptr };
+    size_t argc = ARG_COUNT_2;
+    napi_value args[ARG_COUNT_2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 2, "Wrong number of arguments");
+    NAPI_ASSERT(env, argc >= ARG_COUNT_2, "Wrong number of arguments");
 
     napi_valuetype valuetype;
     NAPI_CALL(env, napi_typeof(env, args[1], &valuetype));
