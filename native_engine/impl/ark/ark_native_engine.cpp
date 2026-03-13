@@ -2660,9 +2660,9 @@ std::vector<panda::ecmascript::HeapMemoryInfo> ArkNativeEngine::GetAllVMHeapMemo
     return JSNApi::GetAllVMHeapMemoryInfo();
 }
 
-void OpenHandleScopeCb(void* eng, void** localHandle)
+void OpenHandleScopeCb(void* engine, void** localHandle)
 {
-    napi_env env = reinterpret_cast<napi_env>(eng);
+    napi_env env = reinterpret_cast<napi_env>(engine);
     napi_handle_scope* result = reinterpret_cast<napi_handle_scope*>(localHandle);
     napi_status status = napi_open_handle_scope(env, result);
     if (status != napi_ok) {
@@ -2670,9 +2670,9 @@ void OpenHandleScopeCb(void* eng, void** localHandle)
     }
 }
 
-void CloseHandleScopeCb(void* eng, void* localHandle)
+void CloseHandleScopeCb(void* engine, void* localHandle)
 {
-    napi_env env = reinterpret_cast<napi_env>(eng);
+    napi_env env = reinterpret_cast<napi_env>(engine);
     napi_handle_scope result = reinterpret_cast<napi_handle_scope>(localHandle);
     napi_status status = napi_close_handle_scope(env, result);
     if (status != napi_ok) {
