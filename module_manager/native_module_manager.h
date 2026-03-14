@@ -180,6 +180,7 @@ private:
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
     void CreateSharedLibsSonames();
+    bool LoadGreylistConfig(std::vector<std::string>& greylistLibs);
 
     char* sharedLibsSonames_ = nullptr;
     std::map<std::string, Dl_namespace> nsMap_;
