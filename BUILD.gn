@@ -426,6 +426,7 @@ if (!ark_standalone_build) {
         "sample/native_module_error:error",
         "sample/native_module_number:napi_number",
         "sample/native_module_regex:regex",
+        "sample/native_module_protect_property:protect_property",
         "sample/native_module_timer:timer_utils",
         "sample/native_module_textdecoder:textdecoder",
         "test/fuzztest:fuzztest",
