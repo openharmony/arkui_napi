@@ -24,6 +24,9 @@
 
 namespace timer_utils {
 
+static constexpr size_t TIMER_ARGS_COUNT = 2;
+static constexpr size_t TIMER_ID_ARGS_COUNT = 1;
+
 enum class TimerType {
     TIMEOUT,
     INTERVAL,
@@ -187,11 +190,11 @@ static bool CancelTimer(napi_env env, uint32_t timerId)
 
 static napi_value SetTimeout(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] {};
+    size_t argc = TIMER_ARGS_COUNT;
+    napi_value args[TIMER_ARGS_COUNT] {};
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < TIMER_ARGS_COUNT) {
         napi_throw_error(env, nullptr, "setTimeout requires 2 arguments: callback and delay");
         return nullptr;
     }
@@ -218,11 +221,11 @@ static napi_value SetTimeout(napi_env env, napi_callback_info info)
 
 static napi_value ClearTimeout(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] {};
+    size_t argc = TIMER_ID_ARGS_COUNT;
+    napi_value args[TIMER_ID_ARGS_COUNT] {};
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 1) {
+    if (argc < TIMER_ID_ARGS_COUNT) {
         napi_throw_error(env, nullptr, "clearTimeout requires 1 argument: timerId");
         return nullptr;
     }
@@ -237,11 +240,11 @@ static napi_value ClearTimeout(napi_env env, napi_callback_info info)
 
 static napi_value SetInterval(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value args[2] {};
+    size_t argc = TIMER_ARGS_COUNT;
+    napi_value args[TIMER_ARGS_COUNT] {};
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < TIMER_ARGS_COUNT) {
         napi_throw_error(env, nullptr, "setInterval requires 2 arguments: callback and interval");
         return nullptr;
     }
@@ -268,11 +271,11 @@ static napi_value SetInterval(napi_env env, napi_callback_info info)
 
 static napi_value ClearInterval(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value args[1] {};
+    size_t argc = TIMER_ID_ARGS_COUNT;
+    napi_value args[TIMER_ID_ARGS_COUNT] {};
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
 
-    if (argc < 1) {
+    if (argc < TIMER_ID_ARGS_COUNT) {
         napi_throw_error(env, nullptr, "clearInterval requires 1 argument: timerId");
         return nullptr;
     }

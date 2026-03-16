@@ -73,6 +73,7 @@ static constexpr int UTF16_SURROGATE_LOW_SHIFT = 10;           // Shift amount f
 static constexpr int UTF16_BYTE_SHIFT = 8;                     // Shift amount for byte in UTF-16 (8 bits)
 static constexpr size_t UTF16_CODE_UNIT_SIZE = 2;              // Size of a UTF-16 code unit in bytes
 static constexpr size_t UTF16_BYTE_OFFSET = 1;                 // Offset for second byte in UTF-16 code unit
+static constexpr size_t UTF16_SURROGATE_PAIR_SIZE = 2;         // Number of code units in a surrogate pair
 
 // Replacement character for invalid sequences (U+FFFD in UTF-8)
 static constexpr char REPLACEMENT_CHAR = '\xEF';
@@ -129,6 +130,94 @@ static bool IsUTF8ContinuationByte(uint8_t byte)
     return (byte & UTF8_CONTINUATION_MASK) == UTF8_CONTINUATION;
 }
 
+static void AppendReplacementChar(std::string& result)
+{
+    result.push_back(REPLACEMENT_CHAR);
+    result.push_back(REPLACEMENT_CHAR_2);
+    result.push_back(REPLACEMENT_CHAR_3);
+}
+
+static size_t DecodeUtF81Byte(std::string& result, uint8_t byte)
+{
+    result.push_back(static_cast<char>(byte));
+    return 1;
+}
+
+static size_t DecodeUtF82Byte(std::string& result, const uint8_t* data, size_t i, size_t length)
+{
+    if (i + UTF8_2ND_BYTE_OFFSET >= length) {
+        AppendReplacementChar(result);
+        return 0; // Break from loop
+    }
+    uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
+    if (!IsUTF8ContinuationByte(byte2)) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+    result.push_back(static_cast<char>(data[i]));
+    result.push_back(static_cast<char>(byte2));
+    return UTF8_2BYTE_SEQ_SIZE;
+}
+
+static size_t DecodeUtF83Byte(std::string& result, const uint8_t* data, size_t i, size_t length)
+{
+    if (i + UTF8_3BYTE_SEQ_SIZE - 1 >= length) {
+        AppendReplacementChar(result);
+        return 0; // Break from loop
+    }
+    uint8_t byte = data[i];
+    uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
+    uint8_t byte3 = data[i + UTF8_3RD_BYTE_OFFSET];
+
+    if (!IsUTF8ContinuationByte(byte2) || !IsUTF8ContinuationByte(byte3)) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+
+    if (byte == UTF8_3BYTE_MIN && (byte2 & UTF8_3BYTE_OVERLONG_MASK) == UTF8_3BYTE_OVERLONG_VALUE) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+
+    result.push_back(static_cast<char>(byte));
+    result.push_back(static_cast<char>(byte2));
+    result.push_back(static_cast<char>(byte3));
+    return UTF8_3BYTE_SEQ_SIZE;
+}
+
+static size_t DecodeUtF84Byte(std::string& result, const uint8_t* data, size_t i, size_t length)
+{
+    if (i + UTF8_4BYTE_SEQ_SIZE - 1 >= length) {
+        AppendReplacementChar(result);
+        return 0; // Break from loop
+    }
+    uint8_t byte = data[i];
+    uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
+    uint8_t byte3 = data[i + UTF8_3RD_BYTE_OFFSET];
+    uint8_t byte4 = data[i + UTF8_4TH_BYTE_OFFSET];
+
+    if (!IsUTF8ContinuationByte(byte2) || !IsUTF8ContinuationByte(byte3) || !IsUTF8ContinuationByte(byte4)) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+
+    if (byte == UTF8_4BYTE_MIN && (byte2 & UTF8_4BYTE_OVERLONG_MASK) == UTF8_4BYTE_OVERLONG_VALUE) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+
+    if (byte == UTF8_4BYTE_MAX && (byte2 & UTF8_4BYTE_MAX_MASK) == UTF8_4BYTE_MAX_VALUE) {
+        AppendReplacementChar(result);
+        return 1;
+    }
+
+    result.push_back(static_cast<char>(byte));
+    result.push_back(static_cast<char>(byte2));
+    result.push_back(static_cast<char>(byte3));
+    result.push_back(static_cast<char>(byte4));
+    return UTF8_4BYTE_SEQ_SIZE;
+}
+
 static std::string DecodeUTF8(const uint8_t* data, size_t length)
 {
     if (data == nullptr || length == 0) {
@@ -142,119 +231,28 @@ static std::string DecodeUTF8(const uint8_t* data, size_t length)
     while (i < length) {
         uint8_t byte = data[i];
 
-        // 1-byte sequence (0x00-0x7F)
         if (byte <= UTF8_1BYTE_MAX) {
-            result.push_back(static_cast<char>(byte));
-            i++;
-        }
-        // 2-byte sequence (0xC2-0xDF)
-        else if (byte >= UTF8_2BYTE_MIN && byte <= UTF8_2BYTE_MAX) {
-            if (i + UTF8_2ND_BYTE_OFFSET >= length) {
-                // Incomplete sequence, add replacement character
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
+            i += DecodeUtF81Byte(result, byte);
+        } else if (byte >= UTF8_2BYTE_MIN && byte <= UTF8_2BYTE_MAX) {
+            size_t advance = DecodeUtF82Byte(result, data, i, length);
+            if (advance == 0) {
                 break;
             }
-            uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
-            if (!IsUTF8ContinuationByte(byte2)) {
-                // Invalid continuation byte
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-            result.push_back(static_cast<char>(byte));
-            result.push_back(static_cast<char>(byte2));
-            i += UTF8_2BYTE_SEQ_SIZE;
-        }
-        // 3-byte sequence (0xE0-0xEF)
-        else if (byte >= UTF8_3BYTE_MIN && byte <= UTF8_3BYTE_MAX) {
-            if (i + UTF8_3BYTE_SEQ_SIZE - 1 >= length) {
-                // Incomplete sequence
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
+            i += advance;
+        } else if (byte >= UTF8_3BYTE_MIN && byte <= UTF8_3BYTE_MAX) {
+            size_t advance = DecodeUtF83Byte(result, data, i, length);
+            if (advance == 0) {
                 break;
             }
-            uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
-            uint8_t byte3 = data[i + UTF8_3RD_BYTE_OFFSET];
-
-            // Check continuation bytes
-            if (!IsUTF8ContinuationByte(byte2) || !IsUTF8ContinuationByte(byte3)) {
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-
-            // Check for overlong encoding for 0xE0
-            if (byte == UTF8_3BYTE_MIN && (byte2 & UTF8_3BYTE_OVERLONG_MASK) == UTF8_3BYTE_OVERLONG_VALUE) {
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-
-            result.push_back(static_cast<char>(byte));
-            result.push_back(static_cast<char>(byte2));
-            result.push_back(static_cast<char>(byte3));
-            i += UTF8_3BYTE_SEQ_SIZE;
-        }
-        // 4-byte sequence (0xF0-0xF4)
-        else if (byte >= UTF8_4BYTE_MIN && byte <= UTF8_4BYTE_MAX) {
-            if (i + UTF8_4BYTE_SEQ_SIZE - 1 >= length) {
-                // Incomplete sequence
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
+            i += advance;
+        } else if (byte >= UTF8_4BYTE_MIN && byte <= UTF8_4BYTE_MAX) {
+            size_t advance = DecodeUtF84Byte(result, data, i, length);
+            if (advance == 0) {
                 break;
             }
-            uint8_t byte2 = data[i + UTF8_2ND_BYTE_OFFSET];
-            uint8_t byte3 = data[i + UTF8_3RD_BYTE_OFFSET];
-            uint8_t byte4 = data[i + UTF8_4TH_BYTE_OFFSET];
-
-            // Check continuation bytes
-            if (!IsUTF8ContinuationByte(byte2) || !IsUTF8ContinuationByte(byte3) || !IsUTF8ContinuationByte(byte4)) {
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-
-            // Check for overlong encoding for 0xF0
-            if (byte == UTF8_4BYTE_MIN && (byte2 & UTF8_4BYTE_OVERLONG_MASK) == UTF8_4BYTE_OVERLONG_VALUE) {
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-
-            // Check for code point beyond Unicode max (0x10FFFF)
-            if (byte == UTF8_4BYTE_MAX && (byte2 & UTF8_4BYTE_MAX_MASK) == UTF8_4BYTE_MAX_VALUE) {
-                result.push_back(REPLACEMENT_CHAR);
-                result.push_back(REPLACEMENT_CHAR_2);
-                result.push_back(REPLACEMENT_CHAR_3);
-                i++;
-                continue;
-            }
-
-            result.push_back(static_cast<char>(byte));
-            result.push_back(static_cast<char>(byte2));
-            result.push_back(static_cast<char>(byte3));
-            result.push_back(static_cast<char>(byte4));
-            i += UTF8_4BYTE_SEQ_SIZE;
-        }
-        // Invalid UTF-8 start byte (0xC0, 0xC1, 0xF5-0xFF)
-        else {
-            result.push_back(REPLACEMENT_CHAR);
-            result.push_back(REPLACEMENT_CHAR_2);
-            result.push_back(REPLACEMENT_CHAR_3);
+            i += advance;
+        } else {
+            AppendReplacementChar(result);
             i++;
         }
     }
@@ -296,11 +294,13 @@ static std::string DecodeUTF16LE(const uint8_t* data, size_t length)
     std::string result;
     result.reserve(length);
 
-    for (size_t i = 0; i + UTF16_BYTE_OFFSET < length; i += UTF16_CODE_UNIT_SIZE) {
+    size_t i = 0;
+    while (i + UTF16_BYTE_OFFSET < length) {
         uint16_t codeUnit = static_cast<uint16_t>(data[i] | (data[i + 1] << UTF16_BYTE_SHIFT));
 
         // Skip BOM at the beginning
         if (i == 0 && codeUnit == UTF16_BOM) {
+            i += UTF16_CODE_UNIT_SIZE;
             continue;
         }
 
@@ -325,23 +325,24 @@ static std::string DecodeUTF16LE(const uint8_t* data, size_t length)
                                      ((codeUnit - UTF16_SURROGATE_HIGH_START) << UTF16_SURROGATE_LOW_SHIFT) +
                                      (lowSurrogate - UTF16_SURROGATE_LOW_START);
                 AppendCodePointToUTF8(result, codePoint);
-                i += UTF16_CODE_UNIT_SIZE; // Skip the low surrogate
+                i += UTF16_CODE_UNIT_SIZE * UTF16_SURROGATE_PAIR_SIZE; // Skip both high and low surrogates
             } else {
                 // Invalid surrogate pair
                 result.push_back(REPLACEMENT_CHAR);
                 result.push_back(REPLACEMENT_CHAR_2);
                 result.push_back(REPLACEMENT_CHAR_3);
+                i += UTF16_CODE_UNIT_SIZE;
             }
-        }
-        // Check for low surrogate without high surrogate
-        else if (codeUnit >= UTF16_SURROGATE_LOW_START && codeUnit <= UTF16_SURROGATE_LOW_END) {
+        } else if (codeUnit >= UTF16_SURROGATE_LOW_START && codeUnit <= UTF16_SURROGATE_LOW_END) {
+            // Check for low surrogate without high surrogate
             result.push_back(REPLACEMENT_CHAR);
             result.push_back(REPLACEMENT_CHAR_2);
             result.push_back(REPLACEMENT_CHAR_3);
-        }
-        // Regular code unit
-        else {
+            i += UTF16_CODE_UNIT_SIZE;
+        } else {
+            // Regular code unit
             AppendCodePointToUTF8(result, codeUnit);
+            i += UTF16_CODE_UNIT_SIZE;
         }
     }
 
@@ -357,11 +358,13 @@ static std::string DecodeUTF16BE(const uint8_t* data, size_t length)
     std::string result;
     result.reserve(length);
 
-    for (size_t i = 0; i + UTF16_BYTE_OFFSET < length; i += UTF16_CODE_UNIT_SIZE) {
+    size_t i = 0;
+    while (i + UTF16_BYTE_OFFSET < length) {
         uint16_t codeUnit = static_cast<uint16_t>((data[i] << UTF16_BYTE_SHIFT) | data[i + 1]);
 
         // Skip BOM at the beginning
         if (i == 0 && codeUnit == UTF16_BOM) {
+            i += UTF16_CODE_UNIT_SIZE;
             continue;
         }
 
@@ -385,27 +388,65 @@ static std::string DecodeUTF16BE(const uint8_t* data, size_t length)
                                      ((codeUnit - UTF16_SURROGATE_HIGH_START) << UTF16_SURROGATE_LOW_SHIFT) +
                                      (lowSurrogate - UTF16_SURROGATE_LOW_START);
                 AppendCodePointToUTF8(result, codePoint);
-                i += UTF16_CODE_UNIT_SIZE; // Skip the low surrogate
+                i += UTF16_CODE_UNIT_SIZE * UTF16_SURROGATE_PAIR_SIZE; // Skip both high and low surrogates
             } else {
                 // Invalid surrogate pair
                 result.push_back(REPLACEMENT_CHAR);
                 result.push_back(REPLACEMENT_CHAR_2);
                 result.push_back(REPLACEMENT_CHAR_3);
+                i += UTF16_CODE_UNIT_SIZE;
             }
-        }
-        // Check for low surrogate without high surrogate
-        else if (codeUnit >= UTF16_SURROGATE_LOW_START && codeUnit <= UTF16_SURROGATE_LOW_END) {
+        } else if (codeUnit >= UTF16_SURROGATE_LOW_START && codeUnit <= UTF16_SURROGATE_LOW_END) {
+            // Check for low surrogate without high surrogate
             result.push_back(REPLACEMENT_CHAR);
             result.push_back(REPLACEMENT_CHAR_2);
             result.push_back(REPLACEMENT_CHAR_3);
-        }
-        // Regular code unit
-        else {
+            i += UTF16_CODE_UNIT_SIZE;
+        } else {
+            // Regular code unit
             AppendCodePointToUTF8(result, codeUnit);
+            i += UTF16_CODE_UNIT_SIZE;
         }
     }
 
     return result;
+}
+
+static bool ValidateArrayBuffer(napi_env env, napi_value value)
+{
+    napi_valuetype type;
+    napi_status status = napi_typeof(env, value, &type);
+    if (status != napi_ok || type != napi_object) {
+        return false;
+    }
+
+    bool isArrayBuffer;
+    status = napi_is_arraybuffer(env, value, &isArrayBuffer);
+    if (status != napi_ok) {
+        return false;
+    }
+
+    return isArrayBuffer;
+}
+
+static bool GetArrayBufferData(napi_env env, napi_value value, void** data, size_t* length)
+{
+    napi_status status = napi_get_arraybuffer_info(env, value, data, length);
+    return status == napi_ok;
+}
+
+static std::string DecodeByEncoding(EncodingType encoding, const uint8_t* data, size_t length)
+{
+    switch (encoding) {
+        case EncodingType::UTF8:
+            return DecodeUTF8(data, length);
+        case EncodingType::UTF16LE:
+            return DecodeUTF16LE(data, length);
+        case EncodingType::UTF16BE:
+            return DecodeUTF16BE(data, length);
+        default:
+            return "";
+    }
 }
 
 static napi_value Decode(napi_env env, napi_callback_info info)
@@ -423,52 +464,20 @@ static napi_value Decode(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_valuetype type;
-    status = napi_typeof(env, argv[0], &type);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to get argument type");
-        return nullptr;
-    }
-
-    if (type != napi_object) {
-        napi_throw_error(env, nullptr, "First argument must be an object");
-        return nullptr;
-    }
-
-    bool isArrayBuffer;
-    status = napi_is_arraybuffer(env, argv[0], &isArrayBuffer);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to check if argument is ArrayBuffer");
-        return nullptr;
-    }
-
-    if (!isArrayBuffer) {
+    if (!ValidateArrayBuffer(env, argv[0])) {
         napi_throw_error(env, nullptr, "First argument must be an ArrayBuffer");
         return nullptr;
     }
 
     void* data = nullptr;
     size_t length = 0;
-    status = napi_get_arraybuffer_info(env, argv[0], &data, &length);
-    if (status != napi_ok) {
+    if (!GetArrayBufferData(env, argv[0], &data, &length)) {
         napi_throw_error(env, nullptr, "Failed to get ArrayBuffer info");
         return nullptr;
     }
 
     EncodingType encoding = ParseEncodingType(env, argc > 1 ? argv[1] : nullptr);
-
-    std::string result;
-    switch (encoding) {
-        case EncodingType::UTF8:
-            result = DecodeUTF8(static_cast<uint8_t*>(data), length);
-            break;
-        case EncodingType::UTF16LE:
-            result = DecodeUTF16LE(static_cast<uint8_t*>(data), length);
-            break;
-        case EncodingType::UTF16BE:
-            result = DecodeUTF16BE(static_cast<uint8_t*>(data), length);
-            break;
-    }
+    std::string result = DecodeByEncoding(encoding, static_cast<uint8_t*>(data), length);
 
     napi_value resultString = nullptr;
     status = napi_create_string_utf8(env, result.c_str(), result.length(), &resultString);

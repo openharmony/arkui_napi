@@ -34,7 +34,7 @@ static napi_value ProxySetHandler(napi_env env, napi_callback_info info)
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
     napi_valuetype valueType;
-    napi_typeof(env, argv[2], &valueType);
+    napi_typeof(env, argv[2], &valueType); // 2: index of target
 
     if (valueType == napi_undefined || valueType == napi_null) {
         // Log warning: attempt to assign property to undefined or null
@@ -43,7 +43,7 @@ static napi_value ProxySetHandler(napi_env env, napi_callback_info info)
         return result;
     }
 
-    napi_set_property(env, argv[0], argv[1], argv[2]);
+    napi_set_property(env, argv[0], argv[1], argv[2]); // 2: args of value
 
     napi_value result = nullptr;
     napi_get_boolean(env, true, &result);
@@ -80,12 +80,14 @@ static napi_value CreateTargetObject(napi_env env)
     return target;
 }
 
-// Create proxy case
-// Use a Proxy to intercept and restrict property modifications
-// when accessed through this proxy (e.g., from ArkTS code).
-// Note: the original target object remains mutable if accessed directly.
-//
-// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+/*
+   Create proxy case
+   Use a Proxy to intercept and restrict property modifications
+   when accessed through this proxy (e.g., from ArkTS code).
+   Note: the original target object remains mutable if accessed directly.
+   
+   See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+*/
 static napi_value ProxyCase(napi_env env)
 {
     napi_value target = CreateTargetObject(env);
@@ -97,20 +99,22 @@ static napi_value ProxyCase(napi_env env)
     napi_value proxyConstructor = nullptr;
     napi_get_named_property(env, global, "Proxy", &proxyConstructor);
 
-    constexpr size_t PROXY_CONSTRUCTOR_ARGC = 2;
-    napi_value argv[PROXY_CONSTRUCTOR_ARGC] = { target, handler };
+    constexpr size_t proxyConstructorArgc = 2;
+    napi_value argv[proxyConstructorArgc] = { target, handler };
     napi_value proxy = nullptr;
-    napi_new_instance(env, proxyConstructor, PROXY_CONSTRUCTOR_ARGC, argv, &proxy);
+    napi_new_instance(env, proxyConstructor, proxyConstructorArgc, argv, &proxy);
 
     return proxy;
 }
 
-// Create frozen case
-// Object.freeze() makes the object non-extensible and prevents
-// existing properties from being changed or deleted.
-// Note: freezing is shallow.
-//
-// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+/*
+   Create frozen case
+   Object.freeze() makes the object non-extensible and prevents
+   existing properties from being changed or deleted.
+   Note: freezing is shallow.
+  
+   See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+*/
 static napi_value FreezeCase(napi_env env)
 {
     napi_value target = CreateTargetObject(env);
@@ -124,19 +128,21 @@ static napi_value FreezeCase(napi_env env)
     napi_value freeze = nullptr;
     napi_get_named_property(env, object, "freeze", &freeze);
 
-    constexpr size_t FREEZE_ARGC = 1;
-    napi_value argv[FREEZE_ARGC] = { target };
+    constexpr size_t freezeArgc = 1;
+    napi_value argv[freezeArgc] = { target };
     napi_call_function(env, object, freeze, FREEZE_ARGC, argv, nullptr);
 
     return target;
 }
 
-// Create non-writable case
-// Properties defined via DefineProperty (napi_define_property) use custom descriptors.
-// By default (if no attributes are set), they are non-writable, non-configurable, and non-enumerable.
-// Here, we enable 'enumerable' while keeping the property non-writable and non-configurable.
-//
-// See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+/*
+   Create non-writable case
+   Properties defined via DefineProperty (napi_define_property) use custom descriptors.
+   By default (if no attributes are set), they are non-writable, non-configurable, and non-enumerable.
+   Here, we enable 'enumerable' while keeping the property non-writable and non-configurable.
+
+   See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+*/
 static napi_value NonWritableCase(napi_env env)
 {
     napi_value target = nullptr;
@@ -206,15 +212,17 @@ static void SetterGetterFinalizer(napi_env env, void* data, void* hint)
     delete static_cast<SetterGetterData*>(data);
 }
 
-// Create setter/getter case
-// Define a property with custom getter/setter. The actual value is stored in
-// heap-allocated data (.data field), not as a regular object property.
-// A finalizer ensures the memory is freed when the target object is garbage-collected.
-//
-// See:
-// - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get
-// - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/set
-// - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+/*
+   Create setter/getter case
+   Define a property with custom getter/setter. The actual value is stored in
+   heap-allocated data (.data field), not as a regular object property.
+   A finalizer ensures the memory is freed when the target object is garbage-collected.
+
+   Go to blow links for more information:
+   - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get
+   - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/set
+   - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+ */
 static napi_value SetterGetterCase(napi_env env)
 {
     napi_value target = nullptr;
@@ -222,9 +230,11 @@ static napi_value SetterGetterCase(napi_env env)
 
     SetterGetterData* data = new SetterGetterData { OBJECT_MAGIC_NUMBER };
 
-    // For simplicity, the property's value is stored in heap-allocated data attached
-    // to the property descriptor (via .data). This data is passed to getter/setter
-    // callbacks and will be cleaned up by the finalizer when the target object is GC'd.
+    /*
+       For simplicity, the property's value is stored in heap-allocated data attached
+       to the property descriptor (via .data). This data is passed to getter/setter
+       callbacks and will be cleaned up by the finalizer when the target object is GC'd.
+    */
     napi_property_descriptor desc[] = { { OBJECT_MAGIC_PROPERTY.data(), nullptr, GetterCallback, SetterCallback,
                                           nullptr, nullptr, napi_default, data } };
     napi_define_properties(env, target, sizeof(desc) / sizeof(desc[0]), desc);
