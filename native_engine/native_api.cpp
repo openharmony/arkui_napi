@@ -4698,9 +4698,8 @@ NAPI_EXTERN napi_status napi_switch_ark_context(napi_env env)
 
     napi_status status = nativeEngine->SwitchContext();
     if (status != napi_ok) {
+        HILOG_WARN("switch context failed");
         return napi_set_last_error(env, status);
-    } else {
-        HILOG_DEBUG("switch context successfully");
     }
     return GET_RETURN_STATUS(env);
 }
