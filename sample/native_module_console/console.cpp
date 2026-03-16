@@ -40,6 +40,64 @@ struct TimerData {
 static std::map<std::string, TimerData> g_timers;
 static std::mutex g_timersMutex;
 
+static std::string BooleanToString(napi_env env, napi_value value)
+{
+    bool boolValue;
+    if (napi_get_value_bool(env, value, &boolValue) == napi_ok) {
+        return boolValue ? "true" : "false";
+    }
+    return "[boolean]";
+}
+
+static std::string NumberToString(napi_env env, napi_value value)
+{
+    double numValue;
+    if (napi_get_value_double(env, value, &numValue) == napi_ok) {
+        std::ostringstream oss;
+        oss << numValue;
+        return oss.str();
+    }
+    return "[number]";
+}
+
+static std::string StringToString(napi_env env, napi_value value)
+{
+    size_t length;
+    if (napi_get_value_string_utf8(env, value, nullptr, ARG_COUNT_ZERO, &length) == napi_ok) {
+        std::string str(length, '\0');
+        napi_get_value_string_utf8(env, value, &str[0], length + NULL_TERMINATOR_SIZE, &length);
+        return str;
+    }
+    return "[string]";
+}
+
+static std::string ObjectToString(napi_env env, napi_value value)
+{
+    napi_value toString;
+    if (napi_get_named_property(env, value, "toString", &toString) != napi_ok) {
+        return "[object]";
+    }
+
+    napi_valuetype toStringType;
+    if (napi_typeof(env, toString, &toStringType) != napi_ok || toStringType != napi_function) {
+        return "[object]";
+    }
+
+    napi_value result;
+    if (napi_call_function(env, value, toString, ARG_COUNT_ZERO, nullptr, &result) != napi_ok) {
+        return "[object]";
+    }
+
+    size_t length;
+    if (napi_get_value_string_utf8(env, result, nullptr, ARG_COUNT_ZERO, &length) != napi_ok) {
+        return "[object]";
+    }
+
+    std::string str(length, '\0');
+    napi_get_value_string_utf8(env, result, &str[0], length + NULL_TERMINATOR_SIZE, &length);
+    return str;
+}
+
 static std::string ValueToString(napi_env env, napi_value value)
 {
     napi_valuetype type;
@@ -53,56 +111,14 @@ static std::string ValueToString(napi_env env, napi_value value)
             return "undefined";
         case napi_null:
             return "null";
-        case napi_boolean: {
-            bool boolValue;
-            if (napi_get_value_bool(env, value, &boolValue) == napi_ok) {
-                return boolValue ? "true" : "false";
-            }
-            return "[boolean]";
-        }
-        case napi_number: {
-            double numValue;
-            if (napi_get_value_double(env, value, &numValue) == napi_ok) {
-                std::ostringstream oss;
-                oss << numValue;
-                return oss.str();
-            }
-            return "[number]";
-        }
-        case napi_string: {
-            size_t length;
-            if (napi_get_value_string_utf8(env, value, nullptr, ARG_COUNT_ZERO, &length) == napi_ok) {
-                std::string str(length, '\0');
-                napi_get_value_string_utf8(env, value, &str[0], length + NULL_TERMINATOR_SIZE, &length);
-                return str;
-            }
-            return "[string]";
-        }
-        case napi_object: {
-            napi_value toString;
-            if (napi_get_named_property(env, value, "toString", &toString) != napi_ok) {
-                return "[object]";
-            }
-
-            napi_valuetype toStringType;
-            if (napi_typeof(env, toString, &toStringType) != napi_ok || toStringType != napi_function) {
-                return "[object]";
-            }
-
-            napi_value result;
-            if (napi_call_function(env, value, toString, ARG_COUNT_ZERO, nullptr, &result) != napi_ok) {
-                return "[object]";
-            }
-
-            size_t length;
-            if (napi_get_value_string_utf8(env, result, nullptr, ARG_COUNT_ZERO, &length) != napi_ok) {
-                return "[object]";
-            }
-
-            std::string str(length, '\0');
-            napi_get_value_string_utf8(env, result, &str[0], length + NULL_TERMINATOR_SIZE, &length);
-            return str;
-        }
+        case napi_boolean:
+            return BooleanToString(env, value);
+        case napi_number:
+            return NumberToString(env, value);
+        case napi_string:
+            return StringToString(env, value);
+        case napi_object:
+            return ObjectToString(env, value);
         case napi_function:
             return "[function]";
         case napi_symbol:
