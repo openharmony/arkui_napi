@@ -14,6 +14,8 @@
  */
 #ifndef NAPI_EXPERIMENTAL
 #define NAPI_EXPERIMENTAL
+#include <string>
+#include <variant>
 #endif
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -81,6 +83,45 @@ NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, NapiStackInfo* result)
     auto res = panda::JSNApi::GetStackInfo(vm);
     result->stackStart = res.stackStart;
     result->stackSize = res.stackSize;
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_get_value_string_utf8_hybrid(napi_env env, napi_value value, void* string_object)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, string_object);
+
+    auto nativeValue = LocalValueFromJsValue(value);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    RETURN_STATUS_IF_FALSE(env, nativeValue->IsStringWithoutSwitchState(vm), napi_string_expected);
+    Local<panda::StringRef> stringVal(nativeValue);
+    auto &strRef = *reinterpret_cast<std::variant<std::string, std::u16string>*>(string_object);
+
+    // Get string length and calculate initial buffer size
+    // Compressed strings need less space, uncompressed strings may need up to 4 bytes per UTF-16 char
+    uint32_t stringLen = stringVal->Length(vm);
+    if (stringLen == 0) {
+        return napi_clear_last_error(env);
+    }
+    auto isCompressed = stringVal->IsCompressed(vm);
+    uint32_t copied = 0;
+    if (isCompressed) {
+        auto &strU8 = strRef.emplace<std::string>();
+        strU8.resize(stringLen);
+        copied = stringVal->WriteUtf8(vm, strU8.data(), stringLen, true);
+    } else {
+        auto &strU16 = strRef.emplace<std::u16string>();
+        strU16.resize(stringLen);
+        copied = stringVal->WriteUtf16(vm, strU16.data(), stringLen);
+    }
+
+    // WriteUtf8 or WriteUtf16 returns 0 on failure, handle this case
+    if (copied == 0) {
+        HILOG_ERROR("napi_get_value_string_utf8_hybrid: Write failed");
+        return napi_set_last_error(env, napi_generic_failure);
+    }
     return napi_clear_last_error(env);
 }
 
