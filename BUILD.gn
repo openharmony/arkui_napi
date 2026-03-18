@@ -282,6 +282,8 @@ if (is_arkui_x) {
         }
       }
     }
+
+    cflags = [ "-fvisibility=hidden" ]
   }
 }
 

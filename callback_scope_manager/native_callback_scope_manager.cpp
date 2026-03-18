@@ -16,6 +16,8 @@
 #include "native_callback_scope_manager.h"
 #include "native_engine/native_engine.h"
 
+__attribute__((visibility("hidden"), weak)) const std::type_info* _ZTISt9exception;
+
 NativeCallbackScope::NativeCallbackScope(NativeEngine* env,
                                          panda::Local<panda::ObjectRef> object,
                                          const AsyncIdInfo& asyncIdInfo,
