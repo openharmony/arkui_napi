@@ -2719,8 +2719,8 @@ void ArkNativeEngine::GetJsonExtraInfoForCrash(napi_env env, std::string &jsonSt
     DFXJSNApi::ClearExtraErrorMessage(vm);
 }
 
-void ArkNativeEngine::SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
-                                       bool defaultCloneSendable, void** result)
+void ArkNativeEngine::SerializeJSError(napi_env env, napi_value object,
+                                       const SerializeOptions& options, void** result)
 {
     if (env == nullptr) {
         HILOG_ERROR("env == nullptr");
@@ -2737,14 +2737,12 @@ void ArkNativeEngine::SerializeJSError(napi_env env, napi_value object, bool def
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(object);
     auto undefRef = JSValueRef::Undefined(vm);
-    *result =
-        panda::JSNApi::SerializeValue(vm, nativeValue, undefRef, undefRef, defaultTransfer,
-                                      defaultCloneSendable, true);
+    *result = panda::JSNApi::SerializeValue(vm, nativeValue, undefRef, undefRef, options);
 }
 
 void ArkNativeEngine::SerializeJSErrorWithError(napi_env env, napi_value object,
-                                                bool defaultTransfer, bool defaultCloneSendable,
-                                                void** result, std::string& error)
+                                                const SerializeOptions& options, void** result,
+                                                std::string& error)
 {
     if (env == nullptr) {
         HILOG_ERROR("env == nullptr");
@@ -2761,9 +2759,7 @@ void ArkNativeEngine::SerializeJSErrorWithError(napi_env env, napi_value object,
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     auto nativeValue = LocalValueFromJsValue(object);
     auto undefRef = JSValueRef::Undefined(vm);
-    *result =
-        panda::JSNApi::SerializeValueWithError(vm, nativeValue, undefRef, undefRef, error, defaultTransfer,
-                                               defaultCloneSendable, true);
+    *result = panda::JSNApi::SerializeValueWithError(vm, nativeValue, undefRef, undefRef, error, options);
 }
 
 bool ArkNativeEngine::DeleteWorker(NativeEngine* workerEngine)
