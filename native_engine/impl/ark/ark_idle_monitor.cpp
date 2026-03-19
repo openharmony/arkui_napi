@@ -702,71 +702,79 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
 #endif
 
     bool isAllInIdle = true;
-
+    size_t index = 0;
     // Traverse all threads to attempt to trigger the compression GC
-    for (uint32_t index = 0; index < workerEnvVector_.size(); index++) {
+    while (true) {
         if (!gEnableDeferFreeze) {
             isAllInIdle = CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_TRIGGER_COUNT);
             break;
         }
-        std::unique_lock<std::mutex> vectorLock(envVectorMutex_);
-        auto it = workerEnvVector_.at(index);
-        if (!CheckIfInBackgroundInCompressGC()) {
-            return;
-        }
-
-        auto arkNativeEngine = reinterpret_cast<ArkNativeEngine*>(it);
-#if (defined(LINUX_PLATFORM) || defined(OHOS_PLATFORM))
-        if (kill(arkNativeEngine->GetSysTid(), 0) != 0) {
-            HILOG_ERROR("ArkIdleMonitor: tid: %{public}u is dead!", arkNativeEngine->GetSysTid());
-            workerEnvVector_.erase(workerEnvVector_.begin() + index);
-            --index;
-            continue;
-        }
-#endif
-        if (IsSentTask(it)) {
-            HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u is not respond!", arkNativeEngine->GetSysTid());
-            continue;
-        }
-
-        if (arkNativeEngine->GetWorkerThreadState()->GetCheckCount() == 0) {
-            isAllInIdle = false;
-            continue;
-        }
-
-        if (arkNativeEngine->IsNativeThread()) {
-            HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u is native thread.", arkNativeEngine->GetSysTid());
-            continue;
-        }
-
-        size_t expectedSize = JSNApi::GetEcmaVMExpectedMemoryReclamationSize(arkNativeEngine->GetEcmaVm());
-        HILOG_DEBUG("ArkIdleMonitor:checkcount:%{public}d,expectedSize:%{public}zu,threadid:%{public}u",
-            arkNativeEngine->GetWorkerThreadState()->GetCheckCount(), expectedSize, arkNativeEngine->GetSysTid());
-
-        if (expectedSize > IDLE_MIN_EXPECT_RECLAIM_SIZE) {
-            TraceScope trace("TriggerWorkerThreadLocalGC");
-            std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
-            std::pair<void*, uint8_t> data(reinterpret_cast<void*>(const_cast<EcmaVM*>(arkNativeEngine->GetEcmaVm())),
-                static_cast<uint8_t>(TRIGGER_IDLE_GC_TYPE::FULL_GC));
-
-            auto callbackTask = [it]() {
-                HILOG_DEBUG("ArkIdleMonitor: try trigger thread full gc end");
-                ArkIdleMonitor::GetInstance()->UnRegisterSentTaskWorkerEnv(it);
-                ArkIdleMonitor::GetInstance()->GCTaskFinishedCallback();
-            };
-            HILOG_DEBUG("ArkIdleMonitor: try trigger thread full gc start,tid: %{public}u",
-                arkNativeEngine->GetSysTid());
-            RegisterSentTaskWorkerEnv(it);
-            arkNativeEngine->PostTriggerGCTask(data, callbackTask);
-            vectorLock.unlock();
-            gcFinishCV_.wait_for(lock, std::chrono::milliseconds(WAIT_GC_FINISH_INTERVAL));
-            auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
-                std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-            if (nowTimestamp - triggerTaskStartTimestamp_ > WAIT_LOCAL_GC_INTERVAL) {
-                NotifyNeedFreeze(true);
-                HILOG_INFO("ArkIdleMonitor: cancel shared gc because over time.");
+        {
+            if (!CheckIfInBackgroundInCompressGC()) {
                 return;
             }
+            std::unique_lock<std::mutex> vectorLock(envVectorMutex_);
+            if (index >= workerEnvVector_.size()) {
+                break;
+            }
+            auto it = workerEnvVector_.at(index);
+            auto arkNativeEngine = reinterpret_cast<ArkNativeEngine*>(it);
+#if (defined(LINUX_PLATFORM) || defined(OHOS_PLATFORM))
+            if (kill(arkNativeEngine->GetSysTid(), 0) != 0) {
+                HILOG_ERROR("ArkIdleMonitor: tid: %{public}u is dead!", arkNativeEngine->GetSysTid());
+                workerEnvVector_.erase(workerEnvVector_.begin() + index);
+                continue;
+            }
+#endif
+            if (IsSentTask(it)) {
+                HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u is not respond!", arkNativeEngine->GetSysTid());
+                index++;
+                continue;
+            }
+
+            if (arkNativeEngine->GetWorkerThreadState()->GetCheckCount() == 0) {
+                isAllInIdle = false;
+                index++;
+                continue;
+            }
+
+            if (arkNativeEngine->IsNativeThread()) {
+                HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u is native thread.", arkNativeEngine->GetSysTid());
+                index++;
+                continue;
+            }
+
+            size_t expectedSize = JSNApi::GetEcmaVMExpectedMemoryReclamationSize(arkNativeEngine->GetEcmaVm());
+            HILOG_DEBUG("ArkIdleMonitor:checkcount:%{public}d,expectedSize:%{public}zu,threadid:%{public}u",
+                arkNativeEngine->GetWorkerThreadState()->GetCheckCount(), expectedSize, arkNativeEngine->GetSysTid());
+
+            if (expectedSize > IDLE_MIN_EXPECT_RECLAIM_SIZE) {
+                TraceScope trace("TriggerWorkerThreadLocalGC");
+                std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
+                std::pair<void*, uint8_t> data(reinterpret_cast<void*>(
+                    const_cast<EcmaVM*>(arkNativeEngine->GetEcmaVm())),
+                    static_cast<uint8_t>(TRIGGER_IDLE_GC_TYPE::FULL_GC));
+
+                auto callbackTask = [it]() {
+                    HILOG_DEBUG("ArkIdleMonitor: try trigger thread full gc end");
+                    ArkIdleMonitor::GetInstance()->UnRegisterSentTaskWorkerEnv(it);
+                    ArkIdleMonitor::GetInstance()->GCTaskFinishedCallback();
+                };
+                HILOG_DEBUG("ArkIdleMonitor: try trigger thread full gc start,tid: %{public}u",
+                    arkNativeEngine->GetSysTid());
+                RegisterSentTaskWorkerEnv(it);
+                arkNativeEngine->PostTriggerGCTask(data, callbackTask);
+                vectorLock.unlock();
+                gcFinishCV_.wait_for(lock, std::chrono::milliseconds(WAIT_GC_FINISH_INTERVAL));
+                auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+                if (nowTimestamp - triggerTaskStartTimestamp_ > WAIT_LOCAL_GC_INTERVAL) {
+                    NotifyNeedFreeze(true);
+                    HILOG_INFO("ArkIdleMonitor: cancel shared gc because over time.");
+                    return;
+                }
+            }
+            index++;
         }
     }
 
