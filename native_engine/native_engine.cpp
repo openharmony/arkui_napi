@@ -1101,7 +1101,6 @@ bool NativeEngine::GetAbcBuffer(const char* path, uint8_t **buffer, size_t* buff
 
 void NativeEngine::SetInstanceData(void* data, NativeFinalize finalize_cb, void* hint)
 {
-    HILOG_DEBUG("NativeEngineWraper::%{public}s, start.", __func__);
     std::lock_guard<std::mutex> insLock(instanceDataLock_);
     FinalizerInstanceData();
     instanceDataInfo_.engine = this;

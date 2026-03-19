@@ -222,8 +222,6 @@ SafeAsyncCode NativeSafeAsyncWork::Send(void* data, NativeThreadSafeFunctionCall
 
 SafeAsyncCode NativeSafeAsyncWork::Acquire()
 {
-    HILOG_DEBUG("NativeSafeAsyncWork::Acquire called");
-
     std::unique_lock<std::mutex> lock(mutex_);
 
     if (status_ == SafeAsyncStatus::SAFE_ASYNC_STATUS_CLOSED ||
