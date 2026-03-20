@@ -330,10 +330,10 @@ std::string DurationHelper::FormatDuration(int64_t millis)
  ***********************************************/
 static napi_value JSTimerStart(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -345,10 +345,10 @@ static napi_value JSTimerStart(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerStop(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -360,10 +360,10 @@ static napi_value JSTimerStop(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerReset(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -375,10 +375,10 @@ static napi_value JSTimerReset(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerLap(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -390,10 +390,10 @@ static napi_value JSTimerLap(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerElapsed(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -405,10 +405,10 @@ static napi_value JSTimerElapsed(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerElapsedMicro(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -420,10 +420,10 @@ static napi_value JSTimerElapsedMicro(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerIsRunning(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -434,10 +434,10 @@ static napi_value JSTimerIsRunning(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerRemove(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);
@@ -481,10 +481,10 @@ static napi_value JSNowMicros(napi_env env, napi_callback_info info)
 
 static napi_value JSIsLeapYear(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int32_t year;
     napi_get_value_int32(env, argv[0], &year);
     napi_value result = nullptr;
@@ -509,10 +509,10 @@ static napi_value JSDaysInMonth(napi_env env, napi_callback_info info)
 
 static napi_value JSDaysInYear(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int32_t year;
     napi_get_value_int32(env, argv[0], &year);
     napi_value result = nullptr;
@@ -525,10 +525,10 @@ static napi_value JSDaysInYear(napi_env env, napi_callback_info info)
  ***********************************************/
 static napi_value JSFormatDuration(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int64_t millis;
     napi_get_value_int64(env, argv[0], &millis);
     std::string formatted = DurationHelper::FormatDuration(millis);
@@ -539,10 +539,10 @@ static napi_value JSFormatDuration(napi_env env, napi_callback_info info)
 
 static napi_value JSSecondsToMillis(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     double seconds;
     napi_get_value_double(env, argv[0], &seconds);
     napi_value result = nullptr;
@@ -552,10 +552,10 @@ static napi_value JSSecondsToMillis(napi_env env, napi_callback_info info)
 
 static napi_value JSMillisToSeconds(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int64_t millis;
     napi_get_value_int64(env, argv[0], &millis);
     napi_value result = nullptr;
@@ -565,10 +565,10 @@ static napi_value JSMillisToSeconds(napi_env env, napi_callback_info info)
 
 static napi_value JSHoursToMillis(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     double hours;
     napi_get_value_double(env, argv[0], &hours);
     napi_value result = nullptr;
@@ -578,10 +578,10 @@ static napi_value JSHoursToMillis(napi_env env, napi_callback_info info)
 
 static napi_value JSMillisToHours(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int64_t millis;
     napi_get_value_int64(env, argv[0], &millis);
     napi_value result = nullptr;
@@ -591,10 +591,10 @@ static napi_value JSMillisToHours(napi_env env, napi_callback_info info)
 
 static napi_value JSMinutesToMillis(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     double minutes;
     napi_get_value_double(env, argv[0], &minutes);
     napi_value result = nullptr;
@@ -604,10 +604,10 @@ static napi_value JSMinutesToMillis(napi_env env, napi_callback_info info)
 
 static napi_value JSMillisToMinutes(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int64_t millis;
     napi_get_value_int64(env, argv[0], &millis);
     napi_value result = nullptr;
@@ -617,10 +617,10 @@ static napi_value JSMillisToMinutes(napi_env env, napi_callback_info info)
 
 static napi_value JSDaysToMillis(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     double days;
     napi_get_value_double(env, argv[0], &days);
     napi_value result = nullptr;
@@ -630,10 +630,10 @@ static napi_value JSDaysToMillis(napi_env env, napi_callback_info info)
 
 static napi_value JSMillisToDays(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     int64_t millis;
     napi_get_value_int64(env, argv[0], &millis);
     napi_value result = nullptr;
@@ -643,10 +643,10 @@ static napi_value JSMillisToDays(napi_env env, napi_callback_info info)
 
 static napi_value JSTimerGetLaps(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1] = { nullptr };
+    size_t argc = TimerArgCount::ONE;
+    napi_value argv[TimerArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= 1, "requires 1 parameter");
+    NAPI_ASSERT(env, argc >= TimerArgCount::ONE, "requires 1 parameter");
     char label[TIMER_LABEL_SIZE] = { 0 };
     size_t labelLen = 0;
     napi_get_value_string_utf8(env, argv[0], label, TIMER_LABEL_SIZE, &labelLen);

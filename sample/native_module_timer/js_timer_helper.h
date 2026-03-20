@@ -35,6 +35,7 @@ enum TimerArgIndex {
 };
 
 namespace TimerArgCount {
+    constexpr size_t ONE = 1;
     constexpr size_t TWO = 2;
     constexpr size_t THREE = 3;
 };
