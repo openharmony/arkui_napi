@@ -130,7 +130,7 @@ static napi_value FreezeCase(napi_env env)
 
     constexpr size_t freezeArgc = 1;
     napi_value argv[freezeArgc] = { target };
-    napi_call_function(env, object, freeze, FREEZE_ARGC, argv, nullptr);
+    napi_call_function(env, object, freeze, freezeArgc, argv, nullptr);
 
     return target;
 }
