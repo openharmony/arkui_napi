@@ -31,6 +31,10 @@ constexpr uint32_t MODULE_VERSION = 1;
 constexpr uint32_t NO_MODULE_FLAGS = 0;
 constexpr size_t MAX_FILE_SIZE = 10 * 1024 * 1024;
 constexpr size_t DEFAULT_BUFFER_SIZE = 4096;
+constexpr int32_t FILE_ERROR_OPEN = 1;
+constexpr int32_t FILE_ERROR_TOO_LARGE = 2;
+constexpr int32_t FILE_ERROR_READ = 3;
+constexpr size_t CALLBACK_ARG_COUNT = 2;
 
 void LogInfo(const std::string& message)
 {
@@ -63,7 +67,7 @@ void AsyncFileExecute(napi_env env, void* data)
 
     std::ifstream file(context->filePath, std::ios::binary);
     if (!file.is_open()) {
-        context->errorCode = 1;
+        context->errorCode = FILE_ERROR_OPEN;
         context->errorMessage = "Failed to open file: " + context->filePath;
         return;
     }
@@ -73,7 +77,7 @@ void AsyncFileExecute(napi_env env, void* data)
     file.seekg(0, std::ios::beg);
 
     if (fileSize > MAX_FILE_SIZE) {
-        context->errorCode = 2;
+        context->errorCode = FILE_ERROR_TOO_LARGE;
         context->errorMessage = "File too large: " + std::to_string(fileSize) + " bytes";
         return;
     }
@@ -82,7 +86,7 @@ void AsyncFileExecute(napi_env env, void* data)
     file.read(&context->content[0], fileSize);
 
     if (!file) {
-        context->errorCode = 3;
+        context->errorCode = FILE_ERROR_READ;
         context->errorMessage = "Failed to read file content";
         return;
     }
@@ -106,16 +110,16 @@ void AsyncFileComplete(napi_env env, napi_status status, void* data)
     if (context->errorCode != 0) {
         napi_value error = nullptr;
         napi_create_string_utf8(env, context->errorMessage.c_str(), NAPI_AUTO_LENGTH, &error);
-        
+
         if (context->usePromise && context->deferred != nullptr) {
             napi_reject_deferred(env, context->deferred, error);
         } else if (context->callbackRef != nullptr) {
             napi_value callback = nullptr;
             napi_get_reference_value(env, context->callbackRef, &callback);
-            
+
             napi_value undefined = nullptr;
             napi_get_undefined(env, &undefined);
-            
+
             napi_value errorValue = nullptr;
             napi_create_string_utf8(env, context->errorMessage.c_str(), NAPI_AUTO_LENGTH, &errorValue);
             napi_call_function(env, undefined, callback, 1, &errorValue, nullptr);
@@ -123,21 +127,21 @@ void AsyncFileComplete(napi_env env, napi_status status, void* data)
     } else {
         napi_value result = nullptr;
         napi_create_string_utf8(env, context->content.c_str(), context->content.size(), &result);
-        
+
         if (context->usePromise && context->deferred != nullptr) {
             napi_resolve_deferred(env, context->deferred, result);
         } else if (context->callbackRef != nullptr) {
             napi_value callback = nullptr;
             napi_get_reference_value(env, context->callbackRef, &callback);
-            
+
             napi_value undefined = nullptr;
             napi_get_undefined(env, &undefined);
-            
+
             napi_value nullValue = nullptr;
             napi_get_null(env, &nullValue);
-            
+
             napi_value argv[] = { nullValue, result };
-            napi_call_function(env, undefined, callback, 2, argv, nullptr);
+            napi_call_function(env, undefined, callback, CALLBACK_ARG_COUNT, argv, nullptr);
         }
     }
 

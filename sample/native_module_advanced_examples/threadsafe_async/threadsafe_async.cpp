@@ -23,6 +23,11 @@
 constexpr int MODULE_VERSION = 1;
 constexpr int MODULE_FLAGS = 0;
 constexpr int SLEEP_DURATION_MS = 100;
+constexpr size_t EXPECTED_ARG_COUNT = 2;
+constexpr size_t CALLBACK_ARG_COUNT = 2;
+constexpr size_t VALUE_ARG_INDEX = 0;
+constexpr size_t CALLBACK_ARG_INDEX = 1;
+constexpr int DOUBLE_FACTOR = 2;
 
 struct AsyncWorkData {
     napi_async_work work = nullptr;
@@ -33,28 +38,30 @@ struct AsyncWorkData {
     std::string error;
 };
 
-static void ExecuteWork(napi_env env, void* data) {
+static void ExecuteWork(napi_env env, void* data)
+{
     AsyncWorkData* asyncData = static_cast<AsyncWorkData*>(data);
-    
+
     try {
         std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION_MS));
-        asyncData->result = asyncData->input * 2;
+        asyncData->result = asyncData->input * DOUBLE_FACTOR;
     } catch (const std::exception& e) {
         asyncData->error = std::string(e.what());
     }
 }
 
-static void WorkComplete(napi_env env, napi_status status, void* data) {
+static void WorkComplete(napi_env env, napi_status status, void* data)
+{
     AsyncWorkData* asyncData = static_cast<AsyncWorkData*>(data);
-    
+
     if (status == napi_ok) {
         napi_value callback;
         napi_status callbackStatus = napi_get_reference_value(env, asyncData->callbackRef, &callback);
         if (callbackStatus != napi_ok) {
             goto cleanup;
         }
-        
-        napi_value argv[2];
+
+        napi_value argv[CALLBACK_ARG_COUNT];
         if (asyncData->error.empty()) {
             napi_get_null(env, &argv[0]);
             napi_create_int32(env, asyncData->result, &argv[1]);
@@ -62,13 +69,13 @@ static void WorkComplete(napi_env env, napi_status status, void* data) {
             napi_create_string_utf8(env, asyncData->error.c_str(), asyncData->error.length(), &argv[0]);
             napi_get_undefined(env, &argv[1]);
         }
-        
+
         napi_value global;
         napi_get_global(env, &global);
         napi_value result;
-        napi_call_function(env, global, callback, 2, argv, &result);
+        napi_call_function(env, global, callback, CALLBACK_ARG_COUNT, argv, &result);
     }
-    
+
 cleanup:
     if (asyncData->work) {
         napi_delete_async_work(env, asyncData->work);
@@ -79,17 +86,19 @@ cleanup:
     if (asyncData->tsfn) {
         napi_release_threadsafe_function(asyncData->tsfn, napi_tsfn_release);
     }
-    
+
     delete asyncData;
 }
 
-static void ThreadSafeCallFinalizer(napi_env env, void* data, void* hint) {
+static void ThreadSafeCallFinalizer(napi_env env, void* data, void* hint)
+{
 }
 
-static void ThreadSafeCallJs(napi_env env, napi_value jsCallback, void* context, void* data) {
+static void ThreadSafeCallJs(napi_env env, napi_value jsCallback, void* context, void* data)
+{
     AsyncWorkData* asyncData = static_cast<AsyncWorkData*>(data);
-    
-    napi_value argv[2];
+
+    napi_value argv[CALLBACK_ARG_COUNT];
     if (asyncData->error.empty()) {
         napi_get_null(env, &argv[0]);
         napi_create_int32(env, asyncData->result, &argv[1]);
@@ -97,57 +106,79 @@ static void ThreadSafeCallJs(napi_env env, napi_value jsCallback, void* context,
         napi_create_string_utf8(env, asyncData->error.c_str(), asyncData->error.length(), &argv[0]);
         napi_get_undefined(env, &argv[1]);
     }
-    
+
     napi_value result;
-    napi_call_function(env, nullptr, jsCallback, 2, argv, &result);
+    napi_call_function(env, nullptr, jsCallback, CALLBACK_ARG_COUNT, argv, &result);
 }
 
-static napi_value AsyncDouble(napi_env env, napi_callback_info info) {
-    size_t argc = 2;
-    napi_value args[2];
+static bool GetValueAndCallback(napi_env env, napi_callback_info info, int32_t* value, napi_value* callback)
+{
+    size_t argc = EXPECTED_ARG_COUNT;
+    napi_value args[EXPECTED_ARG_COUNT];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
-        return nullptr;
+        return false;
     }
-    
-    if (argc < 2) {
+
+    if (argc < EXPECTED_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Expected 2 arguments (value, callback)");
-        return nullptr;
+        return false;
     }
-    
-    int32_t value;
-    status = napi_get_value_int32(env, args[0], &value);
+
+    status = napi_get_value_int32(env, args[VALUE_ARG_INDEX], value);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get value");
-        return nullptr;
+        return false;
     }
-    
+
     napi_valuetype valuetype;
-    status = napi_typeof(env, args[1], &valuetype);
+    status = napi_typeof(env, args[CALLBACK_ARG_INDEX], &valuetype);
     if (status != napi_ok || valuetype != napi_function) {
         napi_throw_error(env, nullptr, "Second argument must be a function");
+        return false;
+    }
+
+    *callback = args[CALLBACK_ARG_INDEX];
+    return true;
+}
+
+static napi_value GetUndefined(napi_env env)
+{
+    napi_value result;
+    napi_status status = napi_get_undefined(env, &result);
+    if (status != napi_ok) {
         return nullptr;
     }
-    
+    return result;
+}
+
+static napi_value AsyncDouble(napi_env env, napi_callback_info info)
+{
+    int32_t value = 0;
+    napi_value callback;
+    if (!GetValueAndCallback(env, info, &value, &callback)) {
+        return nullptr;
+    }
+
     AsyncWorkData* asyncData = new AsyncWorkData();
     asyncData->input = value;
-    
+
     napi_value resourceName;
-    status = napi_create_string_utf8(env, "AsyncDoubleResource", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_string_utf8(env, "AsyncDoubleResource", NAPI_AUTO_LENGTH, &resourceName);
     if (status != napi_ok) {
         delete asyncData;
         napi_throw_error(env, nullptr, "Failed to create resource name");
         return nullptr;
     }
-    
-    status = napi_create_reference(env, args[1], 1, &asyncData->callbackRef);
+
+    status = napi_create_reference(env, callback, 1, &asyncData->callbackRef);
     if (status != napi_ok) {
         delete asyncData;
         napi_throw_error(env, nullptr, "Failed to create reference");
         return nullptr;
     }
-    
+
     status = napi_create_async_work(env, nullptr, resourceName, ExecuteWork, WorkComplete, asyncData, &asyncData->work);
     if (status != napi_ok) {
         delete asyncData;
@@ -160,198 +191,150 @@ static napi_value AsyncDouble(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to queue async work");
         return nullptr;
     }
-    
-    napi_value result;
-    status = napi_get_undefined(env, &result);
-    if (status != napi_ok) {
-        return nullptr;
-    }
-    return result;
+
+    return GetUndefined(env);
 }
 
-static napi_value ThreadSafeAsyncDouble(napi_env env, napi_callback_info info) {
-    size_t argc = 2;
-    napi_value args[2];
-    napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to get callback info");
+static napi_value ThreadSafeAsyncDouble(napi_env env, napi_callback_info info)
+{
+    int32_t value = 0;
+    napi_value callback;
+    if (!GetValueAndCallback(env, info, &value, &callback)) {
         return nullptr;
     }
-    
-    if (argc < 2) {
-        napi_throw_error(env, nullptr, "Expected 2 arguments (value, callback)");
-        return nullptr;
-    }
-    
-    int32_t value;
-    status = napi_get_value_int32(env, args[0], &value);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to get value");
-        return nullptr;
-    }
-    
-    napi_valuetype valuetype;
-    status = napi_typeof(env, args[1], &valuetype);
-    if (status != napi_ok || valuetype != napi_function) {
-        napi_throw_error(env, nullptr, "Second argument must be a function");
-        return nullptr;
-    }
-    
+
     AsyncWorkData* asyncData = new AsyncWorkData();
     asyncData->input = value;
-    
+
     napi_value resourceName;
-    status = napi_create_string_utf8(env, "ThreadSafeResource", NAPI_AUTO_LENGTH, &resourceName);
+    napi_status status = napi_create_string_utf8(env, "ThreadSafeResource", NAPI_AUTO_LENGTH, &resourceName);
     if (status != napi_ok) {
         delete asyncData;
         napi_throw_error(env, nullptr, "Failed to create resource name");
         return nullptr;
     }
-    
-    status = napi_create_threadsafe_function(env, args[1], nullptr, resourceName, 0, 1, nullptr, nullptr, 
+
+    status = napi_create_threadsafe_function(env, callback, nullptr, resourceName, 0, 1, nullptr, nullptr,
         ThreadSafeCallFinalizer, asyncData, &asyncData->tsfn);
     if (status != napi_ok) {
         delete asyncData;
         napi_throw_error(env, nullptr, "Failed to create threadsafe function");
         return nullptr;
     }
-    
+
     std::thread([asyncData]() {
         try {
             std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION_MS));
-            asyncData->result = asyncData->input * 2;
+            asyncData->result = asyncData->input * DOUBLE_FACTOR;
         } catch (const std::exception& e) {
             asyncData->error = std::string(e.what());
         }
-        
+
         napi_call_threadsafe_function(asyncData->tsfn, asyncData, napi_tsfn_blocking);
     }).detach();
-    
-    napi_value result;
-    status = napi_get_undefined(env, &result);
-    if (status != napi_ok) {
-        return nullptr;
-    }
-    return result;
+
+    return GetUndefined(env);
 }
 
 static std::atomic<int> g_counter(0);
 static std::mutex g_mutex;
 static std::vector<int> g_results;
 
-static napi_value ParallelCompute(napi_env env, napi_callback_info info) {
-    size_t argc = 2;
-    napi_value args[2];
-    napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to get callback info");
-        return nullptr;
-    }
-    
-    if (argc < 2) {
-        napi_throw_error(env, nullptr, "Expected 2 arguments (iterations, callback)");
-        return nullptr;
-    }
-    
-    int32_t iterations;
-    status = napi_get_value_int32(env, args[0], &iterations);
-    if (status != napi_ok) {
-        napi_throw_error(env, nullptr, "Failed to get iterations");
-        return nullptr;
-    }
-    
-    napi_valuetype valuetype;
-    status = napi_typeof(env, args[1], &valuetype);
-    if (status != napi_ok || valuetype != napi_function) {
-        napi_throw_error(env, nullptr, "Second argument must be a function");
-        return nullptr;
-    }
-    
+static void RunParallelTasks(int32_t iterations)
+{
     g_counter.store(0);
     {
         std::lock_guard<std::mutex> lock(g_mutex);
         g_results.clear();
     }
-    
+
     std::vector<std::thread> threads;
     for (int i = 0; i < iterations; i++) {
         threads.emplace_back([i]() {
             int result = i * i;
             g_counter.fetch_add(1);
-            
+
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
                 g_results.push_back(result);
             }
         });
     }
-    
+
     for (auto& thread : threads) {
         thread.join();
     }
-    
-    napi_value callback;
-    status = napi_get_reference_value(env, nullptr, &callback);
-    if (status != napi_ok) {
-        callback = args[1];
-    }
-    
-    napi_value argv[2];
-    napi_get_null(env, &argv[0]);
-    
+}
+
+static napi_value BuildResultsArray(napi_env env)
+{
     napi_value resultsArray;
-    status = napi_create_array(env, &resultsArray);
+    napi_status status = napi_create_array(env, &resultsArray);
     if (status != napi_ok) {
+        return nullptr;
+    }
+
+    std::lock_guard<std::mutex> lock(g_mutex);
+    for (size_t i = 0; i < g_results.size(); i++) {
+        napi_value element;
+        status = napi_create_int32(env, g_results[i], &element);
+        if (status != napi_ok) {
+            continue;
+        }
+        status = napi_set_element(env, resultsArray, i, element);
+        if (status != napi_ok) {
+            continue;
+        }
+    }
+    return resultsArray;
+}
+
+static napi_value ParallelCompute(napi_env env, napi_callback_info info)
+{
+    int32_t iterations = 0;
+    napi_value callback;
+    if (!GetValueAndCallback(env, info, &iterations, &callback)) {
+        return nullptr;
+    }
+
+    RunParallelTasks(iterations);
+
+    napi_value argv[CALLBACK_ARG_COUNT];
+    napi_get_null(env, &argv[0]);
+
+    napi_value resultsArray = BuildResultsArray(env);
+    if (resultsArray == nullptr) {
         napi_throw_error(env, nullptr, "Failed to create array");
         return nullptr;
     }
-    
-    {
-        std::lock_guard<std::mutex> lock(g_mutex);
-        for (size_t i = 0; i < g_results.size(); i++) {
-            napi_value element;
-            status = napi_create_int32(env, g_results[i], &element);
-            if (status != napi_ok) {
-                continue;
-            }
-            status = napi_set_element(env, resultsArray, i, element);
-            if (status != napi_ok) {
-                continue;
-            }
-        }
-    }
-    
+
     argv[1] = resultsArray;
-    
+
     napi_value global;
-    status = napi_get_global(env, &global);
+    napi_status status = napi_get_global(env, &global);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get global");
         return nullptr;
     }
     napi_value result;
-    status = napi_call_function(env, global, args[1], 2, argv, &result);
+    status = napi_call_function(env, global, callback, CALLBACK_ARG_COUNT, argv, &result);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to call function");
         return nullptr;
     }
-    
-    napi_value undefined;
-    status = napi_get_undefined(env, &undefined);
-    if (status != napi_ok) {
-        return nullptr;
-    }
-    return undefined;
+
+    return GetUndefined(env);
 }
 
 EXTERN_C_START
-napi_value Init(napi_env env, napi_value exports) {
+napi_value Init(napi_env env, napi_value exports)
+{
     napi_property_descriptor properties[] = {
         {"asyncDouble", nullptr, AsyncDouble, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"threadSafeAsyncDouble", nullptr, ThreadSafeAsyncDouble, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"parallelCompute", nullptr, ParallelCompute, nullptr, nullptr, nullptr, napi_default, nullptr},
     };
-    
+
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
     return exports;
 }
@@ -367,6 +350,7 @@ static napi_module demoModule = {
     .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterThreadSafeAsyncModule(void) {
+extern "C" __attribute__((constructor)) void RegisterThreadSafeAsyncModule(void)
+{
     napi_module_register(&demoModule);
 }

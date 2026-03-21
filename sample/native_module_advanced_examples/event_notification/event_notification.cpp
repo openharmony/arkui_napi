@@ -14,6 +14,7 @@
  */
 
 #include "napi/native_api.h"
+#include <atomic>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -23,6 +24,9 @@
 constexpr int CALLBACK_REF_COUNT = 1;
 constexpr int ARGV_COUNT_THREE = 3;
 constexpr int ARGV_COUNT_ONE = 1;
+constexpr int EVENT_TYPE_INDEX = 0;
+constexpr int EVENT_MESSAGE_INDEX = 1;
+constexpr int EVENT_VALUE_INDEX = 2;
 constexpr int MESSAGE_BUFFER_SIZE = 256;
 constexpr int MODULE_VERSION = 1;
 constexpr int MODULE_FLAGS = 0;
@@ -36,31 +40,35 @@ struct EventData {
 class EventNotifier {
 public:
     EventNotifier() : running_(false) {}
-    
-    ~EventNotifier() {
+
+    ~EventNotifier()
+    {
         Stop();
     }
-    
-    void Start() {
+
+    void Start()
+    {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (!running_) {
-            running_ = true;
+        if (!running_.load()) {
+            running_.store(true);
             workerThread_ = std::thread(&EventNotifier::EventLoop, this);
         }
     }
-    
-    void Stop() {
+
+    void Stop()
+    {
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            running_ = false;
+            running_.store(false);
             cv_.notify_all();
         }
         if (workerThread_.joinable()) {
             workerThread_.join();
         }
     }
-    
-    void SetCallback(napi_env env, napi_value callback) {
+
+    void SetCallback(napi_env env, napi_value callback)
+    {
         std::lock_guard<std::mutex> lock(mutex_);
         if (callbackRef_) {
             napi_delete_reference(env, callbackRef_);
@@ -70,26 +78,28 @@ public:
             callbackRef_ = nullptr;
         }
     }
-    
-    void EmitEvent(int type, const std::string& message, int value) {
+
+    void EmitEvent(int type, const std::string& message, int value)
+    {
         std::lock_guard<std::mutex> lock(mutex_);
         EventData event{type, message, value};
         eventQueue_.push(event);
         cv_.notify_one();
     }
-    
+
 private:
-    void EventLoop() {
-        while (true) {
+    void EventLoop()
+    {
+        while (running_.load()) {
             EventData event;
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                cv_.wait(lock, [this] { return !eventQueue_.empty() || !running_; });
-                
-                if (!running_) {
+                cv_.wait(lock, [this] { return !eventQueue_.empty() || !running_.load(); });
+
+                if (!running_.load()) {
                     break;
                 }
-                
+
                 if (!eventQueue_.empty()) {
                     event = eventQueue_.front();
                     eventQueue_.pop();
@@ -97,58 +107,60 @@ private:
                     continue;
                 }
             }
-            
+
             if (callbackRef_) {
                 napi_handle_scope scope;
                 napi_status status = napi_open_handle_scope(env_, &scope);
                 if (status != napi_ok) {
                     continue;
                 }
-                
+
                 napi_value callback;
                 status = napi_get_reference_value(env_, callbackRef_, &callback);
                 if (status != napi_ok) {
                     napi_close_handle_scope(env_, scope);
                     continue;
                 }
-                
+
                 napi_value argv[ARGV_COUNT_THREE];
-                status = napi_create_int32(env_, event.type, &argv[0]);
+                status = napi_create_int32(env_, event.type, &argv[EVENT_TYPE_INDEX]);
                 if (status != napi_ok) {
                     napi_close_handle_scope(env_, scope);
                     continue;
                 }
-                status = napi_create_string_utf8(env_, event.message.c_str(), event.message.length(), &argv[1]);
+                status = napi_create_string_utf8(env_, event.message.c_str(), event.message.length(),
+                    &argv[EVENT_MESSAGE_INDEX]);
                 if (status != napi_ok) {
                     napi_close_handle_scope(env_, scope);
                     continue;
                 }
-                status = napi_create_int32(env_, event.value, &argv[2]);
+                status = napi_create_int32(env_, event.value, &argv[EVENT_VALUE_INDEX]);
                 if (status != napi_ok) {
                     napi_close_handle_scope(env_, scope);
                     continue;
                 }
-                
+
                 napi_value result;
                 napi_call_function(env_, nullptr, callback, ARGV_COUNT_THREE, argv, &result);
-                
+
                 napi_close_handle_scope(env_, scope);
             }
         }
     }
-    
+
     napi_env env_;
     napi_ref callbackRef_ = nullptr;
     std::thread workerThread_;
     std::mutex mutex_;
     std::condition_variable cv_;
     std::queue<EventData> eventQueue_;
-    bool running_;
+    std::atomic<bool> running_;
 };
 
 static EventNotifier g_eventNotifier;
 
-static napi_value StartEventNotifier(napi_env env, napi_callback_info info) {
+static napi_value StartEventNotifier(napi_env env, napi_callback_info info)
+{
     size_t argc = ARGV_COUNT_ONE;
     napi_value args[ARGV_COUNT_ONE];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -156,22 +168,22 @@ static napi_value StartEventNotifier(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < ARGV_COUNT_ONE) {
         napi_throw_error(env, nullptr, "Expected 1 argument (callback)");
         return nullptr;
     }
-    
+
     napi_valuetype valuetype;
     status = napi_typeof(env, args[0], &valuetype);
     if (status != napi_ok || valuetype != napi_function) {
         napi_throw_error(env, nullptr, "First argument must be a function");
         return nullptr;
     }
-    
+
     g_eventNotifier.SetCallback(env, args[0]);
     g_eventNotifier.Start();
-    
+
     napi_value result;
     status = napi_get_undefined(env, &result);
     if (status != napi_ok) {
@@ -180,9 +192,10 @@ static napi_value StartEventNotifier(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value StopEventNotifier(napi_env env, napi_callback_info info) {
+static napi_value StopEventNotifier(napi_env env, napi_callback_info info)
+{
     g_eventNotifier.Stop();
-    
+
     napi_value result;
     napi_status status = napi_get_undefined(env, &result);
     if (status != napi_ok) {
@@ -191,7 +204,8 @@ static napi_value StopEventNotifier(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value EmitEvent(napi_env env, napi_callback_info info) {
+static napi_value EmitEvent(napi_env env, napi_callback_info info)
+{
     size_t argc = ARGV_COUNT_THREE;
     napi_value args[ARGV_COUNT_THREE];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -199,17 +213,17 @@ static napi_value EmitEvent(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < ARGV_COUNT_THREE) {
         napi_throw_error(env, nullptr, "Expected 3 arguments (type, message, value)");
         return nullptr;
     }
-    
+
     int32_t type;
     int32_t value;
     size_t length;
     char message[MESSAGE_BUFFER_SIZE];
-    
+
     status = napi_get_value_int32(env, args[0], &type);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get type");
@@ -220,14 +234,14 @@ static napi_value EmitEvent(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get message");
         return nullptr;
     }
-    status = napi_get_value_int32(env, args[2], &value);
+    status = napi_get_value_int32(env, args[EVENT_VALUE_INDEX], &value);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get value");
         return nullptr;
     }
-    
+
     g_eventNotifier.EmitEvent(type, std::string(message, length), value);
-    
+
     napi_value result;
     status = napi_get_undefined(env, &result);
     if (status != napi_ok) {
@@ -237,13 +251,14 @@ static napi_value EmitEvent(napi_env env, napi_callback_info info) {
 }
 
 EXTERN_C_START
-napi_value Init(napi_env env, napi_value exports) {
+napi_value Init(napi_env env, napi_value exports)
+{
     napi_property_descriptor properties[] = {
         {"startEventNotifier", nullptr, StartEventNotifier, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"stopEventNotifier", nullptr, StopEventNotifier, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"emitEvent", nullptr, EmitEvent, nullptr, nullptr, nullptr, napi_default, nullptr},
     };
-    
+
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
     return exports;
 }
@@ -259,6 +274,7 @@ static napi_module demoModule = {
     .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterEventNotificationModule(void) {
+extern "C" __attribute__((constructor)) void RegisterEventNotificationModule(void)
+{
     napi_module_register(&demoModule);
 }

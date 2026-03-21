@@ -16,6 +16,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <ctime>
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -27,6 +28,17 @@ constexpr uint32_t NO_MODULE_FLAGS = 0;
 constexpr int HTTP_OK = 200;
 constexpr int HTTP_NOT_FOUND = 404;
 constexpr int HTTP_SERVER_ERROR = 500;
+constexpr int HTTP_SUCCESS_MIN = 200;
+constexpr int HTTP_SUCCESS_MAX = 299;
+constexpr size_t GET_ARG_COUNT = 2;
+constexpr size_t POST_ARG_COUNT = 3;
+constexpr size_t REQUEST_ARG_COUNT = 2;
+constexpr size_t CALLBACK_ARG_COUNT = 2;
+constexpr size_t URL_ARG_INDEX = 0;
+constexpr size_t OPTIONS_ARG_INDEX = 0;
+constexpr size_t CALLBACK_ARG_INDEX = 1;
+constexpr size_t BODY_ARG_INDEX = 1;
+constexpr size_t HEADERS_ARG_INDEX = 2;
 
 struct HttpRequestContext {
     napi_async_work work = nullptr;
@@ -112,6 +124,40 @@ bool ParseHeaders(napi_env env, napi_value headersObj, std::map<std::string, std
     return true;
 }
 
+bool IsSuccessStatus(int statusCode)
+{
+    return statusCode >= HTTP_SUCCESS_MIN && statusCode <= HTTP_SUCCESS_MAX;
+}
+
+bool GetStringFromValue(napi_env env, napi_value value, std::string& out)
+{
+    size_t length = 0;
+    if (napi_get_value_string_utf8(env, value, nullptr, 0, &length) != napi_ok) {
+        return false;
+    }
+
+    std::vector<char> buffer(length + 1);
+    if (napi_get_value_string_utf8(env, value, buffer.data(), length + 1, &length) != napi_ok) {
+        return false;
+    }
+
+    out.assign(buffer.data(), length);
+    return true;
+}
+
+void GetStringProperty(napi_env env, napi_value obj, const char* name, std::string& out)
+{
+    napi_value value;
+    if (napi_get_named_property(env, obj, name, &value) != napi_ok) {
+        return;
+    }
+
+    std::string parsed;
+    if (GetStringFromValue(env, value, parsed)) {
+        out = parsed;
+    }
+}
+
 HttpResult SimulateHttpRequest(const std::string& url, const std::string& method,
                                const std::map<std::string, std::string>& headers,
                                const std::string& body)
@@ -138,7 +184,11 @@ HttpResult SimulateHttpRequest(const std::string& url, const std::string& method
     jsonResponse += "\"url\": \"" + url + "\",";
     jsonResponse += "\"method\": \"" + method + "\",";
     jsonResponse += "\"status\": " + std::to_string(HTTP_OK) + ",";
-    jsonResponse += "\"timestamp\": " + std::to_string(static_cast<long>(time(nullptr)));
+    time_t now = time(nullptr);
+    if (now == static_cast<time_t>(-1)) {
+        now = 0;
+    }
+    jsonResponse += "\"timestamp\": " + std::to_string(static_cast<long>(now));
 
     if (!body.empty()) {
         jsonResponse += ",\"requestBody\": \"" + body + "\"";
@@ -182,33 +232,33 @@ void CompleteHttpRequest(napi_env env, napi_status status, void* data)
     napi_set_named_property(env, resultObj, "data", dataValue);
 
     napi_value successValue;
-    napi_get_boolean(env, context->statusCode >= 200 && context->statusCode < 300, &successValue);
+    napi_get_boolean(env, IsSuccessStatus(context->statusCode), &successValue);
     napi_set_named_property(env, resultObj, "success", successValue);
 
     if (context->useCallback && context->callback != nullptr) {
         napi_value callback;
         napi_get_reference_value(env, context->callback, &callback);
 
-        napi_value argv[2];
-        if (context->statusCode >= 200 && context->statusCode < 300) {
+        napi_value argv[CALLBACK_ARG_COUNT];
+        if (IsSuccessStatus(context->statusCode)) {
             napi_get_null(env, &argv[0]);
             argv[1] = resultObj;
         } else {
             napi_value error;
             napi_create_string_utf8(env, context->responseData.c_str(),
-                                   context->responseData.length(), &argv[0]);
+                context->responseData.length(), &argv[0]);
             argv[1] = undefined;
         }
 
-        napi_call_function(env, undefined, callback, 2, argv, nullptr);
+        napi_call_function(env, undefined, callback, CALLBACK_ARG_COUNT, argv, nullptr);
         napi_delete_reference(env, context->callback);
     } else if (context->deferred != nullptr) {
-        if (context->statusCode >= 200 && context->statusCode < 300) {
+        if (IsSuccessStatus(context->statusCode)) {
             napi_resolve_deferred(env, context->deferred, resultObj);
         } else {
             napi_value error;
             napi_create_string_utf8(env, context->responseData.c_str(),
-                                   context->responseData.length(), &error);
+                context->responseData.length(), &error);
             napi_reject_deferred(env, context->deferred, error);
         }
     }
@@ -219,8 +269,8 @@ void CompleteHttpRequest(napi_env env, napi_status status, void* data)
 
 napi_value HttpGet(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2];
+    size_t argc = GET_ARG_COUNT;
+    napi_value argv[GET_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
     if (argc < 1) {
@@ -229,7 +279,7 @@ napi_value HttpGet(napi_env env, napi_callback_info info)
     }
 
     size_t urlLength = 0;
-    if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &urlLength) != napi_ok || urlLength == 0) {
+    if (napi_get_value_string_utf8(env, argv[URL_ARG_INDEX], nullptr, 0, &urlLength) != napi_ok || urlLength == 0) {
         napi_throw_error(env, nullptr, "Invalid URL");
         return nullptr;
     }
@@ -238,21 +288,21 @@ napi_value HttpGet(napi_env env, napi_callback_info info)
     context->method = "GET";
 
     std::vector<char> urlBuffer(urlLength + 1);
-    napi_get_value_string_utf8(env, argv[0], urlBuffer.data(), urlLength + 1, &urlLength);
+    napi_get_value_string_utf8(env, argv[URL_ARG_INDEX], urlBuffer.data(), urlLength + 1, &urlLength);
     context->url = std::string(urlBuffer.data());
 
     napi_value promise;
     napi_value resourceName;
     napi_create_string_utf8(env, "HttpGet", NAPI_AUTO_LENGTH, &resourceName);
 
-    if (argc >= 2) {
+    if (argc >= GET_ARG_COUNT) {
         napi_valuetype type;
-        if (napi_typeof(env, argv[1], &type) == napi_ok && type == napi_function) {
+        if (napi_typeof(env, argv[CALLBACK_ARG_INDEX], &type) == napi_ok && type == napi_function) {
             context->useCallback = true;
-            napi_create_reference(env, argv[1], 1, &context->callback);
+            napi_create_reference(env, argv[CALLBACK_ARG_INDEX], 1, &context->callback);
             napi_get_undefined(env, &promise);
         } else if (type == napi_object) {
-            ParseHeaders(env, argv[1], context->headers);
+            ParseHeaders(env, argv[CALLBACK_ARG_INDEX], context->headers);
             napi_create_promise(env, &context->deferred, &promise);
         } else {
             napi_create_promise(env, &context->deferred, &promise);
@@ -262,7 +312,7 @@ napi_value HttpGet(napi_env env, napi_callback_info info)
     }
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteHttpRequest,
-                          CompleteHttpRequest, context, &context->work);
+        CompleteHttpRequest, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -270,8 +320,8 @@ napi_value HttpGet(napi_env env, napi_callback_info info)
 
 napi_value HttpPost(napi_env env, napi_callback_info info)
 {
-    size_t argc = 3;
-    napi_value argv[3];
+    size_t argc = POST_ARG_COUNT;
+    napi_value argv[POST_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
     if (argc < 2) {
@@ -280,7 +330,7 @@ napi_value HttpPost(napi_env env, napi_callback_info info)
     }
 
     size_t urlLength = 0;
-    if (napi_get_value_string_utf8(env, argv[0], nullptr, 0, &urlLength) != napi_ok || urlLength == 0) {
+    if (napi_get_value_string_utf8(env, argv[URL_ARG_INDEX], nullptr, 0, &urlLength) != napi_ok || urlLength == 0) {
         napi_throw_error(env, nullptr, "Invalid URL");
         return nullptr;
     }
@@ -289,19 +339,19 @@ napi_value HttpPost(napi_env env, napi_callback_info info)
     context->method = "POST";
 
     std::vector<char> urlBuffer(urlLength + 1);
-    napi_get_value_string_utf8(env, argv[0], urlBuffer.data(), urlLength + 1, &urlLength);
+    napi_get_value_string_utf8(env, argv[URL_ARG_INDEX], urlBuffer.data(), urlLength + 1, &urlLength);
     context->url = std::string(urlBuffer.data());
 
     size_t bodyLength = 0;
-    napi_get_value_string_utf8(env, argv[1], nullptr, 0, &bodyLength);
+    napi_get_value_string_utf8(env, argv[BODY_ARG_INDEX], nullptr, 0, &bodyLength);
     std::vector<char> bodyBuffer(bodyLength + 1);
-    napi_get_value_string_utf8(env, argv[1], bodyBuffer.data(), bodyLength + 1, &bodyLength);
+    napi_get_value_string_utf8(env, argv[BODY_ARG_INDEX], bodyBuffer.data(), bodyLength + 1, &bodyLength);
     context->body = std::string(bodyBuffer.data());
 
-    if (argc >= 3) {
+    if (argc >= POST_ARG_COUNT) {
         napi_valuetype type;
-        if (napi_typeof(env, argv[2], &type) == napi_ok && type == napi_object) {
-            ParseHeaders(env, argv[2], context->headers);
+        if (napi_typeof(env, argv[HEADERS_ARG_INDEX], &type) == napi_ok && type == napi_object) {
+            ParseHeaders(env, argv[HEADERS_ARG_INDEX], context->headers);
         }
     }
 
@@ -311,7 +361,7 @@ napi_value HttpPost(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteHttpRequest,
-                          CompleteHttpRequest, context, &context->work);
+        CompleteHttpRequest, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -319,8 +369,8 @@ napi_value HttpPost(napi_env env, napi_callback_info info)
 
 napi_value HttpRequest(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2];
+    size_t argc = REQUEST_ARG_COUNT;
+    napi_value argv[REQUEST_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
     if (argc < 1) {
@@ -329,44 +379,22 @@ napi_value HttpRequest(napi_env env, napi_callback_info info)
     }
 
     napi_valuetype type;
-    if (napi_typeof(env, argv[0], &type) != napi_ok || type != napi_object) {
+    if (napi_typeof(env, argv[OPTIONS_ARG_INDEX], &type) != napi_ok || type != napi_object) {
         napi_throw_error(env, nullptr, "First argument must be an object");
         return nullptr;
     }
 
     auto context = new HttpRequestContext();
 
-    napi_value urlValue;
-    if (napi_get_named_property(env, argv[0], "url", &urlValue) == napi_ok) {
-        size_t urlLength = 0;
-        napi_get_value_string_utf8(env, urlValue, nullptr, 0, &urlLength);
-        std::vector<char> urlBuffer(urlLength + 1);
-        napi_get_value_string_utf8(env, urlValue, urlBuffer.data(), urlLength + 1, &urlLength);
-        context->url = std::string(urlBuffer.data());
-    }
-
-    napi_value methodValue;
-    if (napi_get_named_property(env, argv[0], "method", &methodValue) == napi_ok) {
-        size_t methodLength = 0;
-        napi_get_value_string_utf8(env, methodValue, nullptr, 0, &methodLength);
-        std::vector<char> methodBuffer(methodLength + 1);
-        napi_get_value_string_utf8(env, methodValue, methodBuffer.data(), methodLength + 1, &methodLength);
-        context->method = std::string(methodBuffer.data());
-    } else {
+    GetStringProperty(env, argv[OPTIONS_ARG_INDEX], "url", context->url);
+    GetStringProperty(env, argv[OPTIONS_ARG_INDEX], "method", context->method);
+    if (context->method.empty()) {
         context->method = "GET";
     }
-
-    napi_value bodyValue;
-    if (napi_get_named_property(env, argv[0], "body", &bodyValue) == napi_ok) {
-        size_t bodyLength = 0;
-        napi_get_value_string_utf8(env, bodyValue, nullptr, 0, &bodyLength);
-        std::vector<char> bodyBuffer(bodyLength + 1);
-        napi_get_value_string_utf8(env, bodyValue, bodyBuffer.data(), bodyLength + 1, &bodyLength);
-        context->body = std::string(bodyBuffer.data());
-    }
+    GetStringProperty(env, argv[OPTIONS_ARG_INDEX], "body", context->body);
 
     napi_value headersValue;
-    if (napi_get_named_property(env, argv[0], "headers", &headersValue) == napi_ok) {
+    if (napi_get_named_property(env, argv[OPTIONS_ARG_INDEX], "headers", &headersValue) == napi_ok) {
         ParseHeaders(env, headersValue, context->headers);
     }
 
@@ -376,7 +404,7 @@ napi_value HttpRequest(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteHttpRequest,
-                          CompleteHttpRequest, context, &context->work);
+        CompleteHttpRequest, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -396,8 +424,7 @@ napi_value Init(napi_env env, napi_value exports)
 
 }
 
-extern "C" __attribute__((visibility("default"))) napi_value
-NAPI_Register(napi_env env, napi_value exports)
+extern "C" __attribute__((visibility("default"))) napi_value NAPI_Register(napi_env env, napi_value exports)
 {
     return Init(env, exports);
 }

@@ -29,11 +29,45 @@ constexpr uint32_t MODULE_VERSION = 1;
 constexpr uint32_t NO_MODULE_FLAGS = 0;
 constexpr int MAX_IMAGE_DIMENSION = 8192;
 constexpr int MIN_IMAGE_DIMENSION = 1;
+constexpr int RGB_CHANNELS = 3;
+constexpr int RGBA_CHANNELS = 4;
+constexpr int GRAYSCALE_CHANNELS = 1;
+constexpr int RESIZE_ARG_COUNT = 3;
+constexpr int CONVERT_ARG_COUNT = 2;
+constexpr int GRAYSCALE_ARG_COUNT = 1;
+constexpr int BRIGHTNESS_ARG_COUNT = 2;
+constexpr int CONTRAST_ARG_COUNT = 2;
+constexpr int INVERT_ARG_COUNT = 1;
+constexpr int CREATE_ARG_COUNT = 3;
+constexpr int CALLBACK_ARG_COUNT = 2;
+constexpr int IMAGE_ARG_INDEX = 0;
+constexpr int WIDTH_ARG_INDEX = 0;
+constexpr int HEIGHT_ARG_INDEX = 1;
+constexpr int FORMAT_ARG_INDEX = 2;
+constexpr int PARAM_ARG_INDEX = 1;
+constexpr int CONTRAST_DENOMINATOR = 100;
+constexpr uint8_t MIN_CHANNEL_VALUE = 0;
+constexpr uint8_t MAX_CHANNEL_VALUE = 255;
+constexpr float GRAY_WEIGHT_R = 0.299f;
+constexpr float GRAY_WEIGHT_G = 0.587f;
+constexpr float GRAY_WEIGHT_B = 0.114f;
+constexpr int CHANNEL_OFFSET_1 = 1;
+constexpr int CHANNEL_OFFSET_2 = 2;
+constexpr int CHANNEL_OFFSET_3 = 3;
 
 enum class ImageFormat {
     RGB,
     RGBA,
     GRAYSCALE
+};
+
+enum class OperationType {
+    Resize = 1,
+    Convert = 2,
+    Grayscale = 3,
+    Brightness = 4,
+    Contrast = 5,
+    Invert = 6,
 };
 
 struct ImageData {
@@ -51,7 +85,7 @@ struct ImageProcessContext {
     std::unique_ptr<ImageData> outputImage;
     std::string errorMessage;
     bool useCallback = false;
-    int operationType = 0;
+    OperationType operationType = OperationType::Resize;
     int param1 = 0;
     int param2 = 0;
 };
@@ -66,13 +100,13 @@ int GetBytesPerPixel(ImageFormat format)
 {
     switch (format) {
         case ImageFormat::RGB:
-            return 3;
+            return RGB_CHANNELS;
         case ImageFormat::RGBA:
-            return 4;
+            return RGBA_CHANNELS;
         case ImageFormat::GRAYSCALE:
-            return 1;
+            return GRAYSCALE_CHANNELS;
         default:
-            return 3;
+            return RGB_CHANNELS;
     }
 }
 
@@ -111,7 +145,7 @@ std::unique_ptr<ImageData> CloneImage(const ImageData* source)
 
 std::unique_ptr<ImageData> ResizeImage(const ImageData* source, int newWidth, int newHeight)
 {
-    if (!source || !ValidateImageDimensions(newWidth, newHeight)) {
+    if (!source || newWidth <= 0 || newHeight <= 0 || !ValidateImageDimensions(newWidth, newHeight)) {
         return nullptr;
     }
 
@@ -156,34 +190,36 @@ std::unique_ptr<ImageData> ConvertFormat(const ImageData* source, ImageFormat ta
 
             if (source->format == ImageFormat::RGB && targetFormat == ImageFormat::RGBA) {
                 result->pixels[dstIndex] = source->pixels[srcIndex];
-                result->pixels[dstIndex + 1] = source->pixels[srcIndex + 1];
-                result->pixels[dstIndex + 2] = source->pixels[srcIndex + 2];
-                result->pixels[dstIndex + 3] = 255;
+                result->pixels[dstIndex + CHANNEL_OFFSET_1] = source->pixels[srcIndex + CHANNEL_OFFSET_1];
+                result->pixels[dstIndex + CHANNEL_OFFSET_2] = source->pixels[srcIndex + CHANNEL_OFFSET_2];
+                result->pixels[dstIndex + CHANNEL_OFFSET_3] = MAX_CHANNEL_VALUE;
             } else if (source->format == ImageFormat::RGBA && targetFormat == ImageFormat::RGB) {
                 result->pixels[dstIndex] = source->pixels[srcIndex];
-                result->pixels[dstIndex + 1] = source->pixels[srcIndex + 1];
-                result->pixels[dstIndex + 2] = source->pixels[srcIndex + 2];
+                result->pixels[dstIndex + CHANNEL_OFFSET_1] = source->pixels[srcIndex + CHANNEL_OFFSET_1];
+                result->pixels[dstIndex + CHANNEL_OFFSET_2] = source->pixels[srcIndex + CHANNEL_OFFSET_2];
             } else if (source->format == ImageFormat::RGB && targetFormat == ImageFormat::GRAYSCALE) {
                 uint8_t r = source->pixels[srcIndex];
-                uint8_t g = source->pixels[srcIndex + 1];
-                uint8_t b = source->pixels[srcIndex + 2];
-                result->pixels[dstIndex] = static_cast<uint8_t>(0.299 * r + 0.587 * g + 0.114 * b);
+                uint8_t g = source->pixels[srcIndex + CHANNEL_OFFSET_1];
+                uint8_t b = source->pixels[srcIndex + CHANNEL_OFFSET_2];
+                result->pixels[dstIndex] = static_cast<uint8_t>(GRAY_WEIGHT_R * r + GRAY_WEIGHT_G * g +
+                    GRAY_WEIGHT_B * b);
             } else if (source->format == ImageFormat::RGBA && targetFormat == ImageFormat::GRAYSCALE) {
                 uint8_t r = source->pixels[srcIndex];
-                uint8_t g = source->pixels[srcIndex + 1];
-                uint8_t b = source->pixels[srcIndex + 2];
-                result->pixels[dstIndex] = static_cast<uint8_t>(0.299 * r + 0.587 * g + 0.114 * b);
+                uint8_t g = source->pixels[srcIndex + CHANNEL_OFFSET_1];
+                uint8_t b = source->pixels[srcIndex + CHANNEL_OFFSET_2];
+                result->pixels[dstIndex] = static_cast<uint8_t>(GRAY_WEIGHT_R * r + GRAY_WEIGHT_G * g +
+                    GRAY_WEIGHT_B * b);
             } else if (source->format == ImageFormat::GRAYSCALE && targetFormat == ImageFormat::RGB) {
                 uint8_t gray = source->pixels[srcIndex];
                 result->pixels[dstIndex] = gray;
-                result->pixels[dstIndex + 1] = gray;
-                result->pixels[dstIndex + 2] = gray;
+                result->pixels[dstIndex + CHANNEL_OFFSET_1] = gray;
+                result->pixels[dstIndex + CHANNEL_OFFSET_2] = gray;
             } else if (source->format == ImageFormat::GRAYSCALE && targetFormat == ImageFormat::RGBA) {
                 uint8_t gray = source->pixels[srcIndex];
                 result->pixels[dstIndex] = gray;
-                result->pixels[dstIndex + 1] = gray;
-                result->pixels[dstIndex + 2] = gray;
-                result->pixels[dstIndex + 3] = 255;
+                result->pixels[dstIndex + CHANNEL_OFFSET_1] = gray;
+                result->pixels[dstIndex + CHANNEL_OFFSET_2] = gray;
+                result->pixels[dstIndex + CHANNEL_OFFSET_3] = MAX_CHANNEL_VALUE;
             }
         }
     }
@@ -211,7 +247,8 @@ std::unique_ptr<ImageData> AdjustBrightness(const ImageData* source, int adjustm
 
     for (size_t i = 0; i < result->pixels.size(); i++) {
         int newValue = static_cast<int>(result->pixels[i]) + adjustment;
-        result->pixels[i] = static_cast<uint8_t>(std::max(0, std::min(255, newValue)));
+        result->pixels[i] = static_cast<uint8_t>(std::max(static_cast<int>(MIN_CHANNEL_VALUE),
+            std::min(static_cast<int>(MAX_CHANNEL_VALUE), newValue)));
     }
 
     return result;
@@ -230,7 +267,8 @@ std::unique_ptr<ImageData> AdjustContrast(const ImageData* source, float factor)
 
     for (size_t i = 0; i < result->pixels.size(); i++) {
         int newValue = static_cast<int>((result->pixels[i] - 128) * factor + 128);
-        result->pixels[i] = static_cast<uint8_t>(std::max(0, std::min(255, newValue)));
+        result->pixels[i] = static_cast<uint8_t>(std::max(static_cast<int>(MIN_CHANNEL_VALUE),
+            std::min(static_cast<int>(MAX_CHANNEL_VALUE), newValue)));
     }
 
     return result;
@@ -248,7 +286,7 @@ std::unique_ptr<ImageData> ApplyInvert(const ImageData* source)
     }
 
     for (uint8_t& i : result->pixels) {
-        i = 255 - i;
+        i = static_cast<uint8_t>(MAX_CHANNEL_VALUE - i);
     }
 
     return result;
@@ -264,22 +302,23 @@ void ExecuteImageProcess(napi_env env, void* data)
     }
 
     switch (context->operationType) {
-        case 1:
+        case OperationType::Resize:
             context->outputImage = ResizeImage(context->inputImage.get(), context->param1, context->param2);
             break;
-        case 2:
+        case OperationType::Convert:
             context->outputImage = ConvertFormat(context->inputImage.get(), static_cast<ImageFormat>(context->param1));
             break;
-        case 3:
+        case OperationType::Grayscale:
             context->outputImage = ApplyGrayscale(context->inputImage.get());
             break;
-        case 4:
+        case OperationType::Brightness:
             context->outputImage = AdjustBrightness(context->inputImage.get(), context->param1);
             break;
-        case 5:
-            context->outputImage = AdjustContrast(context->inputImage.get(), context->param1 / 100.0f);
+        case OperationType::Contrast:
+            context->outputImage = AdjustContrast(context->inputImage.get(),
+                static_cast<float>(context->param1) / CONTRAST_DENOMINATOR);
             break;
-        case 6:
+        case OperationType::Invert:
             context->outputImage = ApplyInvert(context->inputImage.get());
             break;
         default:
@@ -319,7 +358,8 @@ void CompleteImageProcess(napi_env env, napi_status status, void* data)
         napi_value pixelsArray;
         void* arrayData = nullptr;
         napi_create_arraybuffer(env, context->outputImage->pixels.size(), &arrayData, &pixelsArray);
-        std::copy(context->outputImage->pixels.begin(), context->outputImage->pixels.end(), static_cast<uint8_t*>(arrayData));
+        std::copy(context->outputImage->pixels.begin(), context->outputImage->pixels.end(),
+            static_cast<uint8_t*>(arrayData));
         napi_set_named_property(env, resultObj, "pixels", pixelsArray);
     }
 
@@ -327,18 +367,18 @@ void CompleteImageProcess(napi_env env, napi_status status, void* data)
         napi_value callback;
         napi_get_reference_value(env, context->callback, &callback);
 
-        napi_value argv[2];
+        napi_value argv[CALLBACK_ARG_COUNT];
         if (context->outputImage) {
             napi_get_null(env, &argv[0]);
             argv[1] = resultObj;
         } else {
             napi_value error;
             napi_create_string_utf8(env, context->errorMessage.c_str(),
-                                   context->errorMessage.length(), &argv[0]);
+                context->errorMessage.length(), &argv[0]);
             argv[1] = undefined;
         }
 
-        napi_call_function(env, undefined, callback, 2, argv, nullptr);
+        napi_call_function(env, undefined, callback, CALLBACK_ARG_COUNT, argv, nullptr);
         napi_delete_reference(env, context->callback);
     } else if (context->deferred != nullptr) {
         if (context->outputImage) {
@@ -346,7 +386,7 @@ void CompleteImageProcess(napi_env env, napi_status status, void* data)
         } else {
             napi_value error;
             napi_create_string_utf8(env, context->errorMessage.c_str(),
-                                   context->errorMessage.length(), &error);
+                context->errorMessage.length(), &error);
             napi_reject_deferred(env, context->deferred, error);
         }
     }
@@ -409,7 +449,7 @@ std::unique_ptr<ImageData> ParseImageFromNAPI(napi_env env, napi_value imageObj)
     }
 
     if (arrayLength == image->pixels.size()) {
-        memcpy(image->pixels.data(), arrayData, arrayLength);
+        std::copy_n(static_cast<uint8_t*>(arrayData), arrayLength, image->pixels.data());
     }
 
     return image;
@@ -417,17 +457,17 @@ std::unique_ptr<ImageData> ParseImageFromNAPI(napi_env env, napi_value imageObj)
 
 napi_value Resize(napi_env env, napi_callback_info info)
 {
-    size_t argc = 3;
-    napi_value argv[3];
+    size_t argc = RESIZE_ARG_COUNT;
+    napi_value argv[RESIZE_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < RESIZE_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image, width, and height are required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -435,9 +475,9 @@ napi_value Resize(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_get_value_int32(env, argv[1], &context->param1);
-    napi_get_value_int32(env, argv[2], &context->param2);
-    context->operationType = 1;
+    napi_get_value_int32(env, argv[WIDTH_ARG_INDEX], &context->param1);
+    napi_get_value_int32(env, argv[HEIGHT_ARG_INDEX], &context->param2);
+    context->operationType = OperationType::Resize;
 
     napi_value promise;
     napi_value resourceName;
@@ -445,7 +485,7 @@ napi_value Resize(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -453,17 +493,17 @@ napi_value Resize(napi_env env, napi_callback_info info)
 
 napi_value ConvertFormat(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2];
+    size_t argc = CONVERT_ARG_COUNT;
+    napi_value argv[CONVERT_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < CONVERT_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image and format are required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -471,8 +511,8 @@ napi_value ConvertFormat(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_get_value_int32(env, argv[1], &context->param1);
-    context->operationType = 2;
+    napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
+    context->operationType = OperationType::Convert;
 
     napi_value promise;
     napi_value resourceName;
@@ -480,7 +520,7 @@ napi_value ConvertFormat(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -488,17 +528,17 @@ napi_value ConvertFormat(napi_env env, napi_callback_info info)
 
 napi_value Grayscale(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1];
+    size_t argc = GRAYSCALE_ARG_COUNT;
+    napi_value argv[GRAYSCALE_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 1) {
+    if (argc < GRAYSCALE_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image is required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -506,7 +546,7 @@ napi_value Grayscale(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    context->operationType = 3;
+    context->operationType = OperationType::Grayscale;
 
     napi_value promise;
     napi_value resourceName;
@@ -514,7 +554,7 @@ napi_value Grayscale(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -522,17 +562,17 @@ napi_value Grayscale(napi_env env, napi_callback_info info)
 
 napi_value Brightness(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2];
+    size_t argc = BRIGHTNESS_ARG_COUNT;
+    napi_value argv[BRIGHTNESS_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < BRIGHTNESS_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image and adjustment are required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -540,8 +580,8 @@ napi_value Brightness(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_get_value_int32(env, argv[1], &context->param1);
-    context->operationType = 4;
+    napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
+    context->operationType = OperationType::Brightness;
 
     napi_value promise;
     napi_value resourceName;
@@ -549,7 +589,7 @@ napi_value Brightness(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -557,17 +597,17 @@ napi_value Brightness(napi_env env, napi_callback_info info)
 
 napi_value Contrast(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2];
+    size_t argc = CONTRAST_ARG_COUNT;
+    napi_value argv[CONTRAST_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < CONTRAST_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image and factor are required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -575,8 +615,8 @@ napi_value Contrast(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    napi_get_value_int32(env, argv[1], &context->param1);
-    context->operationType = 5;
+    napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
+    context->operationType = OperationType::Contrast;
 
     napi_value promise;
     napi_value resourceName;
@@ -584,7 +624,7 @@ napi_value Contrast(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -592,17 +632,17 @@ napi_value Contrast(napi_env env, napi_callback_info info)
 
 napi_value Invert(napi_env env, napi_callback_info info)
 {
-    size_t argc = 1;
-    napi_value argv[1];
+    size_t argc = INVERT_ARG_COUNT;
+    napi_value argv[INVERT_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 1) {
+    if (argc < INVERT_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Image is required");
         return nullptr;
     }
 
     auto context = new ImageProcessContext();
-    context->inputImage = ParseImageFromNAPI(env, argv[0]);
+    context->inputImage = ParseImageFromNAPI(env, argv[IMAGE_ARG_INDEX]);
 
     if (!context->inputImage) {
         delete context;
@@ -610,7 +650,7 @@ napi_value Invert(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    context->operationType = 6;
+    context->operationType = OperationType::Invert;
 
     napi_value promise;
     napi_value resourceName;
@@ -618,7 +658,7 @@ napi_value Invert(napi_env env, napi_callback_info info)
     napi_create_promise(env, &context->deferred, &promise);
 
     napi_create_async_work(env, nullptr, resourceName, ExecuteImageProcess,
-                          CompleteImageProcess, context, &context->work);
+        CompleteImageProcess, context, &context->work);
     napi_queue_async_work(env, context->work);
 
     return promise;
@@ -626,23 +666,23 @@ napi_value Invert(napi_env env, napi_callback_info info)
 
 napi_value Create(napi_env env, napi_callback_info info)
 {
-    size_t argc = 3;
-    napi_value argv[3];
+    size_t argc = CREATE_ARG_COUNT;
+    napi_value argv[CREATE_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 3) {
+    if (argc < CREATE_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Width, height, and format are required");
         return nullptr;
     }
 
     int32_t width = 0;
-    napi_get_value_int32(env, argv[0], &width);
+    napi_get_value_int32(env, argv[WIDTH_ARG_INDEX], &width);
 
     int32_t height = 0;
-    napi_get_value_int32(env, argv[1], &height);
+    napi_get_value_int32(env, argv[HEIGHT_ARG_INDEX], &height);
 
     int32_t format = 0;
-    napi_get_value_int32(env, argv[2], &format);
+    napi_get_value_int32(env, argv[FORMAT_ARG_INDEX], &format);
 
     auto image = CreateImage(width, height, static_cast<ImageFormat>(format));
     if (!image) {
@@ -692,8 +732,7 @@ napi_value Init(napi_env env, napi_value exports)
 
 }
 
-extern "C" __attribute__((visibility("default"))) napi_value
-NAPI_Register(napi_env env, napi_value exports)
+extern "C" __attribute__((visibility("default"))) napi_value NAPI_Register(napi_env env, napi_value exports)
 {
     return Init(env, exports);
 }

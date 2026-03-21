@@ -27,55 +27,66 @@ struct ManagedData {
     int id;
     std::string name;
     std::vector<int> values;
-    
-    ManagedData(int i, const std::string& n) : id(i), name(n) {}
+
+    ManagedData(int i, const std::string& n) : id(i), name(n)
+    {
+    }
 };
 
 class DataCache {
 public:
-    DataCache() {}
-    
-    ~DataCache() {
+    DataCache()
+    {
+    }
+
+    ~DataCache()
+    {
         Clear();
     }
-    
-    int AddData(napi_env env, int id, const std::string& name) {
+
+    int AddData(napi_env env, int id, const std::string& name)
+    {
         auto data = std::make_unique<ManagedData>(id, name);
         int index = static_cast<int>(dataList_.size());
         dataList_.push_back(std::move(data));
         return index;
     }
-    
-    bool RemoveData(int index) {
+
+    bool RemoveData(int index)
+    {
         if (index < 0 || index >= static_cast<int>(dataList_.size())) {
             return false;
         }
         dataList_[index].reset();
         return true;
     }
-    
-    ManagedData* GetData(int index) {
+
+    ManagedData* GetData(int index)
+    {
         if (index < 0 || index >= static_cast<int>(dataList_.size())) {
             return nullptr;
         }
         return dataList_[index].get();
     }
-    
-    void Clear() {
+
+    void Clear()
+    {
         dataList_.clear();
     }
-    
-    size_t Size() const {
+
+    size_t Size() const
+    {
         return dataList_.size();
     }
-    
+
 private:
     std::vector<std::unique_ptr<ManagedData>> dataList_;
 };
 
 static DataCache g_dataCache;
 
-static napi_value CreateData(napi_env env, napi_callback_info info) {
+static napi_value CreateData(napi_env env, napi_callback_info info)
+{
     size_t argc = 2;
     napi_value args[2];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -83,19 +94,19 @@ static napi_value CreateData(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < 2) {
         napi_throw_error(env, nullptr, "Expected 2 arguments (id, name)");
         return nullptr;
     }
-    
+
     int32_t id;
     status = napi_get_value_int32(env, args[0], &id);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get id");
         return nullptr;
     }
-    
+
     size_t length;
     char name[MAX_BUFFER_SIZE];
     status = napi_get_value_string_utf8(env, args[1], name, sizeof(name), &length);
@@ -103,9 +114,9 @@ static napi_value CreateData(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get name");
         return nullptr;
     }
-    
+
     int index = g_dataCache.AddData(env, id, std::string(name, length));
-    
+
     napi_value result;
     status = napi_create_int32(env, index, &result);
     if (status != napi_ok) {
@@ -114,7 +125,8 @@ static napi_value CreateData(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value GetDataInfo(napi_env env, napi_callback_info info) {
+static napi_value GetDataInfo(napi_env env, napi_callback_info info)
+{
     size_t argc = 1;
     napi_value args[1];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -122,31 +134,31 @@ static napi_value GetDataInfo(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Expected 1 argument (index)");
         return nullptr;
     }
-    
+
     int32_t index;
     status = napi_get_value_int32(env, args[0], &index);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get index");
         return nullptr;
     }
-    
+
     ManagedData* data = g_dataCache.GetData(index);
     if (!data) {
         napi_throw_error(env, nullptr, "Invalid data index");
         return nullptr;
     }
-    
+
     napi_value result;
     status = napi_create_object(env, &result);
     if (status != napi_ok) {
         return nullptr;
     }
-    
+
     napi_value idValue;
     napi_value nameValue;
     status = napi_create_int32(env, data->id, &idValue);
@@ -157,7 +169,7 @@ static napi_value GetDataInfo(napi_env env, napi_callback_info info) {
     if (status != napi_ok) {
         return nullptr;
     }
-    
+
     status = napi_set_named_property(env, result, "id", idValue);
     if (status != napi_ok) {
         return nullptr;
@@ -166,11 +178,12 @@ static napi_value GetDataInfo(napi_env env, napi_callback_info info) {
     if (status != napi_ok) {
         return nullptr;
     }
-    
+
     return result;
 }
 
-static napi_value DeleteData(napi_env env, napi_callback_info info) {
+static napi_value DeleteData(napi_env env, napi_callback_info info)
+{
     size_t argc = 1;
     napi_value args[1];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -178,21 +191,21 @@ static napi_value DeleteData(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Expected 1 argument (index)");
         return nullptr;
     }
-    
+
     int32_t index;
     status = napi_get_value_int32(env, args[0], &index);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get index");
         return nullptr;
     }
-    
+
     bool success = g_dataCache.RemoveData(index);
-    
+
     napi_value result;
     status = napi_create_boolean(env, success, &result);
     if (status != napi_ok) {
@@ -201,9 +214,10 @@ static napi_value DeleteData(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value ClearCache(napi_env env, napi_callback_info info) {
+static napi_value ClearCache(napi_env env, napi_callback_info info)
+{
     g_dataCache.Clear();
-    
+
     napi_value result;
     napi_status status = napi_get_undefined(env, &result);
     if (status != napi_ok) {
@@ -212,9 +226,10 @@ static napi_value ClearCache(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value GetCacheSize(napi_env env, napi_callback_info info) {
+static napi_value GetCacheSize(napi_env env, napi_callback_info info)
+{
     size_t size = g_dataCache.Size();
-    
+
     napi_value result;
     napi_status status = napi_create_uint32(env, static_cast<uint32_t>(size), &result);
     if (status != napi_ok) {
@@ -223,7 +238,8 @@ static napi_value GetCacheSize(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value CreateArrayBuffer(napi_env env, napi_callback_info info) {
+static napi_value CreateArrayBuffer(napi_env env, napi_callback_info info)
+{
     size_t argc = 1;
     napi_value args[1];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -231,24 +247,24 @@ static napi_value CreateArrayBuffer(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Expected 1 argument (size)");
         return nullptr;
     }
-    
+
     int32_t size;
     status = napi_get_value_int32(env, args[0], &size);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get size");
         return nullptr;
     }
-    
+
     if (size <= 0 || size > MAX_ARRAY_BUFFER_SIZE) {
         napi_throw_error(env, nullptr, "Invalid size (must be between 1 and 1MB)");
         return nullptr;
     }
-    
+
     void* data;
     napi_value arrayBuffer;
     status = napi_create_arraybuffer(env, size, &data, &arrayBuffer);
@@ -256,13 +272,14 @@ static napi_value CreateArrayBuffer(napi_env env, napi_callback_info info) {
         napi_throw_error(env, nullptr, "Failed to create array buffer");
         return nullptr;
     }
-    
+
     std::fill(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size, 0);
-    
+
     return arrayBuffer;
 }
 
-static napi_value CreateExternalArrayBuffer(napi_env env, napi_callback_info info) {
+static napi_value CreateExternalArrayBuffer(napi_env env, napi_callback_info info)
+{
     size_t argc = 1;
     napi_value args[1];
     napi_status status = napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
@@ -270,36 +287,37 @@ static napi_value CreateExternalArrayBuffer(napi_env env, napi_callback_info inf
         napi_throw_error(env, nullptr, "Failed to get callback info");
         return nullptr;
     }
-    
+
     if (argc < 1) {
         napi_throw_error(env, nullptr, "Expected 1 argument (size)");
         return nullptr;
     }
-    
+
     int32_t size;
     status = napi_get_value_int32(env, args[0], &size);
     if (status != napi_ok) {
         napi_throw_error(env, nullptr, "Failed to get size");
         return nullptr;
     }
-    
+
     if (size <= 0 || size > MAX_ARRAY_BUFFER_SIZE) {
         napi_throw_error(env, nullptr, "Invalid size (must be between 1 and 1MB)");
         return nullptr;
     }
-    
+
     void* data = malloc(size);
     if (!data) {
         napi_throw_error(env, nullptr, "Memory allocation failed");
         return nullptr;
     }
-    
+
     std::fill(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size, 0xAA);
-    
-    auto finalizeCallback = [](napi_env env, void* data, void* hint) {
+
+    auto finalizeCallback = [](napi_env env, void* data, void* hint)
+    {
         free(data);
     };
-    
+
     napi_value arrayBuffer;
     status = napi_create_external_arraybuffer(env, data, size, finalizeCallback, nullptr, &arrayBuffer);
     if (status != napi_ok) {
@@ -307,12 +325,13 @@ static napi_value CreateExternalArrayBuffer(napi_env env, napi_callback_info inf
         napi_throw_error(env, nullptr, "Failed to create external array buffer");
         return nullptr;
     }
-    
+
     return arrayBuffer;
 }
 
 EXTERN_C_START
-napi_value Init(napi_env env, napi_value exports) {
+napi_value Init(napi_env env, napi_value exports)
+{
     napi_property_descriptor properties[] = {
         {"createData", nullptr, CreateData, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"getDataInfo", nullptr, GetDataInfo, nullptr, nullptr, nullptr, napi_default, nullptr},
@@ -322,7 +341,7 @@ napi_value Init(napi_env env, napi_value exports) {
         {"createArrayBuffer", nullptr, CreateArrayBuffer, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"createExternalArrayBuffer", nullptr, CreateExternalArrayBuffer, nullptr, nullptr, nullptr, napi_default, nullptr},
     };
-    
+
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
     return exports;
 }
@@ -338,6 +357,7 @@ static napi_module demoModule = {
     .reserved = {0},
 };
 
-extern "C" __attribute__((constructor)) void RegisterMemoryManagementModule(void) {
+extern "C" __attribute__((constructor)) void RegisterMemoryManagementModule(void)
+{
     napi_module_register(&demoModule);
 }

@@ -131,9 +131,9 @@ std::lock_guard<std::mutex> lock(mutex_);
 
 ## Additional Resources
 
-- [NAPI Documentation](https://nodejs.org/api/n-api.html)
-- [NAPI Reference](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/napi-guidelines-V5)
-- [OpenHarmony Native Development](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides-V5/ndk-development-guidelines-V5)
+- [OpenHarmony Docs](https://gitee.com/openharmony/docs)
+- [ArkUI NAPI Repository](https://gitee.com/openharmony/arkui_napi)
+- [ArkUI Framework Overview](https://gitee.com/openharmony/docs/blob/master/en/readme/arkui.md)
 
 ## License
 
