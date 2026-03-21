@@ -404,7 +404,6 @@ if (!ark_standalone_build) {
         "sample/native_module_calc:number",
         "sample/native_module_number_suite:number_suite",
         "sample/native_module_callback:callback",
-        "sample/native_module_console:console",
         "sample/native_module_demo:demo",
         "sample/native_module_netserver:netserver",
         "sample/native_module_reference:reference",
@@ -426,9 +425,6 @@ if (!ark_standalone_build) {
         "sample/native_module_error:error",
         "sample/native_module_number:napi_number",
         "sample/native_module_regex:regex",
-        "sample/native_module_protect_property:protect_property",
-        "sample/native_module_timer:timer_utils",
-        "sample/native_module_textdecoder:textdecoder",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
