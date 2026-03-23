@@ -17356,13 +17356,14 @@ HWTEST_F(NapiBasicTest, NapiDeleteCallsiteInfoTest001, testing::ext::TestSize.Le
 
 /**
  * @tc.name: NapiDeleteCallsiteInfoTest002
- * @tc.desc: Delete nullptr info returns napi_ok (no CHECK_ARG on info param).
+ * @tc.desc: Delete nullptr info returns napi_invalid_arg.
  * @tc.type: FUNC
  */
 HWTEST_F(NapiBasicTest, NapiDeleteCallsiteInfoTest002, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
-    ASSERT_CHECK_CALL(napi_delete_callsite_info(env, nullptr));
+    napi_status status = napi_delete_callsite_info(env, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
 }
 
 /**
