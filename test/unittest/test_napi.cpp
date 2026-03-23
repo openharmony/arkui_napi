@@ -17274,3 +17274,944 @@ HWTEST_F(NapiBasicTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.L
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
 }
+// ========================== property with callsite info tests ========================== //
+
+class CallsiteInfoGuard {
+public:
+    CallsiteInfoGuard(napi_env env, napi_callsite_info info) : env_(env), info_(info) {}
+    ~CallsiteInfoGuard()
+    {
+        napi_delete_callsite_info(env_, info_);
+    }
+    napi_callsite_info get() const
+    {
+        return info_;
+    }
+    CallsiteInfoGuard(const CallsiteInfoGuard&) = delete;
+    CallsiteInfoGuard& operator=(const CallsiteInfoGuard&) = delete;
+
+private:
+    napi_env env_;
+    napi_callsite_info info_;
+};
+
+/**
+ * @tc.name: NapiCreateCallsiteInfoTest001
+ * @tc.desc: Happy path: create callsite info succeeds, result non-null, cleanup.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateCallsiteInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+    ASSERT_NE(info, nullptr);
+}
+
+/**
+ * @tc.name: NapiCreateCallsiteInfoTest002
+ * @tc.desc: Null result pointer returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateCallsiteInfoTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_status status = napi_create_callsite_info(env, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiCreateCallsiteInfoTest003
+ * @tc.desc: Create two infos, both succeed and are distinct pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiCreateCallsiteInfoTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_callsite_info info1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info1));
+    CallsiteInfoGuard guard1(env, info1);
+    napi_callsite_info info2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info2));
+    CallsiteInfoGuard guard2(env, info2);
+    ASSERT_NE(info1, nullptr);
+    ASSERT_NE(info2, nullptr);
+    ASSERT_NE(info1, info2);
+}
+
+/**
+ * @tc.name: NapiDeleteCallsiteInfoTest001
+ * @tc.desc: Delete valid callsite info returns napi_ok.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteCallsiteInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    ASSERT_NE(info, nullptr);
+    ASSERT_CHECK_CALL(napi_delete_callsite_info(env, info));
+}
+
+/**
+ * @tc.name: NapiDeleteCallsiteInfoTest002
+ * @tc.desc: Delete nullptr info returns napi_ok (no CHECK_ARG on info param).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiDeleteCallsiteInfoTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    ASSERT_CHECK_CALL(napi_delete_callsite_info(env, nullptr));
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest001
+ * @tc.desc: Happy path: set normally, get via callsite info API, verify value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_FORTYTWO, &val));
+    ASSERT_CHECK_CALL(napi_set_property(env, obj, key, val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, info, &result, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_FORTYTWO);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest002
+ * @tc.desc: IC cache reuse: call twice with same key+info, both return correct value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "val", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_HUNDRED, &val));
+    ASSERT_CHECK_CALL(napi_set_property(env, obj, key, val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result1 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, info, &result1, nullptr));
+    int32_t intResult1 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result1, &intResult1));
+    ASSERT_EQ(intResult1, INT_HUNDRED);
+
+    // Second call reuses IC cache
+    napi_value result2 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, info, &result2, nullptr));
+    int32_t intResult2 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result2, &intResult2));
+    ASSERT_EQ(intResult2, INT_HUNDRED);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest003
+ * @tc.desc: Null object returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, nullptr, key, info, &result, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest004
+ * @tc.desc: Null key returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, obj, nullptr, info, &result, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest005
+ * @tc.desc: Null result returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_get_property_with_callsite_info(env, obj, key, info, nullptr, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest006
+ * @tc.desc: Non-object receiver (number) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value numVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &numVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, numVal, key, info, &result, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest007
+ * @tc.desc: Null callsite info still works via slow path fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "y", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_THREE, &val));
+    ASSERT_CHECK_CALL(napi_set_property(env, obj, key, val));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, nullptr, &result, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_THREE);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest008
+ * @tc.desc: Get non-existent property returns napi_undefined.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nonexistent", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, info, &result, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_undefined);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest009
+ * @tc.desc: Non-object receiver (boolean) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest009, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value boolVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, boolVal, key, info, &result, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest010
+ * @tc.desc: Non-object receiver (null) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest010, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value nullVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &nullVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, nullVal, key, info, &result, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest011
+ * @tc.desc: Non-object receiver (undefined) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest011, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value undefVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    napi_status status = napi_get_property_with_callsite_info(env, undefVal, key, info, &result, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiGetPropertyWithCallsiteInfoTest012
+ * @tc.desc: Function receiver: functions are valid objects, get property works.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiGetPropertyWithCallsiteInfoTest012, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value funcVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, callback, nullptr, &funcVal));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "myProp", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val));
+    ASSERT_CHECK_CALL(napi_set_property(env, funcVal, key, val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, funcVal, key, info, &result, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_TWO);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest001
+ * @tc.desc: Happy path: set via callsite info API, verify with normal get.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "a", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_FORTYTWO, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key, val, info, nullptr));
+
+    // Verify with normal get
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property(env, obj, key, &result));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_FORTYTWO);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest002
+ * @tc.desc: IC cache hit: repeated store same key+info, last value wins.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "counter", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_value val1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val1));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key, val1, info, nullptr));
+
+    // Second call reuses IC cache, overwrites value
+    napi_value val2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val2));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key, val2, info, nullptr));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property(env, obj, key, &result));
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_TWO);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest003
+ * @tc.desc: Null object returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, nullptr, key, val, info, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest004
+ * @tc.desc: Null key returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest004, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, obj, nullptr, val, info, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest005
+ * @tc.desc: Null value returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest005, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, obj, key, nullptr, info, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest006
+ * @tc.desc: Non-object receiver (number) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest006, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value numVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &numVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, numVal, key, val, info, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest007
+ * @tc.desc: Null callsite info still works via slow path.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest007, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "z", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_THREE, &val));
+
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key, val, nullptr, nullptr));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property(env, obj, key, &result));
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_THREE);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest008
+ * @tc.desc: Non-object receiver (boolean) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest008, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value boolVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, boolVal, key, val, info, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest009
+ * @tc.desc: Non-object receiver (null) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest009, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value nullVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &nullVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, nullVal, key, val, info, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest010
+ * @tc.desc: Non-object receiver (undefined) returns napi_object_expected.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest010, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value undefVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefVal));
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "x", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    napi_status status = napi_set_property_with_callsite_info(env, undefVal, key, val, info, nullptr);
+    ASSERT_EQ(status, napi_object_expected);
+}
+
+/**
+ * @tc.name: NapiSetPropertyWithCallsiteInfoTest011
+ * @tc.desc: Function receiver: functions are valid objects, set property works.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiSetPropertyWithCallsiteInfoTest011, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    auto callback = [](napi_env env, napi_callback_info info) -> napi_value {
+        return nullptr;
+    };
+    napi_value funcVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_function(env, "testFunc", NAPI_AUTO_LENGTH, callback, nullptr, &funcVal));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "myProp", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, funcVal, key, val, info, nullptr));
+
+    // Verify with normal get
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property(env, funcVal, key, &result));
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_TWO);
+}
+
+// ========================== Cross-API & advanced scenarios ========================== //
+
+/**
+ * @tc.name: NapiPropertyWithCallsiteInfoRoundTripTest001
+ * @tc.desc: Set via callsite info API, get via callsite info API (separate callsite info per direction).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoRoundTripTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "round", NAPI_AUTO_LENGTH, &key));
+    napi_value val = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_FORTYTWO, &val));
+
+    napi_callsite_info setInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &setInfo));
+    CallsiteInfoGuard setGuard(env, setInfo);
+    napi_callsite_info getInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &getInfo));
+    CallsiteInfoGuard getGuard(env, getInfo);
+
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key, val, setInfo, nullptr));
+
+    napi_value result = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key, getInfo, &result, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, result, napi_number);
+
+    int32_t intResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &intResult));
+    ASSERT_EQ(intResult, INT_FORTYTWO);
+}
+
+/**
+ * @tc.name: NapiPropertyWithCallsiteInfoRoundTripTest002
+ * @tc.desc: Set via normal API then get via fast; set via fast then get via normal.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoRoundTripTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_value key1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "normalSet", NAPI_AUTO_LENGTH, &key1));
+    napi_value val1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val1));
+    ASSERT_CHECK_CALL(napi_set_property(env, obj, key1, val1));
+
+    napi_callsite_info info = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info));
+    CallsiteInfoGuard guard(env, info);
+
+    // Get via callsite info API after normal set
+    napi_value result1 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, key1, info, &result1, nullptr));
+    int32_t intResult1 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result1, &intResult1));
+    ASSERT_EQ(intResult1, INT_ONE);
+
+    // Set via callsite info API, get via normal
+    napi_value key2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "fastSet", NAPI_AUTO_LENGTH, &key2));
+    napi_value val2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val2));
+
+    napi_callsite_info info2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &info2));
+    CallsiteInfoGuard guard2(env, info2);
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, key2, val2, info2, nullptr));
+
+    napi_value result2 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property(env, obj, key2, &result2));
+    int32_t intResult2 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result2, &intResult2));
+    ASSERT_EQ(intResult2, INT_TWO);
+}
+
+/**
+ * @tc.name: NapiPropertyWithCallsiteInfoMultiKeyTest001
+ * @tc.desc: Multiple different keys through same callsite info — exercises KEY_IC polymorphism.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoMultiKeyTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_callsite_info setInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &setInfo));
+    CallsiteInfoGuard setGuard(env, setInfo);
+    napi_callsite_info getInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &getInfo));
+    CallsiteInfoGuard getGuard(env, getInfo);
+
+    // Set three different keys through the same setInfo
+    napi_value keyA = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "keyA", NAPI_AUTO_LENGTH, &keyA));
+    napi_value valA = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &valA));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, keyA, valA, setInfo, nullptr));
+
+    napi_value keyB = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "keyB", NAPI_AUTO_LENGTH, &keyB));
+    napi_value valB = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &valB));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, keyB, valB, setInfo, nullptr));
+
+    napi_value keyC = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "keyC", NAPI_AUTO_LENGTH, &keyC));
+    napi_value valC = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_THREE, &valC));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, keyC, valC, setInfo, nullptr));
+
+    // Get all three through separate getInfo
+    napi_value resultA = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, keyA, getInfo, &resultA, nullptr));
+    int32_t intA = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, resultA, &intA));
+    ASSERT_EQ(intA, INT_ONE);
+
+    napi_value resultB = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, keyB, getInfo, &resultB, nullptr));
+    int32_t intB = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, resultB, &intB));
+    ASSERT_EQ(intB, INT_TWO);
+
+    napi_value resultC = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, keyC, getInfo, &resultC, nullptr));
+    int32_t intC = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, resultC, &intC));
+    ASSERT_EQ(intC, INT_THREE);
+}
+
+/**
+ * @tc.name: NapiPropertyWithCallsiteInfoMultiObjectTest001
+ * @tc.desc: Same key across different objects — exercises IC with different HClasses.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoMultiObjectTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    napi_value key = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "shared", NAPI_AUTO_LENGTH, &key));
+
+    napi_callsite_info setInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &setInfo));
+    CallsiteInfoGuard setGuard(env, setInfo);
+    napi_callsite_info getInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &getInfo));
+    CallsiteInfoGuard getGuard(env, getInfo);
+
+    // Object 1: only "shared" property
+    napi_value obj1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj1));
+    napi_value val1 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_ONE, &val1));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj1, key, val1, setInfo, nullptr));
+
+    // Object 2: has "extra" property first (different HClass), then "shared"
+    napi_value obj2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj2));
+    napi_value extraKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "extra", NAPI_AUTO_LENGTH, &extraKey));
+    napi_value extraVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_HUNDRED, &extraVal));
+    ASSERT_CHECK_CALL(napi_set_property(env, obj2, extraKey, extraVal));
+    napi_value val2 = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, INT_TWO, &val2));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj2, key, val2, setInfo, nullptr));
+
+    // Verify both objects via separate getInfo
+    napi_value result1 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj1, key, getInfo, &result1, nullptr));
+    int32_t intResult1 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result1, &intResult1));
+    ASSERT_EQ(intResult1, INT_ONE);
+
+    napi_value result2 = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj2, key, getInfo, &result2, nullptr));
+    int32_t intResult2 = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result2, &intResult2));
+    ASSERT_EQ(intResult2, INT_TWO);
+}
+
+/**
+ * @tc.name: NapiPropertyWithCallsiteInfoValueTypesTest001
+ * @tc.desc: Set/get various value types (string, boolean, double, null, undefined) via callsite info API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoValueTypesTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_callsite_info setInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &setInfo));
+    CallsiteInfoGuard setGuard(env, setInfo);
+    napi_callsite_info getInfo = nullptr;
+    ASSERT_CHECK_CALL(napi_create_callsite_info(env, &getInfo));
+    CallsiteInfoGuard getGuard(env, getInfo);
+
+    // String value
+    napi_value strKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "strProp", NAPI_AUTO_LENGTH, &strKey));
+    napi_value strVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_STRING, NAPI_AUTO_LENGTH, &strVal));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, strKey, strVal, setInfo, nullptr));
+
+    napi_value strResult = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, strKey, getInfo, &strResult, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, strResult, napi_string);
+    size_t strLen = 0;
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, strResult, nullptr, 0, &strLen));
+    char strBuf[strLen + 1];
+    ASSERT_CHECK_CALL(napi_get_value_string_utf8(env, strResult, strBuf, strLen + 1, &strLen));
+    ASSERT_STREQ(strBuf, TEST_STRING);
+
+    // Boolean value
+    napi_value boolKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "boolProp", NAPI_AUTO_LENGTH, &boolKey));
+    napi_value boolVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_boolean(env, true, &boolVal));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, boolKey, boolVal, setInfo, nullptr));
+
+    napi_value boolResult = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, boolKey, getInfo, &boolResult, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, boolResult, napi_boolean);
+    bool boolOut = false;
+    ASSERT_CHECK_CALL(napi_get_value_bool(env, boolResult, &boolOut));
+    ASSERT_TRUE(boolOut);
+
+    // Double value
+    napi_value dblKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "dblProp", NAPI_AUTO_LENGTH, &dblKey));
+    napi_value dblVal = nullptr;
+    ASSERT_CHECK_CALL(napi_create_double(env, TEST_DOUBLE, &dblVal));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, dblKey, dblVal, setInfo, nullptr));
+
+    napi_value dblResult = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, dblKey, getInfo, &dblResult, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, dblResult, napi_number);
+    double dblOut = 0.0;
+    ASSERT_CHECK_CALL(napi_get_value_double(env, dblResult, &dblOut));
+    ASSERT_DOUBLE_EQ(dblOut, TEST_DOUBLE);
+
+    // Null value
+    napi_value nullKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "nullProp", NAPI_AUTO_LENGTH, &nullKey));
+    napi_value nullVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_null(env, &nullVal));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, nullKey, nullVal, setInfo, nullptr));
+
+    napi_value nullResult = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, nullKey, getInfo, &nullResult, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, nullResult, napi_null);
+
+    // Undefined value
+    napi_value undefKey = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, "undefProp", NAPI_AUTO_LENGTH, &undefKey));
+    napi_value undefVal = nullptr;
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &undefVal));
+    ASSERT_CHECK_CALL(napi_set_property_with_callsite_info(env, obj, undefKey, undefVal, setInfo, nullptr));
+
+    napi_value undefResult = nullptr;
+    ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, undefKey, getInfo, &undefResult, nullptr));
+    ASSERT_CHECK_VALUE_TYPE(env, undefResult, napi_undefined);
+}

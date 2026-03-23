@@ -1047,6 +1047,83 @@ NAPI_EXTERN napi_status napi_get_property(napi_env env, napi_value object, napi_
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_create_callsite_info(napi_env env, napi_callsite_info* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, result);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    uintptr_t info = JSNApi::NapiCreateCallsiteInfo(vm);
+    if (UNLIKELY(info == 0)) {
+        return napi_set_last_error(env, panda::JSNApi::HasPendingException(vm) ?
+            napi_pending_exception : napi_generic_failure);
+    }
+    *result = reinterpret_cast<napi_callsite_info>(info);
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_delete_callsite_info(napi_env env, napi_callsite_info info)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, info);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    JSNApi::NapiDeleteCallsiteInfo(vm, reinterpret_cast<uintptr_t>(info));
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_get_property_with_callsite_info(napi_env env, napi_value object, napi_value key,
+                                                             napi_callsite_info info, napi_value* result,
+                                                             bool* hit)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, key);
+    CHECK_ARG(env, result);
+
+    SWITCH_CONTEXT(env);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    Local<panda::JSValueRef> value = JSNApi::NapiGetPropertyWithCallsiteInfo(
+        vm, reinterpret_cast<uintptr_t>(object),
+        reinterpret_cast<uintptr_t>(key),
+        reinterpret_cast<uintptr_t>(info),
+        hit);
+    RETURN_STATUS_IF_FALSE(env, NapiStatusValidationCheck(value), napi_object_expected);
+#ifdef ENABLE_CONTAINER_SCOPE
+    FunctionSetContainerId(env, value);
+#endif
+    *result = JsValueFromLocalValue(value);
+
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_set_property_with_callsite_info(napi_env env, napi_value object, napi_value key,
+                                                             napi_value value, napi_callsite_info info,
+                                                             bool* hit)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, object);
+    CHECK_ARG(env, key);
+    CHECK_ARG(env, value);
+
+    SWITCH_CONTEXT(env);
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    panda::JsiFastNativeScope fastNativeScope(vm);
+    auto nativeValue = LocalValueFromJsValue(object);
+    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, obj);
+    (void)obj; // avoid compiler complain: we only want check but never use obj
+
+    JSNApi::NapiSetPropertyWithCallsiteInfo(
+        vm, reinterpret_cast<uintptr_t>(object),
+        reinterpret_cast<uintptr_t>(key),
+        reinterpret_cast<uintptr_t>(value),
+        reinterpret_cast<uintptr_t>(info),
+        hit);
+
+    return GET_RETURN_STATUS(env);
+}
+
 NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, napi_value key, bool* result)
 {
     NAPI_PREAMBLE(env);
