@@ -95,9 +95,9 @@
     }
 
 // W-writable E-enumerable C-configurable napi_default is not WEC
-#define DECLARE_NAPI_FUNCTION(name, func)                                         \
-    {                                                                             \
-        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, nullptr \
+#define DECLARE_NAPI_FUNCTION(name, func)                                          \
+    {                                                                              \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_writable, nullptr \
     }
 
 // W-writable E-enumerable C-configurable napi_writable is WEC
@@ -113,9 +113,9 @@
     }
 
 // W-writable E-enumerable C-configurable napi_default is not WEC
-#define DECLARE_NAPI_FUNCTION_WITH_DATA(name, func, data)                      \
-    {                                                                          \
-        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_default, data \
+#define DECLARE_NAPI_FUNCTION_WITH_DATA(name, func, data)                       \
+    {                                                                           \
+        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_writable, data \
     }
 
 // W-writable E-enumerable C-configurable napi_default_jsproperty is WEC
@@ -143,27 +143,28 @@
     }
 
 //static properties
-#define DECLARE_NAPI_STATIC_FUNCTION(name, func)                                 \
-    {                                                                            \
-        (name), nullptr, (func), nullptr, nullptr, nullptr, napi_static, nullptr \
+#define DECLARE_NAPI_STATIC_FUNCTION(name, func)                                        \
+    {                                                                                   \
+        (name), nullptr, (func), nullptr, nullptr, nullptr,                             \
+            static_cast<napi_property_attributes>(napi_writable | napi_static), nullptr \
     }
 
 // W-writable E-enumerable C-configurable napi_default is not WEC
-#define DECLARE_NAPI_GETTER(name, getter)                                           \
-    {                                                                               \
-        (name), nullptr, nullptr, (getter), nullptr, nullptr, napi_default, nullptr \
-    }
-
-// W-writable E-enumerable C-configurable napi_default is not WEC
-#define DECLARE_NAPI_SETTER(name, setter)                                           \
-    {                                                                               \
-        (name), nullptr, nullptr, nullptr, (setter), nullptr, napi_default, nullptr \
-    }
-
-// W-writable E-enumerable C-configurable napi_default is not WEC
-#define DECLARE_NAPI_GETTER_SETTER(name, getter, setter)                             \
+#define DECLARE_NAPI_GETTER(name, getter)                                            \
     {                                                                                \
-        (name), nullptr, nullptr, (getter), (setter), nullptr, napi_default, nullptr \
+        (name), nullptr, nullptr, (getter), nullptr, nullptr, napi_writable, nullptr \
+    }
+
+// W-writable E-enumerable C-configurable napi_default is not WEC
+#define DECLARE_NAPI_SETTER(name, setter)                                            \
+    {                                                                                \
+        (name), nullptr, nullptr, nullptr, (setter), nullptr, napi_writable, nullptr \
+    }
+
+// W-writable E-enumerable C-configurable napi_default is not WEC
+#define DECLARE_NAPI_GETTER_SETTER(name, getter, setter)                              \
+    {                                                                                 \
+        (name), nullptr, nullptr, (getter), (setter), nullptr, napi_writable, nullptr \
     }
 
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_COMMON_H */
