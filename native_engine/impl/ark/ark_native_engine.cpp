@@ -3153,6 +3153,11 @@ void ArkNativeEngine::AllowCrossThreadExecution() const
     JSNApi::AllowCrossThreadExecution(vm_);
 }
 
+void ArkNativeEngine::SetThreadName(const std::string &name)
+{
+    JSNApi::SetThreadName(vm_, name);
+}
+
 bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int32_t deepth)
 {
 #ifdef OHOS_STANDARD_PLATFORM

@@ -313,6 +313,7 @@ public:
     virtual bool StopHeapTracking(const std::string &filePath) = 0;
 
     virtual void AllowCrossThreadExecution() const = 0;
+    virtual void SetThreadName(const std::string &name) = 0;
 
     NativeErrorExtendedInfo* GetLastError();
     void SetLastError(int errorCode, uint32_t engineErrorCode = 0, void* engineReserved = nullptr);
