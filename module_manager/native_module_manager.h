@@ -88,6 +88,7 @@ public:
     void InheritNamespaceEachOther(const std::string& src, const std::string& dst);
     void SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                        const bool& isSystemApp = false);
+    void UpdateNamespaceLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath);
     bool GetLdNamespaceName(const std::string &moduleName, std::string &nsName);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
         std::string& errInfo, bool internal = false, const char* relativePath = "");

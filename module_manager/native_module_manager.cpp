@@ -734,6 +734,66 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
     MODULEMNG_HILOG_DEBUG("path: %{public}s", appLibPathMap_[moduleName]);
 }
 
+void NativeModuleManager::UpdateNamespaceLibPath(const std::string& moduleName,
+                                                 const std::vector<std::string>& appLibPath)
+{
+#if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
+    !defined(LINUX_PLATFORM)
+    MODULEMNG_HILOG_DEBUG("moduleName is %{public}s", moduleName.c_str());
+
+    std::string nsName;
+    if (!GetLdNamespaceName(moduleName, nsName)) {
+        MODULEMNG_HILOG_WARN("namespace not found for moduleName: %{public}s", moduleName.c_str());
+        return;
+    }
+
+    std::string tmpPath = "";
+    {
+        std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
+        if (appLibPathMap_[moduleName] != nullptr) {
+            tmpPath = appLibPathMap_[moduleName];
+        }
+    }
+
+    for (size_t i = 0; i < appLibPath.size(); i++) {
+        if (appLibPath[i].empty()) {
+            continue;
+        }
+        if (!tmpPath.empty()) {
+            tmpPath += ":";
+        }
+        tmpPath += appLibPath[i];
+    }
+
+    int ret = dlns_set_module_namespace_lib_path(nsName.c_str(), tmpPath.c_str());
+    if (ret != 0) {
+        MODULEMNG_HILOG_ERROR("set lib path failed, ret: %{public}d, nsName: %{public}s, path: %{public}s",
+                              ret, nsName.c_str(), tmpPath.c_str());
+        return;
+    }
+
+    char *tmp = strdup(tmpPath.c_str());
+    if (tmp == nullptr) {
+        MODULEMNG_HILOG_ERROR("strdup failed. tmpPath is %{public}s", tmpPath.c_str());
+        return;
+    }
+
+    if (tmp[0] != '\0') {
+        dlns_set_namespace_permitted_paths(nsName.c_str(), tmp);
+    }
+
+    {
+        std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
+        if (appLibPathMap_[moduleName] != nullptr) {
+            free(appLibPathMap_[moduleName]);
+        }
+        appLibPathMap_[moduleName] = tmp;
+    }
+
+    MODULEMNG_HILOG_DEBUG("updated path: %{public}s", tmpPath.c_str());
+#endif
+}
+
 void NativeModuleManager::MoveApiAllowListCheckerPtr(
     std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker, NativeModule* nativeModule)
 {
