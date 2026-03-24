@@ -138,6 +138,7 @@ using NapiAllPromiseRejectCallback = std::function<void(napi_value* args)>;
 using NapiHasOnErrorCallback = std::function<bool()>;
 using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
 using GCTaskFinishedCallback = std::function<void()>;
+using SerializeOptions = panda::SerializeOptions;
 
 // Define method to load counter values of different types
 #define NAPI_COUNTER_ATOMIC_LOAD(storage) (storage).load()
@@ -303,10 +304,10 @@ public:
     virtual bool EnableLocalHandleDetection() = 0;
     virtual void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) = 0;
     virtual void GetJsonExtraInfoForCrash(napi_env env, std::string &jsonStr, uint32_t &position) = 0;
-    virtual void SerializeJSError(napi_env env, napi_value object, bool defaultTransfer,
-                                  bool defaultCloneSendable, void** result) = 0;
-    virtual void SerializeJSErrorWithError(napi_env env, napi_value object, bool defaultTransfer,
-                                           bool defaultCloneSendable, void** result,
+    virtual void SerializeJSError(napi_env env, napi_value object,
+                                  const SerializeOptions& options, void** result) = 0;
+    virtual void SerializeJSErrorWithError(napi_env env, napi_value object,
+                                           const SerializeOptions& options, void** result,
                                            std::string& error) = 0;
     virtual bool DeleteWorker(NativeEngine* workerEngine) = 0;
     virtual bool StartHeapTracking(double timeInterval, bool isVmMode = true) = 0;
