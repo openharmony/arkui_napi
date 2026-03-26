@@ -1270,3 +1270,124 @@ HWTEST_F(ModuleManagerTest, LoadGreylistConfig_WithMock_MultipleBracketPairs, Te
 
     GTEST_LOG_(INFO) << "LoadGreylistConfig_WithMock_MultipleBracketPairs end";
 }
+
+/*
+ * @tc.name: UpdateNamespaceLibPath_001
+ * @tc.desc: test NativeModule's UpdateNamespaceLibPath function when namespace not exist
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_001 starts";
+
+    std::string moduleName = "moduleName_UpdateNamespaceLibPath_001";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::string nsName;
+    bool res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, false);
+
+    std::vector<std::string> appLibPath = { "/new/path1", "/new/path2" };
+    moduleManager->UpdateNamespaceLibPath(moduleName, appLibPath);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_001 end";
+}
+
+/*
+ * @tc.name: UpdateNamespaceLibPath_002
+ * @tc.desc: test NativeModule's UpdateNamespaceLibPath function when namespace exist
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_002, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_002 starts";
+
+    std::string moduleName = "moduleName_UpdateNamespaceLibPath_002";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateLdNamespace(moduleName, "/initial/path", false);
+
+    std::string nsName;
+    bool res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, true);
+
+    std::vector<std::string> appLibPath = { "/new/path1", "/new/path2" };
+    moduleManager->UpdateNamespaceLibPath(moduleName, appLibPath);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_002 end";
+}
+
+/*
+ * @tc.name: UpdateNamespaceLibPath_003
+ * @tc.desc: test NativeModule's UpdateNamespaceLibPath function with empty path
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_003, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_003 starts";
+
+    std::string moduleName = "moduleName_UpdateNamespaceLibPath_003";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateLdNamespace(moduleName, "/initial/path", false);
+
+    std::vector<std::string> appLibPath;
+    moduleManager->UpdateNamespaceLibPath(moduleName, appLibPath);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_003 end";
+}
+
+/*
+ * @tc.name: UpdateNamespaceLibPath_004
+ * @tc.desc: test NativeModule's UpdateNamespaceLibPath function with SetAppLibPath first
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_004 starts";
+
+    std::string moduleName = "moduleName_UpdateNamespaceLibPath_004";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    std::vector<std::string> initialLibPath = { "/initial/path1", "/initial/path2" };
+    moduleManager->SetAppLibPath(moduleName, initialLibPath, false);
+
+    std::string nsName;
+    bool res = moduleManager->GetLdNamespaceName(moduleName, nsName);
+    EXPECT_EQ(res, true);
+
+    std::vector<std::string> newLibPath = { "/new/path1", "/new/path2" };
+    moduleManager->UpdateNamespaceLibPath(moduleName, newLibPath);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_004 end";
+}
+
+/*
+ * @tc.name: UpdateNamespaceLibPath_005
+ * @tc.desc: test NativeModule's UpdateNamespaceLibPath function with empty element in path
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, UpdateNamespaceLibPath_005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_005 starts";
+
+    std::string moduleName = "moduleName_UpdateNamespaceLibPath_005";
+    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
+    ASSERT_NE(nullptr, moduleManager);
+
+    moduleManager->CreateLdNamespace(moduleName, "/initial/path", false);
+
+    std::vector<std::string> appLibPath = { "", "/new/path1", "", "/new/path2", "" };
+    moduleManager->UpdateNamespaceLibPath(moduleName, appLibPath);
+
+    GTEST_LOG_(INFO) << "ModuleManagerTest, UpdateNamespaceLibPath_005 end";
+}
