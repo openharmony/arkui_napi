@@ -580,8 +580,14 @@ public:
      */
     napi_status StopEventLoop();
 
-    virtual bool IsCrossThreadCheckEnabled() const = 0;
-    virtual void UpdateCrossThreadCheckStatus() = 0;
+    virtual bool IsCrossThreadCheckEnabled() const
+    {
+        return crossThreadCheck_;
+    }
+    virtual void UpdateCrossThreadCheckStatus()
+    {
+        crossThreadCheck_ = panda::JSNApi::IsMultiThreadCheckEnabled(GetEcmaVm());
+    }
     virtual bool IsContainerScopeEnabled() const = 0;
 
     bool IsInDestructor() const
@@ -707,6 +713,7 @@ private:
     std::string moduleName_;
     std::string moduleFileName_;
     std::mutex instanceDataLock_;
+    bool crossThreadCheck_ = false;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
     pthread_t tid_ { 0 };

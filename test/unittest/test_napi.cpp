@@ -17244,8 +17244,8 @@ HWTEST_F(NapiBasicTest, NapiInstanceDataCbTest001, testing::ext::TestSize.Level0
         data->called = true;
     }, nullptr));
     ASSERT_CHECK_CALL(napi_set_instance_data(env, data, [](napi_env env, void* rawData, void* hint) {}, nullptr));
-    delete data;
     ASSERT_TRUE(data->called);
+    delete data;
 }
 
 /**

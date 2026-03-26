@@ -1121,7 +1121,7 @@ void NativeEngine::GetInstanceData(void** data)
 void NativeEngine::FinalizerInstanceData(void)
 {
     if (instanceDataInfo_.engine != nullptr && instanceDataInfo_.callback != nullptr) {
-        if (isInDestructor_ || IsCrossThreadCheckEnabled()) {
+        if (IsCrossThreadCheckEnabled()) {
             ExecuteCallback(__FUNCTION__, instanceDataInfo_.callback, instanceDataInfo_.engine,
                             instanceDataInfo_.nativeObject, instanceDataInfo_.hint);
         } else {
