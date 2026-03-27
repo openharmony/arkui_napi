@@ -88,63 +88,71 @@ public:
     }
 
 private:
+    bool TryDequeueEvent(EventData& event)
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cv_.wait(lock, [this] { return !eventQueue_.empty() || !running_.load(); });
+
+        if (!running_.load()) {
+            return false;
+        }
+
+        event = eventQueue_.front();
+        eventQueue_.pop();
+        return true;
+    }
+
+    void DispatchEvent(const EventData& event)
+    {
+        if (!callbackRef_) {
+            return;
+        }
+
+        napi_handle_scope scope;
+        napi_status status = napi_open_handle_scope(env_, &scope);
+        if (status != napi_ok) {
+            return;
+        }
+
+        napi_value callback;
+        status = napi_get_reference_value(env_, callbackRef_, &callback);
+        if (status != napi_ok) {
+            napi_close_handle_scope(env_, scope);
+            return;
+        }
+
+        napi_value argv[ARGV_COUNT_THREE];
+        status = napi_create_int32(env_, event.type, &argv[EVENT_TYPE_INDEX]);
+        if (status != napi_ok) {
+            napi_close_handle_scope(env_, scope);
+            return;
+        }
+        status = napi_create_string_utf8(env_, event.message.c_str(), event.message.length(),
+            &argv[EVENT_MESSAGE_INDEX]);
+        if (status != napi_ok) {
+            napi_close_handle_scope(env_, scope);
+            return;
+        }
+        status = napi_create_int32(env_, event.value, &argv[EVENT_VALUE_INDEX]);
+        if (status != napi_ok) {
+            napi_close_handle_scope(env_, scope);
+            return;
+        }
+
+        napi_value result;
+        napi_call_function(env_, nullptr, callback, ARGV_COUNT_THREE, argv, &result);
+
+        napi_close_handle_scope(env_, scope);
+    }
+
     void EventLoop()
     {
         while (running_.load()) {
             EventData event;
-            {
-                std::unique_lock<std::mutex> lock(mutex_);
-                cv_.wait(lock, [this] { return !eventQueue_.empty() || !running_.load(); });
-
-                if (!running_.load()) {
-                    break;
-                }
-
-                if (!eventQueue_.empty()) {
-                    event = eventQueue_.front();
-                    eventQueue_.pop();
-                } else {
-                    continue;
-                }
+            if (!TryDequeueEvent(event)) {
+                break;
             }
-
-            if (callbackRef_) {
-                napi_handle_scope scope;
-                napi_status status = napi_open_handle_scope(env_, &scope);
-                if (status != napi_ok) {
-                    continue;
-                }
-
-                napi_value callback;
-                status = napi_get_reference_value(env_, callbackRef_, &callback);
-                if (status != napi_ok) {
-                    napi_close_handle_scope(env_, scope);
-                    continue;
-                }
-
-                napi_value argv[ARGV_COUNT_THREE];
-                status = napi_create_int32(env_, event.type, &argv[EVENT_TYPE_INDEX]);
-                if (status != napi_ok) {
-                    napi_close_handle_scope(env_, scope);
-                    continue;
-                }
-                status = napi_create_string_utf8(env_, event.message.c_str(), event.message.length(),
-                    &argv[EVENT_MESSAGE_INDEX]);
-                if (status != napi_ok) {
-                    napi_close_handle_scope(env_, scope);
-                    continue;
-                }
-                status = napi_create_int32(env_, event.value, &argv[EVENT_VALUE_INDEX]);
-                if (status != napi_ok) {
-                    napi_close_handle_scope(env_, scope);
-                    continue;
-                }
-
-                napi_value result;
-                napi_call_function(env_, nullptr, callback, ARGV_COUNT_THREE, argv, &result);
-
-                napi_close_handle_scope(env_, scope);
-            }
+            DispatchEvent(event);
         }
     }
 

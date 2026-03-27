@@ -62,12 +62,12 @@ enum class ImageFormat {
 };
 
 enum class OperationType {
-    Resize = 1,
-    Convert = 2,
-    Grayscale = 3,
-    Brightness = 4,
-    Contrast = 5,
-    Invert = 6,
+    RESIZE = 1,
+    CONVERT = 2,
+    GRAYSCALE = 3,
+    BRIGHTNESS = 4,
+    CONTRAST = 5,
+    INVERT = 6,
 };
 
 struct ImageData {
@@ -85,7 +85,7 @@ struct ImageProcessContext {
     std::unique_ptr<ImageData> outputImage;
     std::string errorMessage;
     bool useCallback = false;
-    OperationType operationType = OperationType::Resize;
+    OperationType operationType = OperationType::RESIZE;
     int param1 = 0;
     int param2 = 0;
 };
@@ -151,6 +151,10 @@ std::unique_ptr<ImageData> ResizeImage(const ImageData* source, int newWidth, in
 
     auto result = CreateImage(newWidth, newHeight, source->format);
     if (!result) {
+        return nullptr;
+    }
+
+    if (newWidth == 0 || newHeight == 0) {
         return nullptr;
     }
 
@@ -302,23 +306,23 @@ void ExecuteImageProcess(napi_env env, void* data)
     }
 
     switch (context->operationType) {
-        case OperationType::Resize:
+        case OperationType::RESIZE:
             context->outputImage = ResizeImage(context->inputImage.get(), context->param1, context->param2);
             break;
-        case OperationType::Convert:
+        case OperationType::CONVERT:
             context->outputImage = ConvertFormat(context->inputImage.get(), static_cast<ImageFormat>(context->param1));
             break;
-        case OperationType::Grayscale:
+        case OperationType::GRAYSCALE:
             context->outputImage = ApplyGrayscale(context->inputImage.get());
             break;
-        case OperationType::Brightness:
+        case OperationType::BRIGHTNESS:
             context->outputImage = AdjustBrightness(context->inputImage.get(), context->param1);
             break;
-        case OperationType::Contrast:
+        case OperationType::CONTRAST:
             context->outputImage = AdjustContrast(context->inputImage.get(),
                 static_cast<float>(context->param1) / CONTRAST_DENOMINATOR);
             break;
-        case OperationType::Invert:
+        case OperationType::INVERT:
             context->outputImage = ApplyInvert(context->inputImage.get());
             break;
         default:
@@ -331,6 +335,68 @@ void ExecuteImageProcess(napi_env env, void* data)
     }
 }
 
+static napi_value BuildImageResult(napi_env env, const ImageData* image)
+{
+    if (!image) {
+        return nullptr;
+    }
+
+    napi_value resultObj;
+    napi_create_object(env, &resultObj);
+
+    napi_value widthValue;
+    napi_create_int32(env, image->width, &widthValue);
+    napi_set_named_property(env, resultObj, "width", widthValue);
+
+    napi_value heightValue;
+    napi_create_int32(env, image->height, &heightValue);
+    napi_set_named_property(env, resultObj, "height", heightValue);
+
+    napi_value formatValue;
+    napi_create_int32(env, static_cast<int>(image->format), &formatValue);
+    napi_set_named_property(env, resultObj, "format", formatValue);
+
+    napi_value pixelsArray;
+    void* arrayData = nullptr;
+    napi_create_arraybuffer(env, image->pixels.size(), &arrayData, &pixelsArray);
+    std::copy(image->pixels.begin(), image->pixels.end(), static_cast<uint8_t*>(arrayData));
+    napi_set_named_property(env, resultObj, "pixels", pixelsArray);
+
+    return resultObj;
+}
+
+static void CompleteWithCallback(napi_env env, ImageProcessContext* context, napi_value resultObj,
+    napi_value undefined)
+{
+    napi_value callback;
+    napi_get_reference_value(env, context->callback, &callback);
+
+    napi_value argv[CALLBACK_ARG_COUNT];
+    if (context->outputImage) {
+        napi_get_null(env, &argv[0]);
+        argv[1] = resultObj;
+    } else {
+        napi_value error;
+        napi_create_string_utf8(env, context->errorMessage.c_str(), context->errorMessage.length(), &argv[0]);
+        argv[1] = undefined;
+    }
+
+    napi_call_function(env, undefined, callback, CALLBACK_ARG_COUNT, argv, nullptr);
+    napi_delete_reference(env, context->callback);
+}
+
+static void CompleteWithPromise(napi_env env, ImageProcessContext* context, napi_value resultObj)
+{
+    if (context->outputImage) {
+        napi_resolve_deferred(env, context->deferred, resultObj);
+        return;
+    }
+
+    napi_value error;
+    napi_create_string_utf8(env, context->errorMessage.c_str(), context->errorMessage.length(), &error);
+    napi_reject_deferred(env, context->deferred, error);
+}
+
 void CompleteImageProcess(napi_env env, napi_status status, void* data)
 {
     auto context = static_cast<ImageProcessContext*>(data);
@@ -338,57 +404,12 @@ void CompleteImageProcess(napi_env env, napi_status status, void* data)
     napi_value undefined;
     napi_get_undefined(env, &undefined);
 
-    napi_value resultObj = nullptr;
-
-    if (context->outputImage) {
-        napi_create_object(env, &resultObj);
-
-        napi_value widthValue;
-        napi_create_int32(env, context->outputImage->width, &widthValue);
-        napi_set_named_property(env, resultObj, "width", widthValue);
-
-        napi_value heightValue;
-        napi_create_int32(env, context->outputImage->height, &heightValue);
-        napi_set_named_property(env, resultObj, "height", heightValue);
-
-        napi_value formatValue;
-        napi_create_int32(env, static_cast<int>(context->outputImage->format), &formatValue);
-        napi_set_named_property(env, resultObj, "format", formatValue);
-
-        napi_value pixelsArray;
-        void* arrayData = nullptr;
-        napi_create_arraybuffer(env, context->outputImage->pixels.size(), &arrayData, &pixelsArray);
-        std::copy(context->outputImage->pixels.begin(), context->outputImage->pixels.end(),
-            static_cast<uint8_t*>(arrayData));
-        napi_set_named_property(env, resultObj, "pixels", pixelsArray);
-    }
+    napi_value resultObj = BuildImageResult(env, context->outputImage.get());
 
     if (context->useCallback && context->callback != nullptr) {
-        napi_value callback;
-        napi_get_reference_value(env, context->callback, &callback);
-
-        napi_value argv[CALLBACK_ARG_COUNT];
-        if (context->outputImage) {
-            napi_get_null(env, &argv[0]);
-            argv[1] = resultObj;
-        } else {
-            napi_value error;
-            napi_create_string_utf8(env, context->errorMessage.c_str(),
-                context->errorMessage.length(), &argv[0]);
-            argv[1] = undefined;
-        }
-
-        napi_call_function(env, undefined, callback, CALLBACK_ARG_COUNT, argv, nullptr);
-        napi_delete_reference(env, context->callback);
+        CompleteWithCallback(env, context, resultObj, undefined);
     } else if (context->deferred != nullptr) {
-        if (context->outputImage) {
-            napi_resolve_deferred(env, context->deferred, resultObj);
-        } else {
-            napi_value error;
-            napi_create_string_utf8(env, context->errorMessage.c_str(),
-                context->errorMessage.length(), &error);
-            napi_reject_deferred(env, context->deferred, error);
-        }
+        CompleteWithPromise(env, context, resultObj);
     }
 
     napi_delete_async_work(env, context->work);
@@ -477,7 +498,7 @@ napi_value Resize(napi_env env, napi_callback_info info)
 
     napi_get_value_int32(env, argv[WIDTH_ARG_INDEX], &context->param1);
     napi_get_value_int32(env, argv[HEIGHT_ARG_INDEX], &context->param2);
-    context->operationType = OperationType::Resize;
+    context->operationType = OperationType::RESIZE;
 
     napi_value promise;
     napi_value resourceName;
@@ -512,7 +533,7 @@ napi_value ConvertFormat(napi_env env, napi_callback_info info)
     }
 
     napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
-    context->operationType = OperationType::Convert;
+    context->operationType = OperationType::CONVERT;
 
     napi_value promise;
     napi_value resourceName;
@@ -546,7 +567,7 @@ napi_value Grayscale(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    context->operationType = OperationType::Grayscale;
+    context->operationType = OperationType::GRAYSCALE;
 
     napi_value promise;
     napi_value resourceName;
@@ -581,7 +602,7 @@ napi_value Brightness(napi_env env, napi_callback_info info)
     }
 
     napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
-    context->operationType = OperationType::Brightness;
+    context->operationType = OperationType::BRIGHTNESS;
 
     napi_value promise;
     napi_value resourceName;
@@ -616,7 +637,7 @@ napi_value Contrast(napi_env env, napi_callback_info info)
     }
 
     napi_get_value_int32(env, argv[PARAM_ARG_INDEX], &context->param1);
-    context->operationType = OperationType::Contrast;
+    context->operationType = OperationType::CONTRAST;
 
     napi_value promise;
     napi_value resourceName;
@@ -650,7 +671,7 @@ napi_value Invert(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    context->operationType = OperationType::Invert;
+    context->operationType = OperationType::INVERT;
 
     napi_value promise;
     napi_value resourceName;

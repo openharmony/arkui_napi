@@ -91,6 +91,18 @@ constexpr int SHA256_WORD_OFFSET_2 = 2;
 constexpr int SHA256_WORD_OFFSET_7 = 7;
 constexpr int SHA256_WORD_OFFSET_15 = 15;
 constexpr int SHA256_WORD_OFFSET_16 = 16;
+constexpr int SHA256_ROTATE_2 = 2;
+constexpr int SHA256_ROTATE_6 = 6;
+constexpr int SHA256_ROTATE_7 = 7;
+constexpr int SHA256_ROTATE_11 = 11;
+constexpr int SHA256_ROTATE_13 = 13;
+constexpr int SHA256_ROTATE_17 = 17;
+constexpr int SHA256_ROTATE_18 = 18;
+constexpr int SHA256_ROTATE_19 = 19;
+constexpr int SHA256_ROTATE_22 = 22;
+constexpr int SHA256_ROTATE_25 = 25;
+constexpr int SHA256_SHIFT_3 = 3;
+constexpr int SHA256_SHIFT_10 = 10;
 constexpr int BYTE_SHIFT_8 = 8;
 constexpr int BYTE_SHIFT_16 = 16;
 constexpr int BYTE_SHIFT_24 = 24;
@@ -416,36 +428,30 @@ inline uint32_t Sha256Maj(uint32_t x, uint32_t y, uint32_t z)
 
 inline uint32_t Sha256Ep0(uint32_t x)
 {
-    return Sha256RotateRight(x, 2) ^ Sha256RotateRight(x, 13) ^ Sha256RotateRight(x, 22);
+    return Sha256RotateRight(x, SHA256_ROTATE_2) ^ Sha256RotateRight(x, SHA256_ROTATE_13) ^
+           Sha256RotateRight(x, SHA256_ROTATE_22);
 }
 
 inline uint32_t Sha256Ep1(uint32_t x)
 {
-    return Sha256RotateRight(x, 6) ^ Sha256RotateRight(x, 11) ^ Sha256RotateRight(x, 25);
+    return Sha256RotateRight(x, SHA256_ROTATE_6) ^ Sha256RotateRight(x, SHA256_ROTATE_11) ^
+           Sha256RotateRight(x, SHA256_ROTATE_25);
 }
 
 inline uint32_t Sha256Sig0(uint32_t x)
 {
-    return Sha256RotateRight(x, 7) ^ Sha256RotateRight(x, 18) ^ (x >> 3);
+    return Sha256RotateRight(x, SHA256_ROTATE_7) ^ Sha256RotateRight(x, SHA256_ROTATE_18) ^
+           (x >> SHA256_SHIFT_3);
 }
 
 inline uint32_t Sha256Sig1(uint32_t x)
 {
-    return Sha256RotateRight(x, 17) ^ Sha256RotateRight(x, 19) ^ (x >> 10);
+    return Sha256RotateRight(x, SHA256_ROTATE_17) ^ Sha256RotateRight(x, SHA256_ROTATE_19) ^
+           (x >> SHA256_SHIFT_10);
 }
 
-void SHA256Transform(SHA256Context* ctx, const uint8_t block[SHA256_BUFFER_SIZE])
+void Sha256InitMessageSchedule(const uint8_t block[SHA256_BUFFER_SIZE], uint32_t* w)
 {
-    uint32_t w[SHA256_ROUNDS];
-    uint32_t a = ctx->state[SHA256_STATE_INDEX_0];
-    uint32_t b = ctx->state[SHA256_STATE_INDEX_1];
-    uint32_t c = ctx->state[SHA256_STATE_INDEX_2];
-    uint32_t d = ctx->state[SHA256_STATE_INDEX_3];
-    uint32_t e = ctx->state[SHA256_STATE_INDEX_4];
-    uint32_t f = ctx->state[SHA256_STATE_INDEX_5];
-    uint32_t g = ctx->state[SHA256_STATE_INDEX_6];
-    uint32_t h = ctx->state[SHA256_STATE_INDEX_7];
-
     for (int i = 0; i < SHA256_FIRST_WORDS; i++) {
         w[i] = (static_cast<uint32_t>(block[i * BYTES_PER_INT32]) << BYTE_SHIFT_24) |
                (static_cast<uint32_t>(block[i * BYTES_PER_INT32 + BYTE_OFFSET_1]) << BYTE_SHIFT_16) |
@@ -457,6 +463,18 @@ void SHA256Transform(SHA256Context* ctx, const uint8_t block[SHA256_BUFFER_SIZE]
         w[i] = Sha256Sig1(w[i - SHA256_WORD_OFFSET_2]) + w[i - SHA256_WORD_OFFSET_7] +
                Sha256Sig0(w[i - SHA256_WORD_OFFSET_15]) + w[i - SHA256_WORD_OFFSET_16];
     }
+}
+
+void Sha256Compress(SHA256Context* ctx, const uint32_t* w)
+{
+    uint32_t a = ctx->state[SHA256_STATE_INDEX_0];
+    uint32_t b = ctx->state[SHA256_STATE_INDEX_1];
+    uint32_t c = ctx->state[SHA256_STATE_INDEX_2];
+    uint32_t d = ctx->state[SHA256_STATE_INDEX_3];
+    uint32_t e = ctx->state[SHA256_STATE_INDEX_4];
+    uint32_t f = ctx->state[SHA256_STATE_INDEX_5];
+    uint32_t g = ctx->state[SHA256_STATE_INDEX_6];
+    uint32_t h = ctx->state[SHA256_STATE_INDEX_7];
 
     static const uint32_t kSha256Constants[SHA256_ROUNDS] = {
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -490,6 +508,13 @@ void SHA256Transform(SHA256Context* ctx, const uint8_t block[SHA256_BUFFER_SIZE]
     ctx->state[SHA256_STATE_INDEX_5] += f;
     ctx->state[SHA256_STATE_INDEX_6] += g;
     ctx->state[SHA256_STATE_INDEX_7] += h;
+}
+
+void SHA256Transform(SHA256Context* ctx, const uint8_t block[SHA256_BUFFER_SIZE])
+{
+    uint32_t w[SHA256_ROUNDS];
+    Sha256InitMessageSchedule(block, w);
+    Sha256Compress(ctx, w);
 }
 
 void SHA256Update(SHA256Context* ctx, const uint8_t* data, size_t length)

@@ -22,6 +22,7 @@ constexpr int MAX_BUFFER_SIZE = 256;
 constexpr int MAX_ARRAY_BUFFER_SIZE = 1048576;
 constexpr int MODULE_VERSION = 1;
 constexpr int MODULE_FLAGS = 0;
+constexpr size_t CREATE_DATA_ARG_COUNT = 2;
 
 struct ManagedData {
     int id;
@@ -95,7 +96,7 @@ static napi_value CreateData(napi_env env, napi_callback_info info)
         return nullptr;
     }
 
-    if (argc < 2) {
+    if (argc < CREATE_DATA_ARG_COUNT) {
         napi_throw_error(env, nullptr, "Expected 2 arguments (id, name)");
         return nullptr;
     }
@@ -313,8 +314,7 @@ static napi_value CreateExternalArrayBuffer(napi_env env, napi_callback_info inf
 
     std::fill(static_cast<uint8_t*>(data), static_cast<uint8_t*>(data) + size, 0xAA);
 
-    auto finalizeCallback = [](napi_env env, void* data, void* hint)
-    {
+    auto finalizeCallback = [](napi_env env, void* data, void* hint) {
         free(data);
     };
 
@@ -339,7 +339,8 @@ napi_value Init(napi_env env, napi_value exports)
         {"clearCache", nullptr, ClearCache, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"getCacheSize", nullptr, GetCacheSize, nullptr, nullptr, nullptr, napi_default, nullptr},
         {"createArrayBuffer", nullptr, CreateArrayBuffer, nullptr, nullptr, nullptr, napi_default, nullptr},
-        {"createExternalArrayBuffer", nullptr, CreateExternalArrayBuffer, nullptr, nullptr, nullptr, napi_default, nullptr},
+        {"createExternalArrayBuffer", nullptr, CreateExternalArrayBuffer, nullptr, nullptr, nullptr, napi_default,
+         nullptr},
     };
 
     napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);

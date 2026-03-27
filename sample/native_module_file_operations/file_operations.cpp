@@ -35,6 +35,7 @@ constexpr int32_t FILE_ERROR_OPEN = 1;
 constexpr int32_t FILE_ERROR_TOO_LARGE = 2;
 constexpr int32_t FILE_ERROR_READ = 3;
 constexpr size_t CALLBACK_ARG_COUNT = 2;
+constexpr size_t WRITE_FILE_SYNC_ARG_COUNT = 2;
 
 void LogInfo(const std::string& message)
 {
@@ -203,8 +204,8 @@ napi_value ReadFileSync(napi_env env, napi_callback_info info)
 
 napi_value ReadFileAsync(napi_env env, napi_callback_info info)
 {
-    size_t argc = 2;
-    napi_value argv[2] = { nullptr };
+    size_t argc = WRITE_FILE_SYNC_ARG_COUNT;
+    napi_value argv[WRITE_FILE_SYNC_ARG_COUNT] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
 
     NAPIAPI_ASSERT(env, argc >= 1, "Requires at least 1 argument: filePath");
@@ -266,7 +267,7 @@ napi_value WriteFileSync(napi_env env, napi_callback_info info)
     napi_value argv[2] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
 
-    NAPI_ASSERT(env, argc >= 2, "Requires 2 arguments: filePath and content");
+    NAPI_ASSERT(env, argc >= WRITE_FILE_SYNC_ARG_COUNT, "Requires 2 arguments: filePath and content");
 
     napi_valuetype type = napi_undefined;
     NAPI_CALL(env, napi_typeof(env, argv[0], &type));

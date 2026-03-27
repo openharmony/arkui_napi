@@ -228,7 +228,7 @@ void CompleteHttpRequest(napi_env env, napi_status status, void* data)
 
     napi_value dataValue;
     napi_create_string_utf8(env, context->responseData.c_str(),
-                           context->responseData.length(), &dataValue);
+        context->responseData.length(), &dataValue);
     napi_set_named_property(env, resultObj, "data", dataValue);
 
     napi_value successValue;
@@ -324,7 +324,7 @@ napi_value HttpPost(napi_env env, napi_callback_info info)
     napi_value argv[POST_ARG_COUNT];
     napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
 
-    if (argc < 2) {
+    if (argc < POST_ARG_COUNT) {
         napi_throw_error(env, nullptr, "URL and body are required");
         return nullptr;
     }
