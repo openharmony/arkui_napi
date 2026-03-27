@@ -79,7 +79,7 @@ config("ace_napi_config") {
     if (use_musl && !is_asan) {
       defines += [ "HOOK_ENABLE" ]
     }
-    if (!is_arkui_x) {
+    if (!is_arkui_x && !ark_standalone_build) {
       defines += [ "OHOS_STANDARD_PLATFORM" ]
     }
   } else if (is_mingw) {
