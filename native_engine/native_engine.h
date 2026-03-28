@@ -580,8 +580,14 @@ public:
      */
     napi_status StopEventLoop();
 
-    virtual bool IsCrossThreadCheckEnabled() const = 0;
-    virtual void UpdateCrossThreadCheckStatus() = 0;
+    virtual bool IsCrossThreadCheckEnabled() const
+    {
+        return crossThreadCheck_;
+    }
+    virtual void UpdateCrossThreadCheckStatus()
+    {
+        crossThreadCheck_ = panda::JSNApi::IsMultiThreadCheckEnabled(GetEcmaVm());
+    }
     virtual bool IsContainerScopeEnabled() const = 0;
 
     bool IsInDestructor() const
@@ -639,6 +645,13 @@ public:
     inline int32_t GetInstanceId() {
         return instanceId_;
     };
+
+    template <typename T, typename... Args>
+    static inline void ExecuteCallback(const std::string& func, T&& call, Args... args) {
+        panda::ArkCrashHolder holder("NAPI", func);
+        holder.UpdateCallbackPtr(reinterpret_cast<uintptr_t>(call));
+        call(args...);
+    }
 
 private:
     void InitUvField();
@@ -700,6 +713,7 @@ private:
     std::string moduleName_;
     std::string moduleFileName_;
     std::mutex instanceDataLock_;
+    bool crossThreadCheck_ = false;
     NativeObjectInfo instanceDataInfo_;
     void FinalizerInstanceData(void);
     pthread_t tid_ { 0 };

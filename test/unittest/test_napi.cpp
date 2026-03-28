@@ -17200,6 +17200,92 @@ HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest003, testing::ext::TestSiz
 }
 
 /**
+ * @tc.name: NapiAsyncWorkCompleteTest001
+ * @tc.desc: Create and execute async work.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiAsyncWorkCompleteTest001, testing::ext::TestSize.Level0)
+{
+    napi_async_work work = nullptr;
+    napi_env env = (napi_env)engine_;
+    napi_value resourceName = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_utf8(env, TEST_CHAR_ASYNCWORK, NAPI_AUTO_LENGTH, &resourceName));
+    ASSERT_CHECK_CALL(napi_create_async_work(
+        env, nullptr, resourceName, [](napi_env value, void* data) {},
+        [](napi_env env, napi_status status, void* data) {
+            STOP_EVENT_LOOP(env);
+            napi_async_work work = *reinterpret_cast<napi_async_work*>(data);
+            napi_status deleteStatus = napi_delete_async_work(env, work);
+            ASSERT_EQ(deleteStatus, napi_ok);
+        }, &work, &work));
+    ASSERT_CHECK_CALL(napi_queue_async_work(env, work));
+    RUN_EVENT_LOOP(env);
+}
+
+/**
+ * @tc.name: NapiInstanceDataCbTest001
+ * @tc.desc: Test instance data delete callback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiInstanceDataCbTest001, testing::ext::TestSize.Level0)
+{
+    struct DataTest {
+        size_t value;
+        bool called;
+    };
+
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    // Set instance data
+    DataTest* data = new DataTest();
+    data->value = INT_FORTYTWO;
+    data->called = false;
+    ASSERT_CHECK_CALL(napi_set_instance_data(env, data, [](napi_env env, void* rawData, void* hint) {
+        DataTest* data = reinterpret_cast<DataTest*>(rawData);
+        data->called = true;
+    }, nullptr));
+    ASSERT_CHECK_CALL(napi_set_instance_data(env, data, [](napi_env env, void* rawData, void* hint) {}, nullptr));
+    ASSERT_TRUE(data->called);
+    delete data;
+}
+
+/**
+ * @tc.name: NapiThreadsafeCbTest001
+ * @tc.desc: Test threadsafe function callback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, NapiThreadsafeCbTest001, testing::ext::TestSize.Level0)
+{
+    struct CallbackContext {
+        napi_threadsafe_function tsfn;
+        bool exeCalled;
+        bool completeCalled;
+    };
+    UVLoopRunner runner(engine_);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    CallbackContext* callbackData = new CallbackContext();
+    callbackData->exeCalled = false;
+    callbackData->completeCalled = false;
+    napi_value resourceName = nullptr;
+    ASSERT_CHECK_CALL(napi_create_string_latin1(env, __func__, NAPI_AUTO_LENGTH, &resourceName));
+    ASSERT_CHECK_CALL(napi_create_threadsafe_function(env, nullptr, nullptr, resourceName,
+        0, 1, nullptr, [](napi_env env, void* finalizeData, void* hint) {
+            STOP_EVENT_LOOP(env);
+            CallbackContext *callbackData = reinterpret_cast<CallbackContext *>(hint);
+            ASSERT_TRUE(callbackData->exeCalled);
+            callbackData->completeCalled = true;
+        }, callbackData,
+        [](napi_env env, napi_value tsfn_cb, void* context, void* data) {
+            CallbackContext *callbackData = reinterpret_cast<CallbackContext *>(context);
+            callbackData->exeCalled = true;
+            ASSERT_CHECK_CALL(napi_release_threadsafe_function(callbackData->tsfn, napi_tsfn_release));
+        }, &callbackData->tsfn));
+    ASSERT_CHECK_CALL(napi_call_threadsafe_function(callbackData->tsfn, nullptr, napi_tsfn_nonblocking));
+    runner.Run();
+    ASSERT_TRUE(callbackData->completeCalled);
+    delete callbackData;
+}
+
+/**
 * @tc.name: NapiGetStringUtf8HybridTest001
 * @tc.desc: Test napi_get_value_string_utf8_hybrid with basic ASCII string
 * @tc.type: FUNC

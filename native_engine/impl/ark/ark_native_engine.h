@@ -423,14 +423,6 @@ public:
         const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
 
-    inline bool IsCrossThreadCheckEnabled() const override
-    {
-        return crossThreadCheck_;
-    }
-    inline void UpdateCrossThreadCheckStatus() override
-    {
-        crossThreadCheck_ = JSNApi::IsMultiThreadCheckEnabled(vm_);
-    }
     static constexpr size_t FINALIZERS_PACK_PENDING_NATIVE_BINDING_SIZE_THRESHOLD = 500 * 1024 * 1024;  // 500 MB
 
     bool IsContainerScopeEnabled() const override
@@ -557,7 +549,6 @@ private:
     std::vector<RefAsyncFinalizer> pendingAsyncFinalizers_ {};
     // napi options and its cache
     NapiOptions* options_ { nullptr };
-    bool crossThreadCheck_ { false };
     // Initialize the default value to false rather than isolating it with macros.
     bool containerScopeEnable_ { false };
     NativeTimerCallbackInfo* TimerListHead_ {nullptr};
