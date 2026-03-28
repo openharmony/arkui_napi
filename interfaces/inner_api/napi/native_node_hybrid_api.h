@@ -65,6 +65,8 @@ NAPI_EXTERN napi_status napi_get_stackinfo(napi_env env, NapiStackInfo* result);
 NAPI_EXTERN napi_status napi_get_value_string_utf8_hybrid(napi_env env,
                                                           napi_value value,
                                                           void* string_object);
+NAPI_EXTERN napi_status napi_is_undefined(napi_env env, napi_value value, bool* result);
+NAPI_EXTERN napi_status napi_is_null(napi_env env, napi_value value, bool* result);
 
 // XGC specific internal API
 #ifdef PANDA_JS_ETS_HYBRID_MODE
