@@ -394,7 +394,7 @@ bool NativeModuleManager::CreateTailNativeModule()
 
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
-constexpr char GREYLIST_CONFIG_PATH[] = "/data/service/el0/public/musl_namespace_config/greylist.json";
+constexpr char GREYLIST_CONFIG_PATH[] = "/data/service/el0/public/for-all-app/musl_namespace_config/greylist.json";
 constexpr static int32_t SO_SUFFIX_LENGTH = 3;
 
 // Helper function to validate library name format

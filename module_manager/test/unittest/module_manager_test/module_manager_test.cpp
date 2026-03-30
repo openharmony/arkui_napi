@@ -27,7 +27,7 @@ namespace {
     constexpr static int32_t NATIVE_PATH_NUMBER = 3;
     constexpr static int32_t IS_APP_MODULE_FLAGS = 100;
     constexpr char GREYLIST_CONFIG_PATH_LT[] =
-        "/data/service/el0/public/musl_namespace_config/greylist.json";
+        "/data/service/el0/public/for-all-app/musl_namespace_config/greylist.json";
 };
 
 class ModuleManagerTest : public testing::Test {
