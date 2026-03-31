@@ -17360,6 +17360,131 @@ HWTEST_F(NapiBasicTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.L
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
 }
+
+/**
+* @tc.name: NapiIsUndefinedTest001
+* @tc.desc: Test napi_is_undefined with undefined value
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, NapiIsUndefinedTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_get_undefined(env, &result));
+
+    bool isUndefined = false;
+    ASSERT_CHECK_CALL(napi_is_undefined(env, result, &isUndefined));
+
+    ASSERT_TRUE(isUndefined);
+}
+
+/**
+* @tc.name: NapiIsUndefinedTest002
+* @tc.desc: Test napi_is_undefined with non-undefined values
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, NapiIsUndefinedTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    // Test with null
+    {
+        napi_value nullValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_null(env, &nullValue));
+
+        bool isUndefined = true;
+        ASSERT_CHECK_CALL(napi_is_undefined(env, nullValue, &isUndefined));
+
+        ASSERT_FALSE(isUndefined);
+    }
+
+    // Test with string
+    {
+        napi_value strValue = nullptr;
+        const char testStr[] = "test";
+        ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, strlen(testStr), &strValue));
+
+        bool isUndefined = true;
+        ASSERT_CHECK_CALL(napi_is_undefined(env, strValue, &isUndefined));
+
+        ASSERT_FALSE(isUndefined);
+    }
+
+    // Test with number
+    {
+        napi_value numValue = nullptr;
+        ASSERT_CHECK_CALL(napi_create_int32(env, 42, &numValue));
+
+        bool isUndefined = true;
+        ASSERT_CHECK_CALL(napi_is_undefined(env, numValue, &isUndefined));
+
+        ASSERT_FALSE(isUndefined);
+    }
+}
+
+/**
+* @tc.name: NapiIsNullTest001
+* @tc.desc: Test napi_is_null with null value
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, NapiIsNullTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value result = nullptr;
+
+    ASSERT_CHECK_CALL(napi_get_null(env, &result));
+
+    bool isNull = false;
+    ASSERT_CHECK_CALL(napi_is_null(env, result, &isNull));
+
+    ASSERT_TRUE(isNull);
+}
+
+/**
+* @tc.name: NapiIsNullTest002
+* @tc.desc: Test napi_is_null with non-null values
+* @tc.type: FUNC
+*/
+HWTEST_F(NapiBasicTest, NapiIsNullTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+
+    // Test with undefined
+    {
+        napi_value undefinedValue = nullptr;
+        ASSERT_CHECK_CALL(napi_get_undefined(env, &undefinedValue));
+
+        bool isNull = true;
+        ASSERT_CHECK_CALL(napi_is_null(env, undefinedValue, &isNull));
+
+        ASSERT_FALSE(isNull);
+    }
+
+    // Test with string
+    {
+        napi_value strValue = nullptr;
+        const char testStr[] = "test";
+        ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, strlen(testStr), &strValue));
+
+        bool isNull = true;
+        ASSERT_CHECK_CALL(napi_is_null(env, strValue, &isNull));
+
+        ASSERT_FALSE(isNull);
+    }
+
+    // Test with number
+    {
+        napi_value numValue = nullptr;
+        ASSERT_CHECK_CALL(napi_create_int32(env, 42, &numValue));
+
+        bool isNull = true;
+        ASSERT_CHECK_CALL(napi_is_null(env, numValue, &isNull));
+
+        ASSERT_FALSE(isNull);
+    }
+}
+
 // ========================== property with callsite info tests ========================== //
 
 class CallsiteInfoGuard {

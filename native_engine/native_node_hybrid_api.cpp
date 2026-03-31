@@ -125,6 +125,32 @@ NAPI_EXTERN napi_status napi_get_value_string_utf8_hybrid(napi_env env, napi_val
     return napi_clear_last_error(env);
 }
 
+NAPI_EXTERN napi_status napi_is_undefined(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto valueObj = LocalValueFromJsValue(value);
+    // IsUndefined() is a pure function that does not access VM state or trigger GC,
+    // so JsiFastNativeScope is not required
+    *result = valueObj->IsUndefined();
+    return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_is_null(napi_env env, napi_value value, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, value);
+    CHECK_ARG(env, result);
+
+    auto valueObj = LocalValueFromJsValue(value);
+    // IsNull() is a pure function that does not access VM state or trigger GC,
+    // so JsiFastNativeScope is not required
+    *result = valueObj->IsNull();
+    return napi_clear_last_error(env);
+}
+
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
                                        napi_value js_object,
