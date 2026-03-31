@@ -30,12 +30,12 @@ class NapiArkIdleMonitorTest : public NativeEngineTest {
 public:
     static void SetUpTestCase()
     {
-        GTEST_LOG_(INFO) << "NapiErrorCodeTest SetUpTestCase";
+        GTEST_LOG_(INFO) << "NapiArkIdleMonitorTest SetUpTestCase";
     }
 
     static void TearDownTestCase()
     {
-        GTEST_LOG_(INFO) << "NapiErrorCodeTest TearDownTestCase";
+        GTEST_LOG_(INFO) << "NapiArkIdleMonitorTest TearDownTestCase";
     }
 
     void SetUp() override
@@ -57,9 +57,10 @@ private:
 
 
 /**
- * @tc.name: SetMainThreadEcmaVMTest
- * @tc.desc: Test interface of ArkIdleMonitor
+ * @tc.name: NapiArkIdleMonitorSetMainThreadEcmaVMTest001
+ * @tc.desc: Test SetMainThreadEcmaVM interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, SetMainThreadEcmaVMTest001, testing::ext::TestSize.Level0)
 {
@@ -92,9 +93,10 @@ HWTEST_F(NapiArkIdleMonitorTest, SetMainThreadEcmaVMTest001, testing::ext::TestS
 }
 
 /**
- * @tc.name: NotifyChangeBackgroundStateTest
- * @tc.desc: Test interface of ArkIdleMonitor
+ * @tc.name: NapiArkIdleMonitorNotifyChangeBackgroundStateTest001
+ * @tc.desc: Test NotifyChangeBackgroundState interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, NotifyChangeBackgroundStateTest001, testing::ext::TestSize.Level0)
 {
@@ -105,15 +107,16 @@ HWTEST_F(NapiArkIdleMonitorTest, NotifyChangeBackgroundStateTest001, testing::ex
     arkIdleMonitor->SetMainThreadEcmaVM(vm);
     arkIdleMonitor->SetStartTimerCallback();
     arkIdleMonitor->NotifyChangeBackgroundState(true);
-    ASSERT_TRUE(arkIdleMonitor->IsInBackground() == true);
+    ASSERT_TRUE(arkIdleMonitor->IsInBackground());
     arkIdleMonitor->NotifyChangeBackgroundState(false);
-    ASSERT_TRUE(arkIdleMonitor->IsInBackground() == false);
+    ASSERT_FALSE(arkIdleMonitor->IsInBackground());
 }
 
 /**
- * @tc.name: RegisterWorkerEnvTest
- * @tc.desc: Test interface of ArkIdleMonitor
+ * @tc.name: NapiArkIdleMonitorRegisterWorkerEnvTest001
+ * @tc.desc: Test RegisterWorkerEnv interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, RegisterWorkerEnvTest001, testing::ext::TestSize.Level0)
 {
@@ -150,9 +153,10 @@ HWTEST_F(NapiArkIdleMonitorTest, RegisterWorkerEnvTest001, testing::ext::TestSiz
 }
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest001
- * @tc.desc: Test idle Monitor deferfreeze
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest001
+ * @tc.desc: Test deferfreeze in background state
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest001, testing::ext::TestSize.Level0)
 {
@@ -164,7 +168,7 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest001, testing::ext::Te
 
     arkIdleMonitor->NotifyChangeBackgroundState(true);
     ASSERT_TRUE(arkIdleMonitor->IsInBackground());
-    sleep(1);
+    sleep(1);  // wait for deferfreeze timer
 
     ASSERT_FALSE(arkIdleMonitor->IsDeferfreeze());
     ASSERT_FALSE(arkIdleMonitor->IsSwitchToBackgroundTask());
@@ -177,9 +181,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest001, testing::ext::Te
 }
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest002
- * @tc.desc: ban persist.ark.enableidlegc
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest002
+ * @tc.desc: Test disable deferfreeze when persist.ark.enableidlegc is disabled
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest002, testing::ext::TestSize.Level0)
 {
@@ -207,9 +212,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest002, testing::ext::Te
 }
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest003
- * @tc.desc: Normal function
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest003
+ * @tc.desc: Test enable deferfreeze with normal function
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest003, testing::ext::TestSize.Level0)
 {
@@ -236,9 +242,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest003, testing::ext::Te
 }
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest004
- * @tc.desc: Turn it on multiple times
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest004
+ * @tc.desc: Test enable deferfreeze multiple times
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest004, testing::ext::TestSize.Level0)
 {
@@ -268,9 +275,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest004, testing::ext::Te
 }
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest005
- * @tc.desc: Closed multiple times
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest005
+ * @tc.desc: Test disable deferfreeze multiple times
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest005, testing::ext::TestSize.Level0)
 {
@@ -302,9 +310,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest005, testing::ext::Te
 
 
 /**
- * @tc.name: IdleMonitorDeferfreezeTest006
- * @tc.desc: The background switch task has not been enabled
+ * @tc.name: NapiArkIdleMonitorDeferfreezeTest006
+ * @tc.desc: Test deferfreeze when background task is not enabled
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest006, testing::ext::TestSize.Level0)
 {
@@ -331,9 +340,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorDeferfreezeTest006, testing::ext::Te
 }
 
 /**
- * @tc.name: IdleMonitorNotifyLooperIdleStartTest001
- * @tc.desc: NotifyLooperIdleStart
+ * @tc.name: NapiArkIdleMonitorNotifyLooperIdleStartTest001
+ * @tc.desc: Test NotifyLooperIdleStart interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorNotifyLooperIdleStartTest001, testing::ext::TestSize.Level0)
 {
@@ -351,13 +361,14 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorNotifyLooperIdleStartTest001, testin
         ASSERT_EQ(arkIdleMonitor->IsIdleState(), false);
     }
 
-    ASSERT_TRUE(arkIdleMonitor->GetIdleNotifyCount() == oldCount + 10);
+    ASSERT_EQ(arkIdleMonitor->GetIdleNotifyCount(), oldCount + 10);
 }
 
 /**
- * @tc.name: IdleMonitorGetNotifyTimestampTest001
- * @tc.desc: GetNotifyTimestamp
+ * @tc.name: NapiArkIdleMonitorGetNotifyTimestampTest001
+ * @tc.desc: Test GetNotifyTimestamp interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorGetNotifyTimestampTest001, testing::ext::TestSize.Level0)
 {
@@ -376,13 +387,14 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorGetNotifyTimestampTest001, testing::
         ASSERT_EQ(arkIdleMonitor->IsIdleState(), false);
     }
 
-    ASSERT_TRUE(arkIdleMonitor->GetIdleNotifyCount() == oldCount + 10);
+    ASSERT_EQ(arkIdleMonitor->GetIdleNotifyCount(), oldCount + 10);
 }
 
 /**
- * @tc.name: IdleMonitorResetIdleNotifyCountTest001
- * @tc.desc: ResetIdleNotifyCount
+ * @tc.name: NapiArkIdleMonitorResetIdleNotifyCountTest001
+ * @tc.desc: Test ResetIdleNotifyCount interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorResetIdleNotifyCountTest001, testing::ext::TestSize.Level0)
 {
@@ -405,9 +417,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorResetIdleNotifyCountTest001, testing
 }
 
 /**
- * @tc.name: IdleMonitorGetTotalIdleDurationTest001
- * @tc.desc: GetTotalIdleDuration
+ * @tc.name: NapiArkIdleMonitorGetTotalIdleDurationTest001
+ * @tc.desc: Test GetTotalIdleDuration interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorGetTotalIdleDurationTest001, testing::ext::TestSize.Level0)
 {
@@ -432,9 +445,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorGetTotalIdleDurationTest001, testing
 
 #if defined(ENABLE_EVENT_HANDLER)
 /**
- * @tc.name: IdleMonitorEnableIdleGCTest001
- * @tc.desc: close idle gc
+ * @tc.name: NapiArkIdleMonitorSetEnableIdleGCTest001
+ * @tc.desc: Test disable idle GC
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest001, testing::ext::TestSize.Level0)
 {
@@ -451,9 +465,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest001, testing::ext
 }
 
 /**
- * @tc.name: IdleMonitorEnableIdleGCTest001
- * @tc.desc: close idle gc
+ * @tc.name: NapiArkIdleMonitorSetEnableIdleGCTest002
+ * @tc.desc: Test enable idle GC
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest002, testing::ext::TestSize.Level0)
 {
@@ -473,9 +488,10 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest002, testing::ext
 
 #if defined(LINUX_PLATFORM) || defined(OHOS_PLATFORM)
 /**
- * @tc.name: IdleMonitorLoadReportDataFuncTest001
- * @tc.desc: load
+ * @tc.name: NapiArkIdleMonitorLoadReportDataFuncTest001
+ * @tc.desc: Test LoadReportDataFunc interface
  * @tc.type: FUNC
+ * @tc.level: Level0
  */
 HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorLoadReportDataFuncTest001, testing::ext::TestSize.Level0)
 {
@@ -484,5 +500,24 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorLoadReportDataFuncTest001, testing::
     auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
     ReportDataFunc func = arkIdleMonitor->LoadReportDataFunc();
     ASSERT_TRUE(func != nullptr);
+}
+
+/**
+ * @tc.name: NapiArkIdleMonitorLoadReportDataFuncTest002
+ * @tc.desc: Test calling LoadReportDataFunc with valid parameters
+ * @tc.type: FUNC
+ * @tc.level: Level0
+ */
+HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorLoadReportDataFuncTest002, testing::ext::TestSize.Level0)
+{
+    ASSERT_NE(engine_, nullptr);
+
+    auto arkIdleMonitor = ArkIdleMonitor::GetInstance();
+    ReportDataFunc func = arkIdleMonitor->LoadReportDataFunc();
+    ASSERT_TRUE(func != nullptr);
+
+    std::unordered_map<std::string, std::string> payload;
+    payload["test_key"] = "test_value";
+    func(0, 100, payload);
 }
 #endif
