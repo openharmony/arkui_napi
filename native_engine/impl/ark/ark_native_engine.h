@@ -271,7 +271,7 @@ public:
     void DumpHeapSnapshot(const std::string &path, bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false, bool captureNumericValue = false, bool isJSLeakWatcher = false,
         bool isClearNodeIdCache = false) override;
-    void DumpHeapSnapshot(bool isFullGC, const std::string &path,const std::function<void(uint8_t)> &callback,
+    void DumpHeapSnapshot(bool isFullGC, const std::string &path, const std::function<void(uint8_t)> &callback,
         bool isClearNodeIdCache = false, bool isProcDump = false) override;
     void DumpCpuProfile() override;
     // Dump the file into faultlog for heap leak.
