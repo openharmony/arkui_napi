@@ -419,6 +419,8 @@ public:
     static std::string tempModuleName_;
 
     static void* GetNativePtrCallBack(void* data);
+    static void* GetNativeReferenceData(void* ref);
+    
     static void CopyPropertyApiFilter(const std::unique_ptr<ApiAllowListChecker>& apiAllowListChecker,
         const EcmaVM* ecmaVm, const panda::Local<panda::ObjectRef> exportObj,
         panda::Local<panda::ObjectRef>& exportCopy, const std::string& apiPath);
