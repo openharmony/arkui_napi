@@ -287,7 +287,7 @@ public:
         bool captureNumericValue = false, bool isJSLeakWatcher = false,
         bool isClearNodeIdCache = false) = 0;
     virtual void DumpHeapSnapshot(bool isFullGC, const std::string &path,
-        const std::function<void(uint8_t)> &callback, bool isClearNodeIdCache = false) = 0;
+        const std::function<void(uint8_t)> &callback, bool isClearNodeIdCache = false, bool isProcDump = false) = 0;
     virtual void DumpCpuProfile() = 0;
     virtual void DumpHeapSnapshot(bool isVmMode = true, DumpFormat dumpFormat = DumpFormat::JSON,
         bool isPrivate = false, bool isFullGC = true, bool isClearNodeIdCache = false) = 0;
