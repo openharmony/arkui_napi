@@ -261,12 +261,41 @@ struct LambdaData {
     int64_t lambdaId;
 };
 
+static void* (*g_getJSLambdaAddr)(ARKTS_Env, int64_t) = nullptr;
+
+void ARKTS_RegisterAddrGetter(void* (*callback)(ARKTS_Env, int64_t))
+{
+    if (g_getJSLambdaAddr == nullptr) {
+        g_getJSLambdaAddr = callback;
+    } else {
+        LOGE("ARKTS_RegisterAddrGetter failed, already registered.")
+    }
+}
+
 static Local<JSValueRef> CJLambdaInvoker(JsiRuntimeCallInfo* callInfo)
 {
     auto data = reinterpret_cast<LambdaData*>(callInfo->GetData());
     if (!data) {
         return JSValueRef::Undefined(callInfo->GetVM());
     }
+    auto env = P_CAST(callInfo->GetVM(), ARKTS_Env);
+    auto lambdaId = data->lambdaId;
+    do {
+        if (!g_getJSLambdaAddr) {
+            break;
+        }
+        if (!JSNApi::IsMixedDebugEnabled(callInfo->GetVM())) {
+            break;
+        }
+        auto addr = g_getJSLambdaAddr(env, lambdaId);
+        if (!addr) {
+            break;
+        }
+        JSNApi::NotifyNativeCalling(callInfo->GetVM(), addr);
+        auto result = ARKTSInner_CJLambdaInvoker(P_CAST(callInfo, ARKTS_CallInfo), data->lambdaId);
+        JSNApi::NotifyNativeReturn(callInfo->GetVM(), addr);
+        return BIT_CAST(result, Local<JSValueRef>);
+    } while (false);
     auto result = ARKTSInner_CJLambdaInvoker(P_CAST(callInfo, ARKTS_CallInfo), data->lambdaId);
     return BIT_CAST(result, Local<JSValueRef>);
 }

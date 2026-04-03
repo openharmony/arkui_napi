@@ -30,6 +30,7 @@ EXPORT void ARKTS_SetCJModuleCallback(struct ARKTS_ModuleCallbacks* callback);
 EXPORT panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName);
 EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllName);
 EXPORT void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, unsigned int opKind);
+EXPORT void ARKTS_RegisterAddrGetter(void* (*callback)(ARKTS_Env, int64_t));
 
 DECL_END
 
