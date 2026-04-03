@@ -2556,7 +2556,7 @@ void ArkNativeEngine::DumpHeapSnapshot(const std::string &path, bool isVmMode, D
 
 void ArkNativeEngine::DumpHeapSnapshot(bool isFullGC, const std::string &path,
                                        const std::function<void(uint8_t)> &callback,
-                                       bool isClearNodeIdCache)
+                                       bool isClearNodeIdCache, bool isProcDump)
 {
     panda::ecmascript::DumpSnapShotOption dumpOption;
     dumpOption.isVmMode = true;
@@ -2564,6 +2564,7 @@ void ArkNativeEngine::DumpHeapSnapshot(bool isFullGC, const std::string &path,
     dumpOption.isFullGC = isFullGC;
     dumpOption.isSync = false;
     dumpOption.isClearNodeIdCache = isClearNodeIdCache;
+    dumpOption.isProcDump = isProcDump;
     dumpOption.dumpFormat = panda::ecmascript::DumpFormat::BINARY;
     DFXJSNApi::DumpHeapSnapshot(vm_, path, dumpOption, callback);
 }
