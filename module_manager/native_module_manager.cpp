@@ -978,18 +978,18 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     std::string sysPrefix("./module");
     const char* abcfix = ".abc";
     std::string sysAbcPrefix("./module");
-#elif defined(_ARM64_) || defined(SIMULATOR)
-    const char* soPostfix = ".so";
-    const char* zfix = ".z";
-    std::string sysPrefix("/system/lib64/module");
-    const char* abcfix = ".abc";
-    std::string sysAbcPrefix("/system/etc/abc");
 #elif defined(LINUX_PLATFORM)
     const char* soPostfix = ".so";
     const char* zfix = "";
     std::string sysPrefix("./module");
     const char* abcfix = ".abc";
     std::string sysAbcPrefix("./module");
+#elif defined(_ARM64_) || defined(SIMULATOR)
+    const char* soPostfix = ".so";
+    const char* zfix = ".z";
+    std::string sysPrefix("/system/lib64/module");
+    const char* abcfix = ".abc";
+    std::string sysAbcPrefix("/system/etc/abc");
 #else
     const char* soPostfix = ".so";
     const char* zfix = ".z";
