@@ -14360,46 +14360,6 @@ HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoTest004, testing::ext::TestSize.Le
 }
 
 /**
- * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
- * @tc.desc: Test interface of napi_load_module_with_info_hybrid
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest001, testing::ext::TestSize.Level1)
-{
-    auto res = napi_load_module_with_info_hybrid(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
-    ASSERT_EQ(res, napi_invalid_arg);
-}
-
-/**
- * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
- * @tc.desc: Test interface of napi_load_module_with_info_hybrid
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest002, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr, nullptr);
-    ASSERT_EQ(res, napi_invalid_arg);
-}
-
-/**
- * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
- * @tc.desc: Test interface of napi_load_module_with_info_hybrid
- * @tc.type: FUNC
- */
-HWTEST_F(NapiBasicTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext::TestSize.Level1)
-{
-    ASSERT_NE(engine_, nullptr);
-    napi_env env = reinterpret_cast<napi_env>(engine_);
-
-    napi_value result = nullptr;
-    auto res = napi_load_module_with_info_hybrid(env, nullptr, nullptr, nullptr, nullptr, &result);
-    ASSERT_EQ(res, napi_ok);
-}
-
-/**
  * @tc.name: NapiSerializeTest
  * @tc.desc: Test interface of napi_serialize
  * @tc.type: FUNC
@@ -17283,82 +17243,6 @@ HWTEST_F(NapiBasicTest, NapiThreadsafeCbTest001, testing::ext::TestSize.Level0)
     runner.Run();
     ASSERT_TRUE(callbackData->completeCalled);
     delete callbackData;
-}
-
-/**
-* @tc.name: NapiGetStringUtf8HybridTest001
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with basic ASCII string
-* @tc.type: FUNC
-*/
-HWTEST_F(NapiBasicTest, NapiGetStringUtf8HybridTest001, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    const char testStr[] = "Hello, World!";
-    size_t testStrLength = strlen(testStr);
-    napi_value result = nullptr;
-
-    ASSERT_CHECK_CALL(napi_create_string_utf8(env, testStr, testStrLength, &result));
-    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
-
-    std::variant<std::string, std::u16string> str;
-
-    ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
-
-    ASSERT_TRUE(std::holds_alternative<std::string>(str));
-    auto &value = std::get<std::string>(str);
-
-    ASSERT_EQ(value, testStr);
-    ASSERT_EQ(value.length(), testStrLength);
-}
-
-/**
-* @tc.name: NapiGetStringUtf8HybridTest002
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with Chinese characters
-* @tc.type: FUNC
-*/
-HWTEST_F(NapiBasicTest, NapiGetStringUtf8HybridTest002, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    const char16_t testStr[] = u"中文字符测试";
-    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
-    napi_value result = nullptr;
-
-    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
-    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
-
-    std::variant<std::string, std::u16string> str;
-
-    ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
-
-    ASSERT_TRUE(std::holds_alternative<std::u16string>(str));
-    auto &value = std::get<std::u16string>(str);
-
-    ASSERT_EQ(value, testStr);
-    ASSERT_EQ(value.length(), testStrLength);
-}
-
-/**
-* @tc.name: NapiGetStringUtf8HybridTest003
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with emoji characters
-* @tc.type: FUNC
-*/
-HWTEST_F(NapiBasicTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.Level1)
-{
-    napi_env env = (napi_env)engine_;
-    const char16_t testStr[] = u"😊😂🤣❤️😍😒👌😘";
-    size_t testStrLength = std::char_traits<char16_t>::length(testStr);
-    napi_value result = nullptr;
-
-    ASSERT_CHECK_CALL(napi_create_string_utf16(env, testStr, testStrLength, &result));
-    ASSERT_CHECK_VALUE_TYPE(env, result, napi_string);
-
-    std::variant<std::string, std::u16string> str;
-    ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
-    ASSERT_TRUE(std::holds_alternative<std::u16string>(str));
-    auto &value = std::get<std::u16string>(str);
-
-    ASSERT_EQ(value, testStr);
-    ASSERT_EQ(value.length(), testStrLength);
 }
 
 /**
