@@ -429,6 +429,16 @@ void* ArkNativeEngine::GetNativePtrCallBack(void* data)
     return cb;
 }
 
+void* ArkNativeEngine::GetNativeReferenceData(void* ref)
+{
+    if (ref == nullptr) {
+        HILOG_ERROR("ref is nullptr");
+        return nullptr;
+    }
+    auto nativeRefer = reinterpret_cast<NativeReference*>(ref);
+    return nativeRefer->GetData();
+}
+
 bool ArkNativeEngine::SetModuleValidateCallback(NapiModuleValidateCallback validateCallback)
 {
     if (validateCallback == nullptr) {
@@ -522,6 +532,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
                 FunctionRef::New(vm, RequireInternal, nullptr, requireData));
 
     JSNApi::SetNativePtrGetter(vm, reinterpret_cast<void*>(ArkNativeEngine::GetNativePtrCallBack));
+    JSNApi::SetNativeReferenceDataGetter(vm, reinterpret_cast<void*>(ArkNativeEngine::GetNativeReferenceData));
     // need to call init of base class.
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     std::function<bool(const std::string&)> func = [moduleManager](const std::string& moduleKey) -> bool {
