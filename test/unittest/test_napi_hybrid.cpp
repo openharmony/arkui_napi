@@ -48,6 +48,11 @@ private:
     napi_handle_scope scope_ = nullptr;
 };
 
+static const napi_type_tag hybridTypeTag = {
+    0x1234567890abcdef,  // lower
+    0xfedcba0987654321   // upper
+};
+
 /**
  * @tc.name: NapiLoadModuleWithInfoForHybridAppTest
  * @tc.desc: Test interface of napi_load_module_with_info_hybrid
@@ -162,4 +167,71 @@ HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.
 
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
+}
+
+/**
+ * @tc.name: NapiHybridWrapUnwrapTest001
+ * @tc.desc: Test basic wrap and unwrap for hybrid API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value jsObject = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &jsObject));
+
+    int nativeValue = 42;
+    void* resultValue = nullptr;
+
+    // 1. Wrap
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, nullptr, nullptr, &hybridTypeTag, nullptr));
+
+    // 2. Unwrap with same tag
+    ASSERT_CHECK_CALL(napi_unwrap_hybrid_s(env, jsObject, &hybridTypeTag, &resultValue));
+    ASSERT_EQ(resultValue, &nativeValue);
+    ASSERT_EQ(*(static_cast<int*>(resultValue)), 42);
+}
+
+/**
+ * @tc.name: NapiHybridWrapUnwrapTest002
+ * @tc.desc: Test unwrap with mismatched type tag for hybrid API.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value jsObject = nullptr;
+    napi_create_object(env, &jsObject);
+
+    int nativeValue = 100;
+    napi_type_tag wrongTag = { 0x1, 0x2 };
+
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, nullptr, nullptr, &hybridTypeTag, nullptr));
+
+    // Unwrap with mismatched tag should return napi_invalid_arg
+    void* resultValue = nullptr;
+    napi_status status = napi_unwrap_hybrid_s(env, jsObject, &wrongTag, &resultValue);
+    ASSERT_EQ(status, napi_invalid_arg);
+    ASSERT_EQ(resultValue, nullptr);
+}
+
+/**
+ * @tc.name: NapiHybridWrapUnwrapTest003
+ * @tc.desc: Test repeated wrap on the same object.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest003, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value jsObject = nullptr;
+    napi_create_object(env, &jsObject);
+
+    int data1 = 1;
+    int data2 = 2;
+
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &data1, nullptr, nullptr, &hybridTypeTag, nullptr));
+    
+    // Repeated wrap should fail
+    napi_status status = napi_wrap_hybrid_s(env, jsObject, &data2, nullptr, nullptr, &hybridTypeTag, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
 }

@@ -16,6 +16,7 @@
 #define NAPI_EXPERIMENTAL
 #include <string>
 #include <variant>
+#include "napi/native_node_api.h"
 #endif
 
 #ifdef ENABLE_CONTAINER_SCOPE
@@ -150,6 +151,26 @@ NAPI_EXTERN napi_status napi_is_null(napi_env env, napi_value value, bool* resul
     *result = valueObj->IsNull();
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_wrap_hybrid_s(napi_env env,
+                                           napi_value js_object,
+                                           void* native_object,
+                                           napi_finalize finalize_cb,
+                                           void* finalize_hint,
+                                           const napi_type_tag* type_tag,
+                                           napi_ref* result)
+{
+    return napi_wrap_s(env, js_object, native_object, finalize_cb, finalize_hint, type_tag, result);
+}
+
+NAPI_EXTERN napi_status napi_unwrap_hybrid_s(napi_env env,
+                                             napi_value js_object,
+                                             const napi_type_tag* type_tag,
+                                             void** result)
+{
+    return napi_unwrap_s(env, js_object, type_tag, result);
+}
+
 
 #ifdef PANDA_JS_ETS_HYBRID_MODE
 NAPI_EXTERN napi_status napi_xref_wrap(napi_env env,
