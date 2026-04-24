@@ -288,6 +288,7 @@ if (is_arkui_x) {
     }
 
     if (is_ohos && is_clang && target_cpu == "arm64" && defined(build_ext_path)) {
+      version_script = "ace_napi.versionscript"
       ldflags += [ 
         "-Wl,--emit-relocs",
         "-Wl,--no-relax", 
