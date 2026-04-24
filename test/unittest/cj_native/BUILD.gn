@@ -80,10 +80,27 @@ ohos_unittest("test_ffi_data") {
   ]
 }
 
+ohos_unittest("test_cj_backtrace") {
+  module_out_path = module_output_path
+
+  cflags = [ "-g3" ]
+
+  sources = [ "test_cj_backtrace.cpp" ]
+
+  deps = [
+    "../../../interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace",
+  ]
+  defines = []
+  if (use_clang_coverage) {
+    defines += [ "CLANG_COVERAGE" ]
+  }
+}
+
 group("cj_native_unittest") {
   testonly = true
   deps = [
     ":test_ark_interop",
     ":test_ffi_data",
+    ":test_cj_backtrace",
   ]
 }

@@ -388,7 +388,8 @@ if (!ark_standalone_build) {
   group("napi_packages") {
     deps = [
       ":ace_napi",
-      "interfaces/inner_api/cjffi/ark_interop:ark_interop"
+      "interfaces/inner_api/cjffi/ark_interop:ark_interop",
+      "interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace",
     ]
   }
 

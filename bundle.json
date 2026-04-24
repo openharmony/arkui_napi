@@ -127,7 +127,16 @@
                       ]
                     },
                     "name": "//foundation/arkui/napi:napi_packages"
-                  }
+                  },
+                {
+                    "header": {
+                        "header_base": "//foundation/arkui/napi/interfaces/inner_api/cjffi/cj_backtrace",
+                        "header_files": [
+                            "cj_backtrace.h"
+                        ]
+                    },
+                    "name": "//foundation/arkui/napi/interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace"
+                }
             ],
             "test": [
                 "//foundation/arkui/napi:napi_packages_test",
