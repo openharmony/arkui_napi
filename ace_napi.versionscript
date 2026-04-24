@@ -1,0 +1,72 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.. All rights reserved.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+ 
+{
+    global:
+        *;
+    local:
+        # libc++ 
+        _ZNSt3__h13basic_filebufIcNS_11char_traitsIcEEE*;
+        _ZTVNSt3__h13basic_filebufIcNS_11char_traitsIcEEEE*;
+        _ZNSt3__h14basic_ofstreamIcNS_11char_traitsIcEEE*;
+        _ZTCNSt3__h14basic_ofstreamIcNS_11char_traitsIcEEEE*;
+        _ZTTNSt3__h14basic_ofstreamIcNS_11char_traitsIcEEEE*;
+        _ZTVNSt3__h14basic_ofstreamIcNS_11char_traitsIcEEEE*;
+        _ZTCNSt3__h14basic_ifstreamIcNS_11char_traitsIcEEEE*;
+        _ZTTNSt3__h14basic_ifstreamIcNS_11char_traitsIcEEEE*;
+        _ZTVNSt3__h14basic_ifstreamIcNS_11char_traitsIcEEEE*;
+        _ZNSt3__h14basic_ifstreamIcNS_11char_traitsIcEEE4openERKNS_12basic_stringIcS2_NS_9allocatorIcEEEEj;
+        _ZNKSt3__h15basic_stringbufIcNS_11char_traitsIcEENS*;
+        _ZNSt3__h15basic_stringbufIcNS_11char_traitsIcEENS*;
+        _ZTVNSt3__h15basic_stringbufIcNS_11char_traitsIcEENS*;
+        _ZTCNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_13basic_istreamIcS2_EE;
+        _ZTCNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE0_NS_14basic_iostreamIcS2_EE;
+        _ZTCNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE16_NS_13basic_ostreamIcS2_EE;
+        _ZTTNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE;
+        _ZTVNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS_9allocatorIcEEEE;
+        _ZTTNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS*;
+        _ZTVNSt3__h18basic_stringstreamIcNS_11char_traitsIcEENS*;
+        _ZTCNSt3__h19basic_istringstreamIcNS_11char_traitsIcEENS*;
+        _ZTTNSt3__h19basic_istringstreamIcNS_11char_traitsIcEENS*;
+        _ZTVNSt3__h19basic_istringstreamIcNS_11char_traitsIcEENS*;
+        _ZTVNSt3__h19basic_ostringstreamIcNS_11char_traitsIcEENS*;
+        _ZTCNSt3__h19basic_ostringstreamIcNS_11char_traitsIcEENS*;
+        _ZTTNSt3__h19basic_ostringstreamIcNS_11char_traitsIcEENS*;
+ 
+        _ZTVNSt3__h10__back_ref*;
+        _ZTVNSt3__h11__alternate*;
+        _ZTVNSt3__h11__end_state*;
+        _ZTVNSt3__h11__lookahead*;
+        _ZTVNSt3__h11__match_any*;
+        _ZTVNSt3__h12__match_char*;
+        _ZTVNSt3__h13__empty_state*;
+        _ZTVNSt3__h15__word_boundary*;
+        _ZTVNSt3__h16__back_ref_icase*;
+        _ZTVNSt3__h16__owns_one_state*;
+        _ZTVNSt3__h17__owns_two_states*;
+        _ZTVNSt3__h17__repeat_one_loop*;
+        _ZTVNSt3__h18__back_ref_collate*;
+        _ZTVNSt3__h18__match_char_icase*;
+        _ZTVNSt3__h20__bracket_expression*;
+        _ZTVNSt3__h20__l_anchor_multiline*;
+        _ZTVNSt3__h20__match_char_collate*;
+        _ZTVNSt3__h20__r_anchor_multiline*;
+        _ZTVNSt3__h20__shared_ptr_pointer*;
+        _ZTVNSt3__h21__empty_non_own_state*;
+        _ZTVNSt3__h23__match_any_but_newline*;
+        _ZTVNSt3__h26__end_marked_subexpression*;
+        _ZTVNSt3__h28__begin_marked_subexpression*;
+        _ZTVNSt3__h6__loop*;
+        _ZTVNSt3__h20__shared_ptr_emplaceIN4OHOS10AppExecFwk12EventHandlerENS_9allocatorIS3_EEEE;
+        __emutls_get_address;
+};
