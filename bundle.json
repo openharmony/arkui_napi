@@ -44,7 +44,8 @@
                 "runtime_core",
                 "ace_engine",
                 "resource_schedule_service",
-                "samgr"
+                "samgr",
+                "ability_runtime"
             ],
             "third_party": [
                 "jerryscript"
