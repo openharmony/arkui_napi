@@ -51,8 +51,13 @@ test_ark_unittest("base") {
   sources = [
     "test_napi.cpp",
     "test_napi_context.cpp",
-    "test_napi_hybrid.cpp",
     "test_sendable_napi.cpp",
+  ]
+}
+
+test_ark_unittest("hybrid") {
+  sources = [
+    "test_napi_hybrid.cpp",
   ]
 }
 
@@ -121,6 +126,7 @@ group("unittest") {
     ":test_ark_unittest_base",
     ":test_ark_unittest_critical",
     ":test_ark_unittest_errorcode",
+    ":test_ark_unittest_hybrid",
     ":test_ark_unittest_idle_monitor",
     ":test_ark_unittest_threadsafe",
     ":test_unittest_sendevent",
