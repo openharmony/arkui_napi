@@ -1662,9 +1662,12 @@ void NativeModuleManager::SetLdPermittedPathsForNamespace(const std::string& nsN
         return;
     }
     if (dlns_set_ld_permitted_path(tmpLdPermittedPath, &ns) != 0) {
-        MODULEMNG_HILOG_ERROR(
-            "dlns_set_ld_permitted_path failed, ldPermittedPath = '%{public}s', nsName = '%{public}s'",
-            tmpLdPermittedPath, nsName.c_str());
+        MODULEMNG_HILOG_ERROR("dlns_set_ld_permitted_path failed, ldPermittedPath = '%{public}s', "
+            "nsName = '%{public}s'", tmpLdPermittedPath, nsName.c_str());
+    }
+    if (dlns_set_namespace_permitted_paths(nsName.c_str(), tmpLdPermittedPath) != 0) {
+        MODULEMNG_HILOG_ERROR("dlns_set_namespace_permitted_paths failed, ldPermittedPath = '%{public}s', "
+            "nsName = '%{public}s'", tmpLdPermittedPath, nsName.c_str());
     }
     delete[] tmpLdPermittedPath;
 #endif
