@@ -251,4 +251,5 @@ NAPI_EXTERN napi_status napi_load_module_with_path(napi_env env, const char* pat
                                                    napi_value* result);
 NAPI_EXTERN napi_status napi_throw_jsvalue(napi_env env, napi_value error);
 
+NAPI_EXTERN napi_status napi_set_store_global_ref(napi_env env, bool enable);
 #endif /* FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_API_H */

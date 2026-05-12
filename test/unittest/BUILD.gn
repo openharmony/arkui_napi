@@ -51,14 +51,13 @@ test_ark_unittest("base") {
   sources = [
     "test_napi.cpp",
     "test_napi_context.cpp",
+    "test_napi_global_ref_track.cpp",
     "test_sendable_napi.cpp",
   ]
 }
 
 test_ark_unittest("hybrid") {
-  sources = [
-    "test_napi_hybrid.cpp",
-  ]
+  sources = [ "test_napi_hybrid.cpp" ]
 }
 
 test_ark_unittest("idle_monitor") {

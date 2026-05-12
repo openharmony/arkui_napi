@@ -17,6 +17,7 @@
 
 #include "ark_native_reference.h"
 
+#include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_engine/native_api_internal.h"
 #include "native_engine/native_utils.h"
 
@@ -92,6 +93,12 @@ void ArkNativeReference::ArkNativeReferenceConstructor()
 
     engineId_ = engine_->GetId();
 }
+
+uintptr_t ArkNativeReference::GetGlobalRefSlotAddress() const
+{
+    return value_.GetSlotAddress();
+}
+
 
 inline void ArkNativeReference::InitProperties(bool deleteSelf, bool isAsyncCall)
 {

@@ -44,5 +44,9 @@ public:
     virtual void ResetFinalizer()
     {
     }
+    virtual uintptr_t GetGlobalRefSlotAddress() const
+    {
+        return 0;
+    }
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_NATIVE_REFERENCE_H */
