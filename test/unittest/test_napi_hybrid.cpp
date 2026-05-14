@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "gtest/gtest.h"
 #include "ecmascript/napi/include/jsnapi_expo.h"
+#include "gtest/gtest.h"
 #include "napi/native_node_hybrid_api.h"
 #include "test.h"
 #include "test_common.h"
@@ -44,13 +44,16 @@ public:
         napi_get_and_clear_last_exception(env, &exception);
         napi_close_handle_scope(env, scope_);
     }
+
 private:
     napi_handle_scope scope_ = nullptr;
 };
 
+static void NoopFinalizer([[maybe_unused]] napi_env env, [[maybe_unused]] void* data, [[maybe_unused]] void* hint) {}
+
 static const napi_type_tag hybridTypeTag = {
-    0x1234567890abcdef,  // lower
-    0xfedcba0987654321   // upper
+    0x1234567890abcdef, // lower
+    0xfedcba0987654321  // upper
 };
 
 /**
@@ -94,10 +97,10 @@ HWTEST_F(NapiHybridTest, NapiLoadModuleWithInfoForHybridAppTest003, testing::ext
 }
 
 /**
-* @tc.name: NapiGetStringUtf8HybridTest001
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with basic ASCII string
-* @tc.type: FUNC
-*/
+ * @tc.name: NapiGetStringUtf8HybridTest001
+ * @tc.desc: Test napi_get_value_string_utf8_hybrid with basic ASCII string
+ * @tc.type: FUNC
+ */
 HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest001, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
@@ -113,17 +116,17 @@ HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest001, testing::ext::TestSize.
     ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
 
     ASSERT_TRUE(std::holds_alternative<std::string>(str));
-    auto &value = std::get<std::string>(str);
+    auto& value = std::get<std::string>(str);
 
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
 }
 
 /**
-* @tc.name: NapiGetStringUtf8HybridTest002
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with Chinese characters
-* @tc.type: FUNC
-*/
+ * @tc.name: NapiGetStringUtf8HybridTest002
+ * @tc.desc: Test napi_get_value_string_utf8_hybrid with Chinese characters
+ * @tc.type: FUNC
+ */
 HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest002, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
@@ -139,17 +142,17 @@ HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest002, testing::ext::TestSize.
     ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
 
     ASSERT_TRUE(std::holds_alternative<std::u16string>(str));
-    auto &value = std::get<std::u16string>(str);
+    auto& value = std::get<std::u16string>(str);
 
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
 }
 
 /**
-* @tc.name: NapiGetStringUtf8HybridTest003
-* @tc.desc: Test napi_get_value_string_utf8_hybrid with emoji characters
-* @tc.type: FUNC
-*/
+ * @tc.name: NapiGetStringUtf8HybridTest003
+ * @tc.desc: Test napi_get_value_string_utf8_hybrid with emoji characters
+ * @tc.type: FUNC
+ */
 HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.Level1)
 {
     napi_env env = (napi_env)engine_;
@@ -163,7 +166,7 @@ HWTEST_F(NapiHybridTest, NapiGetStringUtf8HybridTest003, testing::ext::TestSize.
     std::variant<std::string, std::u16string> str;
     ASSERT_CHECK_CALL(napi_get_value_string_utf8_hybrid(env, result, &str));
     ASSERT_TRUE(std::holds_alternative<std::u16string>(str));
-    auto &value = std::get<std::u16string>(str);
+    auto& value = std::get<std::u16string>(str);
 
     ASSERT_EQ(value, testStr);
     ASSERT_EQ(value.length(), testStrLength);
@@ -184,7 +187,7 @@ HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest001, testing::ext::TestSize.Lev
     void* resultValue = nullptr;
 
     // 1. Wrap
-    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, nullptr, nullptr, &hybridTypeTag, nullptr));
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, NoopFinalizer, nullptr, &hybridTypeTag, nullptr));
 
     // 2. Unwrap with same tag
     ASSERT_CHECK_CALL(napi_unwrap_hybrid_s(env, jsObject, &hybridTypeTag, &resultValue));
@@ -201,12 +204,12 @@ HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest002, testing::ext::TestSize.Lev
 {
     napi_env env = (napi_env)engine_;
     napi_value jsObject = nullptr;
-    napi_create_object(env, &jsObject);
+    ASSERT_CHECK_CALL(napi_create_object(env, &jsObject));
 
     int nativeValue = 100;
     napi_type_tag wrongTag = { 0x1, 0x2 };
 
-    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, nullptr, nullptr, &hybridTypeTag, nullptr));
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &nativeValue, NoopFinalizer, nullptr, &hybridTypeTag, nullptr));
 
     // Unwrap with mismatched tag should return napi_invalid_arg
     void* resultValue = nullptr;
@@ -224,14 +227,14 @@ HWTEST_F(NapiHybridTest, NapiHybridWrapUnwrapTest003, testing::ext::TestSize.Lev
 {
     napi_env env = (napi_env)engine_;
     napi_value jsObject = nullptr;
-    napi_create_object(env, &jsObject);
+    ASSERT_CHECK_CALL(napi_create_object(env, &jsObject));
 
     int data1 = 1;
     int data2 = 2;
 
-    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &data1, nullptr, nullptr, &hybridTypeTag, nullptr));
-    
+    ASSERT_CHECK_CALL(napi_wrap_hybrid_s(env, jsObject, &data1, NoopFinalizer, nullptr, &hybridTypeTag, nullptr));
+
     // Repeated wrap should fail
-    napi_status status = napi_wrap_hybrid_s(env, jsObject, &data2, nullptr, nullptr, &hybridTypeTag, nullptr);
+    napi_status status = napi_wrap_hybrid_s(env, jsObject, &data2, NoopFinalizer, nullptr, &hybridTypeTag, nullptr);
     ASSERT_EQ(status, napi_invalid_arg);
 }
