@@ -562,6 +562,7 @@ ArkNativeEngine::ArkNativeEngine(EcmaVM* vm, void* jsEngine, bool isLimitedWorke
 
     // enable idle gc
     ArkIdleMonitor::GetInstance()->EnableIdleGC(this);
+    InitPostTaskToThreadCallback();
 }
 
 /**
@@ -629,6 +630,10 @@ ArkNativeEngine::~ArkNativeEngine()
         JSNApi::SetTimerTaskCallback(vm_, nullptr);
         JSNApi::SetCancelTimerCallback(vm_, nullptr);
         NativeTimerCallbackInfo::ReleaseTimerList(this);
+        JSNApi::SetPostTaskToThreadCallback(vm_, nullptr);
+        if (threadTaskAsyncInitialized_) {
+            uv_close(reinterpret_cast<uv_handle_t*>(&threadTaskAsync_), nullptr);
+        }
         // destroy looper resource on the ark native engine
         Deinit();
         if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
@@ -2084,7 +2089,7 @@ __attribute__((optnone)) void ArkNativeEngine::RunCallbacks(TriggerGCData *trigg
 #ifdef ENABLE_HITRACE
     StartTrace(HITRACE_TAG_ACE, "RunTriggerGCTaskCallback");
 #endif
-    std::pair<void *, uint8_t> &param = *triggerGCData;
+    std::pair<void *, uint16_t> &param = *triggerGCData;
     JSNApi::TriggerIdleGC(reinterpret_cast<EcmaVM *>(param.first),
         static_cast<JSNApi::TRIGGER_IDLE_GC_TYPE>(param.second));
 #ifdef ENABLE_HITRACE
@@ -2259,6 +2264,55 @@ void ArkNativeEngine::PostTriggerGCTask(TriggerGCData& data, GCTaskFinishedCallb
         delete syncWork;
         delete triggerGCData;
     }
+}
+
+void ArkNativeEngine::InitPostTaskToThreadCallback()
+{
+#if defined(ENABLE_EVENT_HANDLER)
+    if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
+        JSNApi::SetPostTaskToThreadCallback(vm_,
+            [](std::function<void()> task) {
+                static auto handler = std::make_shared<OHOS::AppExecFwk::EventHandler>(
+                    OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
+                handler->PostTask(std::move(task), "ARKTS_THREAD_TASK", 0,
+                    OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
+            });
+        return;
+    }
+#endif
+    uv_loop_t *loop = GetUVLoop();
+    if (loop == nullptr) {
+        HILOG_ERROR("ArkNativeEngine::InitPostTaskToThreadCallback loop is nullptr");
+        return;
+    }
+    int ret = uv_async_init(loop, &threadTaskAsync_,
+        [](uv_async_t *handle) {
+            auto *engine = static_cast<ArkNativeEngine *>(handle->data);
+            std::function<void()> task;
+            {
+                std::lock_guard<std::mutex> lock(engine->threadTaskMutex_);
+                task = std::move(engine->pendingThreadTask_);
+                engine->pendingThreadTask_ = nullptr;
+            }
+            if (task) {
+                task();
+            }
+        });
+    if (ret != 0) {
+        HILOG_ERROR("ArkNativeEngine::InitPostTaskToThreadCallback uv_async_init failed, ret=%{public}d", ret);
+        return;
+    }
+    threadTaskAsync_.data = this;
+    threadTaskAsyncInitialized_ = true;
+    JSNApi::SetPostTaskToThreadCallback(vm_,
+        [this](std::function<void()> task) {
+            {
+                std::lock_guard<std::mutex> lock(threadTaskMutex_);
+                // Single-slot: only the latest task is kept; earlier ones are overwritten.
+                pendingThreadTask_ = std::move(task);
+            }
+            uv_async_send(&threadTaskAsync_);
+        });
 }
 
 #if defined(OHOS_PLATFORM) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

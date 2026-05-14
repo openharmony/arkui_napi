@@ -795,8 +795,8 @@ ArkIdleMonitor::WorkerGCResult ArkIdleMonitor::EvaluateWorkerGC(napi_env workerE
 void ArkIdleMonitor::PostWorkerFullGC(napi_env workerEnv, bool notifyFinished)
 {
     auto arkNativeEngine = reinterpret_cast<ArkNativeEngine*>(workerEnv);
-    std::pair<void*, uint8_t> data(reinterpret_cast<void*>(const_cast<EcmaVM*>(arkNativeEngine->GetEcmaVm())),
-                                   static_cast<uint8_t>(TRIGGER_IDLE_GC_TYPE::FULL_GC));
+    std::pair<void*, uint16_t> data(reinterpret_cast<void*>(const_cast<EcmaVM*>(arkNativeEngine->GetEcmaVm())),
+                                   static_cast<uint16_t>(TRIGGER_IDLE_GC_TYPE::FULL_GC));
     auto callbackTask = [this, workerEnv, notifyFinished]() {
         HILOG_DEBUG("ArkIdleMonitor: try trigger thread full gc end");
         UnRegisterSentTaskWorkerEnv(workerEnv);
