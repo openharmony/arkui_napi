@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_HYBRID_API_H
 #define FOUNDATION_ACE_NAPI_INTERFACES_KITS_NAPI_NATIVE_NODE_HYBRID_API_H
 
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -71,6 +72,8 @@ NAPI_EXTERN napi_status napi_wrap_hybrid_s(napi_env env, napi_value js_object, v
                                            const napi_type_tag* type_tag, napi_ref* result);
 NAPI_EXTERN napi_status napi_unwrap_hybrid_s(napi_env env, napi_value js_object, const napi_type_tag* type_tag,
                                              void** result);
+NAPI_EXTERN napi_status napi_ref_get_vm(napi_ref ref, uintptr_t &result);
+NAPI_EXTERN napi_status napi_ref_get_value(napi_ref ref, uintptr_t &result);
 
 // XGC specific internal API
 #ifdef PANDA_JS_ETS_HYBRID_MODE
