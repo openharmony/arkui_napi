@@ -524,6 +524,11 @@ private:
         return isLimitedWorker_;
     }
 
+    void SetExternalClearCallback(std::function<void()>&& func) override
+    {
+        panda::ecmascript::ArkIdleMonitor::GetInstance()->SetExternalClearCallback(std::move(func));
+    }
+
     // ecma vm
     EcmaVM* vm_ = nullptr;
     bool needStop_ = false;
