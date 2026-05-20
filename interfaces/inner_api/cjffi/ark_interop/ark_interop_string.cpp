@@ -89,7 +89,7 @@ const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
     if (size <= 0) {
         return nullptr;
     }
-    auto result = (char*) malloc(sizeof(char) * size);
+    auto result = static_cast<char*> (malloc(sizeof(char) * size));
     if (!result) {
         LOGE("ARKTS_GetValueCString fail, out of memory");
         return nullptr;
