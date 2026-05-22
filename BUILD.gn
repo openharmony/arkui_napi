@@ -298,6 +298,64 @@ if (is_arkui_x) {
   }
 }
 
+if (is_arkui_x) {
+  ohos_static_library("ace_napi_test") {
+    deps = [ ":ace_napi_static" ]
+    public_configs = [ ":ace_napi_config" ]
+    subsystem_name = "arkui"
+    part_name = "napi"
+  }
+} else {
+  ohos_shared_library("ace_napi_test") {
+    stack_protector_ret = false
+    deps = [ ":ace_napi_static" ]
+    external_deps = [ "bounds_checking_function:libsec_shared" ]
+    public_configs = [
+      ":ace_napi_config",
+      ":module_manager_config",
+    ]
+    external_deps += [
+      "libuv:uv",
+      "node:node_header_notice",
+    ]
+    if (!ark_standalone_build) {
+      external_deps += [
+        "ets_runtime:libark_jsruntime",
+      ]
+      if(current_toolchain != host_toolchain){
+        external_deps += [ "hilog:libhilog" ]
+      }
+    }
+
+    subsystem_name = "arkui"
+    innerapi_tags = [ "platformsdk" ]
+    part_name = "napi"
+
+    if (is_ohos && is_clang && defined(enhanced_opt) && enhanced_opt) {
+      if (napi_feature_enable_pgo) {
+        ldflags = [ "-Wl,-mllvm,-align-all-functions=4" ]
+
+        if (target_cpu == "arm64") {
+          ldflags += [ "-Wl,--aarch64-inline-plt" ]
+        }
+      }
+    }
+
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+
+    if (is_ohos && is_clang && target_cpu == "arm64" && defined(build_ext_path)) {
+      version_script = "ace_napi.versionscript"
+      ldflags += [
+        "-Wl,--emit-relocs",
+        "-Wl,--no-relax",
+        "-mno-fix-cortex-a53-843419"
+      ]
+    }
+  }
+}
+
 #cj_ffi
 if (!ark_standalone_build) {
   config("ffi_bind_native_config") {
