@@ -2486,6 +2486,15 @@ NAPI_EXTERN napi_status napi_create_reference(napi_env env,
     auto engine = reinterpret_cast<ArkNativeEngine*>(env);
     auto ref = new ArkNativeReference(engine, value, initial_refcount);
 
+    // Register global ref mapping for heap snapshot tracking
+    EcmaVM* vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    if (vm != nullptr && panda::JSNApi::IsTrackGlobalRefEnabled(vm)) {
+        uintptr_t slotAddress = ref->GetGlobalRefSlotAddress();
+        if (slotAddress != 0) {
+            panda::JSNApi::StoreGlobalRefMapping(vm, slotAddress, reinterpret_cast<void*>(ref));
+        }
+    }
+
     *result = reinterpret_cast<napi_ref>(ref);
     return napi_clear_last_error(env);
 }
@@ -2498,6 +2507,17 @@ NAPI_EXTERN napi_status napi_delete_reference(napi_env env, napi_ref ref)
     CHECK_ARG(env, ref);
 
     auto reference = reinterpret_cast<NativeReference*>(ref);
+
+    // Unregister global ref mapping before deletion
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    EcmaVM* vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    if (vm != nullptr && panda::JSNApi::IsTrackGlobalRefEnabled(vm)) {
+        uintptr_t slotAddress = reference->GetGlobalRefSlotAddress();
+        if (slotAddress != 0) {
+            panda::JSNApi::EraseGlobalRefMapping(vm, slotAddress);
+        }
+    }
+
     uint32_t refCount = reference->GetRefCount();
     if (refCount > 0 || reference->GetFinalRun()) {
         delete reference;
@@ -2561,6 +2581,14 @@ NAPI_EXTERN napi_status napi_get_reference_value(napi_env env, napi_ref ref, nap
 
     *result = reference->Get(engine);
     return napi_clear_last_error(env);
+}
+
+NAPI_EXTERN napi_status napi_set_store_global_ref(napi_env env, bool enable)
+{
+    NAPI_PREAMBLE(env);
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    panda::JSNApi::SetTrackGlobalRef(const_cast<EcmaVM*>(engine->GetEcmaVm()), enable);
+    return GET_RETURN_STATUS(env);
 }
 
 NAPI_EXTERN napi_status napi_open_handle_scope(napi_env env, napi_handle_scope* result)
