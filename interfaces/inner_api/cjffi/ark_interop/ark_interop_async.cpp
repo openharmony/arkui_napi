@@ -152,6 +152,15 @@ void ARKTS_CreateAsyncTask(ARKTS_Env env, int64_t callbackId)
     ARKTSInner_CreateAsyncTask(env, ARKTSInner_CJAsyncCallback, callbackId);
 }
 
+void CleanupFinalizerCallBackImpl(void* data)
+{
+    if (!data) {
+        return;
+    }
+    auto loop = reinterpret_cast<ARKTS_Loop_*>(data);
+    delete loop;
+}
+
 ARKTS_Loop_::ARKTS_Loop_(napi_env env, uv_loop_t* loop) : asyncReq(), status(IDLE)
 {
     auto error = uv_async_init(loop, &asyncReq, [](uv_async_t* work) {
@@ -166,13 +175,7 @@ ARKTS_Loop_::ARKTS_Loop_(napi_env env, uv_loop_t* loop) : asyncReq(), status(IDL
         return;
     }
     asyncReq.data = this;
-    hasCleanupHook = napi_add_cleanup_finalizer(env, [](void* data) {
-        if (!data) {
-            return;
-        }
-        auto loop = reinterpret_cast<ARKTS_Loop_*>(data);
-        delete loop;
-    }, this) == napi_ok;
+    hasCleanupHook = napi_add_cleanup_finalizer(env, CleanupFinalizerCallBackImpl, this) == napi_ok;
 }
 
 void ARKTS_Loop_::PostTask(std::function<void()> task)
@@ -242,6 +245,7 @@ bool ARKTSInner_InitLoop(napi_env env, ARKTS_Env vm, uv_loop_t* loop)
     auto cleanupTask = new (std::nothrow) CleanupTask {vm};
     if (!cleanupTask) {
         LOGE("new CleanupTask failed.");
+        napi_remove_cleanup_finalizer(env, CleanupFinalizerCallBackImpl, arktsLoop);
         delete arktsLoop;
         return false;
     }
@@ -257,6 +261,7 @@ bool ARKTSInner_InitLoop(napi_env env, ARKTS_Env vm, uv_loop_t* loop)
     }, cleanupTask);
     if (status != napi_ok) {
         LOGE("add env cleanup hook failed: %{public}d", status);
+        napi_remove_cleanup_finalizer(env, CleanupFinalizerCallBackImpl, arktsLoop);
         delete arktsLoop;
         delete cleanupTask;
         return false;
