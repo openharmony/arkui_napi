@@ -259,7 +259,7 @@ if (is_arkui_x) {
         "libuv:uv",
         "node:node_header_notice",
       ]
-      if(current_toolchain != host_toolchain){
+      if(current_toolchain != host_toolchain || !is_host_product){
         external_deps += [ "hilog:libhilog" ]
       }
     } else {
@@ -322,7 +322,7 @@ if (is_arkui_x) {
       external_deps += [
         "ets_runtime:libark_jsruntime",
       ]
-      if(current_toolchain != host_toolchain){
+      if(current_toolchain != host_toolchain || !is_host_product){
         external_deps += [ "hilog:libhilog" ]
       }
     }
@@ -446,13 +446,18 @@ if (!ark_standalone_build) {
   group("napi_packages") {
     deps = [
       ":ace_napi",
-      "interfaces/inner_api/cjffi/ark_interop:ark_interop",
-      "interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace",
     ]
+
+    if (!is_host_product) {
+      deps += [
+        "interfaces/inner_api/cjffi/ark_interop:ark_interop",
+        "interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace",
+      ]
+    }
   }
 
   group("napi_packages_test") {
-    if (!build_ohos_ndk && !is_arkui_x && !ohos_indep_compiler_enable) {
+    if (!build_ohos_ndk && !is_arkui_x && !ohos_indep_compiler_enable && !is_host_product) {
       testonly = true
 
       deps = [
