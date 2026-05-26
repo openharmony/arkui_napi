@@ -119,6 +119,8 @@ static bool HasCJMetadata(int fd)
         }
     }
 
+    const size_t CJ_META_SIZE = strlen(".cjmetadata");
+
     // Iterate through section headers
     bool found = false;
     for (ElfHalf i = 0; i < shnum; ++i) {
@@ -134,7 +136,7 @@ static bool HasCJMetadata(int fd)
 
             // Safe string comparison with boundary check
             const size_t maxLen = shstrtabSize - shdr.sh_name;
-            if (strncmp(name, ".cjmetadata", maxLen) == 0) {
+            if (maxLen >= CJ_META_SIZE && strncmp(name, ".cjmetadata", maxLen) == 0) {
                 found = true;
                 break;
             }
@@ -153,7 +155,7 @@ bool IsCJModule(const char* moduleName)
 
     absolutePath = absolutePath + "/" + libName;
     struct stat st;
-    if (stat(absolutePath.c_str(), &st) == 1) {
+    if (stat(absolutePath.c_str(), &st) == -1) {
         return false;
     }
     const char* soPath = absolutePath.c_str();
