@@ -469,7 +469,6 @@ if (!ark_standalone_build) {
         "sample/native_module_reference:reference",
         "sample/native_module_storage:storage",
         "sample/native_module_array_suite:array_suite",
-        "sample/native_module_queue_suite:queue_suite",
         "sample/native_module_async_suite:async_suite",
         "sample/native_module_boolean_suite:boolean_suite",
         "sample/native_module_buffer_suite:buffer_suite",
