@@ -53,10 +53,10 @@ constexpr std::array<const char*, K_OPERATION_COUNT> K_OPERATION_LABELS = {
 };
 
 enum class PropertyOp : int32_t {
-    SetGet = 0,
-    Has = 1,
-    Delete = 2,
-    Enumerate = 3,
+    SET_GET = 0,
+    HAS = 1,
+    DELETE = 2,
+    ENUMERATE = 3,
 };
 
 struct PropertyCaseSpec {
@@ -325,7 +325,7 @@ OperationResult ExecuteOperation(napi_env env, const PropertyCaseSpec& spec, int
 {
     OperationResult result = {false, K_INVALID_VALUE};
     switch (spec.operation) {
-        case PropertyOp::SetGet: {
+        case PropertyOp::SET_GET: {
             int32_t val = K_INVALID_VALUE;
             result.passed = ExecuteSetGet(env, spec.keyName, inputVal, &val);
             if (result.passed) {
@@ -334,7 +334,7 @@ OperationResult ExecuteOperation(napi_env env, const PropertyCaseSpec& spec, int
             result.value = val;
             break;
         }
-        case PropertyOp::Has: {
+        case PropertyOp::HAS: {
             bool hasProp = false;
             result.passed = ExecuteHas(env, spec.keyName, inputVal, &hasProp);
             if (result.passed) {
@@ -343,7 +343,7 @@ OperationResult ExecuteOperation(napi_env env, const PropertyCaseSpec& spec, int
             result.value = hasProp ? inputVal : K_INVALID_VALUE;
             break;
         }
-        case PropertyOp::Delete: {
+        case PropertyOp::DELETE: {
             bool deleted = false;
             result.passed = ExecuteDelete(env, spec.keyName, inputVal, &deleted);
             if (result.passed) {
@@ -352,7 +352,7 @@ OperationResult ExecuteOperation(napi_env env, const PropertyCaseSpec& spec, int
             result.value = deleted ? inputVal : K_INVALID_VALUE;
             break;
         }
-        case PropertyOp::Enumerate: {
+        case PropertyOp::ENUMERATE: {
             uint32_t count = 0;
             const int32_t expected = K_BASE_PROPERTY_COUNT + spec.extraPropCount;
             result.passed = ExecuteEnumerate(
