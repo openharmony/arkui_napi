@@ -482,8 +482,9 @@ private:
         Local<panda::StringRef> &moduleName,
         NativeModule *&module,
         Local<JSValueRef> &exports,
-        std::string &errInfo
-    );
+        std::string &errInfo,
+        std::string *loadErrInfo = nullptr);
+
     Local<JSValueRef> LoadNativeModule(
         NativeModuleManager* moduleManager,
         Local<panda::StringRef> &moduleName,
