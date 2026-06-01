@@ -396,7 +396,6 @@ static napi_value RunPropertyCase(napi_env env, napi_callback_info info)
 
     return CreatePropertySummary(env, spec.name, opLabel, opResult.value, opResult.passed);
 }
-
 }  // namespace
 
 static napi_value InitPropertySuite(napi_env env, napi_value exports)

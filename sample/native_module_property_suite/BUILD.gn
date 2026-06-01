@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 
 ohos_shared_library("property_suite") {
-  sources = [ "property_tests.cpp" ]
+  sources = [ "property_suite.cpp" ]
 
   deps = [ "../..:ace_napi" ]
 
