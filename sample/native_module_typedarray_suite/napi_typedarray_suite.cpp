@@ -210,8 +210,8 @@ static napi_value TestCreateTypedArrayInt8(napi_env env, napi_callback_info info
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int8_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int8_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Int8Array");
@@ -230,8 +230,8 @@ static napi_value TestCreateTypedArrayUint8(napi_env env, napi_callback_info inf
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint8_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Uint8Array");
@@ -249,8 +249,8 @@ static napi_value TestCreateTypedArrayUint8Clamped(napi_env env, napi_callback_i
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint8_clamped_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_clamped_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Uint8ClampedArray");
@@ -268,8 +268,8 @@ static napi_value TestCreateTypedArrayInt16(napi_env env, napi_callback_info inf
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int16_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int16_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Int16Array");
@@ -287,8 +287,8 @@ static napi_value TestCreateTypedArrayUint16(napi_env env, napi_callback_info in
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint16_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint16_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Uint16Array");
@@ -306,8 +306,8 @@ static napi_value TestCreateTypedArrayInt32(napi_env env, napi_callback_info inf
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Int32Array");
@@ -325,8 +325,8 @@ static napi_value TestCreateTypedArrayUint32(napi_env env, napi_callback_info in
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Uint32Array");
@@ -344,8 +344,8 @@ static napi_value TestCreateTypedArrayFloat32(napi_env env, napi_callback_info i
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_float32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_float32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Float32Array");
@@ -363,8 +363,8 @@ static napi_value TestCreateTypedArrayFloat64(napi_env env, napi_callback_info i
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "Float64Array");
@@ -382,8 +382,8 @@ static napi_value TestCreateTypedArrayBigInt64(napi_env env, napi_callback_info 
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_bigint64_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_bigint64_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "BigInt64Array");
@@ -401,8 +401,8 @@ static napi_value TestCreateTypedArrayBigUint64(napi_env env, napi_callback_info
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_biguint64_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_biguint64_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     SetNamedBool(env, result, "created", typedArray != nullptr);
     SetNamedString(env, result, "type", "BigUint64Array");
@@ -420,8 +420,8 @@ static napi_value TestGetTypedArrayInfo(napi_env env, napi_callback_info info)
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     napi_typedarray_type arrayType = napi_int8_array;
     size_t length = ZERO_LENGTH;
@@ -670,8 +670,8 @@ static napi_value TestCreateExternalArrayBuffer(napi_env env, napi_callback_info
     FillBuffer(g_externalData, MEDIUM_BUFFER_BYTES, EXTERNAL_FILL_BYTE);
 
     napi_value arrayBuffer = nullptr;
-    NAPI_CALL(env, napi_create_external_arraybuffer(
-        env, g_externalData, MEDIUM_BUFFER_BYTES, ExternalArrayBufferFinalizer, nullptr, &arrayBuffer));
+    NAPI_CALL(env, napi_create_external_arraybuffer(env, g_externalData, MEDIUM_BUFFER_BYTES,
+                                                    ExternalArrayBufferFinalizer, nullptr, &arrayBuffer));
 
     bool isArrayBuffer = false;
     NAPI_CALL(env, napi_is_arraybuffer(env, arrayBuffer, &isArrayBuffer));
@@ -749,8 +749,8 @@ static napi_value TestTypedArrayReadWriteInt8(napi_env env, napi_callback_info i
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int8_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int8_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<int8_t*>(data);
     elements[ZERO_LENGTH] = static_cast<int8_t>(INT8_TEST_VALUE);
@@ -771,8 +771,8 @@ static napi_value TestTypedArrayReadWriteInt32(napi_env env, napi_callback_info 
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<int32_t*>(data);
     elements[ZERO_LENGTH] = INT32_TEST_VALUE;
@@ -793,8 +793,8 @@ static napi_value TestTypedArrayReadWriteFloat64(napi_env env, napi_callback_inf
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<double*>(data);
     elements[ZERO_LENGTH] = FLOAT64_TEST_VALUE;
@@ -815,8 +815,8 @@ static napi_value TestTypedArrayReadWriteUint8(napi_env env, napi_callback_info 
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint8_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<uint8_t*>(data);
     elements[ZERO_LENGTH] = static_cast<uint8_t>(UINT8_TEST_VALUE);
@@ -837,8 +837,8 @@ static napi_value TestTypedArrayReadWriteInt16(napi_env env, napi_callback_info 
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int16_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int16_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<int16_t*>(data);
     elements[ZERO_LENGTH] = static_cast<int16_t>(INT16_TEST_VALUE);
@@ -859,8 +859,8 @@ static napi_value TestTypedArrayReadWriteUint16(napi_env env, napi_callback_info
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint16_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint16_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<uint16_t*>(data);
     elements[ZERO_LENGTH] = static_cast<uint16_t>(UINT16_TEST_VALUE);
@@ -881,8 +881,8 @@ static napi_value TestTypedArrayReadWriteUint32(napi_env env, napi_callback_info
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_uint32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<uint32_t*>(data);
     elements[ZERO_LENGTH] = UINT32_TEST_VALUE;
@@ -903,8 +903,8 @@ static napi_value TestTypedArrayReadWriteFloat32(napi_env env, napi_callback_inf
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_float32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_float32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     auto* elements = static_cast<float*>(data);
     elements[ZERO_LENGTH] = FLOAT32_TEST_VALUE;
@@ -933,12 +933,10 @@ static napi_value TestMultipleTypedArrayViews(napi_env env, napi_callback_info i
     size_t offsetB = MULTI_VIEW_OFFSET_B * BYTES_PER_INT32;
 
     napi_value viewA = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, MULTI_VIEW_ELEM_COUNT, arrayBuffer, offsetA, &viewA));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, MULTI_VIEW_ELEM_COUNT, arrayBuffer, offsetA, &viewA));
 
     napi_value viewB = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, MULTI_VIEW_ELEM_COUNT, arrayBuffer, offsetB, &viewB));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, MULTI_VIEW_ELEM_COUNT, arrayBuffer, offsetB, &viewB));
 
     auto* elements = static_cast<int32_t*>(data);
     elements[MULTI_VIEW_OFFSET_A] = INT32_TEST_VALUE;
@@ -959,12 +957,10 @@ static napi_value TestDataViewByteOffsets(napi_env env, napi_callback_info info)
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, LARGE_BUFFER_BYTES, &data);
 
     napi_value viewAtZero = nullptr;
-    NAPI_CALL(env, napi_create_dataview(
-        env, DATAVIEW_LENGTH, arrayBuffer, DATAVIEW_DEFAULT_OFFSET, &viewAtZero));
+    NAPI_CALL(env, napi_create_dataview(env, DATAVIEW_LENGTH, arrayBuffer, DATAVIEW_DEFAULT_OFFSET, &viewAtZero));
 
     napi_value viewAtFour = nullptr;
-    NAPI_CALL(env, napi_create_dataview(
-        env, DATAVIEW_LENGTH, arrayBuffer, DATAVIEW_CUSTOM_OFFSET, &viewAtFour));
+    NAPI_CALL(env, napi_create_dataview(env, DATAVIEW_LENGTH, arrayBuffer, DATAVIEW_CUSTOM_OFFSET, &viewAtFour));
 
     size_t offsetZero = ZERO_LENGTH;
     size_t offsetFour = ZERO_LENGTH;
@@ -987,8 +983,8 @@ static napi_value TestGetTypedArrayInfoFloat64(napi_env env, napi_callback_info 
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_float64_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     napi_typedarray_type arrayType = napi_int8_array;
     size_t length = ZERO_LENGTH;
@@ -1056,8 +1052,8 @@ static napi_value TestTypedArrayIsNotDataView(napi_env env, napi_callback_info i
     napi_value arrayBuffer = CreateArrayBufferWithSize(env, bufferBytes, &data);
 
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(
-        env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer, TYPED_ARRAY_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_int32_array, TYPED_ARRAY_LENGTH, arrayBuffer,
+                                          TYPED_ARRAY_OFFSET_ZERO, &typedArray));
 
     bool isDataView = true;
     NAPI_CALL(env, napi_is_dataview(env, typedArray, &isDataView));
@@ -1079,55 +1075,54 @@ struct TestEntry {
 };
 
 static const TestEntry TYPEDARRAY_TESTS[] = {
-    { "testCreateArrayBuffer",            TestCreateArrayBuffer },
-    { "testGetArrayBufferInfo",           TestGetArrayBufferInfo },
-    { "testIsArrayBuffer",                TestIsArrayBuffer },
-    { "testIsArrayBufferNegative",        TestIsArrayBufferNegative },
-    { "testCreateTypedArrayInt8",         TestCreateTypedArrayInt8 },
-    { "testCreateTypedArrayUint8",        TestCreateTypedArrayUint8 },
+    { "testCreateArrayBuffer", TestCreateArrayBuffer },
+    { "testGetArrayBufferInfo", TestGetArrayBufferInfo },
+    { "testIsArrayBuffer", TestIsArrayBuffer },
+    { "testIsArrayBufferNegative", TestIsArrayBufferNegative },
+    { "testCreateTypedArrayInt8", TestCreateTypedArrayInt8 },
+    { "testCreateTypedArrayUint8", TestCreateTypedArrayUint8 },
     { "testCreateTypedArrayUint8Clamped", TestCreateTypedArrayUint8Clamped },
-    { "testCreateTypedArrayInt16",        TestCreateTypedArrayInt16 },
-    { "testCreateTypedArrayUint16",       TestCreateTypedArrayUint16 },
-    { "testCreateTypedArrayInt32",        TestCreateTypedArrayInt32 },
-    { "testCreateTypedArrayUint32",       TestCreateTypedArrayUint32 },
-    { "testCreateTypedArrayFloat32",      TestCreateTypedArrayFloat32 },
-    { "testCreateTypedArrayFloat64",      TestCreateTypedArrayFloat64 },
-    { "testCreateTypedArrayBigInt64",     TestCreateTypedArrayBigInt64 },
-    { "testCreateTypedArrayBigUint64",    TestCreateTypedArrayBigUint64 },
-    { "testGetTypedArrayInfo",            TestGetTypedArrayInfo },
-    { "testCreateDataView",              TestCreateDataView },
-    { "testGetDataViewInfo",             TestGetDataViewInfo },
-    { "testIsDataView",                  TestIsDataView },
-    { "testIsDataViewNegative",          TestIsDataViewNegative },
-    { "testDetachArrayBuffer",           TestDetachArrayBuffer },
-    { "testIsDetachedArrayBufferFalse",  TestIsDetachedArrayBufferFalse },
-    { "testCreateBuffer",               TestCreateBuffer },
-    { "testCreateBufferCopy",            TestCreateBufferCopy },
-    { "testIsBuffer",                    TestIsBuffer },
-    { "testIsBufferNegative",            TestIsBufferNegative },
-    { "testGetBufferInfo",               TestGetBufferInfo },
-    { "testCreateExternalArrayBuffer",   TestCreateExternalArrayBuffer },
-    { "testArrayBufferDifferentSizes",   TestArrayBufferDifferentSizes },
+    { "testCreateTypedArrayInt16", TestCreateTypedArrayInt16 },
+    { "testCreateTypedArrayUint16", TestCreateTypedArrayUint16 },
+    { "testCreateTypedArrayInt32", TestCreateTypedArrayInt32 },
+    { "testCreateTypedArrayUint32", TestCreateTypedArrayUint32 },
+    { "testCreateTypedArrayFloat32", TestCreateTypedArrayFloat32 },
+    { "testCreateTypedArrayFloat64", TestCreateTypedArrayFloat64 },
+    { "testCreateTypedArrayBigInt64", TestCreateTypedArrayBigInt64 },
+    { "testCreateTypedArrayBigUint64", TestCreateTypedArrayBigUint64 },
+    { "testGetTypedArrayInfo", TestGetTypedArrayInfo },
+    { "testCreateDataView", TestCreateDataView },
+    { "testGetDataViewInfo", TestGetDataViewInfo },
+    { "testIsDataView", TestIsDataView },
+    { "testIsDataViewNegative", TestIsDataViewNegative },
+    { "testDetachArrayBuffer", TestDetachArrayBuffer },
+    { "testIsDetachedArrayBufferFalse", TestIsDetachedArrayBufferFalse },
+    { "testCreateBuffer", TestCreateBuffer },
+    { "testCreateBufferCopy", TestCreateBufferCopy },
+    { "testIsBuffer", TestIsBuffer },
+    { "testIsBufferNegative", TestIsBufferNegative },
+    { "testGetBufferInfo", TestGetBufferInfo },
+    { "testCreateExternalArrayBuffer", TestCreateExternalArrayBuffer },
+    { "testArrayBufferDifferentSizes", TestArrayBufferDifferentSizes },
     { "testArrayBufferDataManipulation", TestArrayBufferDataManipulation },
-    { "testTypedArrayReadWriteInt8",     TestTypedArrayReadWriteInt8 },
-    { "testTypedArrayReadWriteInt32",    TestTypedArrayReadWriteInt32 },
-    { "testTypedArrayReadWriteFloat64",  TestTypedArrayReadWriteFloat64 },
-    { "testTypedArrayReadWriteUint8",    TestTypedArrayReadWriteUint8 },
-    { "testTypedArrayReadWriteInt16",    TestTypedArrayReadWriteInt16 },
-    { "testTypedArrayReadWriteUint16",   TestTypedArrayReadWriteUint16 },
-    { "testTypedArrayReadWriteUint32",   TestTypedArrayReadWriteUint32 },
-    { "testTypedArrayReadWriteFloat32",  TestTypedArrayReadWriteFloat32 },
-    { "testMultipleTypedArrayViews",     TestMultipleTypedArrayViews },
-    { "testDataViewByteOffsets",         TestDataViewByteOffsets },
-    { "testGetTypedArrayInfoFloat64",    TestGetTypedArrayInfoFloat64 },
-    { "testArrayBufferZeroLength",       TestArrayBufferZeroLength },
-    { "testDataViewIsNotTypedArray",     TestDataViewIsNotTypedArray },
-    { "testTypedArrayIsNotDataView",     TestTypedArrayIsNotDataView },
+    { "testTypedArrayReadWriteInt8", TestTypedArrayReadWriteInt8 },
+    { "testTypedArrayReadWriteInt32", TestTypedArrayReadWriteInt32 },
+    { "testTypedArrayReadWriteFloat64", TestTypedArrayReadWriteFloat64 },
+    { "testTypedArrayReadWriteUint8", TestTypedArrayReadWriteUint8 },
+    { "testTypedArrayReadWriteInt16", TestTypedArrayReadWriteInt16 },
+    { "testTypedArrayReadWriteUint16", TestTypedArrayReadWriteUint16 },
+    { "testTypedArrayReadWriteUint32", TestTypedArrayReadWriteUint32 },
+    { "testTypedArrayReadWriteFloat32", TestTypedArrayReadWriteFloat32 },
+    { "testMultipleTypedArrayViews", TestMultipleTypedArrayViews },
+    { "testDataViewByteOffsets", TestDataViewByteOffsets },
+    { "testGetTypedArrayInfoFloat64", TestGetTypedArrayInfoFloat64 },
+    { "testArrayBufferZeroLength", TestArrayBufferZeroLength },
+    { "testDataViewIsNotTypedArray", TestDataViewIsNotTypedArray },
+    { "testTypedArrayIsNotDataView", TestTypedArrayIsNotDataView },
 };
 
 static constexpr size_t TYPEDARRAY_TEST_COUNT = sizeof(TYPEDARRAY_TESTS) / sizeof(TYPEDARRAY_TESTS[0]);
-
-}  // namespace
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Module initialization
@@ -1136,10 +1131,14 @@ static napi_value InitTypedArraySuite(napi_env env, napi_value exports)
 {
     napi_property_descriptor descriptors[TYPEDARRAY_TEST_COUNT];
     for (size_t i = 0; i < TYPEDARRAY_TEST_COUNT; i++) {
-        descriptors[i] = napi_property_descriptor{
-            TYPEDARRAY_TESTS[i].name, nullptr, TYPEDARRAY_TESTS[i].callback,
-            nullptr, nullptr, nullptr, napi_default, nullptr
-        };
+        descriptors[i] = napi_property_descriptor { TYPEDARRAY_TESTS[i].name,
+                                                    nullptr,
+                                                    TYPEDARRAY_TESTS[i].callback,
+                                                    nullptr,
+                                                    nullptr,
+                                                    nullptr,
+                                                    napi_default,
+                                                    nullptr };
     }
     NAPI_CALL(env, napi_define_properties(env, exports, TYPEDARRAY_TEST_COUNT, descriptors));
     return exports;

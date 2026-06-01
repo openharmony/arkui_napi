@@ -43,12 +43,14 @@ static constexpr int32_t MODULE_FLAGS_NONE = 0;
 
 static bool g_finalizerCalled = false;
 
-static void ExternalFinalizeCallback(napi_env env, void* data, void* hint)
+static void ExternalFinalizeCallback([[maybe_unused]] napi_env env,
+                                     [[maybe_unused]] void* data,
+                                     [[maybe_unused]] void* hint)
 {
     g_finalizerCalled = true;
 }
 
-static napi_value DummyCallback(napi_env env, napi_callback_info info)
+static napi_value DummyCallback(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value undefined = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &undefined));
@@ -71,7 +73,7 @@ static napi_value CreateTestResult(napi_env env, bool passed, const char* messag
 /**
  * Test 1: Create a weak reference (initial refcount 0).
  */
-static napi_value TestCreateWeakReference(napi_env env, napi_callback_info info)
+static napi_value TestCreateWeakReference(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -87,7 +89,7 @@ static napi_value TestCreateWeakReference(napi_env env, napi_callback_info info)
 /**
  * Test 2: Create a strong reference (initial refcount 1).
  */
-static napi_value TestCreateStrongReference(napi_env env, napi_callback_info info)
+static napi_value TestCreateStrongReference(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -105,7 +107,7 @@ static napi_value TestCreateStrongReference(napi_env env, napi_callback_info inf
 /**
  * Test 3: Create a reference with a higher initial refcount.
  */
-static napi_value TestCreateRefWithHighCount(napi_env env, napi_callback_info info)
+static napi_value TestCreateRefWithHighCount(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -125,7 +127,7 @@ static napi_value TestCreateRefWithHighCount(napi_env env, napi_callback_info in
 /**
  * Test 4: Delete a reference.
  */
-static napi_value TestDeleteReference(napi_env env, napi_callback_info info)
+static napi_value TestDeleteReference(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -139,7 +141,7 @@ static napi_value TestDeleteReference(napi_env env, napi_callback_info info)
 /**
  * Test 5: Increment refcount via napi_reference_ref and verify the new count.
  */
-static napi_value TestRefIncrementCount(napi_env env, napi_callback_info info)
+static napi_value TestRefIncrementCount(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -156,7 +158,7 @@ static napi_value TestRefIncrementCount(napi_env env, napi_callback_info info)
 /**
  * Test 6: Decrement refcount via napi_reference_unref and verify the new count.
  */
-static napi_value TestUnrefDecrementCount(napi_env env, napi_callback_info info)
+static napi_value TestUnrefDecrementCount(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -173,7 +175,7 @@ static napi_value TestUnrefDecrementCount(napi_env env, napi_callback_info info)
 /**
  * Test 7: Retrieve value from a strong reference.
  */
-static napi_value TestGetValueFromStrongRef(napi_env env, napi_callback_info info)
+static napi_value TestGetValueFromStrongRef(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -190,7 +192,7 @@ static napi_value TestGetValueFromStrongRef(napi_env env, napi_callback_info inf
 /**
  * Test 8: Retrieve value from a weak reference (refcount 0).
  */
-static napi_value TestGetValueFromWeakRef(napi_env env, napi_callback_info info)
+static napi_value TestGetValueFromWeakRef(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -206,7 +208,7 @@ static napi_value TestGetValueFromWeakRef(napi_env env, napi_callback_info info)
 /**
  * Test 9: Create multiple references to the same object.
  */
-static napi_value TestMultipleRefsToSameObj(napi_env env, napi_callback_info info)
+static napi_value TestMultipleRefsToSameObj(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -236,7 +238,7 @@ static napi_value TestMultipleRefsToSameObj(napi_env env, napi_callback_info inf
 /**
  * Test 10: Reference to a plain object, verify type after deref.
  */
-static napi_value TestRefToPlainObject(napi_env env, napi_callback_info info)
+static napi_value TestRefToPlainObject(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -254,7 +256,7 @@ static napi_value TestRefToPlainObject(napi_env env, napi_callback_info info)
 /**
  * Test 11: Reference to an array, verify it is still an array after deref.
  */
-static napi_value TestRefToArray(napi_env env, napi_callback_info info)
+static napi_value TestRefToArray(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value arr = nullptr;
     NAPI_CALL(env, napi_create_array_with_length(env, ARRAY_ELEMENT_COUNT, &arr));
@@ -271,11 +273,10 @@ static napi_value TestRefToArray(napi_env env, napi_callback_info info)
 /**
  * Test 12: Reference to a function, verify type is napi_function.
  */
-static napi_value TestRefToFunction(napi_env env, napi_callback_info info)
+static napi_value TestRefToFunction(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value func = nullptr;
-    NAPI_CALL(env, napi_create_function(env, "dummy", NAPI_AUTO_LENGTH,
-                                        DummyCallback, nullptr, &func));
+    NAPI_CALL(env, napi_create_function(env, "dummy", NAPI_AUTO_LENGTH, DummyCallback, nullptr, &func));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, func, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -290,12 +291,11 @@ static napi_value TestRefToFunction(napi_env env, napi_callback_info info)
 /**
  * Test 13: Reference to an external value, verify type is napi_external.
  */
-static napi_value TestRefToExternal(napi_env env, napi_callback_info info)
+static napi_value TestRefToExternal(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     int32_t externalData = 0;
     napi_value ext = nullptr;
-    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&externalData),
-                                        nullptr, nullptr, &ext));
+    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&externalData), nullptr, nullptr, &ext));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, ext, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -310,28 +310,42 @@ static napi_value TestRefToExternal(napi_env env, napi_callback_info info)
 /**
  * Test 14: Reference to a promise value.
  */
-static napi_value TestRefToPromise(napi_env env, napi_callback_info info)
+static napi_value TestRefToPromise(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_deferred deferred = nullptr;
     napi_value promise = nullptr;
     NAPI_CALL(env, napi_create_promise(env, &deferred, &promise));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, promise, REFCOUNT_ONE, &ref));
+
     napi_value retrieved = nullptr;
-    NAPI_CALL(env, napi_get_reference_value(env, ref, &retrieved));
+    napi_status status = napi_get_reference_value(env, ref, &retrieved);
+
     bool isPromise = false;
-    NAPI_CALL(env, napi_is_promise(env, retrieved, &isPromise));
+    if (status == napi_ok) {
+        status = napi_is_promise(env, retrieved, &isPromise);
+    }
+
     napi_value resolveVal = nullptr;
-    NAPI_CALL(env, napi_get_undefined(env, &resolveVal));
-    NAPI_CALL(env, napi_resolve_deferred(env, deferred, resolveVal));
-    NAPI_CALL(env, napi_delete_reference(env, ref));
+    if (status == napi_ok) {
+        status = napi_get_undefined(env, &resolveVal);
+    }
+    if (status == napi_ok) {
+        status = napi_resolve_deferred(env, deferred, resolveVal);
+    }
+
+    napi_delete_reference(env, ref);
+    NAPI_CALL(env, status);
+
     return CreateTestResult(env, isPromise, "promise ref still reports as promise");
 }
 
 /**
  * Test 15: Strong reference unref'd to become a weak reference.
+ * Under N-API, unreferencing a reference to a count of 0 transitions it to a
+ * weak reference. We verify this by ensuring the count reaches 0.
  */
-static napi_value TestStrongToWeakTransition(napi_env env, napi_callback_info info)
+static napi_value TestStrongToWeakTransition(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -347,7 +361,7 @@ static napi_value TestStrongToWeakTransition(napi_env env, napi_callback_info in
 /**
  * Test 16: Weak reference ref'd back to become a strong reference.
  */
-static napi_value TestWeakToStrongTransition(napi_env env, napi_callback_info info)
+static napi_value TestWeakToStrongTransition(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -366,7 +380,7 @@ static napi_value TestWeakToStrongTransition(napi_env env, napi_callback_info in
 /**
  * Test 17: Full lifecycle: strong -> weak -> strong -> delete.
  */
-static napi_value TestFullRefLifecycle(napi_env env, napi_callback_info info)
+static napi_value TestFullRefLifecycle(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -388,7 +402,7 @@ static napi_value TestFullRefLifecycle(napi_env env, napi_callback_info info)
 /**
  * Test 18: Create reference inside a handle scope, use it outside.
  */
-static napi_value TestRefCreatedInHandleScope(napi_env env, napi_callback_info info)
+static napi_value TestRefCreatedInHandleScope(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_ref ref = nullptr;
     napi_handle_scope scope = nullptr;
@@ -405,16 +419,37 @@ static napi_value TestRefCreatedInHandleScope(napi_env env, napi_callback_info i
 }
 
 /**
+ * Test 18b: Create reference inside an escapable handle scope, use it outside.
+ * General escapable handle scope tests are implemented in napi_scope_suite.cpp.
+ */
+static napi_value TestRefCreatedInEscapableHandleScope(napi_env env, [[maybe_unused]] napi_callback_info info)
+{
+    napi_ref ref = nullptr;
+    napi_escapable_handle_scope scope = nullptr;
+    NAPI_CALL(env, napi_open_escapable_handle_scope(env, &scope));
+    napi_value obj = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &obj));
+    napi_value escaped = nullptr;
+    NAPI_CALL(env, napi_escape_handle(env, scope, obj, &escaped));
+    NAPI_CALL(env, napi_create_reference(env, escaped, REFCOUNT_ONE, &ref));
+    NAPI_CALL(env, napi_close_escapable_handle_scope(env, scope));
+    napi_value retrieved = nullptr;
+    NAPI_CALL(env, napi_get_reference_value(env, ref, &retrieved));
+    bool passed = (retrieved != nullptr);
+    NAPI_CALL(env, napi_delete_reference(env, ref));
+    return CreateTestResult(env, passed, "ref created in escapable handle scope usable outside");
+}
+
+/**
  * Test 19: External with finalizer callback and a strong reference.
  * While the strong reference exists the finalizer must not fire.
  */
-static napi_value TestExternalFinalizerWithRef(napi_env env, napi_callback_info info)
+static napi_value TestExternalFinalizerWithRef(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     g_finalizerCalled = false;
     int32_t data = 0;
     napi_value ext = nullptr;
-    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&data),
-                                        ExternalFinalizeCallback, nullptr, &ext));
+    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&data), ExternalFinalizeCallback, nullptr, &ext));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, ext, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -427,12 +462,11 @@ static napi_value TestExternalFinalizerWithRef(napi_env env, napi_callback_info 
 /**
  * Test 20: Create reference on a value from napi_create_external.
  */
-static napi_value TestRefOnCreateExternal(napi_env env, napi_callback_info info)
+static napi_value TestRefOnCreateExternal(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     int32_t payload = 0;
     napi_value ext = nullptr;
-    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&payload),
-                                        nullptr, nullptr, &ext));
+    NAPI_CALL(env, napi_create_external(env, static_cast<void*>(&payload), nullptr, nullptr, &ext));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, ext, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -447,12 +481,11 @@ static napi_value TestRefOnCreateExternal(napi_env env, napi_callback_info info)
 /**
  * Test 21: Create reference on a value from napi_create_arraybuffer.
  */
-static napi_value TestRefOnArrayBuffer(napi_env env, napi_callback_info info)
+static napi_value TestRefOnArrayBuffer(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     void* bufferData = nullptr;
     napi_value arrayBuffer = nullptr;
-    NAPI_CALL(env, napi_create_arraybuffer(env, ARRAY_BUFFER_BYTE_LENGTH,
-                                           &bufferData, &arrayBuffer));
+    NAPI_CALL(env, napi_create_arraybuffer(env, ARRAY_BUFFER_BYTE_LENGTH, &bufferData, &arrayBuffer));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, arrayBuffer, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -466,7 +499,7 @@ static napi_value TestRefOnArrayBuffer(napi_env env, napi_callback_info info)
 /**
  * Test 22: Stress test – create many references and verify all return values.
  */
-static napi_value TestStressCreateAndVerify(napi_env env, napi_callback_info info)
+static napi_value TestStressCreateAndVerify(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -491,7 +524,7 @@ static napi_value TestStressCreateAndVerify(napi_env env, napi_callback_info inf
 /**
  * Test 23: Stress test – create many references then delete all.
  */
-static napi_value TestStressCreateAndDelete(napi_env env, napi_callback_info info)
+static napi_value TestStressCreateAndDelete(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -512,7 +545,7 @@ static napi_value TestStressCreateAndDelete(napi_env env, napi_callback_info inf
 /**
  * Test 24: Boundary – increment refcount many times and verify final count.
  */
-static napi_value TestRefBoundaryIncrement(napi_env env, napi_callback_info info)
+static napi_value TestRefBoundaryIncrement(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -534,7 +567,7 @@ static napi_value TestRefBoundaryIncrement(napi_env env, napi_callback_info info
 /**
  * Test 25: Boundary – decrement refcount many times from a high initial value.
  */
-static napi_value TestRefBoundaryDecrement(napi_env env, napi_callback_info info)
+static napi_value TestRefBoundaryDecrement(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -556,7 +589,7 @@ static napi_value TestRefBoundaryDecrement(napi_env env, napi_callback_info info
 /**
  * Test 26: Delete reference and verify no crash on subsequent operations.
  */
-static napi_value TestDeleteRefCleanup(napi_env env, napi_callback_info info)
+static napi_value TestDeleteRefCleanup(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -573,15 +606,15 @@ static napi_value TestDeleteRefCleanup(napi_env env, napi_callback_info info)
 /**
  * Test 27: Reference to a typed array (Uint8Array).
  */
-static napi_value TestRefToTypedArray(napi_env env, napi_callback_info info)
+static napi_value TestRefToTypedArray(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     void* bufferData = nullptr;
     napi_value arrayBuffer = nullptr;
     size_t byteLength = TYPED_ARRAY_LENGTH * sizeof(uint8_t);
     NAPI_CALL(env, napi_create_arraybuffer(env, byteLength, &bufferData, &arrayBuffer));
     napi_value typedArray = nullptr;
-    NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, TYPED_ARRAY_LENGTH,
-                                          arrayBuffer, BYTE_OFFSET_ZERO, &typedArray));
+    NAPI_CALL(env, napi_create_typedarray(env, napi_uint8_array, TYPED_ARRAY_LENGTH, arrayBuffer, BYTE_OFFSET_ZERO,
+                                          &typedArray));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, typedArray, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -595,15 +628,13 @@ static napi_value TestRefToTypedArray(napi_env env, napi_callback_info info)
 /**
  * Test 28: Reference to a DataView.
  */
-static napi_value TestRefToDataView(napi_env env, napi_callback_info info)
+static napi_value TestRefToDataView(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     void* bufferData = nullptr;
     napi_value arrayBuffer = nullptr;
-    NAPI_CALL(env, napi_create_arraybuffer(env, DATA_VIEW_BYTE_LENGTH,
-                                           &bufferData, &arrayBuffer));
+    NAPI_CALL(env, napi_create_arraybuffer(env, DATA_VIEW_BYTE_LENGTH, &bufferData, &arrayBuffer));
     napi_value dataView = nullptr;
-    NAPI_CALL(env, napi_create_dataview(env, DATA_VIEW_BYTE_LENGTH, arrayBuffer,
-                                        BYTE_OFFSET_ZERO, &dataView));
+    NAPI_CALL(env, napi_create_dataview(env, DATA_VIEW_BYTE_LENGTH, arrayBuffer, BYTE_OFFSET_ZERO, &dataView));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, dataView, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
@@ -617,7 +648,7 @@ static napi_value TestRefToDataView(napi_env env, napi_callback_info info)
 /**
  * Test 29: Reference to an Error object.
  */
-static napi_value TestRefToErrorObject(napi_env env, napi_callback_info info)
+static napi_value TestRefToErrorObject(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value code = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "TEST_ERR", NAPI_AUTO_LENGTH, &code));
@@ -638,7 +669,7 @@ static napi_value TestRefToErrorObject(napi_env env, napi_callback_info info)
 /**
  * Test 30: Multiple ref/unref cycles on the same reference.
  */
-static napi_value TestMultipleRefUnrefCycles(napi_env env, napi_callback_info info)
+static napi_value TestMultipleRefUnrefCycles(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -664,7 +695,7 @@ static napi_value TestMultipleRefUnrefCycles(napi_env env, napi_callback_info in
 /**
  * Test 31: Verify that the initial refcount matches the value passed to create.
  */
-static napi_value TestRefInitialCountVerify(napi_env env, napi_callback_info info)
+static napi_value TestRefInitialCountVerify(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -685,7 +716,7 @@ static napi_value TestRefInitialCountVerify(napi_env env, napi_callback_info inf
 /**
  * Test 32: Two independent references to the same object have independent counts.
  */
-static napi_value TestTwoRefsIndependentCounts(napi_env env, napi_callback_info info)
+static napi_value TestTwoRefsIndependentCounts(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value testObj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &testObj));
@@ -712,7 +743,7 @@ static napi_value TestTwoRefsIndependentCounts(napi_env env, napi_callback_info 
 /**
  * Test 33: Verify strict equality between original object and dereferenced value.
  */
-static napi_value TestRefValueStrictEquality(napi_env env, napi_callback_info info)
+static napi_value TestRefValueStrictEquality(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -739,7 +770,7 @@ static napi_value TestRefValueStrictEquality(napi_env env, napi_callback_info in
 /**
  * Test 34: Weak reference – retrieved value still equals original when alive.
  */
-static napi_value TestWeakRefValueEquality(napi_env env, napi_callback_info info)
+static napi_value TestWeakRefValueEquality(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -760,7 +791,7 @@ static napi_value TestWeakRefValueEquality(napi_env env, napi_callback_info info
 /**
  * Test 35: Create reference with initial refcount 2 and verify both unrefs.
  */
-static napi_value TestRefWithInitialCountTwo(napi_env env, napi_callback_info info)
+static napi_value TestRefWithInitialCountTwo(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -780,7 +811,7 @@ static napi_value TestRefWithInitialCountTwo(napi_env env, napi_callback_info in
 /**
  * Test 36: Create reference in a nested handle scope.
  */
-static napi_value TestRefInNestedHandleScope(napi_env env, napi_callback_info info)
+static napi_value TestRefInNestedHandleScope(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_ref ref = nullptr;
     napi_handle_scope outerScope = nullptr;
@@ -802,7 +833,7 @@ static napi_value TestRefInNestedHandleScope(napi_env env, napi_callback_info in
 /**
  * Test 37: Stress test with references to distinct objects.
  */
-static napi_value TestStressRefsToDistinctObjs(napi_env env, napi_callback_info info)
+static napi_value TestStressRefsToDistinctObjs(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_ref refs[STRESS_REF_COUNT] = {};
     for (size_t i = 0; i < STRESS_REF_COUNT; ++i) {
@@ -827,20 +858,18 @@ static napi_value TestStressRefsToDistinctObjs(napi_env env, napi_callback_info 
 /**
  * Test 38: ArrayBuffer data pointer preserved through reference dereference.
  */
-static napi_value TestArrayBufferDataThroughRef(napi_env env, napi_callback_info info)
+static napi_value TestArrayBufferDataThroughRef(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     void* originalData = nullptr;
     napi_value arrayBuf = nullptr;
-    NAPI_CALL(env, napi_create_arraybuffer(env, ARRAY_BUFFER_BYTE_LENGTH,
-                                           &originalData, &arrayBuf));
+    NAPI_CALL(env, napi_create_arraybuffer(env, ARRAY_BUFFER_BYTE_LENGTH, &originalData, &arrayBuf));
     napi_ref ref = nullptr;
     NAPI_CALL(env, napi_create_reference(env, arrayBuf, REFCOUNT_ONE, &ref));
     napi_value retrieved = nullptr;
     NAPI_CALL(env, napi_get_reference_value(env, ref, &retrieved));
     void* retrievedData = nullptr;
     size_t retrievedLen = 0;
-    NAPI_CALL(env, napi_get_arraybuffer_info(env, retrieved,
-                                             &retrievedData, &retrievedLen));
+    NAPI_CALL(env, napi_get_arraybuffer_info(env, retrieved, &retrievedData, &retrievedLen));
     bool dataMatch = (retrievedData == originalData);
     bool lenMatch = (retrievedLen == ARRAY_BUFFER_BYTE_LENGTH);
     bool passed = dataMatch && lenMatch;
@@ -851,7 +880,7 @@ static napi_value TestArrayBufferDataThroughRef(napi_env env, napi_callback_info
 /**
  * Test 39: Delete one reference among multiple to same object; others stay valid.
  */
-static napi_value TestDeleteOneOfMultipleRefs(napi_env env, napi_callback_info info)
+static napi_value TestDeleteOneOfMultipleRefs(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -879,7 +908,7 @@ static napi_value TestDeleteOneOfMultipleRefs(napi_env env, napi_callback_info i
 /**
  * Test 40: Reference to a RangeError object.
  */
-static napi_value TestRefToRangeError(napi_env env, napi_callback_info info)
+static napi_value TestRefToRangeError(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value code = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "RANGE_ERR", NAPI_AUTO_LENGTH, &code));
@@ -900,7 +929,7 @@ static napi_value TestRefToRangeError(napi_env env, napi_callback_info info)
 /**
  * Test 41: Alternating ref and unref verifies count at each step.
  */
-static napi_value TestAlternatingRefUnref(napi_env env, napi_callback_info info)
+static napi_value TestAlternatingRefUnref(napi_env env, [[maybe_unused]] napi_callback_info info)
 {
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
@@ -955,6 +984,7 @@ static napi_property_descriptor REFERENCE_TESTS[] = {
     DECLARE_NAPI_FUNCTION("testWeakToStrongTransition", TestWeakToStrongTransition),
     DECLARE_NAPI_FUNCTION("testFullRefLifecycle", TestFullRefLifecycle),
     DECLARE_NAPI_FUNCTION("testRefCreatedInHandleScope", TestRefCreatedInHandleScope),
+    DECLARE_NAPI_FUNCTION("testRefCreatedInEscapableHandleScope", TestRefCreatedInEscapableHandleScope),
     DECLARE_NAPI_FUNCTION("testExternalFinalizerWithRef", TestExternalFinalizerWithRef),
     DECLARE_NAPI_FUNCTION("testRefOnCreateExternal", TestRefOnCreateExternal),
     DECLARE_NAPI_FUNCTION("testRefOnArrayBuffer", TestRefOnArrayBuffer),

@@ -25,7 +25,7 @@
 namespace {
 
 // ---------------------------------------------------------------------------
-// Named constants – no magic numbers
+// Constants used for verifying N-API type-checking APIs
 // ---------------------------------------------------------------------------
 static constexpr uint32_t MODULE_VERSION = 1;
 static constexpr uint32_t NO_MODULE_FLAGS = 0;
@@ -287,6 +287,14 @@ static napi_value TestIsArraybufferPositive(napi_env env, napi_callback_info inf
     bool isAB = false;
     NAPI_CALL(env, napi_is_arraybuffer(env, ab, &isAB));
     SetNamedBool(env, result, "isArrayBuffer", isAB);
+
+    void* zeroData = nullptr;
+    napi_value zeroAb = nullptr;
+    NAPI_CALL(env, napi_create_arraybuffer(env, 0, &zeroData, &zeroAb));
+    bool isZeroAB = false;
+    NAPI_CALL(env, napi_is_arraybuffer(env, zeroAb, &isZeroAB));
+    SetNamedBool(env, result, "isZeroArrayBuffer", isZeroAB);
+
     return result;
 }
 
@@ -327,6 +335,7 @@ static napi_value TestIsBufferNegative(napi_env env, napi_callback_info info)
     napi_value result = CreateResultObject(env);
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "notbuf", NAPI_AUTO_LENGTH, &str));
+    SetNamedBool(env, result, "isString", CheckTypeOf(env, str, napi_string));
     bool isBuf = true;
     NAPI_CALL(env, napi_is_buffer(env, str, &isBuf));
     SetNamedBool(env, result, "isNotBuffer", !isBuf);
@@ -710,9 +719,8 @@ static napi_value TestInstanceof(napi_env env, napi_callback_info info)
 {
     napi_value result = CreateResultObject(env);
     napi_value ctor = nullptr;
-    NAPI_CALL(env, napi_define_class(
-        env, "TestClass", NAPI_AUTO_LENGTH, ConstructorCallback,
-        nullptr, ZERO_INDEX, nullptr, &ctor));
+    NAPI_CALL(env, napi_define_class(env, "TestClass", NAPI_AUTO_LENGTH, ConstructorCallback, nullptr, ZERO_INDEX,
+                                     nullptr, &ctor));
     napi_value instance = nullptr;
     NAPI_CALL(env, napi_new_instance(env, ctor, ZERO_INDEX, nullptr, &instance));
     bool isInstance = false;
@@ -785,6 +793,10 @@ static napi_value TestTypeofMatrix(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_function(env, "fn", NAPI_AUTO_LENGTH, DummyCallback, nullptr, &fnVal));
     SetNamedBool(env, result, "functionOk", CheckTypeOf(env, fnVal, napi_function));
 
+    napi_value dateVal = nullptr;
+    NAPI_CALL(env, napi_create_date(env, DATE_TIMESTAMP_MS, &dateVal));
+    SetNamedBool(env, result, "dateOk", CheckTypeOf(env, dateVal, napi_object));
+
     return result;
 }
 
@@ -830,8 +842,8 @@ static napi_value TestNumberInfinity(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_get_value_double(env, negInf, &negInfVal));
     SetNamedBool(env, result, "negInfOk", std::isinf(negInfVal) && negInfVal < DOUBLE_ZERO);
 
-    SetNamedBool(env, result, "bothAreNumbers", CheckTypeOf(env, posInf, napi_number) &&
-                                                 CheckTypeOf(env, negInf, napi_number));
+    SetNamedBool(env, result, "bothAreNumbers",
+                 CheckTypeOf(env, posInf, napi_number) && CheckTypeOf(env, negInf, napi_number));
     return result;
 }
 
@@ -907,59 +919,59 @@ struct TestEntry {
 };
 
 static const TestEntry VALUE_CHECK_TESTS[] = {
-    { "testTypeofUndefined",         TestTypeofUndefined },
-    { "testTypeofNull",              TestTypeofNull },
-    { "testTypeofBoolean",           TestTypeofBoolean },
-    { "testTypeofNumber",            TestTypeofNumber },
-    { "testTypeofString",            TestTypeofString },
-    { "testTypeofSymbol",            TestTypeofSymbol },
-    { "testTypeofObject",            TestTypeofObject },
-    { "testTypeofFunction",          TestTypeofFunction },
-    { "testTypeofExternal",          TestTypeofExternal },
-    { "testTypeofBigint",            TestTypeofBigint },
-    { "testIsArrayPositive",         TestIsArrayPositive },
-    { "testIsArrayNegative",         TestIsArrayNegative },
-    { "testIsArraybufferPositive",   TestIsArraybufferPositive },
-    { "testIsArraybufferNegative",   TestIsArraybufferNegative },
-    { "testIsBufferPositive",        TestIsBufferPositive },
-    { "testIsBufferNegative",        TestIsBufferNegative },
-    { "testIsDatePositive",          TestIsDatePositive },
-    { "testIsDateNegative",          TestIsDateNegative },
-    { "testIsErrorPositive",         TestIsErrorPositive },
-    { "testIsErrorNegative",         TestIsErrorNegative },
-    { "testIsTypedarrayPositive",    TestIsTypedarrayPositive },
-    { "testIsTypedarrayNegative",    TestIsTypedarrayNegative },
-    { "testIsDataviewPositive",      TestIsDataviewPositive },
-    { "testIsDataviewNegative",      TestIsDataviewNegative },
-    { "testIsPromisePositive",       TestIsPromisePositive },
-    { "testIsPromiseNegative",       TestIsPromiseNegative },
-    { "testStrictEqualsSameValue",   TestStrictEqualsSameValue },
-    { "testStrictEqualsDiffValue",   TestStrictEqualsDiffValue },
-    { "testStrictEqualsDiffTypes",   TestStrictEqualsDiffTypes },
-    { "testStrictEqualsNullUndef",   TestStrictEqualsNullUndefined },
-    { "testStrictEqualsNanNan",      TestStrictEqualsNanNan },
-    { "testGetValueBoolTrue",        TestGetValueBoolTrue },
-    { "testGetValueBoolFalse",       TestGetValueBoolFalse },
-    { "testGetValueInt32",           TestGetValueInt32 },
-    { "testGetValueUint32",          TestGetValueUint32 },
-    { "testGetValueInt64",           TestGetValueInt64 },
-    { "testGetValueDouble",          TestGetValueDouble },
-    { "testIsObject",                TestIsObject },
-    { "testCoerceToString",          TestCoerceToString },
-    { "testInstanceof",              TestInstanceof },
-    { "testIsDetachedArraybuffer",   TestIsDetachedArraybuffer },
-    { "testTypeofMatrix",            TestTypeofMatrix },
-    { "testNumberZero",              TestNumberZero },
-    { "testNumberInfinity",          TestNumberInfinity },
-    { "testNumberNan",               TestNumberNan },
-    { "testNumberSafeIntegers",      TestNumberSafeIntegers },
-    { "testGetUndefined",            TestGetUndefined },
-    { "testGetNull",                 TestGetNull },
+    { "testTypeofUndefined", TestTypeofUndefined },
+    { "testTypeofNull", TestTypeofNull },
+    { "testTypeofBoolean", TestTypeofBoolean },
+    { "testTypeofNumber", TestTypeofNumber },
+    { "testTypeofString", TestTypeofString },
+    { "testTypeofSymbol", TestTypeofSymbol },
+    { "testTypeofObject", TestTypeofObject },
+    { "testTypeofFunction", TestTypeofFunction },
+    { "testTypeofExternal", TestTypeofExternal },
+    { "testTypeofBigint", TestTypeofBigint },
+    { "testIsArrayPositive", TestIsArrayPositive },
+    { "testIsArrayNegative", TestIsArrayNegative },
+    { "testIsArraybufferPositive", TestIsArraybufferPositive },
+    { "testIsArraybufferNegative", TestIsArraybufferNegative },
+    { "testIsBufferPositive", TestIsBufferPositive },
+    { "testIsBufferNegative", TestIsBufferNegative },
+    { "testIsDatePositive", TestIsDatePositive },
+    { "testIsDateNegative", TestIsDateNegative },
+    { "testIsErrorPositive", TestIsErrorPositive },
+    { "testIsErrorNegative", TestIsErrorNegative },
+    { "testIsTypedarrayPositive", TestIsTypedarrayPositive },
+    { "testIsTypedarrayNegative", TestIsTypedarrayNegative },
+    { "testIsDataviewPositive", TestIsDataviewPositive },
+    { "testIsDataviewNegative", TestIsDataviewNegative },
+    { "testIsPromisePositive", TestIsPromisePositive },
+    { "testIsPromiseNegative", TestIsPromiseNegative },
+    { "testStrictEqualsSameValue", TestStrictEqualsSameValue },
+    { "testStrictEqualsDiffValue", TestStrictEqualsDiffValue },
+    { "testStrictEqualsDiffTypes", TestStrictEqualsDiffTypes },
+    { "testStrictEqualsNullUndef", TestStrictEqualsNullUndefined },
+    { "testStrictEqualsNanNan", TestStrictEqualsNanNan },
+    { "testGetValueBoolTrue", TestGetValueBoolTrue },
+    { "testGetValueBoolFalse", TestGetValueBoolFalse },
+    { "testGetValueInt32", TestGetValueInt32 },
+    { "testGetValueUint32", TestGetValueUint32 },
+    { "testGetValueInt64", TestGetValueInt64 },
+    { "testGetValueDouble", TestGetValueDouble },
+    { "testIsObject", TestIsObject },
+    { "testCoerceToString", TestCoerceToString },
+    { "testInstanceof", TestInstanceof },
+    { "testIsDetachedArraybuffer", TestIsDetachedArraybuffer },
+    { "testTypeofMatrix", TestTypeofMatrix },
+    { "testNumberZero", TestNumberZero },
+    { "testNumberInfinity", TestNumberInfinity },
+    { "testNumberNan", TestNumberNan },
+    { "testNumberSafeIntegers", TestNumberSafeIntegers },
+    { "testGetUndefined", TestGetUndefined },
+    { "testGetNull", TestGetNull },
 };
 
 static constexpr size_t VALUE_CHECK_TEST_COUNT = sizeof(VALUE_CHECK_TESTS) / sizeof(VALUE_CHECK_TESTS[0]);
 
-}  // namespace
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Module initialization
@@ -968,10 +980,14 @@ static napi_value InitValueCheckSuite(napi_env env, napi_value exports)
 {
     napi_property_descriptor descriptors[VALUE_CHECK_TEST_COUNT];
     for (size_t i = 0; i < VALUE_CHECK_TEST_COUNT; i++) {
-        descriptors[i] = napi_property_descriptor{
-            VALUE_CHECK_TESTS[i].name, nullptr, VALUE_CHECK_TESTS[i].callback,
-            nullptr, nullptr, nullptr, napi_default, nullptr
-        };
+        descriptors[i] = napi_property_descriptor { VALUE_CHECK_TESTS[i].name,
+                                                    nullptr,
+                                                    VALUE_CHECK_TESTS[i].callback,
+                                                    nullptr,
+                                                    nullptr,
+                                                    nullptr,
+                                                    napi_default,
+                                                    nullptr };
     }
     NAPI_CALL(env, napi_define_properties(env, exports, VALUE_CHECK_TEST_COUNT, descriptors));
     return exports;
