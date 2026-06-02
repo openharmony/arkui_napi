@@ -650,16 +650,26 @@ bool NativeEngine::CallOffWorkerFunc(NativeEngine* engine)
 // adapt worker to ace container
 void NativeEngine::SetGetContainerScopeIdFunc(GetContainerScopeIdCallback func)
 {
+    if (g_getContainerScopeIdFunc != nullptr) {
+        return;
+    }
     g_getContainerScopeIdFunc = func;
 }
 void NativeEngine::SetInitContainerScopeFunc(ContainerScopeCallback func)
 {
+    if (g_initContainerScopeFunc != nullptr) {
+        return;
+    }
     g_initContainerScopeFunc = func;
 }
 void NativeEngine::SetFinishContainerScopeFunc(ContainerScopeCallback func)
 {
+    if (g_finishContainerScopeFunc != nullptr) {
+        return;
+    }
     g_finishContainerScopeFunc = func;
 }
+
 int32_t NativeEngine::GetContainerScopeIdFunc()
 {
     int32_t scopeId = -1;

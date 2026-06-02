@@ -40,9 +40,6 @@
 #ifdef OHOS_STANDARD_PLATFORM
 #include "unwinder.h"
 #endif
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
 #if defined(ENABLE_EVENT_HANDLER)
 #include "event_handler.h"
 #endif
@@ -178,7 +175,7 @@ void FunctionSetContainerId(napi_env env, panda::Local<panda::JSValueRef> &value
         HILOG_ERROR("funcInfo is nullptr");
         return;
     }
-    funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+    funcInfo->scopeId = engine->GetContainerScopeIdFunc();
     funcValue->SetData(vm, reinterpret_cast<void*>(funcInfo),
         [](void* env, void *externalPointer, void *data) {
             auto info = reinterpret_cast<NapiFunctionInfo*>(data);
@@ -205,7 +202,7 @@ static Local<panda::JSValueRef> NapiNativeCreateFunction(napi_env env, const cha
     funcInfo->env = env;
 #ifdef ENABLE_CONTAINER_SCOPE
     if (engine->IsContainerScopeEnabled()) {
-        funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+        funcInfo->scopeId = engine->GetContainerScopeIdFunc();
     }
 #endif
 
@@ -353,7 +350,7 @@ panda::Local<panda::JSValueRef> NapiDefineClass(napi_env env, const char* name, 
 #ifdef ENABLE_CONTAINER_SCOPE
     NativeEngine* engine = reinterpret_cast<NativeEngine*>(env);
     if (engine->IsContainerScopeEnabled()) {
-        funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+        funcInfo->scopeId = engine->GetContainerScopeIdFunc();
     }
 #endif
     Local<panda::FunctionRef> fn = NapiCreateClassFunction(env, className, funcInfo, length, properties);
