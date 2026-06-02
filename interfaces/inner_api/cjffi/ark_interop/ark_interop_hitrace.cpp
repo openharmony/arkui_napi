@@ -21,16 +21,25 @@
 DECL_START
 void ARKTS_HiTraceStartTrace(const char* name, int32_t taskId)
 {
+    if (name == nullptr) {
+        return;
+    }
     StartAsyncTrace(HITRACE_TAG_APP, name, taskId);
 }
 
 void ARKTS_HiTraceFinishTrace(const char* name, int32_t taskId)
 {
+    if (name == nullptr) {
+        return;
+    }
     FinishAsyncTrace(HITRACE_TAG_APP, name, taskId);
 }
 
 void ARKTS_HiTraceCountTrace(const char* name, int64_t count)
 {
+    if (name == nullptr) {
+        return;
+    }
     CountTrace(HITRACE_TAG_APP, name, count);
 }
 

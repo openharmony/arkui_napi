@@ -155,7 +155,7 @@ bool IsCJModule(const char* moduleName)
 
     absolutePath = absolutePath + "/" + libName;
     struct stat st;
-    if (stat(absolutePath.c_str(), &st) == -1) {
+    if (stat(absolutePath.c_str(), &st) != 0) {
         return false;
     }
     const char* soPath = absolutePath.c_str();
