@@ -1237,7 +1237,14 @@ int main(int argc, char** argv)
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
 
-    OHOS::CJEnvironment::SetAppPath("/data/test");
+    int ret = -1;
+
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    if (!runtime) {
+        LOGE("Get CJEnvMethods failed");
+        return ret;
+    }
+    runtime->initCJAppNS("/data/test");
 
     auto runner = OHOS::AppExecFwk::EventRunner::Create(true);
     EXPECT_TRUE(runner);
@@ -1248,9 +1255,7 @@ int main(int argc, char** argv)
 
     MockContext::Init();
 
-    int ret = -1;
     std::condition_variable cv;
-
     ARKTS_Engine globalEngine;
 
     auto success = handler->PostTask([&ret, &cv, &globalEngine] {
