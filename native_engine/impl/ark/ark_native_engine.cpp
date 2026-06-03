@@ -1967,6 +1967,14 @@ napi_value ArkNativeEngine::NapiLoadModuleWithInfoForHybridApp(const char* path,
         HILOG_ERROR("ArkNativeEngine:The module name is empty");
         return nullptr;
     }
+    if (ohmurl == nullptr) {
+        HILOG_ERROR("ArkNativeEngine:The ohmurl is empty");
+        return nullptr;
+    }
+    if (abcFilePath == nullptr) {
+        HILOG_ERROR("ArkNativeEngine:The abcFilePath is empty");
+        return nullptr;
+    }
     panda::EscapeLocalScope scope(vm_);
     Local<JSValueRef> undefObj = JSValueRef::Undefined(vm_);
     Local<ObjectRef> exportObj(undefObj);
