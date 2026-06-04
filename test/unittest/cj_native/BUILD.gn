@@ -35,6 +35,7 @@ ohos_unittest("test_ark_interop") {
   deps = [
     "../../..:ace_napi",
     "../../../interfaces/inner_api/cjffi/ark_interop:ark_interop",
+    "../../../interfaces/inner_api/cjffi/ark_interop:cj_envsetup",
   ]
   defines = []
   if (use_clang_coverage) {
@@ -46,8 +47,7 @@ ohos_unittest("test_ark_interop") {
     "eventhandler:libeventhandler",
     "hilog:libhilog",
     "libuv:uv",
-    "c_utils:utils",
-    "ability_runtime:cj_environment"
+    "c_utils:utils"
   ]
 }
 

@@ -23,8 +23,8 @@
 #include "ark_interop_napi.h"
 #include "gtest/gtest.h"
 #include "uv_loop_handler.h"
-#include "cj_environment.h"
 #include "napi/native_api.h"
+#include "cj_envsetup.h"
 
 #include <algorithm>
 #include <cmath>
