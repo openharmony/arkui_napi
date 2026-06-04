@@ -299,11 +299,7 @@ public:
     virtual bool OnVMHeapMemoryPressure(napi_env env, HeapMemoryThreshold heapMemoryThreshold,
                                         napi_value callback) = 0;
     virtual void OffVMHeapMemoryPressure(napi_env env) = 0;
-    virtual void SetMultithreadingDetectionEnabled(napi_env env, bool enabled, bool abort,
-                                                   int64_t frequency, int64_t interval) = 0;
-    virtual bool GetDetectionAbort() = 0;
-    virtual int64_t GetDetectionFrequency() = 0;
-    virtual int64_t GetDetectionInterval() = 0;
+    virtual void SetMultithreadingDetectionEnabled(napi_env env, bool enabled) = 0;
     virtual std::vector<HeapMemoryInfo> GetAllVMHeapMemoryInfo() = 0;
     virtual bool EnableLocalHandleDetection() = 0;
     virtual void GetHybridStackTraceForCrash(napi_env env, std::string &stackTraceStr) = 0;
