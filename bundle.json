@@ -143,30 +143,7 @@
                 "//foundation/arkui/napi/sample/native_module_systemtest:systemtest",
                 "//foundation/arkui/napi/test/unittest:unittest",
                 "//foundation/arkui/napi/test/fuzztest:fuzztest"
-            ],
-            "conditions": {
-                "//foundation/arkui/napi/interfaces/inner_api/cjffi/ark_interop:ark_interop": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi/interfaces/inner_api/cjffi/cj_backtrace:cj_backtrace": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi:napi_packages_test": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi/module_manager/test/unittest/module_manager_test:unittest": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi/sample/native_module_systemtest:systemtest": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi/test/unittest:unittest": {
-                    "compile_mode": ["cross"]
-                },
-                "//foundation/arkui/napi/test/fuzztest:fuzztest": {
-                    "compile_mode": ["cross"]
-                }
-            }
+            ]
         }
     }
 }
