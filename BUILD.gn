@@ -380,8 +380,10 @@ if (!ark_standalone_build) {
 
     include_dirs = [ "interfaces/inner_api/cjffi" ]
 
-    external_deps = [ "hilog:libhilog" ]
-    public_external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "hilog:libhilog",
+      "c_utils:utils",
+    ]
 
     innerapi_tags = [ "platformsdk" ]
     subsystem_name = "arkui"
@@ -394,7 +396,9 @@ if (!ark_standalone_build) {
       "interfaces/inner_api/cjffi/cj_ffi/cj_data_ffi.cpp",
     ]
 
-    public_deps = [ ":cj_bind_native" ]
+    deps = [ ":cj_bind_native" ]
+
+    external_deps = [ "c_utils:utils" ]
 
     include_dirs = [
       "interfaces/inner_api/cjffi/cj_ffi",
