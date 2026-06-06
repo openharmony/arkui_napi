@@ -339,6 +339,7 @@ private:
     bool started_ {false};
     bool triggeredGC_ {false};
     bool needCheckIntervalIdle_ = {true};
+    bool enableIdleProcessGCBackground_ = {true};
     int currentTimerHandler_ {-1};
     int waitForStopTimerHandler_ {-1};
     int switchBackgroundTimerHandler_ {-1};
