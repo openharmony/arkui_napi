@@ -27,12 +27,11 @@ HWTEST_F(NapiGlobalRefTrackTest, TestSetStoreGlobalRefEnable, testing::ext::Test
     napi_status status = napi_set_store_global_ref(env, true);
     ASSERT_EQ(status, napi_ok);
 
-    const EcmaVM *vm = engine_->GetEcmaVm();
-    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled());
 
     status = napi_set_store_global_ref(env, false);
     ASSERT_EQ(status, napi_ok);
-    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled());
 }
 
 HWTEST_F(NapiGlobalRefTrackTest, TestSetStoreGlobalRefInvalidEnv, testing::ext::TestSize.Level1)
@@ -57,8 +56,7 @@ HWTEST_F(NapiGlobalRefTrackTest, TestRegisterOnConstruct, testing::ext::TestSize
     ASSERT_NE(ref, nullptr);
 
     // Verify tracking is enabled and mapping is functional
-    const EcmaVM *vm = engine_->GetEcmaVm();
-    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled());
 
     // Cleanup
     napi_delete_reference(env, ref);
@@ -70,8 +68,7 @@ HWTEST_F(NapiGlobalRefTrackTest, TestNoRegisterWhenDisabled, testing::ext::TestS
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
     // Tracking is off by default
-    const EcmaVM *vm = engine_->GetEcmaVm();
-    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled());
 
     napi_value obj = nullptr;
     napi_create_object(env, &obj);
@@ -81,7 +78,7 @@ HWTEST_F(NapiGlobalRefTrackTest, TestNoRegisterWhenDisabled, testing::ext::TestS
     ASSERT_EQ(status, napi_ok);
 
     // Tracking still off after creating reference
-    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled());
 
     napi_delete_reference(env, ref);
 }
@@ -103,8 +100,7 @@ HWTEST_F(NapiGlobalRefTrackTest, TestUnregisterOnDestruct, testing::ext::TestSiz
     ASSERT_EQ(status, napi_ok);
 
     // After delete, tracking still enabled but mapping for that ref is erased
-    const EcmaVM *vm = engine_->GetEcmaVm();
-    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_TRUE(JSNApi::IsTrackGlobalRefEnabled());
 
     napi_set_store_global_ref(env, false);
 }
@@ -123,8 +119,7 @@ HWTEST_F(NapiGlobalRefTrackTest, TestDisableClearsAllMappings, testing::ext::Tes
 
     // Disable tracking — should clear all mappings
     napi_set_store_global_ref(env, false);
-    const EcmaVM *vm = engine_->GetEcmaVm();
-    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled(vm));
+    ASSERT_FALSE(JSNApi::IsTrackGlobalRefEnabled());
 
     napi_delete_reference(env, ref);
 }
