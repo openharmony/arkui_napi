@@ -91,6 +91,10 @@ public:
     napi_value GetNapiValue() override;
     void ResetFinalizer()  override;
     uintptr_t GetGlobalRefSlotAddress() const override;
+    NativeEngine* GetEngine() const
+    {
+        return engine_;
+    }
 #ifdef PANDA_JS_ETS_HYBRID_MODE
     void MarkFromObject(std::function<void(uintptr_t)> &visitor);
     void MarkFromObject();
