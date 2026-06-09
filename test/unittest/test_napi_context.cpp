@@ -4875,3 +4875,15 @@ HWTEST_F(NapiContextTest, WrapEnhanceSWithMultiContext001, testing::ext::TestSiz
     ASSERT_EQ(status, napi_ok);
     ASSERT_STREQ(TEST_WRAP_STRING, tempTestStr1);
 }
+
+/**
+ * @tc.name: SetTaskpoolShrinkCallbackTest001
+ * @tc.desc: Test SetTaskpoolShrinkCallback with nullptr callback
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiContextTest, SetTaskpoolShrinkCallbackTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    engine_->SetTaskpoolShrinkCallback(nullptr);
+    ASSERT_NE(engine_, nullptr);
+}

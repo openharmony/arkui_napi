@@ -139,6 +139,7 @@ using NapiHasOnErrorCallback = std::function<bool()>;
 using NapiHasAllUnhandledRejectionCallback = std::function<bool()>;
 using GCTaskFinishedCallback = std::function<void()>;
 using SerializeOptions = panda::SerializeOptions;
+using TaskPoolShrinkCallback = std::function<void(bool inBackground)>;
 
 // Define method to load counter values of different types
 #define NAPI_COUNTER_ATOMIC_LOAD(storage) (storage).load()
@@ -642,6 +643,8 @@ public:
     virtual napi_status DestroyContext() = 0;
 
     virtual void NotifyVMIgnoreFinalizeCallback() const = 0;
+
+    virtual void SetTaskpoolShrinkCallback(TaskPoolShrinkCallback callback) = 0;
 
     inline void SetInstanceId(int32_t id) {
         instanceId_ = id;
