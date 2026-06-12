@@ -25,9 +25,8 @@
 
 namespace {
 
-// ============================================================
-// Named constants — no magic numbers
-// ============================================================
+static constexpr size_t UTF8_EXACT_BUF_EXPECTED = 4;
+static constexpr size_t UTF16_EXACT_BUF_EXPECTED = 4;
 
 // Buffer and length constants
 static constexpr size_t BUFFER_SIZE_SMALL = 4;
@@ -35,41 +34,36 @@ static constexpr size_t BUFFER_SIZE_MEDIUM = 64;
 static constexpr size_t BUFFER_SIZE_LARGE = 2048;
 static constexpr size_t EMPTY_STRING_LENGTH = 0;
 static constexpr size_t LONG_STRING_LENGTH = 1024;
-static constexpr size_t LONG_STRING_CHAR = 65;  // 'A'
+static constexpr size_t LONG_STRING_CHAR = 65; // 'A'
 
 // UTF-8 test data lengths
 static constexpr size_t UTF8_HELLO_LENGTH = 5;
-static constexpr size_t UTF8_ACCENTED_BYTE_LENGTH = 6;  // "éñü" in UTF-8 is 2 bytes each
-static constexpr size_t UTF8_CJK_BYTE_LENGTH = 12;      // "你好世界" in UTF-8 is 3 bytes each
+static constexpr size_t UTF8_ACCENTED_BYTE_LENGTH = 6; // "éñü" in UTF-8 is 2 bytes each
+static constexpr size_t UTF8_CJK_BYTE_LENGTH = 12;     // "你好世界" in UTF-8 is 3 bytes each
 
 // UTF-16 test data
 static constexpr char16_t UTF16_HELLO[] = u"Hello";
 static constexpr size_t UTF16_HELLO_LENGTH = 5;
 static constexpr char16_t UTF16_EMPTY[] = u"";
 static constexpr size_t UTF16_EMPTY_LENGTH = 0;
-static constexpr char16_t UTF16_ACCENTED[] = u"\u00E9\u00F1\u00FC";  // éñü
+static constexpr char16_t UTF16_ACCENTED[] = u"\u00E9\u00F1\u00FC"; // éñü
 static constexpr size_t UTF16_ACCENTED_LENGTH = 3;
-static constexpr char16_t UTF16_CJK[] = u"\u4F60\u597D\u4E16\u754C";  // 你好世界
+static constexpr char16_t UTF16_CJK[] = u"\u4F60\u597D\u4E16\u754C"; // 你好世界
 static constexpr size_t UTF16_CJK_LENGTH = 4;
-static constexpr char16_t UTF16_SNOWMAN[] = u"\u2603";  // ☃ BMP emoji-like
+static constexpr char16_t UTF16_SNOWMAN[] = u"\u2603"; // ☃ BMP emoji-like
 static constexpr size_t UTF16_SNOWMAN_LENGTH = 1;
 // Surrogate pair for U+1F600 (😀): high=0xD83D, low=0xDE00
-static constexpr char16_t UTF16_SURROGATE_PAIR[] = {0xD83D, 0xDE00, 0x0000};
+static constexpr char16_t UTF16_SURROGATE_PAIR[] = { 0xD83D, 0xDE00, 0x0000 };
 static constexpr size_t UTF16_SURROGATE_PAIR_LENGTH = 2;
 
 // Latin-1 test data
 static constexpr const char* LATIN1_HELLO = "Hello";
 static constexpr size_t LATIN1_HELLO_LENGTH = 5;
 static constexpr const char* LATIN1_EMPTY = "";
-static constexpr const char LATIN1_HIGH_BYTES[] = {
-    static_cast<char>(0x80),
-    static_cast<char>(0xA0),
-    static_cast<char>(0xBF),
-    static_cast<char>(0xFF),
-    '\0'
-};
+static constexpr const char LATIN1_HIGH_BYTES[] = { static_cast<char>(0x80), static_cast<char>(0xA0),
+                                                    static_cast<char>(0xBF), static_cast<char>(0xFF), '\0' };
 static constexpr size_t LATIN1_HIGH_BYTES_LENGTH = 4;
-static constexpr const char* LATIN1_SPECIAL = "\xE9\xF1\xFC";  // éñü in Latin-1
+static constexpr const char* LATIN1_SPECIAL = "\xE9\xF1\xFC"; // éñü in Latin-1
 static constexpr size_t LATIN1_SPECIAL_LENGTH = 3;
 
 // Coercion expected strings
@@ -167,7 +161,7 @@ static napi_value TestUtf8BasicRoundTrip(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "Hello", UTF8_HELLO_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -187,7 +181,7 @@ static napi_value TestUtf8EmptyString(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "", EMPTY_STRING_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = BUFFER_SIZE_MEDIUM;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -204,11 +198,11 @@ static napi_value TestUtf8AccentedChars(napi_env env, napi_callback_info info)
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
 
-    const char* input = "\xC3\xA9\xC3\xB1\xC3\xBC";  // éñü in UTF-8
+    const char* input = "\xC3\xA9\xC3\xB1\xC3\xBC"; // éñü in UTF-8
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, input, UTF8_ACCENTED_BYTE_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -220,16 +214,16 @@ static napi_value TestUtf8AccentedChars(napi_env env, napi_callback_info info)
 // ============================================================
 // Test 04: UTF-8 CJK characters (你好世界)
 // ============================================================
-static napi_value TestUtf8CjkChars(napi_env env, napi_callback_info info)
+static napi_value TestUtf8CJKChars(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
 
-    const char* input = "\xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C";  // 你好世界
+    const char* input = "\xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C"; // 你好世界
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, input, UTF8_CJK_BYTE_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -293,7 +287,7 @@ static napi_value TestUtf8BufferTooSmall(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_string_utf8(env, "Hello", UTF8_HELLO_LENGTH, &str));
 
     // Buffer of size 3 can hold 2 chars + null terminator
-    char buf[TRUNCATION_BUFFER_SIZE] = {0};
+    char buf[TRUNCATION_BUFFER_SIZE] = { 0 };
     size_t copied = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, TRUNCATION_BUFFER_SIZE, &copied));
 
@@ -313,7 +307,7 @@ static napi_value TestUtf8AutoLength(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "Hello", NAPI_AUTO_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -334,12 +328,11 @@ static napi_value TestUtf8ExactBufferSize(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_string_utf8(env, "Hello", UTF8_HELLO_LENGTH, &str));
 
     // Buffer size == string length (5), so only 4 chars + null can fit
-    char buf[UTF8_HELLO_LENGTH] = {0};
+    char buf[UTF8_HELLO_LENGTH] = { 0 };
     size_t copied = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, UTF8_HELLO_LENGTH, &copied));
 
-    constexpr size_t exactBufExpected = 4;
-    SetNamedBool(env, result, "copiedLessThanFull", copied == exactBufExpected);
+    SetNamedBool(env, result, "copiedLessThanFull", copied == UTF8_EXACT_BUF_EXPECTED);
     return result;
 }
 
@@ -354,7 +347,7 @@ static napi_value TestUtf16BasicRoundTrip(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_HELLO, UTF16_HELLO_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -375,7 +368,7 @@ static napi_value TestUtf16EmptyString(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_EMPTY, UTF16_EMPTY_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = BUFFER_SIZE_MEDIUM;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -394,7 +387,7 @@ static napi_value TestUtf16AccentedChars(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_ACCENTED, UTF16_ACCENTED_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -407,7 +400,7 @@ static napi_value TestUtf16AccentedChars(napi_env env, napi_callback_info info)
 // ============================================================
 // Test 13: UTF-16 CJK characters (你好世界)
 // ============================================================
-static napi_value TestUtf16CjkChars(napi_env env, napi_callback_info info)
+static napi_value TestUtf16CJKChars(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
@@ -415,7 +408,7 @@ static napi_value TestUtf16CjkChars(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_CJK, UTF16_CJK_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -428,7 +421,7 @@ static napi_value TestUtf16CjkChars(napi_env env, napi_callback_info info)
 // ============================================================
 // Test 14: UTF-16 BMP emoji-like char (snowman ☃)
 // ============================================================
-static napi_value TestUtf16BmpEmoji(napi_env env, napi_callback_info info)
+static napi_value TestUtf16BMPEmoji(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
@@ -436,7 +429,7 @@ static napi_value TestUtf16BmpEmoji(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_SNOWMAN, UTF16_SNOWMAN_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -456,7 +449,7 @@ static napi_value TestUtf16SurrogatePair(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_SURROGATE_PAIR, UTF16_SURROGATE_PAIR_LENGTH, &str));
 
-    char16_t buf[BUFFER_SIZE_MEDIUM] = {0};
+    char16_t buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, BUFFER_SIZE_MEDIUM, &len));
 
@@ -514,7 +507,7 @@ static napi_value TestUtf16BufferTooSmall(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_HELLO, UTF16_HELLO_LENGTH, &str));
 
-    char16_t buf[TRUNCATION_BUFFER_SIZE] = {0};
+    char16_t buf[TRUNCATION_BUFFER_SIZE] = { 0 };
     size_t copied = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, TRUNCATION_BUFFER_SIZE, &copied));
 
@@ -534,7 +527,7 @@ static napi_value TestLatin1BasicRoundTrip(napi_env env, napi_callback_info info
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_HELLO, NAPI_AUTO_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
@@ -554,7 +547,7 @@ static napi_value TestLatin1EmptyString(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_EMPTY, EMPTY_STRING_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = BUFFER_SIZE_MEDIUM;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
@@ -573,7 +566,7 @@ static napi_value TestLatin1HighBytes(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_HIGH_BYTES, LATIN1_HIGH_BYTES_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
@@ -592,7 +585,7 @@ static napi_value TestLatin1SpecialChars(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_SPECIAL, LATIN1_SPECIAL_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
@@ -629,7 +622,7 @@ static napi_value TestLatin1BufferTooSmall(napi_env env, napi_callback_info info
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_HELLO, NAPI_AUTO_LENGTH, &str));
 
-    char buf[TRUNCATION_BUFFER_SIZE] = {0};
+    char buf[TRUNCATION_BUFFER_SIZE] = { 0 };
     size_t copied = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, TRUNCATION_BUFFER_SIZE, &copied));
 
@@ -652,7 +645,7 @@ static napi_value TestCoerceStringFromNumber(napi_env env, napi_callback_info in
     napi_value coerced = nullptr;
     NAPI_CALL(env, napi_coerce_to_string(env, numVal, &coerced));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coerced, buf, sizeof(buf), &len));
 
@@ -673,7 +666,7 @@ static napi_value TestCoerceStringFromBooleans(napi_env env, napi_callback_info 
     NAPI_CALL(env, napi_get_boolean(env, true, &trueVal));
     napi_value coercedTrue = nullptr;
     NAPI_CALL(env, napi_coerce_to_string(env, trueVal, &coercedTrue));
-    char bufTrue[BUFFER_SIZE_MEDIUM] = {0};
+    char bufTrue[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenTrue = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedTrue, bufTrue, sizeof(bufTrue), &lenTrue));
     SetNamedBool(env, result, "trueOk", strcmp(bufTrue, COERCE_TRUE_STR) == STRCMP_EQUAL);
@@ -682,7 +675,7 @@ static napi_value TestCoerceStringFromBooleans(napi_env env, napi_callback_info 
     NAPI_CALL(env, napi_get_boolean(env, false, &falseVal));
     napi_value coercedFalse = nullptr;
     NAPI_CALL(env, napi_coerce_to_string(env, falseVal, &coercedFalse));
-    char bufFalse[BUFFER_SIZE_MEDIUM] = {0};
+    char bufFalse[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenFalse = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedFalse, bufFalse, sizeof(bufFalse), &lenFalse));
     SetNamedBool(env, result, "falseOk", strcmp(bufFalse, COERCE_FALSE_STR) == STRCMP_EQUAL);
@@ -702,7 +695,7 @@ static napi_value TestCoerceStringFromNullUndef(napi_env env, napi_callback_info
     NAPI_CALL(env, napi_get_null(env, &nullVal));
     napi_value coercedNull = nullptr;
     NAPI_CALL(env, napi_coerce_to_string(env, nullVal, &coercedNull));
-    char bufNull[BUFFER_SIZE_MEDIUM] = {0};
+    char bufNull[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenNull = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedNull, bufNull, sizeof(bufNull), &lenNull));
     SetNamedBool(env, result, "nullOk", strcmp(bufNull, COERCE_NULL_STR) == STRCMP_EQUAL);
@@ -711,7 +704,7 @@ static napi_value TestCoerceStringFromNullUndef(napi_env env, napi_callback_info
     NAPI_CALL(env, napi_get_undefined(env, &undefVal));
     napi_value coercedUndef = nullptr;
     NAPI_CALL(env, napi_coerce_to_string(env, undefVal, &coercedUndef));
-    char bufUndef[BUFFER_SIZE_MEDIUM] = {0};
+    char bufUndef[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenUndef = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedUndef, bufUndef, sizeof(bufUndef), &lenUndef));
     SetNamedBool(env, result, "undefinedOk", strcmp(bufUndef, COERCE_UNDEFINED_STR) == STRCMP_EQUAL);
@@ -737,7 +730,7 @@ static napi_value TestCoerceStringFromObject(napi_env env, napi_callback_info in
     NAPI_CALL(env, napi_typeof(env, coerced, &coercedType));
     SetNamedBool(env, result, "isString", coercedType == napi_string);
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coerced, buf, sizeof(buf), &len));
     SetNamedBool(env, result, "notEmpty", len > EMPTY_STRING_LENGTH);
@@ -821,7 +814,7 @@ static napi_value TestStringAsPropertyKey(napi_env env, napi_callback_info info)
     napi_value retrieved = nullptr;
     NAPI_CALL(env, napi_get_property(env, obj, key, &retrieved));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, retrieved, buf, sizeof(buf), &len));
 
@@ -842,11 +835,11 @@ static napi_value TestStringConcatenation(napi_env env, napi_callback_info info)
     napi_value strB = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, CONCAT_PART_B, NAPI_AUTO_LENGTH, &strB));
 
-    char bufA[BUFFER_SIZE_MEDIUM] = {0};
+    char bufA[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenA = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, strA, bufA, sizeof(bufA), &lenA));
 
-    char bufB[BUFFER_SIZE_MEDIUM] = {0};
+    char bufB[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenB = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, strB, bufB, sizeof(bufB), &lenB));
 
@@ -854,7 +847,7 @@ static napi_value TestStringConcatenation(napi_env env, napi_callback_info info)
     napi_value strConcat = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, concatenated.c_str(), concatenated.size(), &strConcat));
 
-    char bufConcat[BUFFER_SIZE_MEDIUM] = {0};
+    char bufConcat[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t lenConcat = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, strConcat, bufConcat, sizeof(bufConcat), &lenConcat));
 
@@ -879,6 +872,7 @@ static napi_value TestMultipleSequentialOps(napi_env env, napi_callback_info inf
 
     // Step 2: Create UTF-16 string
     constexpr char16_t step2Data[] = u"Step2";
+    // length of u"Step2" (excluding null terminator)
     constexpr size_t step2Length = 5;
     napi_value str2 = nullptr;
     NAPI_CALL(env, napi_create_string_utf16(env, step2Data, step2Length, &str2));
@@ -892,7 +886,7 @@ static napi_value TestMultipleSequentialOps(napi_env env, napi_callback_info inf
     NAPI_CALL(env, napi_typeof(env, str3, &type3));
 
     // Step 4: Read back UTF-8
-    char buf1[BUFFER_SIZE_MEDIUM] = {0};
+    char buf1[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len1 = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str1, buf1, sizeof(buf1), &len1));
 
@@ -927,7 +921,7 @@ static napi_value TestLatin1ExplicitLength(napi_env env, napi_callback_info info
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_latin1(env, LATIN1_HELLO, LATIN1_HELLO_LENGTH, &str));
 
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
@@ -975,12 +969,11 @@ static napi_value TestUtf16ExactBufferSize(napi_env env, napi_callback_info info
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_HELLO, UTF16_HELLO_LENGTH, &str));
 
     // Buffer size == string length (5), so only 4 code units + null can fit
-    char16_t buf[UTF16_HELLO_LENGTH] = {0};
+    char16_t buf[UTF16_HELLO_LENGTH] = { 0 };
     size_t copied = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, UTF16_HELLO_LENGTH, &copied));
 
-    constexpr size_t utf16ExactBufExpected = 4;
-    SetNamedBool(env, result, "copiedLessThanFull", copied == utf16ExactBufExpected);
+    SetNamedBool(env, result, "copiedLessThanFull", copied == UTF16_EXACT_BUF_EXPECTED);
     SetNamedBool(env, result, "firstCharOk", buf[0] == u'H');
     return result;
 }
@@ -1022,7 +1015,7 @@ static napi_value TestUtf8SingleChar(napi_env env, napi_callback_info info)
     napi_value str = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "X", singleCharLength, &str));
 
-    char buf[BUFFER_SIZE_SMALL] = {0};
+    char buf[BUFFER_SIZE_SMALL] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -1044,7 +1037,7 @@ static napi_value TestUtf16ReadAsUtf8(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_string_utf16(env, UTF16_HELLO, UTF16_HELLO_LENGTH, &str));
 
     // Read it back as UTF-8
-    char buf[BUFFER_SIZE_MEDIUM] = {0};
+    char buf[BUFFER_SIZE_MEDIUM] = { 0 };
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, str, buf, sizeof(buf), &len));
 
@@ -1095,7 +1088,7 @@ static napi_property_descriptor STRING_ENCODE_TESTS[] = {
     DECLARE_NAPI_FUNCTION("testUtf8BasicRoundTrip", TestUtf8BasicRoundTrip),
     DECLARE_NAPI_FUNCTION("testUtf8EmptyString", TestUtf8EmptyString),
     DECLARE_NAPI_FUNCTION("testUtf8AccentedChars", TestUtf8AccentedChars),
-    DECLARE_NAPI_FUNCTION("testUtf8CjkChars", TestUtf8CjkChars),
+    DECLARE_NAPI_FUNCTION("testUtf8CJKChars", TestUtf8CJKChars),
     DECLARE_NAPI_FUNCTION("testUtf8LongString", TestUtf8LongString),
     DECLARE_NAPI_FUNCTION("testUtf8LengthQuery", TestUtf8LengthQuery),
     DECLARE_NAPI_FUNCTION("testUtf8BufferTooSmall", TestUtf8BufferTooSmall),
@@ -1104,8 +1097,8 @@ static napi_property_descriptor STRING_ENCODE_TESTS[] = {
     DECLARE_NAPI_FUNCTION("testUtf16BasicRoundTrip", TestUtf16BasicRoundTrip),
     DECLARE_NAPI_FUNCTION("testUtf16EmptyString", TestUtf16EmptyString),
     DECLARE_NAPI_FUNCTION("testUtf16AccentedChars", TestUtf16AccentedChars),
-    DECLARE_NAPI_FUNCTION("testUtf16CjkChars", TestUtf16CjkChars),
-    DECLARE_NAPI_FUNCTION("testUtf16BmpEmoji", TestUtf16BmpEmoji),
+    DECLARE_NAPI_FUNCTION("testUtf16CJKChars", TestUtf16CJKChars),
+    DECLARE_NAPI_FUNCTION("testUtf16BMPEmoji", TestUtf16BMPEmoji),
     DECLARE_NAPI_FUNCTION("testUtf16SurrogatePair", TestUtf16SurrogatePair),
     DECLARE_NAPI_FUNCTION("testUtf16LongString", TestUtf16LongString),
     DECLARE_NAPI_FUNCTION("testUtf16LengthQuery", TestUtf16LengthQuery),
@@ -1133,13 +1126,12 @@ static napi_property_descriptor STRING_ENCODE_TESTS[] = {
     DECLARE_NAPI_FUNCTION("testUtf16ReadAsUtf8", TestUtf16ReadAsUtf8),
     DECLARE_NAPI_FUNCTION("testUtf8AutoLengthEmpty", TestUtf8AutoLengthEmpty),
 };
-
-}  // namespace
+} // namespace
 
 static napi_value InitStringEncodeSuite(napi_env env, napi_value exports)
 {
-    NAPI_CALL(env, napi_define_properties(env, exports,
-        sizeof(STRING_ENCODE_TESTS) / sizeof(STRING_ENCODE_TESTS[0]), STRING_ENCODE_TESTS));
+    NAPI_CALL(env, napi_define_properties(env, exports, sizeof(STRING_ENCODE_TESTS) / sizeof(STRING_ENCODE_TESTS[0]),
+                                          STRING_ENCODE_TESTS));
     return exports;
 }
 
@@ -1150,7 +1142,7 @@ static napi_module g_stringEncodeSuiteModule = {
     .nm_register_func = InitStringEncodeSuite,
     .nm_modname = "string_encode_suite",
     .nm_priv = nullptr,
-    .reserved = {0},
+    .reserved = { 0 },
 };
 
 extern "C" __attribute__((constructor)) void RegisterStringEncodeSuiteModule(void)
