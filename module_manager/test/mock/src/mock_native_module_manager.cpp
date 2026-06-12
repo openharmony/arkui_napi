@@ -20,13 +20,8 @@
 
 namespace {
 bool g_mockCheckModuleLoadable = false;
+bool g_mockDiskCheckOnly = true;
 LIBHANDLE g_mockLoadModuleLibrary = nullptr;
-NativeModule *g_mockFindNativeModuleByDisk = nullptr;
-}
-
-void MockFindNativeModuleByDisk(NativeModule *module)
-{
-    g_mockFindNativeModuleByDisk = module;
 }
 
 void MockLoadModuleLibrary(LIBHANDLE handle)
@@ -40,19 +35,16 @@ void MockCheckModuleLoadable(bool loadable)
     g_mockCheckModuleLoadable = loadable;
 }
 
-void MockResetModuleManagerState()
+void MockDiskCheckOnly(bool diskCheckOnly)
 {
-    g_mockFindNativeModuleByDisk = nullptr;
-    g_mockCheckModuleLoadable = false;
-    g_mockLoadModuleLibrary = nullptr;
+    g_mockDiskCheckOnly = diskCheckOnly;
 }
 
-NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
-    const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
-    char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
+void MockResetModuleManagerState()
 {
-    GTEST_LOG_(INFO) << g_mockFindNativeModuleByDisk;
-    return g_mockFindNativeModuleByDisk;
+    g_mockCheckModuleLoadable = false;
+    g_mockDiskCheckOnly = true;
+    g_mockLoadModuleLibrary = nullptr;
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string &moduleKey, const char* path,
@@ -68,4 +60,9 @@ bool ModuleLoadChecker::CheckModuleLoadable(const char* moduleName,
     apiAllowListChecker = nullptr;
     GTEST_LOG_(INFO) << g_mockCheckModuleLoadable;
     return g_mockCheckModuleLoadable;
+}
+
+bool ModuleLoadChecker::DiskCheckOnly()
+{
+    return g_mockDiskCheckOnly;
 }
