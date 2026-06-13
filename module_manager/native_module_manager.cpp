@@ -56,20 +56,27 @@ static inline void SetLoadErrInfo(std::string* loadErrInfo, const std::string& m
     }
 }
 
-static void ClassifyLoadError(std::string* loadErrInfo, bool dlopenFailed, const std::string& dlopenErrMsg,
-    bool isAppModule, bool pathRegistered, const char* path)
+struct LoadErrorContext {
+    bool dlopenFailed = false;
+    std::string dlopenErrMsg;
+    bool isAppModule = false;
+    bool pathRegistered = false;
+    const char* path = nullptr;
+};
+
+static void ClassifyLoadError(std::string* loadErrInfo, const LoadErrorContext& ctx)
 {
     if (loadErrInfo == nullptr) {
         return;
     }
-    if (dlopenFailed) {
-        std::string rawErr = dlopenErrMsg;
+    if (ctx.dlopenFailed) {
+        std::string rawErr = ctx.dlopenErrMsg;
         if (rawErr.find("failed ") == 0) {
             rawErr = rawErr.substr(strlen("failed "));
         }
         *loadErrInfo = "dlopen failed: " + rawErr;
-    } else if (isAppModule && !pathRegistered) {
-        *loadErrInfo = std::string("app lib path not registered in namespace '") + path + "'";
+    } else if (ctx.isAppModule && !ctx.pathRegistered) {
+        *loadErrInfo = std::string("app lib path not registered in namespace '") + ctx.path + "'";
     } else {
         *loadErrInfo = "module not found";
     }
@@ -1429,7 +1436,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             MODULEMNG_HILOG_WARN("%{public}s %{public}s", isAppModule ? ("key:" + moduleKey).c_str() : "",
                 errInfo.c_str());
             // Set precise loadErrInfo for NAPI layer
-            ClassifyLoadError(loadErrInfo, dlopenFailed, dlopenErrMsg, isAppModule, IsExistedPath(path), path);
+            LoadErrorContext ctx = { dlopenFailed, dlopenErrMsg, isAppModule, IsExistedPath(path), path };
+            ClassifyLoadError(loadErrInfo, ctx);
             return nullptr;
         }
     }
