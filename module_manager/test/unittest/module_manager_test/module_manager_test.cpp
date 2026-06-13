@@ -1863,8 +1863,11 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
 
     // Construct nativeModulePath[0] pointing to the temp file
     char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
-    memset(nativeModulePath, 0, sizeof(nativeModulePath));
-    strncpy(nativeModulePath[0], tempLibPath.c_str(), NAPI_PATH_MAX - 1);
+    for (int i = 0; i < NATIVE_PATH_NUMBER; ++i) {
+        nativeModulePath[i][0] = '\0';
+    }
+    errno_t ret = snprintf_s(nativeModulePath[0], NAPI_PATH_MAX, NAPI_PATH_MAX - 1, "%s", tempLibPath.c_str());
+    EXPECT_EQ(ret, static_cast<errno_t>(tempLibPath.size()));
 
     std::string errInfo = "";
     std::string loadErrInfo = "";

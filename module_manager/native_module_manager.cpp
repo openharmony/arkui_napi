@@ -55,6 +55,25 @@ static inline void SetLoadErrInfo(std::string* loadErrInfo, const std::string& m
         *loadErrInfo = msg;
     }
 }
+
+static void ClassifyLoadError(std::string* loadErrInfo, bool dlopenFailed, const std::string& dlopenErrMsg,
+    bool isAppModule, bool pathRegistered, const char* path)
+{
+    if (loadErrInfo == nullptr) {
+        return;
+    }
+    if (dlopenFailed) {
+        std::string rawErr = dlopenErrMsg;
+        if (rawErr.find("failed ") == 0) {
+            rawErr = rawErr.substr(strlen("failed "));
+        }
+        *loadErrInfo = "dlopen failed: " + rawErr;
+    } else if (isAppModule && !pathRegistered) {
+        *loadErrInfo = std::string("app lib path not registered in namespace '") + path + "'";
+    } else {
+        *loadErrInfo = "module not found";
+    }
+}
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
     !defined(LINUX_PLATFORM)
 constexpr char MODULE_NS[] = "moduleNs_";
@@ -1410,19 +1429,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             MODULEMNG_HILOG_WARN("%{public}s %{public}s", isAppModule ? ("key:" + moduleKey).c_str() : "",
                 errInfo.c_str());
             // Set precise loadErrInfo for NAPI layer
-            if (loadErrInfo != nullptr) {
-                if (dlopenFailed) {
-                    std::string rawErr = dlopenErrMsg;
-                    if (rawErr.find("failed ") == 0) {
-                        rawErr = rawErr.substr(strlen("failed "));
-                    }
-                    *loadErrInfo = "dlopen failed: " + rawErr;
-                } else if (isAppModule && !IsExistedPath(path)) {
-                    *loadErrInfo = std::string("app lib path not registered in namespace '") + path + "'";
-                } else {
-                    *loadErrInfo = "module not found";
-                }
-            }
+            ClassifyLoadError(loadErrInfo, dlopenFailed, dlopenErrMsg, isAppModule, IsExistedPath(path), path);
             return nullptr;
         }
     }
