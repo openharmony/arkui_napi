@@ -1866,8 +1866,8 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     for (int i = 0; i < NATIVE_PATH_NUMBER; ++i) {
         nativeModulePath[i][0] = '\0';
     }
-    errno_t ret = snprintf_s(nativeModulePath[0], NAPI_PATH_MAX, NAPI_PATH_MAX - 1, "%s", tempLibPath.c_str());
-    EXPECT_EQ(ret, static_cast<errno_t>(tempLibPath.size()));
+    int ret = snprintf(nativeModulePath[0], NAPI_PATH_MAX, "%s", tempLibPath.c_str());
+    EXPECT_EQ(ret, static_cast<int>(tempLibPath.size()));
 
     std::string errInfo = "";
     std::string loadErrInfo = "";
@@ -1882,5 +1882,4 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     remove(tempLibPath.c_str());
 
     GTEST_LOG_(INFO) << "FindNativeModuleByDisk_ErrInfo_DlopenFailed end";
-}
 }
