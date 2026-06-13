@@ -802,7 +802,11 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
                 gcFinishCV_.wait_for(lock, std::chrono::milliseconds(WAIT_GC_FINISH_INTERVAL));
                 auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
                     std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-                if (nowTimestamp - triggerTaskStartTimestamp_ > WAIT_LOCAL_GC_INTERVAL) {
+                int64_t totalSpentTime = nowTimestamp - triggerTaskStartTimestamp_;
+                if (totalSpentTime > WAIT_LOCAL_GC_LOWER_INTERVAL && totalSpentTime <= WAIT_LOCAL_GC_UPPER_INTERVAL) {
+                    HILOG_INFO("ArkIdleMonitor: local gc overtime, try to trigger shared gc directly.");
+                    break;
+                } else if (totalSpentTime > WAIT_LOCAL_GC_UPPER_INTERVAL) {
                     NotifyNeedFreeze(true);
                     HILOG_INFO("ArkIdleMonitor: cancel shared gc because over time.");
                     return;
