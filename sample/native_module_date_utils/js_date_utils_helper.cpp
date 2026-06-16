@@ -110,7 +110,9 @@ bool ExtractDateFromArgs(
     if (type != napi_number) {
         return false;
     }
-    int32_t y, m, d;
+    int32_t y;
+    int32_t m;
+    int32_t d;
     NAPI_CALL(env, napi_get_value_int32(env, args[static_cast<size_t>(
         DateArgIndex::FIRST)], &y));
     NAPI_CALL(env, napi_get_value_int32(env, args[static_cast<size_t>(
@@ -131,7 +133,10 @@ static napi_value JSIsLeapYear(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::ONE;
     napi_value argv[DateArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::ONE, "requires 1 parameter: year");
+    if (argc < DateArgCount::ONE) {
+        napi_throw_type_error(env, nullptr, "requires 1 parameter: year");
+        return nullptr;
+    }
     int32_t year;
     NAPI_CALL(env, napi_get_value_int32(env,
         argv[static_cast<size_t>(DateArgIndex::FIRST)], &year));
@@ -146,8 +151,10 @@ static napi_value JSGetDaysInMonth(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::TWO;
     napi_value argv[DateArgCount::TWO] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::TWO,
-        "requires 2 parameters: year, month");
+    if (argc < DateArgCount::TWO) {
+        napi_throw_type_error(env, nullptr, "requires 2 parameters: year, month");
+        return nullptr;
+    }
     int32_t year;
     int32_t month;
     NAPI_CALL(env, napi_get_value_int32(env,
@@ -165,9 +172,14 @@ static napi_value JSIsValidDate(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE,
-        "requires 3 parameters: year, month, day");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr,
+            "requires 3 parameters: year, month, day");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         napi_value jsFalse = nullptr;
         NAPI_CALL(env, napi_get_boolean(env, false, &jsFalse));
@@ -187,8 +199,13 @@ static napi_value JSGetDayOfYear(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE, "requires 3 parameters");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr, "requires 3 parameters");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         return nullptr;
     }
@@ -203,8 +220,13 @@ static napi_value JSGetWeekday(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE, "requires 3 parameters");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr, "requires 3 parameters");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         return nullptr;
     }
@@ -219,8 +241,13 @@ static napi_value JSGetWeekdayName(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE, "requires 3 parameters");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr, "requires 3 parameters");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         return nullptr;
     }
@@ -232,42 +259,77 @@ static napi_value JSGetWeekdayName(napi_env env, napi_callback_info info)
     return jsResult;
 }
 
+namespace DateArgIndex6 {
+    constexpr size_t YEAR1 = 0;
+    constexpr size_t MONTH1 = 1;
+    constexpr size_t DAY1 = 2;
+    constexpr size_t YEAR2 = 3;
+    constexpr size_t MONTH2 = 4;
+    constexpr size_t DAY2 = 5;
+};
+
 static napi_value JSDaysBetween(napi_env env, napi_callback_info info)
 {
     size_t argc = DateArgCount::SIX;
     napi_value argv[DateArgCount::SIX] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::SIX,
-        "requires 6 parameters: y1, m1, d1, y2, m2, d2");
-    int32_t y1, m1, d1, y2, m2, d2;
-    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &y1));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[1], &m1));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[2], &d1));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[3], &y2));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[4], &m2));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[5], &d2));
-    int result = DateUtils::DaysBetween(y1, m1, d1, y2, m2, d2);
+    if (argc < DateArgCount::SIX) {
+        napi_throw_type_error(env, nullptr,
+            "requires 6 parameters: y1, m1, d1, y2, m2, d2");
+        return nullptr;
+    }
+    int32_t y1;
+    int32_t m1;
+    int32_t d1;
+    int32_t y2;
+    int32_t m2;
+    int32_t d2;
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::YEAR1], &y1));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::MONTH1], &m1));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::DAY1], &d1));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::YEAR2], &y2));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::MONTH2], &m2));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex6::DAY2], &d2));
+    DateInfo d1(y1, m1, d1);
+    DateInfo d2(y2, m2, d2);
+    int result = DateUtils::DaysBetween(d1, d2);
     napi_value jsResult = nullptr;
     NAPI_CALL(env, napi_create_int32(env, result, &jsResult));
     return jsResult;
 }
+
+namespace DateArgIndex4 {
+    constexpr size_t YEAR = 0;
+    constexpr size_t MONTH = 1;
+    constexpr size_t DAY = 2;
+    constexpr size_t DAYS_TO_ADD = 3;
+};
 
 static napi_value JSAddDays(napi_env env, napi_callback_info info)
 {
     size_t argc = DateArgCount::FOUR;
     napi_value argv[DateArgCount::FOUR] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::FOUR,
-        "requires 4 parameters: year, month, day, daysToAdd");
-    int32_t year, month, day, daysToAdd;
-    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &year));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[1], &month));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[2], &day));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[3], &daysToAdd));
+    if (argc < DateArgCount::FOUR) {
+        napi_throw_type_error(env, nullptr,
+            "requires 4 parameters: year, month, day, daysToAdd");
+        return nullptr;
+    }
+    int32_t year;
+    int32_t month;
+    int32_t day;
+    int32_t daysToAdd;
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4::YEAR], &year));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4::MONTH], &month));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4::DAY], &day));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4::DAYS_TO_ADD],
+        &daysToAdd));
     DateInfo result = DateUtils::AddDays(year, month, day, daysToAdd);
     napi_value jsResult = nullptr;
     NAPI_CALL(env, napi_create_object(env, &jsResult));
-    napi_value yVal, mVal, dVal;
+    napi_value yVal;
+    napi_value mVal;
+    napi_value dVal;
     NAPI_CALL(env, napi_create_int32(env, result.year, &yVal));
     NAPI_CALL(env, napi_create_int32(env, result.month, &mVal));
     NAPI_CALL(env, napi_create_int32(env, result.day, &dVal));
@@ -280,20 +342,35 @@ static napi_value JSAddDays(napi_env env, napi_callback_info info)
 /***********************************************
  * NAPI Functions - Date Formatting
  ***********************************************/
+namespace DateArgIndex4Fmt {
+    constexpr size_t YEAR = 0;
+    constexpr size_t MONTH = 1;
+    constexpr size_t DAY = 2;
+    constexpr size_t FORMAT = 3;
+};
+
 static napi_value JSFormatDate(napi_env env, napi_callback_info info)
 {
     size_t argc = DateArgCount::FOUR;
     napi_value argv[DateArgCount::FOUR] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::FOUR,
-        "requires 4 parameters: year, month, day, format");
-    int32_t year, month, day;
-    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &year));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[1], &month));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[2], &day));
+    if (argc < DateArgCount::FOUR) {
+        napi_throw_type_error(env, nullptr,
+            "requires 4 parameters: year, month, day, format");
+        return nullptr;
+    }
+    int32_t year;
+    int32_t month;
+    int32_t day;
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4Fmt::YEAR],
+        &year));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4Fmt::MONTH],
+        &month));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex4Fmt::DAY], &day));
     char format[K_DATE_FORMAT_MAX_LEN] = { 0 };
     size_t formatLen = 0;
-    NAPI_CALL(env, napi_get_value_string_utf8(env, argv[3], format,
+    NAPI_CALL(env, napi_get_value_string_utf8(env,
+        argv[DateArgIndex4Fmt::FORMAT], format,
         sizeof(format), &formatLen));
     std::string result = DateUtils::FormatDate(year, month, day,
         std::string(format, formatLen));
@@ -308,7 +385,10 @@ static napi_value JSGetSeason(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::ONE;
     napi_value argv[DateArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::ONE, "requires 1 parameter: month");
+    if (argc < DateArgCount::ONE) {
+        napi_throw_type_error(env, nullptr, "requires 1 parameter: month");
+        return nullptr;
+    }
     int32_t month;
     NAPI_CALL(env, napi_get_value_int32(env,
         argv[static_cast<size_t>(DateArgIndex::FIRST)], &month));
@@ -324,7 +404,10 @@ static napi_value JSGetQuarter(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::ONE;
     napi_value argv[DateArgCount::ONE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::ONE, "requires 1 parameter: month");
+    if (argc < DateArgCount::ONE) {
+        napi_throw_type_error(env, nullptr, "requires 1 parameter: month");
+        return nullptr;
+    }
     int32_t month;
     NAPI_CALL(env, napi_get_value_int32(env,
         argv[static_cast<size_t>(DateArgIndex::FIRST)], &month));
@@ -338,17 +421,31 @@ static napi_value JSGetQuarter(napi_env env, napi_callback_info info)
 /***********************************************
  * NAPI Functions - Date Utilities
  ***********************************************/
+namespace DateArgIndex3Age {
+    constexpr size_t BIRTH_YEAR = 0;
+    constexpr size_t BIRTH_MONTH = 1;
+    constexpr size_t BIRTH_DAY = 2;
+};
+
 static napi_value JSGetAge(napi_env env, napi_callback_info info)
 {
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE,
-        "requires 3 parameters: birthYear, birthMonth, birthDay");
-    int32_t birthYear, birthMonth, birthDay;
-    NAPI_CALL(env, napi_get_value_int32(env, argv[0], &birthYear));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[1], &birthMonth));
-    NAPI_CALL(env, napi_get_value_int32(env, argv[2], &birthDay));
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr,
+            "requires 3 parameters: birthYear, birthMonth, birthDay");
+        return nullptr;
+    }
+    int32_t birthYear;
+    int32_t birthMonth;
+    int32_t birthDay;
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex3Age::BIRTH_YEAR],
+        &birthYear));
+    NAPI_CALL(env, napi_get_value_int32(env,
+        argv[DateArgIndex3Age::BIRTH_MONTH], &birthMonth));
+    NAPI_CALL(env, napi_get_value_int32(env, argv[DateArgIndex3Age::BIRTH_DAY],
+        &birthDay));
     int result = DateUtils::GetAge(birthYear, birthMonth, birthDay);
     napi_value jsResult = nullptr;
     NAPI_CALL(env, napi_create_int32(env, result, &jsResult));
@@ -360,8 +457,13 @@ static napi_value JSIsWeekend(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE, "requires 3 parameters");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr, "requires 3 parameters");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         napi_value jsFalse = nullptr;
         NAPI_CALL(env, napi_get_boolean(env, false, &jsFalse));
@@ -378,8 +480,13 @@ static napi_value JSGetWeekNumber(napi_env env, napi_callback_info info)
     size_t argc = DateArgCount::THREE;
     napi_value argv[DateArgCount::THREE] = { nullptr };
     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-    NAPI_ASSERT(env, argc >= DateArgCount::THREE, "requires 3 parameters");
-    int year, month, day;
+    if (argc < DateArgCount::THREE) {
+        napi_throw_type_error(env, nullptr, "requires 3 parameters");
+        return nullptr;
+    }
+    int year;
+    int month;
+    int day;
     if (!ExtractDateFromArgs(env, argv, year, month, day)) {
         return nullptr;
     }
@@ -429,7 +536,6 @@ extern "C" __attribute__((constructor)) void DateUtilsRegister()
 {
     napi_module_register(&g_dateUtilsModule);
 }
-
 }  // namespace
 
 bool DateUtils::IsLeapYear(int year)
@@ -496,32 +602,32 @@ int DateUtils::GetWeekday(int year, int month, int day)
     return (h + K_WEEKDAY_OFFSET) % K_DAYS_PER_WEEK;
 }
 
-int DateUtils::DaysBetween(int y1, int m1, int d1, int y2, int m2, int d2)
+int DateUtils::DaysBetween(const DateInfo& date1, const DateInfo& date2)
 {
     int days1 = 0;
-    for (int y = K_MIN_VALID_YEAR; y < y1; y++) {
+    for (int y = K_MIN_VALID_YEAR; y < date1.year; y++) {
         if (IsLeapYear(y)) {
             days1 += K_DAYS_PER_YEAR_LEAP;
         } else {
             days1 += K_DAYS_PER_YEAR_COMMON;
         }
     }
-    for (int m = K_MIN_VALID_MONTH; m < m1; m++) {
-        days1 += GetDaysInMonth(y1, m);
+    for (int m = K_MIN_VALID_MONTH; m < date1.month; m++) {
+        days1 += GetDaysInMonth(date1.year, m);
     }
-    days1 += d1;
+    days1 += date1.day;
     int days2 = 0;
-    for (int y = K_MIN_VALID_YEAR; y < y2; y++) {
+    for (int y = K_MIN_VALID_YEAR; y < date2.year; y++) {
         if (IsLeapYear(y)) {
             days2 += K_DAYS_PER_YEAR_LEAP;
         } else {
             days2 += K_DAYS_PER_YEAR_COMMON;
         }
     }
-    for (int m = K_MIN_VALID_MONTH; m < m2; m++) {
-        days2 += GetDaysInMonth(y2, m);
+    for (int m = K_MIN_VALID_MONTH; m < date2.month; m++) {
+        days2 += GetDaysInMonth(date2.year, m);
     }
-    days2 += d2;
+    days2 += date2.day;
     return days2 - days1;
 }
 
@@ -556,8 +662,11 @@ std::string DateUtils::FormatDate(int year, int month, int day,
     int weekday = GetWeekday(year, month, day);
     const char* weekdayName = K_WEEKDAY_NAMES[weekday];
     const char* monthName = K_MONTH_NAMES[month];
-    snprintf(buffer, sizeof(buffer), format.c_str(),
-        year, month, day, weekdayName, monthName);
+    int ret = snprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1,
+        format.c_str(), year, month, day, weekdayName, monthName);
+    if (ret < 0) {
+        return "";
+    }
     return std::string(buffer);
 }
 
@@ -578,17 +687,21 @@ std::string DateUtils::GetQuarter(int month)
     int quarter = (month - K_MONTH_INDEX_OFFSET) /
         K_MONTHS_PER_SEASON + K_MONTH_INDEX_OFFSET;
     char buffer[K_DATE_STR_MAX_LEN] = { 0 };
-    snprintf(buffer, sizeof(buffer), "Q%d", quarter);
+    int ret = snprintf_s(buffer, sizeof(buffer), sizeof(buffer) - 1,
+        "Q%d", quarter);
+    if (ret < 0) {
+        return "";
+    }
     return std::string(buffer);
 }
 
 int DateUtils::GetAge(int birthYear, int birthMonth, int birthDay)
 {
     int age = K_REFERENCE_YEAR - birthYear;
-    if (K_REFERENCE_MONTH < birthMonth) {
+    if (birthMonth > K_REFERENCE_MONTH) {
         age--;
     }
-    if (K_REFERENCE_MONTH == birthMonth && K_REFERENCE_DAY < birthDay) {
+    if (birthMonth == K_REFERENCE_MONTH && birthDay > K_REFERENCE_DAY) {
         age--;
     }
     return age;
@@ -612,4 +725,3 @@ int DateUtils::GetWeekNumber(int year, int month, int day)
     }
     return weekNum;
 }
-

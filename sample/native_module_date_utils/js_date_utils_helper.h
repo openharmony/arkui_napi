@@ -31,7 +31,6 @@ struct DateInfo {
 
     DateInfo() : year(0), month(0), day(0), hour(0), minute(0), second(0) {}
     DateInfo(int y, int m, int d) : year(y), month(m), day(d), hour(0), minute(0), second(0) {}
-    DateInfo(int y, int m, int d, int h, int min, int s) : year(y), month(m), day(d), hour(h), minute(min), second(s) {}
 };
 
 class DateUtils {
@@ -41,7 +40,7 @@ public:
     static bool IsValidDate(int year, int month, int day);
     static int GetDayOfYear(int year, int month, int day);
     static int GetWeekday(int year, int month, int day);
-    static int DaysBetween(int y1, int m1, int d1, int y2, int m2, int d2);
+    static int DaysBetween(const DateInfo& date1, const DateInfo& date2);
     static DateInfo AddDays(int year, int month, int day, int daysToAdd);
     static std::string FormatDate(int year, int month, int day,
         const std::string& format);

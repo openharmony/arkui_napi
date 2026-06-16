@@ -290,14 +290,15 @@ bool SetCollectionInt32(
 
 int32_t CalculateScore(int32_t base, int32_t weight, int32_t itemCount)
 {
-    int32_t score = base + weight * itemCount;
+    int64_t score = static_cast<int64_t>(base) +
+        static_cast<int64_t>(weight) * itemCount;
     if (score >= K_BONUS_THRESHOLD) {
         score += K_BONUS_AMOUNT;
     }
     if (itemCount > K_MAX_ITEM_COUNT / K_PENALTY_RATE) {
         score -= itemCount / K_PENALTY_RATE;
     }
-    return score;
+    return static_cast<int32_t>(score);
 }
 
 OperationResult ExecuteAddItem(napi_env env, int32_t baseScore, int32_t weight)
