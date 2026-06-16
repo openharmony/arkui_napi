@@ -119,37 +119,10 @@ bool SetNamedBool(napi_env env, napi_value object, const char* name, bool value)
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
 }
 
-bool SetNamedInt32(napi_env env, napi_value object, const char* name, int32_t value)
-{
-    napi_value napiValue = nullptr;
-    if (napi_create_int32(env, value, &napiValue) != napi_ok) {
-        return false;
-    }
-    return napi_set_named_property(env, object, name, napiValue) == napi_ok;
-}
-
-bool SetNamedDouble(napi_env env, napi_value object, const char* name, double value)
-{
-    napi_value napiValue = nullptr;
-    if (napi_create_double(env, value, &napiValue) != napi_ok) {
-        return false;
-    }
-    return napi_set_named_property(env, object, name, napiValue) == napi_ok;
-}
-
 bool SetNamedString(napi_env env, napi_value object, const char* name, const char* value)
 {
     napi_value napiValue = nullptr;
     if (napi_create_string_utf8(env, value, NAPI_AUTO_LENGTH, &napiValue) != napi_ok) {
-        return false;
-    }
-    return napi_set_named_property(env, object, name, napiValue) == napi_ok;
-}
-
-bool SetNamedInt64(napi_env env, napi_value object, const char* name, int64_t value)
-{
-    napi_value napiValue = nullptr;
-    if (napi_create_int64(env, value, &napiValue) != napi_ok) {
         return false;
     }
     return napi_set_named_property(env, object, name, napiValue) == napi_ok;
@@ -192,12 +165,16 @@ static napi_value TestCoerceBoolFromZero(napi_env env, napi_callback_info info)
     napi_value zeroVal = nullptr;
     NAPI_CALL(env, napi_create_int32(env, INT32_ZERO, &zeroVal));
     bool coerced = CoerceToBoolValue(env, zeroVal);
-    SetNamedBool(env, result, "zeroIsFalse", !coerced);
+    if (!SetNamedBool(env, result, "zeroIsFalse", !coerced)) {
+        return nullptr;
+    }
 
     napi_value oneVal = nullptr;
     NAPI_CALL(env, napi_create_int32(env, INT32_ONE, &oneVal));
     bool coercedOne = CoerceToBoolValue(env, oneVal);
-    SetNamedBool(env, result, "oneIsTrue", coercedOne);
+    if (!SetNamedBool(env, result, "oneIsTrue", coercedOne)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -212,11 +189,15 @@ static napi_value TestCoerceBoolFromString(napi_env env, napi_callback_info info
 
     napi_value emptyStr = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "", EMPTY_STRING_LENGTH, &emptyStr));
-    SetNamedBool(env, result, "emptyStringIsFalse", !CoerceToBoolValue(env, emptyStr));
+    if (!SetNamedBool(env, result, "emptyStringIsFalse", !CoerceToBoolValue(env, emptyStr))) {
+        return nullptr;
+    }
 
     napi_value nonEmptyStr = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "hello", NAPI_AUTO_LENGTH, &nonEmptyStr));
-    SetNamedBool(env, result, "nonEmptyStringIsTrue", CoerceToBoolValue(env, nonEmptyStr));
+    if (!SetNamedBool(env, result, "nonEmptyStringIsTrue", CoerceToBoolValue(env, nonEmptyStr))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -231,11 +212,15 @@ static napi_value TestCoerceBoolFromNullUndefined(napi_env env, napi_callback_in
 
     napi_value nullVal = nullptr;
     NAPI_CALL(env, napi_get_null(env, &nullVal));
-    SetNamedBool(env, result, "nullIsFalse", !CoerceToBoolValue(env, nullVal));
+    if (!SetNamedBool(env, result, "nullIsFalse", !CoerceToBoolValue(env, nullVal))) {
+        return nullptr;
+    }
 
     napi_value undefVal = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &undefVal));
-    SetNamedBool(env, result, "undefinedIsFalse", !CoerceToBoolValue(env, undefVal));
+    if (!SetNamedBool(env, result, "undefinedIsFalse", !CoerceToBoolValue(env, undefVal))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -250,11 +235,15 @@ static napi_value TestCoerceBoolFromObject(napi_env env, napi_callback_info info
 
     napi_value obj = nullptr;
     NAPI_CALL(env, napi_create_object(env, &obj));
-    SetNamedBool(env, result, "objectIsTrue", CoerceToBoolValue(env, obj));
+    if (!SetNamedBool(env, result, "objectIsTrue", CoerceToBoolValue(env, obj))) {
+        return nullptr;
+    }
 
     napi_value arr = nullptr;
     NAPI_CALL(env, napi_create_array(env, &arr));
-    SetNamedBool(env, result, "arrayIsTrue", CoerceToBoolValue(env, arr));
+    if (!SetNamedBool(env, result, "arrayIsTrue", CoerceToBoolValue(env, arr))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -270,12 +259,16 @@ static napi_value TestCoerceNumberFromBool(napi_env env, napi_callback_info info
     napi_value trueVal = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, true, &trueVal));
     double numTrue = CoerceToNumberValue(env, trueVal);
-    SetNamedBool(env, result, "trueIsOne", numTrue == static_cast<double>(COERCE_NUM_FROM_TRUE));
+    if (!SetNamedBool(env, result, "trueIsOne", numTrue == static_cast<double>(COERCE_NUM_FROM_TRUE))) {
+        return nullptr;
+    }
 
     napi_value falseVal = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, false, &falseVal));
     double numFalse = CoerceToNumberValue(env, falseVal);
-    SetNamedBool(env, result, "falseIsZero", numFalse == static_cast<double>(COERCE_NUM_FROM_FALSE));
+    if (!SetNamedBool(env, result, "falseIsZero", numFalse == static_cast<double>(COERCE_NUM_FROM_FALSE))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -291,12 +284,16 @@ static napi_value TestCoerceNumberFromNull(napi_env env, napi_callback_info info
     napi_value nullVal = nullptr;
     NAPI_CALL(env, napi_get_null(env, &nullVal));
     double numNull = CoerceToNumberValue(env, nullVal);
-    SetNamedBool(env, result, "nullIsZero", numNull == static_cast<double>(COERCE_NUM_FROM_NULL));
+    if (!SetNamedBool(env, result, "nullIsZero", numNull == static_cast<double>(COERCE_NUM_FROM_NULL))) {
+        return nullptr;
+    }
 
     napi_value undefVal = nullptr;
     NAPI_CALL(env, napi_get_undefined(env, &undefVal));
     double numUndef = CoerceToNumberValue(env, undefVal);
-    SetNamedBool(env, result, "undefinedIsNaN", std::isnan(numUndef));
+    if (!SetNamedBool(env, result, "undefinedIsNaN", std::isnan(numUndef))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -318,8 +315,12 @@ static napi_value TestCoerceStringFromNumber(napi_env env, napi_callback_info in
     char buf[STRING_BUFFER_SIZE] = {0};
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coerced, buf, sizeof(buf), &len));
-    SetNamedBool(env, result, "numberToStringOk", strcmp(buf, "42") == INT32_ZERO);
-    SetNamedString(env, result, "coercedValue", buf);
+    if (!SetNamedBool(env, result, "numberToStringOk", strcmp(buf, "42") == INT32_ZERO)) {
+        return nullptr;
+    }
+    if (!SetNamedString(env, result, "coercedValue", buf)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -340,7 +341,9 @@ static napi_value TestCoerceStringFromBool(napi_env env, napi_callback_info info
     char bufTrue[STRING_BUFFER_SIZE] = {0};
     size_t lenTrue = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedTrue, bufTrue, sizeof(bufTrue), &lenTrue));
-    SetNamedBool(env, result, "trueToString", strcmp(bufTrue, "true") == INT32_ZERO);
+    if (!SetNamedBool(env, result, "trueToString", strcmp(bufTrue, "true") == INT32_ZERO)) {
+        return nullptr;
+    }
 
     napi_value falseVal = nullptr;
     NAPI_CALL(env, napi_get_boolean(env, false, &falseVal));
@@ -350,7 +353,9 @@ static napi_value TestCoerceStringFromBool(napi_env env, napi_callback_info info
     char bufFalse[STRING_BUFFER_SIZE] = {0};
     size_t lenFalse = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf8(env, coercedFalse, bufFalse, sizeof(bufFalse), &lenFalse));
-    SetNamedBool(env, result, "falseToString", strcmp(bufFalse, "false") == INT32_ZERO);
+    if (!SetNamedBool(env, result, "falseToString", strcmp(bufFalse, "false") == INT32_ZERO)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -371,7 +376,9 @@ static napi_value TestCoerceObjectFromNumber(napi_env env, napi_callback_info in
 
     napi_valuetype objType = napi_undefined;
     NAPI_CALL(env, napi_typeof(env, coerced, &objType));
-    SetNamedBool(env, result, "isObject", objType == napi_object);
+    if (!SetNamedBool(env, result, "isObject", objType == napi_object)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -392,7 +399,9 @@ static napi_value TestCoerceObjectFromString(napi_env env, napi_callback_info in
 
     napi_valuetype objType = napi_undefined;
     NAPI_CALL(env, napi_typeof(env, coerced, &objType));
-    SetNamedBool(env, result, "stringToObject", objType == napi_object);
+    if (!SetNamedBool(env, result, "stringToObject", objType == napi_object)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -411,8 +420,12 @@ static napi_value TestBigintInt64RoundTrip(napi_env env, napi_callback_info info
     int64_t valPos = BIGINT_ZERO;
     bool losslessPos = false;
     NAPI_CALL(env, napi_get_value_bigint_int64(env, bigintPos, &valPos, &losslessPos));
-    SetNamedBool(env, result, "positiveMatch", valPos == BIGINT_POSITIVE_SMALL);
-    SetNamedBool(env, result, "positiveLossless", losslessPos);
+    if (!SetNamedBool(env, result, "positiveMatch", valPos == BIGINT_POSITIVE_SMALL)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "positiveLossless", losslessPos)) {
+        return nullptr;
+    }
 
     // Negative value
     napi_value bigintNeg = nullptr;
@@ -420,8 +433,12 @@ static napi_value TestBigintInt64RoundTrip(napi_env env, napi_callback_info info
     int64_t valNeg = BIGINT_ZERO;
     bool losslessNeg = false;
     NAPI_CALL(env, napi_get_value_bigint_int64(env, bigintNeg, &valNeg, &losslessNeg));
-    SetNamedBool(env, result, "negativeMatch", valNeg == BIGINT_NEGATIVE_SMALL);
-    SetNamedBool(env, result, "negativeLossless", losslessNeg);
+    if (!SetNamedBool(env, result, "negativeMatch", valNeg == BIGINT_NEGATIVE_SMALL)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "negativeLossless", losslessNeg)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -440,7 +457,9 @@ static napi_value TestBigintInt64Boundary(napi_env env, napi_callback_info info)
     int64_t valMin = BIGINT_ZERO;
     bool lossMin = false;
     NAPI_CALL(env, napi_get_value_bigint_int64(env, bigintMin, &valMin, &lossMin));
-    SetNamedBool(env, result, "int64MinMatch", valMin == INT64_MIN_VAL);
+    if (!SetNamedBool(env, result, "int64MinMatch", valMin == INT64_MIN_VAL)) {
+        return nullptr;
+    }
 
     // INT64_MAX
     napi_value bigintMax = nullptr;
@@ -448,7 +467,9 @@ static napi_value TestBigintInt64Boundary(napi_env env, napi_callback_info info)
     int64_t valMax = BIGINT_ZERO;
     bool lossMax = false;
     NAPI_CALL(env, napi_get_value_bigint_int64(env, bigintMax, &valMax, &lossMax));
-    SetNamedBool(env, result, "int64MaxMatch", valMax == INT64_MAX_VAL);
+    if (!SetNamedBool(env, result, "int64MaxMatch", valMax == INT64_MAX_VAL)) {
+        return nullptr;
+    }
 
     // Zero
     napi_value bigintZero = nullptr;
@@ -456,7 +477,9 @@ static napi_value TestBigintInt64Boundary(napi_env env, napi_callback_info info)
     int64_t valZero = INT64_MAX_VAL;
     bool lossZero = false;
     NAPI_CALL(env, napi_get_value_bigint_int64(env, bigintZero, &valZero, &lossZero));
-    SetNamedBool(env, result, "zeroMatch", valZero == BIGINT_ZERO);
+    if (!SetNamedBool(env, result, "zeroMatch", valZero == BIGINT_ZERO)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -475,8 +498,12 @@ static napi_value TestBigintUint64RoundTrip(napi_env env, napi_callback_info inf
     uint64_t valMax = BIGINT_UINT_ZERO;
     bool lossMax = false;
     NAPI_CALL(env, napi_get_value_bigint_uint64(env, bigintMax, &valMax, &lossMax));
-    SetNamedBool(env, result, "uint64MaxMatch", valMax == BIGINT_UINT_LARGE);
-    SetNamedBool(env, result, "uint64MaxLossless", lossMax);
+    if (!SetNamedBool(env, result, "uint64MaxMatch", valMax == BIGINT_UINT_LARGE)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "uint64MaxLossless", lossMax)) {
+        return nullptr;
+    }
 
     // Zero
     napi_value bigintZero = nullptr;
@@ -484,7 +511,9 @@ static napi_value TestBigintUint64RoundTrip(napi_env env, napi_callback_info inf
     uint64_t valZero = BIGINT_UINT_ONE;
     bool lossZero = false;
     NAPI_CALL(env, napi_get_value_bigint_uint64(env, bigintZero, &valZero, &lossZero));
-    SetNamedBool(env, result, "uint64ZeroMatch", valZero == BIGINT_UINT_ZERO);
+    if (!SetNamedBool(env, result, "uint64ZeroMatch", valZero == BIGINT_UINT_ZERO)) {
+        return nullptr;
+    }
 
     // One
     napi_value bigintOne = nullptr;
@@ -492,7 +521,9 @@ static napi_value TestBigintUint64RoundTrip(napi_env env, napi_callback_info inf
     uint64_t valOne = BIGINT_UINT_ZERO;
     bool lossOne = false;
     NAPI_CALL(env, napi_get_value_bigint_uint64(env, bigintOne, &valOne, &lossOne));
-    SetNamedBool(env, result, "uint64OneMatch", valOne == BIGINT_UINT_ONE);
+    if (!SetNamedBool(env, result, "uint64OneMatch", valOne == BIGINT_UINT_ONE)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -517,9 +548,15 @@ static napi_value TestBigintWordsSingleWord(napi_env env, napi_callback_info inf
     uint64_t wordsOut[BIGINT_WORD_COUNT_ONE] = {BIGINT_UINT_ZERO};
     NAPI_CALL(env, napi_get_value_bigint_words(env, bigint, &signBit, &wordCount, wordsOut));
 
-    SetNamedBool(env, result, "signIsPositive", signBit == BIGINT_SIGN_POSITIVE);
-    SetNamedBool(env, result, "wordCountIsOne", wordCount == BIGINT_WORD_COUNT_ONE);
-    SetNamedBool(env, result, "wordValueMatch", wordsOut[0] == BIGINT_WORD_LOW);
+    if (!SetNamedBool(env, result, "signIsPositive", signBit == BIGINT_SIGN_POSITIVE)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "wordCountIsOne", wordCount == BIGINT_WORD_COUNT_ONE)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "wordValueMatch", wordsOut[0] == BIGINT_WORD_LOW)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -544,10 +581,18 @@ static napi_value TestBigintWordsTwoWords(napi_env env, napi_callback_info info)
     uint64_t wordsOut[BIGINT_WORD_COUNT_TWO] = {BIGINT_UINT_ZERO, BIGINT_UINT_ZERO};
     NAPI_CALL(env, napi_get_value_bigint_words(env, bigint, &signBit, &wordCount, wordsOut));
 
-    SetNamedBool(env, result, "signIsNegative", signBit == BIGINT_SIGN_NEGATIVE);
-    SetNamedBool(env, result, "wordCountIsTwo", wordCount == BIGINT_WORD_COUNT_TWO);
-    SetNamedBool(env, result, "lowWordMatch", wordsOut[0] == BIGINT_WORD_LOW);
-    SetNamedBool(env, result, "highWordMatch", wordsOut[1] == BIGINT_WORD_HIGH);
+    if (!SetNamedBool(env, result, "signIsNegative", signBit == BIGINT_SIGN_NEGATIVE)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "wordCountIsTwo", wordCount == BIGINT_WORD_COUNT_TWO)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "lowWordMatch", wordsOut[0] == BIGINT_WORD_LOW)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "highWordMatch", wordsOut[1] == BIGINT_WORD_HIGH)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -567,9 +612,13 @@ static napi_value TestStringUtf16Basic(napi_env env, napi_callback_info info)
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, STRING_BUFFER_SIZE, &len));
 
-    SetNamedBool(env, result, "lengthMatch", len == UTF16_HELLO_LENGTH);
+    if (!SetNamedBool(env, result, "lengthMatch", len == UTF16_HELLO_LENGTH)) {
+        return nullptr;
+    }
     bool contentMatch = (memcmp(buf, UTF16_HELLO, UTF16_HELLO_LENGTH * sizeof(char16_t)) == INT32_ZERO);
-    SetNamedBool(env, result, "contentMatch", contentMatch);
+    if (!SetNamedBool(env, result, "contentMatch", contentMatch)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -589,7 +638,9 @@ static napi_value TestStringUtf16Empty(napi_env env, napi_callback_info info)
     size_t len = UINT32_ONE;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, STRING_BUFFER_SIZE, &len));
 
-    SetNamedBool(env, result, "emptyLengthZero", len == UTF16_EMPTY_LENGTH);
+    if (!SetNamedBool(env, result, "emptyLengthZero", len == UTF16_EMPTY_LENGTH)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -609,9 +660,13 @@ static napi_value TestStringUtf16Special(napi_env env, napi_callback_info info)
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, STRING_BUFFER_SIZE, &len));
 
-    SetNamedBool(env, result, "specialLengthMatch", len == UTF16_SPECIAL_LENGTH);
+    if (!SetNamedBool(env, result, "specialLengthMatch", len == UTF16_SPECIAL_LENGTH)) {
+        return nullptr;
+    }
     bool contentMatch = (memcmp(buf, UTF16_SPECIAL, UTF16_SPECIAL_LENGTH * sizeof(char16_t)) == INT32_ZERO);
-    SetNamedBool(env, result, "specialContentMatch", contentMatch);
+    if (!SetNamedBool(env, result, "specialContentMatch", contentMatch)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -631,9 +686,13 @@ static napi_value TestStringUtf16Cjk(napi_env env, napi_callback_info info)
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_utf16(env, str, buf, STRING_BUFFER_SIZE, &len));
 
-    SetNamedBool(env, result, "cjkLengthMatch", len == UTF16_CJK_LENGTH);
+    if (!SetNamedBool(env, result, "cjkLengthMatch", len == UTF16_CJK_LENGTH)) {
+        return nullptr;
+    }
     bool contentMatch = (memcmp(buf, UTF16_CJK, UTF16_CJK_LENGTH * sizeof(char16_t)) == INT32_ZERO);
-    SetNamedBool(env, result, "cjkContentMatch", contentMatch);
+    if (!SetNamedBool(env, result, "cjkContentMatch", contentMatch)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -653,8 +712,12 @@ static napi_value TestStringLatin1Basic(napi_env env, napi_callback_info info)
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
-    SetNamedBool(env, result, "latin1LengthMatch", len == LATIN1_TEST_LENGTH);
-    SetNamedBool(env, result, "latin1ContentMatch", strcmp(buf, LATIN1_HELLO) == INT32_ZERO);
+    if (!SetNamedBool(env, result, "latin1LengthMatch", len == LATIN1_TEST_LENGTH)) {
+        return nullptr;
+    }
+    if (!SetNamedBool(env, result, "latin1ContentMatch", strcmp(buf, LATIN1_HELLO) == INT32_ZERO)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -674,7 +737,9 @@ static napi_value TestStringLatin1Empty(napi_env env, napi_callback_info info)
     size_t len = UINT32_ONE;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
-    SetNamedBool(env, result, "emptyLatin1LenZero", len == EMPTY_STRING_LENGTH);
+    if (!SetNamedBool(env, result, "emptyLatin1LenZero", len == EMPTY_STRING_LENGTH)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -694,7 +759,9 @@ static napi_value TestStringLatin1Special(napi_env env, napi_callback_info info)
     size_t len = EMPTY_STRING_LENGTH;
     NAPI_CALL(env, napi_get_value_string_latin1(env, str, buf, sizeof(buf), &len));
 
-    SetNamedBool(env, result, "latin1SpecialLenMatch", len == LATIN1_SPECIAL_LENGTH);
+    if (!SetNamedBool(env, result, "latin1SpecialLenMatch", len == LATIN1_SPECIAL_LENGTH)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -712,11 +779,15 @@ static napi_value TestDateEpoch(napi_env env, napi_callback_info info)
 
     bool isDate = false;
     NAPI_CALL(env, napi_is_date(env, dateVal, &isDate));
-    SetNamedBool(env, result, "isDate", isDate);
+    if (!SetNamedBool(env, result, "isDate", isDate)) {
+        return nullptr;
+    }
 
     double retrieved = DOUBLE_NEGATIVE_ONE;
     NAPI_CALL(env, napi_get_date_value(env, dateVal, &retrieved));
-    SetNamedBool(env, result, "epochMatch", fabs(retrieved - DATE_EPOCH) < DATE_TOLERANCE);
+    if (!SetNamedBool(env, result, "epochMatch", fabs(retrieved - DATE_EPOCH) < DATE_TOLERANCE)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -734,14 +805,18 @@ static napi_value TestDateY2kAndNegative(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_date(env, DATE_Y2K, &y2kDate));
     double y2kVal = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_date_value(env, y2kDate, &y2kVal));
-    SetNamedBool(env, result, "y2kMatch", fabs(y2kVal - DATE_Y2K) < DATE_TOLERANCE);
+    if (!SetNamedBool(env, result, "y2kMatch", fabs(y2kVal - DATE_Y2K) < DATE_TOLERANCE)) {
+        return nullptr;
+    }
 
     // Negative (before epoch)
     napi_value negDate = nullptr;
     NAPI_CALL(env, napi_create_date(env, DATE_NEGATIVE, &negDate));
     double negVal = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_date_value(env, negDate, &negVal));
-    SetNamedBool(env, result, "negativeMatch", fabs(negVal - DATE_NEGATIVE) < DATE_TOLERANCE);
+    if (!SetNamedBool(env, result, "negativeMatch", fabs(negVal - DATE_NEGATIVE) < DATE_TOLERANCE)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -759,21 +834,27 @@ static napi_value TestIsDateNonDate(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_double(env, DATE_UNIX_100K, &numVal));
     bool isDateNum = true;
     NAPI_CALL(env, napi_is_date(env, numVal, &isDateNum));
-    SetNamedBool(env, result, "numberIsNotDate", !isDateNum);
+    if (!SetNamedBool(env, result, "numberIsNotDate", !isDateNum)) {
+        return nullptr;
+    }
 
     // Object is not a date
     napi_value objVal = nullptr;
     NAPI_CALL(env, napi_create_object(env, &objVal));
     bool isDateObj = true;
     NAPI_CALL(env, napi_is_date(env, objVal, &isDateObj));
-    SetNamedBool(env, result, "objectIsNotDate", !isDateObj);
+    if (!SetNamedBool(env, result, "objectIsNotDate", !isDateObj)) {
+        return nullptr;
+    }
 
     // String is not a date
     napi_value strVal = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "2000-01-01", NAPI_AUTO_LENGTH, &strVal));
     bool isDateStr = true;
     NAPI_CALL(env, napi_is_date(env, strVal, &isDateStr));
-    SetNamedBool(env, result, "stringIsNotDate", !isDateStr);
+    if (!SetNamedBool(env, result, "stringIsNotDate", !isDateStr)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -791,21 +872,27 @@ static napi_value TestInt32RoundTrip(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_int32(env, INT32_MIN_VAL, &minVal));
     int32_t gotMin = INT32_ZERO;
     NAPI_CALL(env, napi_get_value_int32(env, minVal, &gotMin));
-    SetNamedBool(env, result, "int32MinMatch", gotMin == INT32_MIN_VAL);
+    if (!SetNamedBool(env, result, "int32MinMatch", gotMin == INT32_MIN_VAL)) {
+        return nullptr;
+    }
 
     // INT32_MAX
     napi_value maxVal = nullptr;
     NAPI_CALL(env, napi_create_int32(env, INT32_MAX_VAL, &maxVal));
     int32_t gotMax = INT32_ZERO;
     NAPI_CALL(env, napi_get_value_int32(env, maxVal, &gotMax));
-    SetNamedBool(env, result, "int32MaxMatch", gotMax == INT32_MAX_VAL);
+    if (!SetNamedBool(env, result, "int32MaxMatch", gotMax == INT32_MAX_VAL)) {
+        return nullptr;
+    }
 
     // Zero
     napi_value zeroVal = nullptr;
     NAPI_CALL(env, napi_create_int32(env, INT32_ZERO, &zeroVal));
     int32_t gotZero = INT32_ONE;
     NAPI_CALL(env, napi_get_value_int32(env, zeroVal, &gotZero));
-    SetNamedBool(env, result, "int32ZeroMatch", gotZero == INT32_ZERO);
+    if (!SetNamedBool(env, result, "int32ZeroMatch", gotZero == INT32_ZERO)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -823,21 +910,27 @@ static napi_value TestUint32RoundTrip(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_uint32(env, UINT32_MAX_VAL, &maxVal));
     uint32_t gotMax = UINT32_ZERO;
     NAPI_CALL(env, napi_get_value_uint32(env, maxVal, &gotMax));
-    SetNamedBool(env, result, "uint32MaxMatch", gotMax == UINT32_MAX_VAL);
+    if (!SetNamedBool(env, result, "uint32MaxMatch", gotMax == UINT32_MAX_VAL)) {
+        return nullptr;
+    }
 
     // Zero
     napi_value zeroVal = nullptr;
     NAPI_CALL(env, napi_create_uint32(env, UINT32_ZERO, &zeroVal));
     uint32_t gotZero = UINT32_ONE;
     NAPI_CALL(env, napi_get_value_uint32(env, zeroVal, &gotZero));
-    SetNamedBool(env, result, "uint32ZeroMatch", gotZero == UINT32_ZERO);
+    if (!SetNamedBool(env, result, "uint32ZeroMatch", gotZero == UINT32_ZERO)) {
+        return nullptr;
+    }
 
     // Hundred
     napi_value hundredVal = nullptr;
     NAPI_CALL(env, napi_create_uint32(env, UINT32_HUNDRED, &hundredVal));
     uint32_t gotHundred = UINT32_ZERO;
     NAPI_CALL(env, napi_get_value_uint32(env, hundredVal, &gotHundred));
-    SetNamedBool(env, result, "uint32HundredMatch", gotHundred == UINT32_HUNDRED);
+    if (!SetNamedBool(env, result, "uint32HundredMatch", gotHundred == UINT32_HUNDRED)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -855,14 +948,18 @@ static napi_value TestInt64RoundTrip(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_int64(env, INT64_MIN_VAL, &minVal));
     int64_t gotMin = BIGINT_ZERO;
     NAPI_CALL(env, napi_get_value_int64(env, minVal, &gotMin));
-    SetNamedBool(env, result, "int64MinMatch", gotMin == INT64_MIN_VAL);
+    if (!SetNamedBool(env, result, "int64MinMatch", gotMin == INT64_MIN_VAL)) {
+        return nullptr;
+    }
 
     // INT64_MAX
     napi_value maxVal = nullptr;
     NAPI_CALL(env, napi_create_int64(env, INT64_MAX_VAL, &maxVal));
     int64_t gotMax = BIGINT_ZERO;
     NAPI_CALL(env, napi_get_value_int64(env, maxVal, &gotMax));
-    SetNamedBool(env, result, "int64MaxMatch", gotMax == INT64_MAX_VAL);
+    if (!SetNamedBool(env, result, "int64MaxMatch", gotMax == INT64_MAX_VAL)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -880,21 +977,27 @@ static napi_value TestDoubleRoundTrip(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_double(env, DOUBLE_PI, &piVal));
     double gotPi = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_value_double(env, piVal, &gotPi));
-    SetNamedBool(env, result, "piMatch", gotPi == DOUBLE_PI);
+    if (!SetNamedBool(env, result, "piMatch", gotPi == DOUBLE_PI)) {
+        return nullptr;
+    }
 
     // Negative PI
     napi_value negPiVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, DOUBLE_NEGATIVE_PI, &negPiVal));
     double gotNegPi = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_value_double(env, negPiVal, &gotNegPi));
-    SetNamedBool(env, result, "negativePiMatch", gotNegPi == DOUBLE_NEGATIVE_PI);
+    if (!SetNamedBool(env, result, "negativePiMatch", gotNegPi == DOUBLE_NEGATIVE_PI)) {
+        return nullptr;
+    }
 
     // Large value
     napi_value largeVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, DOUBLE_LARGE, &largeVal));
     double gotLarge = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_value_double(env, largeVal, &gotLarge));
-    SetNamedBool(env, result, "largeMatch", gotLarge == DOUBLE_LARGE);
+    if (!SetNamedBool(env, result, "largeMatch", gotLarge == DOUBLE_LARGE)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -912,21 +1015,27 @@ static napi_value TestDoubleSmallAndZero(napi_env env, napi_callback_info info)
     NAPI_CALL(env, napi_create_double(env, DOUBLE_SMALL, &smallVal));
     double gotSmall = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_value_double(env, smallVal, &gotSmall));
-    SetNamedBool(env, result, "smallMatch", gotSmall == DOUBLE_SMALL);
+    if (!SetNamedBool(env, result, "smallMatch", gotSmall == DOUBLE_SMALL)) {
+        return nullptr;
+    }
 
     // Zero
     napi_value zeroVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, DOUBLE_ZERO, &zeroVal));
     double gotZero = DOUBLE_ONE;
     NAPI_CALL(env, napi_get_value_double(env, zeroVal, &gotZero));
-    SetNamedBool(env, result, "zeroMatch", gotZero == DOUBLE_ZERO);
+    if (!SetNamedBool(env, result, "zeroMatch", gotZero == DOUBLE_ZERO)) {
+        return nullptr;
+    }
 
     // Negative one
     napi_value negOneVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, DOUBLE_NEGATIVE_ONE, &negOneVal));
     double gotNegOne = DOUBLE_ZERO;
     NAPI_CALL(env, napi_get_value_double(env, negOneVal, &gotNegOne));
-    SetNamedBool(env, result, "negOneMatch", gotNegOne == DOUBLE_NEGATIVE_ONE);
+    if (!SetNamedBool(env, result, "negOneMatch", gotNegOne == DOUBLE_NEGATIVE_ONE)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -946,7 +1055,9 @@ static napi_value TestStrictEqualsSameValue(napi_env env, napi_callback_info inf
     NAPI_CALL(env, napi_create_int32(env, INT32_FORTY_TWO, &num2));
     bool eqNum = false;
     NAPI_CALL(env, napi_strict_equals(env, num1, num2, &eqNum));
-    SetNamedBool(env, result, "sameNumberEqual", eqNum);
+    if (!SetNamedBool(env, result, "sameNumberEqual", eqNum)) {
+        return nullptr;
+    }
 
     // Same string
     napi_value str1 = nullptr;
@@ -955,7 +1066,9 @@ static napi_value TestStrictEqualsSameValue(napi_env env, napi_callback_info inf
     NAPI_CALL(env, napi_create_string_utf8(env, "hello", NAPI_AUTO_LENGTH, &str2));
     bool eqStr = false;
     NAPI_CALL(env, napi_strict_equals(env, str1, str2, &eqStr));
-    SetNamedBool(env, result, "sameStringEqual", eqStr);
+    if (!SetNamedBool(env, result, "sameStringEqual", eqStr)) {
+        return nullptr;
+    }
 
     // Same boolean
     napi_value boolA = nullptr;
@@ -964,7 +1077,9 @@ static napi_value TestStrictEqualsSameValue(napi_env env, napi_callback_info inf
     NAPI_CALL(env, napi_get_boolean(env, true, &boolB));
     bool eqBool = false;
     NAPI_CALL(env, napi_strict_equals(env, boolA, boolB, &eqBool));
-    SetNamedBool(env, result, "sameBoolEqual", eqBool);
+    if (!SetNamedBool(env, result, "sameBoolEqual", eqBool)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -984,7 +1099,9 @@ static napi_value TestStrictEqualsDiffType(napi_env env, napi_callback_info info
     NAPI_CALL(env, napi_create_string_utf8(env, "42", NAPI_AUTO_LENGTH, &strVal));
     bool eqNumStr = true;
     NAPI_CALL(env, napi_strict_equals(env, numVal, strVal, &eqNumStr));
-    SetNamedBool(env, result, "numberStringNotEqual", !eqNumStr);
+    if (!SetNamedBool(env, result, "numberStringNotEqual", !eqNumStr)) {
+        return nullptr;
+    }
 
     // null vs undefined
     napi_value nullVal = nullptr;
@@ -993,7 +1110,9 @@ static napi_value TestStrictEqualsDiffType(napi_env env, napi_callback_info info
     NAPI_CALL(env, napi_get_undefined(env, &undefVal));
     bool eqNullUndef = true;
     NAPI_CALL(env, napi_strict_equals(env, nullVal, undefVal, &eqNullUndef));
-    SetNamedBool(env, result, "nullUndefinedNotEqual", !eqNullUndef);
+    if (!SetNamedBool(env, result, "nullUndefinedNotEqual", !eqNullUndef)) {
+        return nullptr;
+    }
 
     // true vs 1
     napi_value trueVal = nullptr;
@@ -1002,7 +1121,9 @@ static napi_value TestStrictEqualsDiffType(napi_env env, napi_callback_info info
     NAPI_CALL(env, napi_create_int32(env, INT32_ONE, &oneVal));
     bool eqBoolNum = true;
     NAPI_CALL(env, napi_strict_equals(env, trueVal, oneVal, &eqBoolNum));
-    SetNamedBool(env, result, "boolNumberNotEqual", !eqBoolNum);
+    if (!SetNamedBool(env, result, "boolNumberNotEqual", !eqBoolNum)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -1020,7 +1141,9 @@ static napi_value TestStrictEqualsObjectIdentity(napi_env env, napi_callback_inf
     NAPI_CALL(env, napi_create_object(env, &obj));
     bool eqSame = false;
     NAPI_CALL(env, napi_strict_equals(env, obj, obj, &eqSame));
-    SetNamedBool(env, result, "sameObjectEqual", eqSame);
+    if (!SetNamedBool(env, result, "sameObjectEqual", eqSame)) {
+        return nullptr;
+    }
 
     // Different object references (content-identical but not same)
     napi_value objA = nullptr;
@@ -1029,7 +1152,9 @@ static napi_value TestStrictEqualsObjectIdentity(napi_env env, napi_callback_inf
     NAPI_CALL(env, napi_create_object(env, &objB));
     bool eqDiff = true;
     NAPI_CALL(env, napi_strict_equals(env, objA, objB, &eqDiff));
-    SetNamedBool(env, result, "diffObjectsNotEqual", !eqDiff);
+    if (!SetNamedBool(env, result, "diffObjectsNotEqual", !eqDiff)) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -1045,17 +1170,23 @@ static napi_value TestCoerceBoolFromNegativeAndNaN(napi_env env, napi_callback_i
     // Negative number is truthy
     napi_value negVal = nullptr;
     NAPI_CALL(env, napi_create_int32(env, INT32_NEGATIVE_ONE, &negVal));
-    SetNamedBool(env, result, "negativeIsTrue", CoerceToBoolValue(env, negVal));
+    if (!SetNamedBool(env, result, "negativeIsTrue", CoerceToBoolValue(env, negVal))) {
+        return nullptr;
+    }
 
     // NaN is falsy
     napi_value nanVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, NAN, &nanVal));
-    SetNamedBool(env, result, "nanIsFalse", !CoerceToBoolValue(env, nanVal));
+    if (!SetNamedBool(env, result, "nanIsFalse", !CoerceToBoolValue(env, nanVal))) {
+        return nullptr;
+    }
 
     // Infinity is truthy
     napi_value infVal = nullptr;
     NAPI_CALL(env, napi_create_double(env, INFINITY, &infVal));
-    SetNamedBool(env, result, "infinityIsTrue", CoerceToBoolValue(env, infVal));
+    if (!SetNamedBool(env, result, "infinityIsTrue", CoerceToBoolValue(env, infVal))) {
+        return nullptr;
+    }
 
     return result;
 }
@@ -1106,7 +1237,6 @@ static const ConvertTestEntry CONVERT_TESTS[] = {
     {"testStrictEqualsObjectIdentity", TestStrictEqualsObjectIdentity},
     {"testCoerceBoolFromNegativeAndNaN", TestCoerceBoolFromNegativeAndNaN},
 };
-
 }  // namespace
 
 static napi_value InitConvertSuite(napi_env env, napi_value exports)
