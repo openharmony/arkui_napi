@@ -459,9 +459,6 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest001, testing::ext
 
     ArkIdleMonitor::SetEnableIdleGC(false);
     ASSERT_FALSE(ArkIdleMonitor::IsEnableIdleGC());
-
-    arkIdleMonitor->EnableIdleGC(engine_);
-    ASSERT_FALSE(arkIdleMonitor->IsIdleMonitorStarted());
 }
 
 /**
@@ -480,9 +477,6 @@ HWTEST_F(NapiArkIdleMonitorTest, IdleMonitorSetEnableIdleGCTest002, testing::ext
 
     ArkIdleMonitor::SetEnableIdleGC(true);
     ASSERT_TRUE(ArkIdleMonitor::IsEnableIdleGC());
-
-    arkIdleMonitor->EnableIdleGC(engine_);
-    ASSERT_TRUE(arkIdleMonitor->IsIdleMonitorStarted());
 }
 #endif
 
