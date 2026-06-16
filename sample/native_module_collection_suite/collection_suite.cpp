@@ -103,8 +103,8 @@ CollectionCaseSpec GetCollectionCaseSpec(size_t caseIndex)
     };
 }
 
-bool ReadString(napi_env env, napi_value value, const char* message,
-    std::string* result)
+bool ReadString(
+    napi_env env, napi_value value, const char* message, std::string* result)
 {
     napi_valuetype type = napi_undefined;
     if (napi_typeof(env, value, &type) != napi_ok) {
@@ -128,8 +128,8 @@ bool ReadString(napi_env env, napi_value value, const char* message,
     return true;
 }
 
-bool ReadInt32(napi_env env, napi_value value, const char* message,
-    int32_t* result)
+bool ReadInt32(
+    napi_env env, napi_value value, const char* message, int32_t* result)
 {
     napi_valuetype type = napi_undefined;
     if (napi_typeof(env, value, &type) != napi_ok) {
@@ -142,8 +142,8 @@ bool ReadInt32(napi_env env, napi_value value, const char* message,
     return napi_get_value_int32(env, value, result) == napi_ok;
 }
 
-bool SetNamedInt32(napi_env env, napi_value object, const char* name,
-    int32_t value)
+bool SetNamedInt32(
+    napi_env env, napi_value object, const char* name, int32_t value)
 {
     napi_value napiValue = nullptr;
     if (napi_create_int32(env, value, &napiValue) != napi_ok) {
@@ -193,8 +193,8 @@ bool SetNamedBool(napi_env env, napi_value object, const char* name, bool value)
     return true;
 }
 
-bool SetNamedString(napi_env env, napi_value object, const char* name,
-    const std::string& value)
+bool SetNamedString(
+    napi_env env, napi_value object, const char* name, const std::string& value)
 {
     napi_value napiValue = nullptr;
     if (napi_create_string_utf8(env, value.c_str(), value.size(),
@@ -229,8 +229,8 @@ napi_value CreateEmptyArray(napi_env env)
     return result;
 }
 
-napi_value CreateCollectionSummary(napi_env env, const std::string& name,
-    const char* operation, int32_t value, bool passed)
+napi_value CreateCollectionSummary(
+    napi_env env, const std::string& name, const char* operation, int32_t value, bool passed)
 {
     napi_value result = nullptr;
     NAPI_CALL(env, napi_create_object(env, &result));
@@ -262,8 +262,8 @@ napi_value CreateTestCollection(napi_env env)
     return obj;
 }
 
-bool SetCollectionInt32(napi_env env, napi_value obj, const char* key,
-    int32_t val)
+bool SetCollectionInt32(
+    napi_env env, napi_value obj, const char* key, int32_t val)
 {
     napi_value napiVal = nullptr;
     if (napi_create_int32(env, val, &napiVal) != napi_ok) {
@@ -290,14 +290,15 @@ bool SetCollectionInt32(napi_env env, napi_value obj, const char* key,
 
 int32_t CalculateScore(int32_t base, int32_t weight, int32_t itemCount)
 {
-    int32_t score = base + weight * itemCount;
+    int64_t score = static_cast<int64_t>(base) +
+        static_cast<int64_t>(weight) * itemCount;
     if (score >= K_BONUS_THRESHOLD) {
         score += K_BONUS_AMOUNT;
     }
     if (itemCount > K_MAX_ITEM_COUNT / K_PENALTY_RATE) {
         score -= itemCount / K_PENALTY_RATE;
     }
-    return score;
+    return static_cast<int32_t>(score);
 }
 
 OperationResult ExecuteAddItem(napi_env env, int32_t baseScore, int32_t weight)
@@ -326,11 +327,9 @@ OperationResult ExecuteAddItem(napi_env env, int32_t baseScore, int32_t weight)
     return {passed, actual};
 }
 
-OperationResult ExecuteRemoveItem(napi_env env, int32_t baseScore,
-    int32_t weight)
+OperationResult ExecuteRemoveItem(
+    napi_env env, [[maybe_unused]] int32_t baseScore, [[maybe_unused]] int32_t weight)
 {
-    (void)baseScore;
-    (void)weight;
     napi_value collection = CreateTestCollection(env);
     if (collection == nullptr) {
         return {false, K_INVALID_VALUE};
@@ -355,10 +354,9 @@ OperationResult ExecuteRemoveItem(napi_env env, int32_t baseScore,
     return {passed, remaining};
 }
 
-OperationResult ExecuteContainsKey(napi_env env, int32_t baseScore,
-    int32_t weight)
+OperationResult ExecuteContainsKey(
+    napi_env env, int32_t baseScore, [[maybe_unused]] int32_t weight)
 {
-    (void)weight;
     napi_value collection = CreateTestCollection(env);
     if (collection == nullptr) {
         return {false, K_INVALID_VALUE};
@@ -374,10 +372,9 @@ OperationResult ExecuteContainsKey(napi_env env, int32_t baseScore,
     return {hasKey, value};
 }
 
-OperationResult ExecuteGetSize(napi_env env, int32_t baseScore, int32_t weight)
+OperationResult ExecuteGetSize(
+    napi_env env, [[maybe_unused]] int32_t baseScore, [[maybe_unused]] int32_t weight)
 {
-    (void)baseScore;
-    (void)weight;
     napi_value collection = CreateTestCollection(env);
     if (collection == nullptr) {
         return {false, K_INVALID_VALUE};
@@ -404,10 +401,9 @@ OperationResult ExecuteGetSize(napi_env env, int32_t baseScore, int32_t weight)
     return {passed, static_cast<int32_t>(count)};
 }
 
-OperationResult ExecuteClearAll(napi_env env, int32_t baseScore, int32_t weight)
+OperationResult ExecuteClearAll(
+    napi_env env, [[maybe_unused]] int32_t baseScore, [[maybe_unused]] int32_t weight)
 {
-    (void)baseScore;
-    (void)weight;
     napi_value collection = CreateTestCollection(env);
     if (collection == nullptr) {
         return {false, K_INVALID_VALUE};
@@ -431,10 +427,9 @@ OperationResult ExecuteClearAll(napi_env env, int32_t baseScore, int32_t weight)
     return {isEmpty, static_cast<int32_t>(count)};
 }
 
-OperationResult ExecuteToArray(napi_env env, int32_t baseScore, int32_t weight)
+OperationResult ExecuteToArray(
+    napi_env env, [[maybe_unused]] int32_t baseScore, [[maybe_unused]] int32_t weight)
 {
-    (void)baseScore;
-    (void)weight;
     napi_value array = CreateEmptyArray(env);
     if (array == nullptr) {
         return {false, K_INVALID_VALUE};
