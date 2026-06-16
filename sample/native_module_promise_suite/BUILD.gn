@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 
 ohos_shared_library("promise_suite") {
-  sources = [ "promise_tests.cpp" ]
+  sources = [ "promise_suite.cpp" ]
 
   deps = [ "../..:ace_napi" ]
 
