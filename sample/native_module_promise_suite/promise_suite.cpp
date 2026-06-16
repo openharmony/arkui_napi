@@ -157,20 +157,23 @@ void CompletePromise(napi_env env, napi_status status, void* data)
         std::string errorMsg = spec.name + " rejected: input divisible by divisor";
         napi_value errorCode = nullptr;
         napi_value errorMessage = nullptr;
-        napi_create_string_utf8(env, spec.name.c_str(), NAPI_AUTO_LENGTH, &errorCode);
-        napi_create_string_utf8(env, errorMsg.c_str(), errorMsg.size(), &errorMessage);
+        NAPI_CALL_RETURN_VOID(env,
+            napi_create_string_utf8(env, spec.name.c_str(), NAPI_AUTO_LENGTH, &errorCode));
+        NAPI_CALL_RETURN_VOID(env,
+            napi_create_string_utf8(env, errorMsg.c_str(), errorMsg.size(), &errorMessage));
         napi_value error = nullptr;
-        napi_create_error(env, errorCode, errorMessage, &error);
-        napi_reject_deferred(env, context->deferred, error);
+        NAPI_CALL_RETURN_VOID(env, napi_create_error(env, errorCode, errorMessage, &error));
+        NAPI_CALL_RETURN_VOID(env, napi_reject_deferred(env, context->deferred, error));
     } else {
-        napi_value result = nullptr;
         const auto spec = GetPromiseCaseSpec(context->caseIndex);
-        if (CreatePromiseResultObject(env, spec, context->input, context->output, &result)) {
-            napi_resolve_deferred(env, context->deferred, result);
+        napi_value result = CreatePromiseResultObject(env, spec, context->input, context->output);
+        if (result != nullptr) {
+            NAPI_CALL_RETURN_VOID(env, napi_resolve_deferred(env, context->deferred, result));
         } else {
             napi_value error = nullptr;
-            napi_create_string_utf8(env, "failed to create result", NAPI_AUTO_LENGTH, &error);
-            napi_reject_deferred(env, context->deferred, error);
+            NAPI_CALL_RETURN_VOID(env,
+                napi_create_string_utf8(env, "failed to create result", NAPI_AUTO_LENGTH, &error));
+            NAPI_CALL_RETURN_VOID(env, napi_reject_deferred(env, context->deferred, error));
         }
     }
     if (context->work != nullptr) {
@@ -309,6 +312,7 @@ static napi_module g_promiseSuiteModule = {
     .nm_register_func = InitPromiseSuite,
     .nm_modname = "promise_suite",
     .nm_priv = nullptr,
+    .reserved = {nullptr},
 };
 
 extern "C" __attribute__((constructor)) void RegisterPromiseSuiteModule(void)
