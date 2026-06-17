@@ -107,6 +107,7 @@ NAPI_EXTERN napi_status napi_is_xref_type(napi_env env, napi_value js_object, bo
 NAPI_EXTERN napi_status napi_get_ets_implements(napi_env env, napi_value value, napi_value* result);
 NAPI_EXTERN napi_status napi_deserialize_hybrid(napi_env env, void* buffer, napi_value* object);
 NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env);
+NAPI_EXTERN napi_status napi_set_is_hybrid_vm(napi_env env, bool isHybrid);
 NAPI_EXTERN napi_status
 napi_serialize_hybrid(napi_env env, napi_value object, napi_value transfer_list, napi_value clone_list, void** result);
 NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,
