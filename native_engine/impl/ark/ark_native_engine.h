@@ -60,6 +60,7 @@ using JsiRuntimeCallInfo = panda::JsiRuntimeCallInfo;
 // indirect used by ace_engine and(or) ability_runtime
 using panda::Local;
 using GCTaskFinishedCallback = std::function<void()>;
+using TaskPoolShrinkCallback = std::function<void(bool inBackground)>;
 
 typedef bool (*NapiModuleValidateCallback)(const char* moduleName);
 
@@ -470,6 +471,8 @@ public:
 #if defined(PREVIEW)
     static void SetCurrentPreviewenv(bool enableFileOperation);
 #endif
+
+    void SetTaskpoolShrinkCallback(TaskPoolShrinkCallback callback) override;
 private:
     // ArkNativeEngine constructor for multi-context
     ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context);

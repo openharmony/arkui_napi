@@ -3580,3 +3580,8 @@ void ArkNativeEngine::RegisterAllPromiseCallback(NapiAllPromiseRejectCallback ca
     fn->SetName(vm_, fnName);
     globalCheckCallbackRef_ = new ArkNativeReference(this, JsValueFromLocalValue(fn), 1);
 }
+
+void ArkNativeEngine::SetTaskpoolShrinkCallback(TaskPoolShrinkCallback callback)
+{
+    JSNApi::SetTaskpoolShrinkCallback(vm_, callback);
+}
