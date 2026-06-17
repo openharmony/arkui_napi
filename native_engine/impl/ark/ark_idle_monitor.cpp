@@ -20,6 +20,7 @@
 #include <signal.h>
 #endif
 #include "utils/log.h"
+#include <cinttypes>
 #if defined(ENABLE_FFRT)
 #include "ffrt.h"
 #include "c/executor_task.h"
@@ -531,17 +532,16 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
     int64_t sumIdleDuration = (GetTotalIdleDuration() - idleDuration) + (nowTimestamp - GetNotifyTimestamp());
     double idlePercentage = static_cast<double>(sumIdleDuration) / static_cast<double>(sumDuration);
     double cpuUsage = GetCpuUsage();
-    if (idlePercentage > BACKGROUND_IDLE_RATIO && sumDuration < static_cast<int64_t>(gDelayOverTime)) {
+    if (idlePercentage > BACKGROUND_IDLE_RATIO && sumDuration < static_cast<int64_t>(BACKGROUND_GC_DELAY_OVER_TIME)) {
         triggerTaskStartTimestamp_ = nowTimestamp;
         CheckWorkerEnvQueue();
         SetSwitchToBackgroundTask(true);
         TryTriggerCompressGCOfProcess();
     } else {
-        HILOG_INFO("ArkIdleMonitor cancel BGGCTask,idlePer:%{public}.2f;cpuUsage:%{public}.2f;duration:%{public}s",
-            idlePercentage, cpuUsage, std::to_string(sumDuration).c_str());
+        HILOG_INFO("ArkIdleMonitor skip BGGCTask, idlePer:%{public}.2f;cpuUsage:%{public}.2f"
+                   ";sumDuration:%{public}" PRId64,
+                   idlePercentage, cpuUsage, sumDuration);
     }
-    StopIdleMonitorTimerTaskAndPostSleepTask();
-    ClearIdleStats();
 }
 
 void ArkIdleMonitor::PostSwitchBackgroundGCTask()
@@ -556,19 +556,34 @@ void ArkIdleMonitor::PostSwitchBackgroundGCTask()
     auto nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now()).time_since_epoch().count();
     std::tuple<ArkIdleMonitor*, int64_t, int64_t> myTuple = std::make_tuple(this, nowTimestamp, GetTotalIdleDuration());
-    std::tuple<ArkIdleMonitor*, int64_t, int64_t> *data = new std::tuple<ArkIdleMonitor*, int64_t, int64_t>(myTuple);
+    auto* taskData = new std::tuple<ArkIdleMonitor*, int64_t, int64_t>(myTuple);
     auto task = [](void* data) {
-        std::tuple<ArkIdleMonitor*, int64_t, int64_t>* tuple =
-            reinterpret_cast<std::tuple<ArkIdleMonitor*, int64_t, int64_t>*>(data);
+        auto* tuple = reinterpret_cast<std::tuple<ArkIdleMonitor*, int64_t, int64_t>*>(data);
         if (tuple == nullptr || std::get<0>(*tuple) == nullptr) {
+            delete tuple;
             return;
         }
-        std::get<0>(*tuple)->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
-        std::get<0>(*tuple)->SetDuringBackgroundTask(false);
+        auto* monitor = std::get<0>(*tuple);
+        for (uint32_t retry = 0; retry < BACKGROUND_GC_CHECK_COUNT; ++retry) {
+            monitor->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
+            if (monitor->IsSwitchToBackgroundTask()) {
+                break;
+            }
+            HILOG_INFO("ArkIdleMonitor retry BGGCTask, count:%{public}u", retry + 1);
+            if (retry < BACKGROUND_GC_CHECK_COUNT - 1) {
+                std::get<1>(*tuple) = std::chrono::time_point_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+                std::get<2>(*tuple) = monitor->GetTotalIdleDuration();
+                ffrt_usleep(BACKGROUND_GC_CHECK_INTERVAL * 1000); // ms → µs
+            }
+        }
+        monitor->StopIdleMonitorTimerTaskAndPostSleepTask();
+        monitor->ClearIdleStats();
+        monitor->SetDuringBackgroundTask(false);
         delete tuple;
     };
-    switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, gIdleMonitoringInterval,
-        reinterpret_cast<void*>(data), task, false);
+    switchBackgroundTimerHandler_ = ffrt_timer_start(ffrt_qos_user_initiated, BACKGROUND_GC_CHECK_INTERVAL,
+                                                     reinterpret_cast<void*>(taskData), task, false);
     SetDuringBackgroundTask(true);
 #endif
 }
@@ -849,4 +864,4 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
     }
 #endif
 }
-}
+} // namespace panda::ecmascript
