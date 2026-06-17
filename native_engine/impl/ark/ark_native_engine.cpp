@@ -2253,6 +2253,7 @@ void ArkNativeEngine::PostTriggerGCTask(TriggerGCData& data, GCTaskFinishedCallb
     if (ret != 0) {
         HILOG_ERROR("uv_queue_work fail ret '%{public}d'", ret);
         RunCallbacks(triggerGCData);
+        delete callbackData;
         delete syncWork;
         delete triggerGCData;
     }
