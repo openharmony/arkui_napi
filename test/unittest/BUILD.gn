@@ -21,6 +21,9 @@ config("ace_napi_unittest_config") {
   include_dirs = common_include
   cflags = [ "-g3" ]
   defines = [ "NAPI_TEST" ]
+  if (!is_mingw && !is_mac && !is_linux && is_ohos_standard_system) {
+    defines += [ "ENABLE_EVENT_HANDLER" ]
+  }
 }
 
 template("test_ark_unittest") {
