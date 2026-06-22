@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <fstream>
 #include <string>
 
@@ -1866,8 +1867,10 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     for (int i = 0; i < NATIVE_PATH_NUMBER; ++i) {
         nativeModulePath[i][0] = '\0';
     }
-    int ret = snprintf(nativeModulePath[0], NAPI_PATH_MAX, "%s", tempLibPath.c_str());
-    EXPECT_EQ(ret, static_cast<int>(tempLibPath.size()));
+    size_t copyLen = std::min(tempLibPath.size(), static_cast<size_t>(NAPI_PATH_MAX - 1));
+    tempLibPath.copy(nativeModulePath[0], copyLen);
+    nativeModulePath[0][copyLen] = '\0';
+    EXPECT_EQ(copyLen, tempLibPath.size());
 
     std::string errInfo = "";
     std::string loadErrInfo = "";
