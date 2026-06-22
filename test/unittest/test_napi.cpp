@@ -18311,3 +18311,80 @@ HWTEST_F(NapiBasicTest, NapiPropertyWithCallsiteInfoValueTypesTest001, testing::
     ASSERT_CHECK_CALL(napi_get_property_with_callsite_info(env, obj, undefKey, getInfo, &undefResult, nullptr));
     ASSERT_CHECK_VALUE_TYPE(env, undefResult, napi_undefined);
 }
+
+static void MockNapiDeleteReference(napi_env env, napi_ref ref)
+{
+    auto reference = reinterpret_cast<NativeReference*>(ref);
+
+    // Unregister global ref mapping before deletion
+    auto engine = reinterpret_cast<ArkNativeEngine*>(env);
+    EcmaVM* vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    if ( vm == nullptr ) {
+        return;
+    }
+    uint32_t refCount = reference->GetRefCount();
+    if (refCount > 0 || reference->GetFinalRun()) {
+        delete reference;
+    } else {
+        reference->SetDeleteSelf();
+    }
+}
+
+HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize001, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy proxy;
+
+        napi_value obj = nullptr;
+        napi_create_object(proxy, &obj);
+
+        napi_ref ref = nullptr;
+        napi_create_reference(proxy, obj, 1, &ref);
+
+        struct CallbackData {
+            napi_ref ref;
+        };
+
+        auto* cbData = new CallbackData { ref };
+
+        napi_set_instance_data(
+            proxy, cbData, [](napi_env env, void* data, void* hint) {
+                auto* cbData = static_cast<CallbackData*>(data);
+                MockNapiDeleteReference(env, cbData->ref);
+                delete cbData;
+            },
+            nullptr
+        )
+    });
+    deathTest.AssertSignal(SIGABRT).AssertError("Pure virtual function called!");
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
+HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize002, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy proxy;
+
+        napi_value obj = nullptr;
+        napi_create_object(proxy, &obj);
+
+        napi_ref ref = nullptr;
+        napi_create_reference(proxy, obj, 1, &ref);
+
+        struct CallbackData {
+            napi_ref ref;
+        };
+
+        auto* cbData = new CallbackData { ref };
+
+        napi_set_instance_data(
+            proxy, cbData, [](napi_env env, void* data, void* hint) {
+                auto* cbData = static_cast<CallbackData*>(data);
+                napi_delete_reference(env, cbData->ref);
+                delete cbData;
+            },
+            nullptr
+        );
+    });
+    deathTest.AssertExit(0);
+}
