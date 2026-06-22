@@ -2312,6 +2312,11 @@ NativeEngine* ArkNativeEngine::CreateRuntimeFunc(NativeEngine* engine, void* jsE
     // worker adaptation mergeabc
     JSNApi::SynchronizVMInfo(vm, hostVM);
     ArkNativeEngine* arkEngine = new ArkNativeEngine(vm, jsEngine, isLimitedWorker);
+    if (arkEngine == nullptr) {
+        HILOG_ERROR("ArkNativeEngine::CreateRuntimeFunc: new ArkNativeEngine failed");
+        JSNApi::DestroyJSVM(vm);
+        return nullptr;
+    }
     // init callback
     arkEngine->RegisterWorkerFunction(engine);
     arkEngine->SetHostEngine(engine);
