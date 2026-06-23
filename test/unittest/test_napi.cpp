@@ -18354,7 +18354,7 @@ HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize001, testing::ext::Te
                 delete cbData;
             },
             nullptr
-        )
+        );
     });
     deathTest.AssertSignal(SIGABRT).AssertError("Pure virtual function called!");
     ASSERT_TRUE(deathTest.GetResult());
