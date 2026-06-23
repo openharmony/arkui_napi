@@ -26,7 +26,7 @@
 #define NAPI_PATH_MAX 4096
 
 void MockCheckModuleLoadable(bool loadable);
-void MockDiskCheckOnly(bool diskCheckOnly);
+void MockFindNativeModuleByDisk(NativeModule *module);
 void MockLoadModuleLibrary(LIBHANDLE handle);
 void MockResetModuleManagerState();
 
