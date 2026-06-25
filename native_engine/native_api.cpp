@@ -16,10 +16,6 @@
 #define NAPI_EXPERIMENTAL
 #endif
 
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"
@@ -29,6 +25,10 @@
 #include "native_engine/native_utils.h"
 #include "native_engine/worker_manager.h"
 #include "securec.h"
+
+#ifdef ENABLE_CONTAINER_SCOPE
+#include "native_engine/native_container_scope.h"
+#endif
 
 using panda::ArrayBufferRef;
 using panda::ArrayRef;
@@ -526,7 +526,7 @@ NAPI_EXTERN napi_status napi_create_function(napi_env env,
     funcInfo->env = env;
 #ifdef ENABLE_CONTAINER_SCOPE
     if (EnableContainerScope(env)) {
-        funcInfo->scopeId = OHOS::Ace::ContainerScope::CurrentId();
+        funcInfo->scopeId = reinterpret_cast<NativeEngine*>(env)->GetContainerScopeIdFunc();
     }
 #endif
 
@@ -1468,7 +1468,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
     int32_t scopeId = -1;
     bool enableContainerScope = EnableContainerScope(env);
     if (enableContainerScope) {
-        scopeId = OHOS::Ace::ContainerScope::CurrentId();
+        scopeId = reinterpret_cast<NativeEngine*>(env)->GetContainerScopeIdFunc();
         if (!function->IsConcurrentFunction(vm)) {
             auto funcInfo = reinterpret_cast<NapiFunctionInfo*>(function->GetData(vm));
             if (funcInfo != nullptr) {
@@ -1476,7 +1476,7 @@ NAPI_EXTERN napi_status napi_call_function(napi_env env,
             }
         }
     }
-    OHOS::Ace::ContainerScope containerScope(scopeId, enableContainerScope);
+    NapiContainerScope containerScope(reinterpret_cast<NativeEngine*>(env), scopeId, enableContainerScope);
 #endif
     panda::JSValueRef* value =
         function->CallForNapi(vm, thisObj, reinterpret_cast<panda::JSValueRef *const*>(argv), argc);

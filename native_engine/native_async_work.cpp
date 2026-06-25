@@ -20,15 +20,10 @@
 #include "parameter.h"
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
+#include "native_container_scope.h"
 #endif
-
 #include <cinttypes>
 #include "native_api_internal.h"
-
-#ifdef ENABLE_CONTAINER_SCOPE
-using OHOS::Ace::ContainerScope;
-#endif
 
 #ifdef ENABLE_HITRACE
 std::atomic<bool> g_napiTraceIdEnabled(false);
@@ -86,7 +81,7 @@ NativeAsyncWork::NativeAsyncWork(NativeEngine* engine,
 #endif
 #ifdef ENABLE_CONTAINER_SCOPE
     if (engine->IsContainerScopeEnabled()) {
-        containerScopeId_ = ContainerScope::CurrentId();
+        containerScopeId_ = engine->GetContainerScopeIdFunc();
     }
 #endif
 }
@@ -267,7 +262,7 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
             nstatus = napi_generic_failure;
     }
 #ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(that->containerScopeId_, engine->IsContainerScopeEnabled());
+    NapiContainerScope containerScope(engine, that->containerScopeId_, engine->IsContainerScopeEnabled());
 #endif
 
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine));

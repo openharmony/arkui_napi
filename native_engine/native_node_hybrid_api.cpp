@@ -19,10 +19,6 @@
 #include "napi/native_node_api.h"
 #endif
 
-#ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"

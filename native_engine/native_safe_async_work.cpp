@@ -26,11 +26,7 @@
 #endif
 
 #ifdef ENABLE_CONTAINER_SCOPE
-#include "core/common/container_scope.h"
-#endif
-
-#ifdef ENABLE_CONTAINER_SCOPE
-using OHOS::Ace::ContainerScope;
+#include "native_container_scope.h"
 #endif
 
 #if defined(ENABLE_EVENT_HANDLER)
@@ -107,7 +103,7 @@ NativeSafeAsyncWork::NativeSafeAsyncWork(NativeEngine* engine,
 
 #ifdef ENABLE_CONTAINER_SCOPE
     if (engine->IsContainerScopeEnabled()) {
-        containerScopeId_ = ContainerScope::CurrentId();
+        containerScopeId_ = engine->GetContainerScopeIdFunc();
     }
 #endif
 
@@ -329,7 +325,7 @@ void NativeSafeAsyncWork::ProcessAsyncHandle()
     auto vm = engine_->GetEcmaVm();
     panda::LocalScope scope(vm);
 #ifdef ENABLE_CONTAINER_SCOPE
-    ContainerScope containerScope(containerScopeId_, engine_->IsContainerScopeEnabled());
+    NapiContainerScope containerScope(engine_, containerScopeId_, engine_->IsContainerScopeEnabled());
 #endif
     TryCatch tryCatch(reinterpret_cast<napi_env>(engine_));
 
