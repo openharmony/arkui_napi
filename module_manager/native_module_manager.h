@@ -135,6 +135,10 @@ public:
                 return true;
             }
         }
+        const std::string arkMatch = "arkui.components.ark";
+        if (moduleName.find(arkMatch) == 0) {
+            return true;
+        }
 
         return false;
     }
