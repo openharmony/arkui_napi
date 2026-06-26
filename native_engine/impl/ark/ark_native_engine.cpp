@@ -784,7 +784,8 @@ int ArkNativeEngine::CheckAndGetModule(
     Local<panda::StringRef> &moduleName,
     NativeModule *&module,
     Local<JSValueRef> &exports,
-    std::string &errInfo)
+    std::string &errInfo,
+    std::string *loadErrInfo)
 {
 #ifdef IOS_PLATFORM
     if (isLimitedWorker_) {
@@ -795,7 +796,7 @@ int ArkNativeEngine::CheckAndGetModule(
         }
     }
     module = moduleManager->LoadNativeModule(
-        moduleName->ToString(vm_).c_str(), nullptr, false, errInfo, false, "");
+        moduleName->ToString(vm_).c_str(), nullptr, false, errInfo, false, "", loadErrInfo);
     return 0;
 #else
     isAppModule_ = isAppModule;
@@ -815,15 +816,15 @@ int ArkNativeEngine::CheckAndGetModule(
             return 1;
         }
         module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
-            path->ToString(vm_).c_str(), isAppModule, errInfo, false, "");
+            path->ToString(vm_).c_str(), isAppModule, errInfo, false, "", loadErrInfo);
     } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
         Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
         Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
         module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(), nullptr, isAppModule,
-            errInfo, false, relativePath->ToString(vm_).c_str());
+            errInfo, false, relativePath->ToString(vm_).c_str(), loadErrInfo);
     } else {
         module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
-            nullptr, isAppModule, errInfo, false, "");
+            nullptr, isAppModule, errInfo, false, "", loadErrInfo);
     }
     return 0;
 #endif
@@ -926,6 +927,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
     std::string errInfo = "";
+    std::string loadErrInfo = "";
     Local<JSValueRef> exports(JSValueRef::Undefined(ecmaVm));
     if (info->GetArgsNumber() == 0) {
         return scope.Escape(exports);
@@ -947,7 +949,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
     // if the module is fully loaded (code 1)
     // or has failed to load (code -1).
     if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
-        moduleName, module, exports, errInfo) != 0) {
+        moduleName, module, exports, errInfo, &loadErrInfo) != 0) {
         return scope.Escape(exports);
     }
     // process loaded module
@@ -955,6 +957,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
         return scope.Escape(arkNativeEngine->LoadNativeModule(moduleManager, moduleName, module, exports, errInfo));
     } else {
         HILOG_DEBUG("%{public}s", errInfo.c_str());
+        DFXJSNApi::InsertSoLoadFailure(ecmaVm, moduleName, loadErrInfo);
         return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
     }
 }
@@ -1006,12 +1009,13 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
     ArkNativeEngine* arkNativeEngine = static_cast<ArkNativeEngine*>(info->GetData());
     std::string errInfo = "";
+    std::string loadErrInfo = "";
     NativeModule* module = nullptr;
     // Returns the module exports or undefined
     // if the module is fully loaded (code 1)
     // or has failed to load (code -1).
     if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
-        moduleName, module, exports, errInfo) != 0) {
+        moduleName, module, exports, errInfo, &loadErrInfo) != 0) {
         return scope.Escape(exports);
     }
     // process loaded module
@@ -1019,6 +1023,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
         return scope.Escape(arkNativeEngine->LoadNativeModule(moduleManager, moduleName, module, exports, errInfo));
     } else {
         HILOG_INFO("%{public}s", errInfo.c_str());
+        DFXJSNApi::InsertSoLoadFailure(ecmaVm, moduleName, loadErrInfo);
         return scope.Escape(panda::ObjectRef::CreateNativeModuleFailureInfo(ecmaVm, errInfo));
     }
 }
