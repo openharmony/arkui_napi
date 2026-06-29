@@ -23,6 +23,8 @@
 #include "napi/native_node_api.h"
 #include "native_api_internal.h"
 #include "native_engine/native_utils.h"
+#include "native_engine/impl/ark/ark_sendable_native_reference.h"
+#include "native_engine/impl/ark/ark_native_engine.h"
 #include "napi/native_common.h"
 #include "securec.h"
 #include "utils/log.h"
@@ -2878,4 +2880,60 @@ HWTEST_F(NapiSendableTest, WrapSendableSTest005, testing::ext::TestSize.Level1)
     char* tmpTestStr = nullptr;
     status = napi_unwrap_sendable_s(env, sendableObj, &wrapTypeTag, (void**)&tmpTestStr);
     ASSERT_EQ(status, napi_generic_failure);
+}
+
+HWTEST_F(NapiSendableTest, ArkSendableNativeReferenceGetTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ArkNativeEngine* arkEngine = reinterpret_cast<ArkNativeEngine*>(engine_);
+    ASSERT_NE(arkEngine, nullptr);
+
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value sendableObj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_sendable_object_with_properties(env, 0, nullptr, &sendableObj));
+    panda::Local<JSValueRef> localValue = NapiValueToLocalValue(sendableObj);
+
+    ArkSendableNativeReference ref(arkEngine, localValue);
+    napi_value result = ref.Get(arkEngine);
+    ASSERT_NE(result, nullptr);
+
+    napi_valuetype valueType = napi_undefined;
+    ASSERT_CHECK_CALL(napi_typeof(env, result, &valueType));
+    ASSERT_EQ(valueType, napi_object);
+
+    bool isShared = false;
+    ASSERT_CHECK_CALL(napi_is_sendable(env, result, &isShared));
+    ASSERT_EQ(isShared, true);
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
+}
+
+HWTEST_F(NapiSendableTest, ArkSendableNativeReferenceGetTest002, testing::ext::TestSize.Level1)
+{
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    ArkNativeEngine* arkEngine = reinterpret_cast<ArkNativeEngine*>(engine_);
+    ASSERT_NE(arkEngine, nullptr);
+
+    napi_handle_scope scope = nullptr;
+    ASSERT_CHECK_CALL(napi_open_handle_scope(env, &scope));
+
+    napi_value numValue = nullptr;
+    ASSERT_CHECK_CALL(napi_create_int32(env, TEST_INT32, &numValue));
+    panda::Local<JSValueRef> localValue = NapiValueToLocalValue(numValue);
+
+    ArkSendableNativeReference ref(arkEngine, localValue);
+    napi_value result = ref.Get(arkEngine);
+    ASSERT_NE(result, nullptr);
+
+    napi_valuetype valueType = napi_undefined;
+    ASSERT_CHECK_CALL(napi_typeof(env, result, &valueType));
+    ASSERT_EQ(valueType, napi_number);
+
+    int32_t getResult = 0;
+    ASSERT_CHECK_CALL(napi_get_value_int32(env, result, &getResult));
+    ASSERT_EQ(getResult, TEST_INT32);
+
+    ASSERT_CHECK_CALL(napi_close_handle_scope(env, scope));
 }
