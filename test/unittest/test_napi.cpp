@@ -18388,3 +18388,223 @@ HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize002, testing::ext::Te
     });
     deathTest.AssertExit(0);
 }
+
+/**
+ * @tc.name: GlobalHandleCountTest001
+ * @tc.desc: Test napi_get_global_handle_count with null env returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest001, testing::ext::TestSize.Level1)
+{
+    size_t count = 0;
+    auto status = napi_get_global_handle_count(nullptr, &count);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest002
+ * @tc.desc: Test napi_get_global_handle_count with null count returns napi_invalid_arg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto status = napi_get_global_handle_count(env, nullptr);
+    ASSERT_EQ(status, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest003
+ * @tc.desc: Test napi_get_global_handle_count with pending exception returns napi_pending_exception.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_throw_error(env, nullptr, "test exception");
+    size_t count = 0;
+    auto status = napi_get_global_handle_count(env, &count);
+    ASSERT_EQ(status, napi_pending_exception);
+
+    napi_value exception = nullptr;
+    napi_get_and_clear_last_exception(env, &exception);
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest004
+ * @tc.desc: Test initial global handle count is greater than 0 after engine initialization.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    size_t count = 0;
+    auto status = napi_get_global_handle_count(env, &count);
+    ASSERT_EQ(status, napi_ok);
+    ASSERT_GE(count, 0);
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest005
+ * @tc.desc: Test consecutive calls within a fast native scope return the same count, as GC is suppressed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest005, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_fast_native_scope scope = nullptr;
+    {
+        ASSERT_CHECK_CALL(napi_open_fast_native_scope(env, &scope));
+        size_t count1 = 0;
+        size_t count2 = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &count1));
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &count2));
+        ASSERT_EQ(count1, count2);
+        ASSERT_CHECK_CALL(napi_close_fast_native_scope(env, scope));
+    }
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest006
+ * @tc.desc: Test strong ref keeps object alive after GC, count drops back after delete ref.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest006, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_fast_native_scope scope = nullptr;
+    napi_handle_scope handle_scope = nullptr;
+    {
+        ASSERT_CHECK_CALL(napi_open_fast_native_scope(env, &scope));
+        ASSERT_CHECK_CALL(napi_open_handle_scope(env, &handle_scope));
+        size_t baseline = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &baseline));
+
+        napi_value objStrong = nullptr;
+        napi_ref refStrong = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &objStrong));
+        ASSERT_CHECK_CALL(napi_create_reference(env, objStrong, 1, &refStrong));
+
+        size_t countWithStrong = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countWithStrong));
+        ASSERT_GE(countWithStrong, baseline + 1);
+
+        napi_value value = nullptr;
+        napi_get_reference_value(env, refStrong, &value);
+        ASSERT_NE(value, nullptr);
+
+        ASSERT_CHECK_CALL(napi_close_handle_scope(env, handle_scope));
+        ASSERT_CHECK_CALL(napi_delete_reference(env, refStrong));
+        size_t countAfterDelete = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countAfterDelete));
+        ASSERT_LE(countAfterDelete, baseline);
+        ASSERT_CHECK_CALL(napi_close_fast_native_scope(env, scope));
+    }
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest007
+ * @tc.desc: Test weak ref with no strong ref: object not reclaimed by GC, get_reference_value not null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest007, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_fast_native_scope scope = nullptr;
+    napi_handle_scope handle_scope = nullptr;
+    {
+        ASSERT_CHECK_CALL(napi_open_fast_native_scope(env, &scope));
+        ASSERT_CHECK_CALL(napi_open_handle_scope(env, &handle_scope));
+        size_t baseline = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &baseline));
+
+        napi_value obj = nullptr;
+        napi_ref weakRef = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+        ASSERT_CHECK_CALL(napi_create_reference(env, obj, 0, &weakRef));
+
+        size_t countAfterGC = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countAfterGC));
+        ASSERT_GE(countAfterGC, baseline);
+
+        napi_value value = nullptr;
+        napi_get_reference_value(env, weakRef, &value);
+        ASSERT_NE(value, nullptr);
+        
+        ASSERT_CHECK_CALL(napi_close_handle_scope(env, handle_scope));
+        ASSERT_CHECK_CALL(napi_delete_reference(env, weakRef));
+        size_t countAfterDelete = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countAfterDelete));
+        ASSERT_LE(countAfterDelete, baseline);
+        ASSERT_CHECK_CALL(napi_close_fast_native_scope(env, scope));
+    }
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest008
+ * @tc.desc: Test weak ref with strong ref: object not reclaimed by GC, get_reference_value not null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest008, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+    napi_fast_native_scope scope = nullptr;
+    napi_handle_scope handle_scope = nullptr;
+    {
+        ASSERT_CHECK_CALL(napi_open_fast_native_scope(env, &scope));
+        ASSERT_CHECK_CALL(napi_open_handle_scope(env, &handle_scope));
+        size_t baseline = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &baseline));
+
+        napi_value obj = nullptr;
+        napi_ref strongRef = nullptr;
+        napi_ref weakRef = nullptr;
+        ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+        ASSERT_CHECK_CALL(napi_create_reference(env, obj, 1, &strongRef));
+        ASSERT_CHECK_CALL(napi_create_reference(env, obj, 0, &weakRef));
+
+        size_t countAfterGC = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countAfterGC));
+        ASSERT_GE(countAfterGC, baseline + 1);
+
+        napi_value value = nullptr;
+        napi_get_reference_value(env, weakRef, &value);
+        ASSERT_NE(value, nullptr);
+        ASSERT_CHECK_CALL(napi_close_handle_scope(env, handle_scope));
+
+        ASSERT_CHECK_CALL(napi_delete_reference(env, strongRef));
+        ASSERT_CHECK_CALL(napi_delete_reference(env, weakRef));
+        size_t countAfterDelete = 0;
+        ASSERT_CHECK_CALL(napi_get_global_handle_count(env, &countAfterDelete));
+        ASSERT_LE(countAfterDelete, baseline);
+        ASSERT_CHECK_CALL(napi_close_fast_native_scope(env, scope));
+    }
+}
+
+/**
+ * @tc.name: GlobalHandleCountTest009
+ * @tc.desc: Test calling from non-main thread crashes with multi-thread detection enabled.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiBasicTest, GlobalHandleCountTest009, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([]() {
+        NativeEngineProxy env(0x107c);
+        std::thread ([&env]() {
+            size_t count = 0;
+            napi_get_global_handle_count(env, &count);
+        }).join();
+    });
+    deathTest.AssertSignal(SIGABRT).AssertError("[CheckThread] Fatal: ecma_vm cannot run in multi-thread!");
+    ASSERT_TRUE(deathTest.GetResult());
+}

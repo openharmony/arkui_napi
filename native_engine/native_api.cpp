@@ -1124,6 +1124,18 @@ NAPI_EXTERN napi_status napi_set_property_with_callsite_info(napi_env env, napi_
     return GET_RETURN_STATUS(env);
 }
 
+NAPI_EXTERN napi_status napi_get_global_handle_count(napi_env env, size_t* count)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, count);
+
+    auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
+    size_t globalHandleCount = JSNApi::GetGlobalHandleCount(vm);
+    RETURN_STATUS_IF_FALSE(env, globalHandleCount != JSNApi::INVALID_GLOBAL_HANDLE_SIZE, napi_pending_exception);
+    *count = globalHandleCount;
+    return GET_RETURN_STATUS(env);
+}
+
 NAPI_EXTERN napi_status napi_delete_property(napi_env env, napi_value object, napi_value key, bool* result)
 {
     NAPI_PREAMBLE(env);

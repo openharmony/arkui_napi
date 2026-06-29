@@ -271,6 +271,8 @@ NAPI_EXTERN napi_status napi_set_property_with_callsite_info(napi_env env,
                                                              napi_callsite_info info,
                                                              bool* hit);
 
+NAPI_EXTERN napi_status napi_get_global_handle_count(napi_env env, size_t* count);
+
 #ifdef __cplusplus
 }
 #endif

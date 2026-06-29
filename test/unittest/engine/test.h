@@ -158,10 +158,11 @@ public:
     NativeEngineProxy& operator=(const NativeEngineProxy&) = delete;
     NativeEngineProxy& operator=(NativeEngineProxy&&) noexcept = delete;
 
-    NativeEngineProxy()
+    NativeEngineProxy(int prop = -1)
     {
         // Setup
         panda::RuntimeOption option;
+        option.SetArkProperties(prop);
         option.SetGcType(panda::RuntimeOption::GC_TYPE::GEN_GC);
         const int64_t poolSize = 0x1000000; // 16M
         option.SetGcPoolSize(poolSize);
