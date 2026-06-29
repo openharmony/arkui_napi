@@ -20,6 +20,12 @@ config("cj_backtrace_public_config") {
 }
 
 ohos_shared_library("cj_backtrace") {
+  branch_protector_ret = "pac_ret"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
   sources = [
     "cj_backtrace.cpp"
   ]
