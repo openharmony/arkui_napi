@@ -493,6 +493,7 @@ if (!ark_standalone_build) {
         "sample/native_module_error:error",
         "sample/native_module_number:napi_number",
         "sample/native_module_regex:regex",
+        "sample/native_module_arraybuffer_suite:arraybuffer_suite",
         "test/fuzztest:fuzztest",
         "test/unittest:unittest",
       ]
