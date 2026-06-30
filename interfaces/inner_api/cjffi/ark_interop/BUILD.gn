@@ -58,6 +58,7 @@ ohos_source_set("cj_envsetup") {
 }
 
 ohos_shared_library("ark_interop") {
+  branch_protector_ret = "pac_ret"
   part_name = "napi"
   subsystem_name = "arkui"
   innerapi_tags = [ "platformsdk" ]
