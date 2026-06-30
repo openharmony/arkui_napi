@@ -109,6 +109,8 @@ NAPI_EXTERN napi_status napi_deserialize_hybrid(napi_env env, void* buffer, napi
 NAPI_EXTERN napi_status napi_setup_hybrid_environment(napi_env env);
 NAPI_EXTERN napi_status napi_set_is_hybrid_vm(napi_env env, bool isHybrid);
 NAPI_EXTERN napi_status napi_is_hybrid_vm(napi_env env, bool* result);
+NAPI_EXTERN napi_status napi_mark_worker_thread(napi_env env);
+NAPI_EXTERN napi_status napi_is_worker_thread(napi_env env, bool* result);
 NAPI_EXTERN napi_status
 napi_serialize_hybrid(napi_env env, napi_value object, napi_value transfer_list, napi_value clone_list, void** result);
 NAPI_EXTERN napi_status napi_wrap_with_xref(napi_env env,

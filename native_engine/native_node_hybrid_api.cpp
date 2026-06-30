@@ -531,5 +531,24 @@ NAPI_EXTERN napi_status napi_is_hybrid_vm(napi_env env, bool* result)
 
     return napi_clear_last_error(env);
 }
+
+NAPI_EXTERN napi_status napi_mark_worker_thread(napi_env env)
+{
+    NAPI_PREAMBLE(env);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    engine->MarkWorkerThread();
+    return GET_RETURN_STATUS(env);
+}
+
+NAPI_EXTERN napi_status napi_is_worker_thread(napi_env env, bool* result)
+{
+    NAPI_PREAMBLE(env);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    *result = engine->IsWorkerThread();
+    return GET_RETURN_STATUS(env);
+}
 #endif // PANDA_JS_ETS_HYBRID_MODE
 
