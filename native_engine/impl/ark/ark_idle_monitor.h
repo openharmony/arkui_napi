@@ -306,7 +306,7 @@ private:
     void PostWorkerFullGC(napi_env workerEnv, bool notifyFinished);
     static uint64_t GetIdleMonitoringInterval();
 
-    EcmaVM* mainVM_;
+    EcmaVM* mainVM_ {nullptr};
 
     static constexpr uint32_t IDLE_CHECK_LENGTH = 15;
     static constexpr uint32_t IDLE_INBACKGROUND_CHECK_LENGTH = 4;
