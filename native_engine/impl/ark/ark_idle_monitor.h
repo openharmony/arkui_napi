@@ -174,6 +174,13 @@ public:
         mainVM_ = vm;
     }
 
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    EcmaVM* GetMainThreadEcmaVM()
+    {
+        return mainVM_;
+    }
+#endif
+
     void RegisterSentTaskWorkerEnv(napi_env workerEnv)
     {
         std::lock_guard<std::mutex> lock(sentTaskMutex_);
@@ -384,6 +391,15 @@ private:
     std::mutex waitGCFinishjedMutex_;
     std::condition_variable gcFinishCV_;
     std::atomic<bool> duringBackgroundTask_ {false};
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    static void PostCrossPlatformSwitchBackgroundGCTask();
+    static void OnMainThreadGCTask(uv_async_t* handle);
+    static void OnCrossPlatformBackgroundGCThreadStart(void* arg);
+    void TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE type);
+    uv_loop_t* mainLoop_ {nullptr};
+    uv_thread_t CrossPlatformBgGCThread_ {};
+    bool CrossPlatformBgGCThreadStarted_ {false};
+#endif
 };
 
 }
