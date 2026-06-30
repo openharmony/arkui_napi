@@ -354,3 +354,64 @@ HWTEST_F(NapiHybridTest, NapiSetIsHybridVMTest004, testing::ext::TestSize.Level1
     auto res2 = napi_set_is_hybrid_vm(env, false);
     ASSERT_EQ(res2, napi_ok);
 }
+
+/**
+ * @tc.name: NapiIsHybridVMTest001
+ * @tc.desc: Test napi_is_hybrid_vm with null env
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsHybridVMTest001, testing::ext::TestSize.Level1)
+{
+    bool result = false;
+    auto res = napi_is_hybrid_vm(nullptr, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsHybridVMTest002
+ * @tc.desc: Test napi_is_hybrid_vm with null result pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsHybridVMTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_is_hybrid_vm(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsHybridVMTest003
+ * @tc.desc: Test napi_is_hybrid_vm returns false by default
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsHybridVMTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    bool result = false;
+    auto res = napi_is_hybrid_vm(env, &result);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(result, false);
+}
+
+/**
+ * @tc.name: NapiIsHybridVMTest004
+ * @tc.desc: Test napi_is_hybrid_vm returns true after set
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsHybridVMTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    napi_set_is_hybrid_vm(env, true);
+    bool result = false;
+    auto res = napi_is_hybrid_vm(env, &result);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_EQ(result, true);
+
+    napi_set_is_hybrid_vm(env, false);
+}
