@@ -87,6 +87,11 @@ public:
         return checkCount_;
     }
 
+    void ResetCheckCount()
+    {
+        checkCount_ = 0;
+    }
+
     void NoityTaskStart()
     {
         taskCount_++;
