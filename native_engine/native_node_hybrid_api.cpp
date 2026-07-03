@@ -519,4 +519,17 @@ NAPI_EXTERN napi_status napi_set_is_hybrid_vm(napi_env env, bool isHybrid)
     panda::JSNApi::SetHybridVMFlag(const_cast<panda::ecmascript::EcmaVM*>(vm), isHybrid);
     return GET_RETURN_STATUS(env);
 }
+
+NAPI_EXTERN napi_status napi_is_hybrid_vm(napi_env env, bool* result)
+{
+    CHECK_ENV(env);
+    CHECK_ARG(env, result);
+
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = engine->GetEcmaVm();
+    *result = panda::JSNApi::IsHybridVM(vm);
+
+    return napi_clear_last_error(env);
+}
 #endif // PANDA_JS_ETS_HYBRID_MODE
+
