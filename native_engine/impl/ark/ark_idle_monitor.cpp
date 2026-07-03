@@ -402,6 +402,14 @@ void ArkIdleMonitor::EnableIdleGC(NativeEngine *engine)
         mainThreadHandler_ = std::make_shared<OHOS::AppExecFwk::EventHandler>(
             OHOS::AppExecFwk::EventRunner::GetMainEventRunner());
     };
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    auto vm = const_cast<EcmaVM *>(engine->GetEcmaVm());
+    if (JSNApi::IsJSMainThreadOfEcmaVM(vm)) {
+        SetMainThreadEcmaVM(vm);
+        mainLoop_ = engine->GetUVLoop();
+    } else {
+        RegisterWorkerEnv(reinterpret_cast<napi_env>(engine));
+    }
 #endif
 }
 
@@ -409,6 +417,10 @@ void ArkIdleMonitor::UnregisterEnv(NativeEngine *engine)
 {
 #if defined(ENABLE_EVENT_HANDLER)
     if (!gEnableIdleGC || !JSNApi::IsJSMainThreadOfEcmaVM(engine->GetEcmaVm())) {
+        UnregisterWorkerEnv(reinterpret_cast<napi_env>(engine));
+    }
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    if (!JSNApi::IsJSMainThreadOfEcmaVM(engine->GetEcmaVm())) {
         UnregisterWorkerEnv(reinterpret_cast<napi_env>(engine));
     }
 #endif
@@ -444,6 +456,13 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
         CheckWorkerEnvQueue();
         PostSwitchBackgroundGCTask();
     }
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    inBackground_.store(inBackground, std::memory_order_release);
+    if (inBackground) {
+        HILOG_DEBUG("ArkIdleMonitor post check switch background gc task");
+        PostCrossPlatformSwitchBackgroundGCTask();
+    }
+    return;
 #endif
     inBackground_.store(inBackground, std::memory_order_release);
     if (!started_ && inBackground) {
@@ -712,6 +731,12 @@ ArkIdleMonitor::~ArkIdleMonitor()
         timerHandlerQueue_.pop();
     }
 #endif
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    if (CrossPlatformBgGCThreadStarted_) {
+        uv_thread_join(&CrossPlatformBgGCThread_);
+        CrossPlatformBgGCThreadStarted_ = false;
+    }
+#endif
 }
 
 std::shared_ptr<ArkIdleMonitor> ArkIdleMonitor::GetInstance()
@@ -745,6 +770,7 @@ ArkIdleMonitor::WorkerGCResult ArkIdleMonitor::EvaluateWorkerGC(napi_env workerE
     }
     uint32_t checkCount = arkNativeEngine->GetWorkerThreadState()->GetCheckCount();
     if (checkCount == 0) {
+        HILOG_DEBUG("ArkIdleMonitor: tid: %{public}u NOT idle", arkNativeEngine->GetSysTid());
         return WorkerGCResult::NOT_IDLE;
     }
     if (isForeground && checkCount % IDLE_WORKER_GC_CHECK_COUNT != 0) {
@@ -822,12 +848,9 @@ void ArkIdleMonitor::TryTriggerWorkerLocalGC()
 void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
 {
     NotifyNeedFreeze(false);
-#ifndef ENABLE_EVENT_HANDLER
-    HILOG_WARN("ArkIdleMonitor: not enable ENABLE_EVENT_HANDLER");
-    return;
-#endif
-
-#ifdef ENABLE_EVENT_HANDLER
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE::FULL_GC);
+#elif defined(ENABLE_EVENT_HANDLER)
     // trigger main thread local gc.
     auto mainThreadLocalTask = [this]() {
         HILOG_DEBUG("ArkIdleMonitor: try trigger local full gc start");
@@ -844,16 +867,21 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
             OHOS::AppExecFwk::EventQueue::Priority::IMMEDIATE);
         gcFinishCV_.wait(lock);
     }
+#else
+    HILOG_WARN("ArkIdleMonitor: not enable ENABLE_EVENT_HANDLER");
+    return;
 #endif
 
     bool isAllInIdle = true;
     size_t index = 0;
     // Traverse all threads to attempt to trigger the compression GC
     while (true) {
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         if (!gEnableDeferFreeze) {
             isAllInIdle = CheckWorkerEnvQueueAllInIdle(IDLE_WORKER_TRIGGER_COUNT);
             break;
         }
+#endif
         {
             if (!CheckIfInBackgroundInCompressGC()) {
                 return;
@@ -901,6 +929,7 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         HILOG_INFO("ArkIdleMonitor: cancel shared gc because not all in idle");
         return;
     }
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     double cpuUsage = GetCpuUsage();
     if (cpuUsage > IDLE_BACKGROUND_CPU_USAGE) {
         NotifyNeedFreeze(true);
@@ -908,8 +937,9 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         HILOG_INFO("ArkIdleMonitor: cancel process gc because high cpu usage:%{public}.2f", cpuUsage);
         return;
     }
+#endif
 
-#ifdef ENABLE_EVENT_HANDLER
+#if defined(ENABLE_EVENT_HANDLER)
     // try trigger shared gc
     auto mainThreadSharedTask = [this]() {
         HILOG_DEBUG("ArkIdleMonitor: try trigger shared full gc");
@@ -926,6 +956,135 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         NotifyNeedFreeze(true);
         HILOG_WARN("ArkIdleMonitor: app is not in idle or in background.");
     }
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
 #endif
 }
+
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+void ArkIdleMonitor::PostCrossPlatformSwitchBackgroundGCTask()
+{
+    auto monitorPtr = ArkIdleMonitor::GetInstance();
+    ArkIdleMonitor* monitor = monitorPtr.get();
+    if (monitor == nullptr) {
+        HILOG_ERROR("ArkIdleMonitor: PostCrossPlatformSwitchBackgroundGCTask called but monitor is null");
+        return;
+    }
+    HILOG_DEBUG("ArkIdleMonitor: background GC triggered, inBackground=%{public}d, during=%{public}d",
+        static_cast<int>(monitor->IsInBackground()),
+        static_cast<int>(monitor->IsDuringBackgroundTask()));
+    if (!monitor->IsInBackground() || monitor->IsDuringBackgroundTask()) {
+        return;
+    }
+    monitor->SetDuringBackgroundTask(true);
+    if (monitor->CrossPlatformBgGCThreadStarted_) {
+        uv_thread_join(&monitor->CrossPlatformBgGCThread_);
+        monitor->CrossPlatformBgGCThreadStarted_ = false;
+    }
+
+    if (uv_thread_create(&monitor->CrossPlatformBgGCThread_, ArkIdleMonitor::OnCrossPlatformBackgroundGCThreadStart,
+        reinterpret_cast<void*>(monitor)) != 0) {
+        HILOG_ERROR("ArkIdleMonitor: failed to create cross-platform background GC thread");
+        monitor->SetDuringBackgroundTask(false);
+        return;
+    }
+    monitor->CrossPlatformBgGCThreadStarted_ = true;
+}
+
+void ArkIdleMonitor::OnCrossPlatformBackgroundGCThreadStart(void* arg)
+{
+    auto* monitor = reinterpret_cast<ArkIdleMonitor*>(arg);
+    if (monitor == nullptr) {
+        HILOG_ERROR("ArkIdleMonitor: OnCrossPlatformBackgroundGCThreadStart called with null monitor");
+        return;
+    }
+    HILOG_DEBUG("ArkIdleMonitor: cross-platform background GC thread started");
+    int64_t nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+    monitor->triggerTaskStartTimestamp_ = nowTimestamp;
+    monitor->CheckWorkerEnvQueue();
+    monitor->SetSwitchToBackgroundTask(true);
+    monitor->TryTriggerCompressGCOfProcess();
+    monitor->SetDuringBackgroundTask(false);
+    HILOG_DEBUG("ArkIdleMonitor: cross-platform background GC thread finished");
+}
+
+struct MainThreadGCData {
+    ArkIdleMonitor* monitor;
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool finished {false};
+    panda::JSNApi::TRIGGER_IDLE_GC_TYPE type;
+};
+
+void ArkIdleMonitor::OnMainThreadGCTask(uv_async_t* handle)
+{
+    if (handle == nullptr) {
+        HILOG_ERROR("ArkIdleMonitor: OnMainThreadGCTask called with null handle");
+        return;
+    }
+    MainThreadGCData* data = reinterpret_cast<MainThreadGCData*>(handle->data);
+    if (data == nullptr) {
+        HILOG_ERROR("ArkIdleMonitor: OnMainThreadGCTask called with null data");
+        return;
+    }
+    EcmaVM* vm = nullptr;
+    if (data->monitor != nullptr) {
+        vm = data->monitor->GetMainThreadEcmaVM();
+    } else {
+        HILOG_ERROR("ArkIdleMonitor: OnMainThreadGCTask monitor is null");
+    }
+    if (vm != nullptr) {
+        JSNApi::TriggerIdleGC(vm, data->type);
+    } else {
+        HILOG_ERROR("ArkIdleMonitor: OnMainThreadGCTask skipped TriggerIdleGC because vm is null");
+    }
+    {
+        std::lock_guard<std::mutex> lock(data->mtx);
+        data->finished = true;
+        data->cv.notify_one();
+    }
+    HILOG_DEBUG("ArkIdleMonitor: OnMainThreadGCTask completed and notified");
+    // close and free in loop thread
+    uv_close(reinterpret_cast<uv_handle_t*>(handle), [](uv_handle_t* h) {
+        delete reinterpret_cast<uv_async_t*>(h);
+    });
+}
+
+void ArkIdleMonitor::TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE type)
+{
+    if (mainLoop_ == nullptr) {
+        HILOG_ERROR("ArkIdleMonitor: skip GC, no mainLoop");
+        return;
+    }
+
+    if (!CheckIfInBackgroundInCompressGC()) {
+        HILOG_WARN("ArkIdleMonitor: skip GC, not in background");
+        return;
+    }
+
+    MainThreadGCData* data = new MainThreadGCData();
+    data->monitor = this;
+    data->type = type;
+
+    uv_async_t* async = new uv_async_t();
+    async->data = data;
+    if (uv_async_init(mainLoop_, async, ArkIdleMonitor::OnMainThreadGCTask) != 0) {
+        HILOG_ERROR("ArkIdleMonitor: uv_async_init failed");
+        delete data;
+        delete async;
+        return;
+    }
+    const char* gcTypeStr = (type == TRIGGER_IDLE_GC_TYPE::FULL_GC) ? "local full gc" : "shared full gc";
+    HILOG_DEBUG("ArkIdleMonitor: try trigger %s start", gcTypeStr);
+    uv_async_send(async);
+
+    {
+        std::unique_lock<std::mutex> lock(data->mtx);
+        data->cv.wait(lock, [data]() { return data->finished; });
+        HILOG_DEBUG("ArkIdleMonitor: try trigger %s end", gcTypeStr);
+    }
+    delete data;
+}
+#endif
 } // namespace panda::ecmascript
