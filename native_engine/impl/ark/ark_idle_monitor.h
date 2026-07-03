@@ -282,7 +282,7 @@ private:
     bool CheckIntervalIdle(int64_t timestamp, int64_t idleDuration);
     bool CheckWorkerEnvQueueAllInIdle(uint32_t idleCount);
     bool CheckIfInBackgroundInCompressGC();
-    void SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration);
+    bool SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration);
     void IntervalMonitor();
     void NotifyMainThreadTryCompressGC();
     void ClearIdleStats();
