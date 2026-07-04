@@ -3834,7 +3834,7 @@ NAPI_EXTERN napi_status napi_serialize_inner_with_error(napi_env env, napi_value
     auto transferList = LocalValueFromJsValue(transfer_list);
     auto cloneList = LocalValueFromJsValue(clone_list);
     *result = panda::JSNApi::SerializeValueWithError(vm, nativeValue, transferList, cloneList, error, defaultTransfer,
-                                                     defaultCloneSendable);
+                                                     defaultCloneSendable, true);
 
     return napi_clear_last_error(env);
 }
