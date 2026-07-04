@@ -550,7 +550,7 @@ void ArkIdleMonitor::PostIdleCheckTask()
 #endif
 }
 
-void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration)
+bool ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idleDuration)
 {
     int64_t nowTimestamp = std::chrono::time_point_cast<std::chrono::milliseconds>(
         std::chrono::high_resolution_clock::now()).time_since_epoch().count();
@@ -563,10 +563,12 @@ void ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
         CheckWorkerEnvQueue();
         SetSwitchToBackgroundTask(true);
         TryTriggerCompressGCOfProcess();
+        return true;
     } else {
         HILOG_INFO("ArkIdleMonitor skip BGGCTask, idlePer:%{public}.2f;cpuUsage:%{public}.2f"
                    ";sumDuration:%{public}" PRId64,
                    idlePercentage, cpuUsage, sumDuration);
+        return false;
     }
 }
 
@@ -591,8 +593,12 @@ void ArkIdleMonitor::PostSwitchBackgroundGCTask()
         }
         auto* monitor = std::get<0>(*tuple);
         for (uint32_t retry = 0; retry < BACKGROUND_GC_CHECK_COUNT; ++retry) {
-            monitor->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
-            if (monitor->IsSwitchToBackgroundTask()) {
+            if (!monitor->IsInBackground()) {
+                HILOG_INFO("ArkIdleMonitor exit BGGCTask loop, app switched to foreground");
+                break;
+            }
+            bool triggered = monitor->SwitchBackgroundCheckGCTask(std::get<1>(*tuple), std::get<2>(*tuple));
+            if (triggered) {
                 break;
             }
             HILOG_INFO("ArkIdleMonitor retry BGGCTask, count:%{public}u", retry + 1);
