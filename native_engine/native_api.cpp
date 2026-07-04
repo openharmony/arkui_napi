@@ -362,7 +362,10 @@ NAPI_EXTERN napi_status napi_create_int64(napi_env env, int64_t value, napi_valu
     return napi_clear_last_error(env);
 }
 
-NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env, const char* str, size_t length, napi_value* result)
+__attribute__((retain)) NAPI_EXTERN napi_status napi_create_string_latin1(napi_env env,
+                                                                          const char* str,
+                                                                          size_t length,
+                                                                          napi_value* result)
 {
     CHECK_ENV(env);
     CHECK_ARG(env, str);
