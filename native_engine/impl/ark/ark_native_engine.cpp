@@ -1209,6 +1209,10 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
     bool getStackBeforeCallNapiSuccess = false;
     JSNApi::GetStackBeforeCallNapiSuccess(vm, getStackBeforeCallNapiSuccess);
     auto info = reinterpret_cast<NapiFunctionInfo*>(runtimeInfo->GetData());
+    if (info == nullptr) {
+        HILOG_ERROR("NapiFunctionInfo is nullptr in ArkNativeFunctionCallBack");
+        return **JSValueRef::Undefined(vm);
+    }
     napi_env env = nullptr;
     if (info->isSendable) {
         env = reinterpret_cast<napi_env>(JSNApi::GetEnv(vm));
