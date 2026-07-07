@@ -15,7 +15,9 @@
 
 #include "native_module_manager.h"
 
+#include <cctype>
 #include <cerrno>
+#include <climits>
 #include <cstring>
 #include <dirent.h>
 #include <fstream>
@@ -208,7 +210,14 @@ void NativeModuleManager::EmplaceModuleBuffer(const std::string moduleKey, const
 {
     MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleBufMutex_);
-    if (lib != nullptr) {
+    if (lib == nullptr) {
+        return;
+    }
+    auto it = moduleBufMap_.find(moduleKey);
+    if (it != moduleBufMap_.end()) {
+        delete[] it->second;
+        it->second = lib;
+    } else {
         moduleBufMap_.emplace(moduleKey, lib);
     }
 }
@@ -504,7 +513,7 @@ bool NativeModuleManager::LoadGreylistConfig(std::vector<std::string>& greylistL
         }
 
         // Validate library name format
-        if (IsValidLibName(libName)) {
+        if (NativeModuleManager::IsValidLibNameStrict(libName)) {
             greylistLibs.push_back(libName);
             MODULEMNG_HILOG_DEBUG("added greylist lib: %{public}s", libName.c_str());
         } else if (!libName.empty()) {
@@ -748,7 +757,7 @@ void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std
         tmpPath += appLibPath[i];
         tmpPath += ":";
     }
-    if (tmpPath.back() == ':') {
+    if (!tmpPath.empty() && tmpPath.back() == ':') {
         tmpPath.pop_back();
     }
 
@@ -853,9 +862,9 @@ NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, cons
     }
 
     std::string relativePathStr(relativePath);
-    if (relativePathStr.find("..") != std::string::npos) {
+    if (!NativeModuleManager::IsSafeRelativePath(relativePathStr)) {
         SetLoadErrInfo(loadErrInfo, "invalid relativePath");
-        MODULEMNG_HILOG_ERROR("failed");
+        MODULEMNG_HILOG_ERROR("invalid relativePath: rejected by whitelist");
         return nullptr;
     }
 
@@ -1048,10 +1057,14 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     }
 
     const char* prefix = nullptr;
-    if (isAppModule && IsExistedPath(path)) {
-        appLibPathMapMutex_.lock();
-        prefix = appLibPathMap_[path];
-        appLibPathMapMutex_.unlock();
+    if (isAppModule) {
+        std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
+        auto it = appLibPathMap_.find(path);
+        if (it != appLibPathMap_.end()) {
+            prefix = it->second;
+        }
+    }
+    if (prefix != nullptr) {
 #ifdef ANDROID_PLATFORM
         for (int32_t i = 0; i < lengthOfModuleName; i++) {
             dupModuleName[i] = tolower(dupModuleName[i]);
@@ -1631,14 +1644,16 @@ NativeModule* NativeModuleManager::FindNativeModuleByCache(const char* moduleNam
     }
     for (NativeModule* temp = headNativeModule_; temp != nullptr; temp = temp->next) {
         if ((temp->moduleName && !strcmp(temp->moduleName, moduleName))
-            || !strcasecmp(temp->name, moduleName)) {
+            || (temp->name != nullptr && !strcasecmp(temp->name, moduleName))) {
             int label = 0;
 #if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
-            while (label < NATIVE_PATH_NUMBER && strcmp(temp->systemFilePath, nativeModulePath[label])) {
+            while (label < NATIVE_PATH_NUMBER && temp->systemFilePath != nullptr
+                   && strcmp(temp->systemFilePath, nativeModulePath[label])) {
                 label++;
             }
 #endif
-            if (label < NATIVE_PATH_NUMBER || !strcmp(temp->systemFilePath, "")) {
+            if (label < NATIVE_PATH_NUMBER
+                || (temp->systemFilePath != nullptr && !strcmp(temp->systemFilePath, ""))) {
                 result = temp;
                 break;
             } else {
@@ -1669,6 +1684,45 @@ bool NativeModuleManager::IsExistedPath(const char* pathKey) const
     MODULEMNG_HILOG_DEBUG("path:'%{public}s'", pathKey);
     std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
+}
+
+bool NativeModuleManager::IsSafeRelativePath(const std::string& p)
+{
+    if (p.empty()) {
+        return true;
+    }
+    if (p.front() == '/') {
+        return false;
+    }
+    std::stringstream ss(p);
+    std::string seg;
+    while (std::getline(ss, seg, '/')) {
+        if (seg.empty() || seg == "." || seg == "..") {
+            return false;
+        }
+        for (char c : seg) {
+            if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '.') {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool NativeModuleManager::IsValidLibNameStrict(const std::string& libName)
+{
+    if (libName.empty() || libName.size() >= NAME_MAX) {
+        return false;
+    }
+    if (libName.substr(libName.size() - 3) != ".so") {
+        return false;
+    }
+    for (char c : libName) {
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '.' && c != '_' && c != '-') {
+            return false;
+        }
+    }
+    return libName.find("...") == std::string::npos;
 }
 
 void NativeModuleManager::SetModuleLoadChecker(const std::shared_ptr<ModuleCheckerDelegate>& moduleCheckerDelegate)

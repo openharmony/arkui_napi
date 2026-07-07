@@ -1860,3 +1860,351 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
 
     GTEST_LOG_(INFO) << "FindNativeModuleByDisk_ErrInfo_DlopenFailed end";
 }
+
+/*
+ * @tc.name: FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash
+ * @tc.desc: test FindNativeModuleByCache does not dereference nullptr when temp->name is nullptr
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    NativeModule* cacheNativeModule = nullptr;
+    NativeModuleHeadTailStruct cacheHeadTailStruct = {nullptr, nullptr, nullptr};
+
+    // Node A: name=nullptr (default), moduleName=nullptr (default), systemFilePath=""
+    // Verifies: when temp->name is nullptr, strcasecmp must not be called (avoid null-pointer deref)
+    NativeModule* nodeA = new NativeModule();
+    ASSERT_NE(nodeA, nullptr);
+    nodeA->systemFilePath = "";
+
+    // Node B: name=nullptr (default), moduleName=matched target, systemFilePath=""
+    // Verifies: even with a name==nullptr node preceding, moduleName-field match still works
+    NativeModule* nodeB = new NativeModule();
+    ASSERT_NE(nodeB, nullptr);
+    nodeB->moduleName = "test.module.nullptr.target";
+    nodeB->systemFilePath = "";
+    nodeB->next = nullptr;
+
+    // Chain: A -> B
+    nodeA->next = nodeB;
+    moduleManager.headNativeModule_ = nodeA;
+    moduleManager.tailNativeModule_ = nodeB;
+
+    std::string target = "test.module.nullptr.target";
+    // AC-2: list contains name==nullptr node A; moduleName match on B should succeed without crash
+    NativeModule* result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeB);
+
+    // AC-1: list contains only name==nullptr node A (B unlinked); should not crash, no false match -> nullptr
+    nodeA->next = nullptr;
+    moduleManager.tailNativeModule_ = nodeA;
+    result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nullptr);
+
+    // Cleanup
+    delete nodeA;
+    nodeA = nullptr;
+    delete nodeB;
+    nodeB = nullptr;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash
+ * @tc.desc: test FindNativeModuleByCache does not dereference nullptr when temp->systemFilePath is nullptr
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    NativeModule* cacheNativeModule = nullptr;
+    NativeModuleHeadTailStruct cacheHeadTailStruct = {nullptr, nullptr, nullptr};
+
+    // Node X: moduleName matches the query, name=nullptr (keeps outer-if driven by moduleName only),
+    // systemFilePath=nullptr (DEFAULT) -> triggers L1637/L1641 nullptr risk once outer-if holds.
+    NativeModule* nodeX = new NativeModule();
+    ASSERT_NE(nodeX, nullptr);
+    nodeX->moduleName = "test.module.syspath.nullptr.target";
+    // nodeX->name left as nullptr (default)
+    // nodeX->systemFilePath left as nullptr (default) -- this is the bug-trigger condition
+
+    moduleManager.headNativeModule_ = nodeX;
+    moduleManager.tailNativeModule_ = nodeX;
+
+    std::string target = "test.module.syspath.nullptr.target";
+    // AC-2.1: outer-if holds (moduleName match), systemFilePath==nullptr -> must not crash.
+    // Per minimum-fix semantics: nullptr short-circuits while (label stays 0);
+    // L1641 if holds via (label < NATIVE_PATH_NUMBER) -> node is treated as path-0 match and returned.
+    NativeModule* result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeX);
+
+    // AC-2.2: prepend node Y (systemFilePath="" normal match) before X; both have same moduleName.
+    // Demonstrates that nullptr-systemFilePath node's presence does not break normal matching flow.
+    NativeModule* nodeY = new NativeModule();
+    ASSERT_NE(nodeY, nullptr);
+    nodeY->moduleName = "test.module.syspath.nullptr.target";
+    nodeY->systemFilePath = "";
+    nodeY->next = nodeX;
+    moduleManager.headNativeModule_ = nodeY;
+
+    result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeY);
+
+    // Cleanup
+    delete nodeY;
+    nodeY = nullptr;
+    delete nodeX;
+    nodeX = nullptr;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey
+ * @tc.desc: test EmplaceModuleBuffer releases old buffer and overwrites on duplicate moduleKey
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey starts";
+
+    NativeModuleManager moduleManager;
+    std::string key = "test.module.emplace.dupkey";
+
+    // Allocate two distinct uint8_t[] buffers as the values to be cached.
+    // Use new uint8_t[] so the fix's delete[] semantics match the allocation.
+    uint8_t* lib1 = new uint8_t[16];
+    ASSERT_NE(lib1, nullptr);
+    uint8_t* lib2 = new uint8_t[16];
+    ASSERT_NE(lib2, nullptr);
+
+    // AC-3.3: first call -- emplace path. Map size becomes 1, map[key] == lib1.
+    moduleManager.EmplaceModuleBuffer(key, lib1);
+    EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
+    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib1);
+
+    // AC-3.1 + AC-3.2: second call with same key, different buffer.
+    // Fix semantics: delete[] old (lib1), replace with new (lib2). Map size stays 1, map[key] == lib2.
+    moduleManager.EmplaceModuleBuffer(key, lib2);
+    EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
+    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib2);
+
+    // Cleanup: lib1 already delete[]-ed by the fix; lib2 is still in the map.
+    // Map destructor does NOT free raw pointers, so we must delete[] lib2 manually.
+    // To avoid touching the map after asserting, just delete[] lib2 (the current owner).
+    delete[] lib2;
+    lib2 = nullptr;
+    lib1 = nullptr;
+    moduleManager.moduleBufMap_.clear();
+
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey end";
+}
+
+/*
+ * @tc.name: GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash
+ * @tc.desc: test GetNativeModulePath does not pollute map nor dereference nullptr when appLibPathMap_ value is null
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    const char* moduleName = "somemodule";
+
+    // AC-4.1: appLibPathMap_ has key with nullptr value.
+    // Original buggy code: prefix = appLibPathMap_[path] returns nullptr -> enters if-branch ->
+    // sprintf_s("%s/...", nullptr, ...) on non-Android -> crash.
+    // Fixed code: prefix != nullptr short-circuits to fallback branch, no crash, no map pollution.
+    const std::string keyNull = "test.app.path.nullptr";
+    moduleManager.appLibPathMap_[keyNull] = nullptr;
+    size_t sizeBefore = moduleManager.appLibPathMap_.size();
+    bool ret = moduleManager.GetNativeModulePath(moduleName, keyNull.c_str(), "", true,
+        nativeModulePath, NAPI_PATH_MAX);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), sizeBefore); // map not polluted
+    // nativeModulePath[0] populated via fallback branch (prefix = sysPrefix).
+    EXPECT_GT(strlen(nativeModulePath[0]), 0u);
+
+    // AC-4.2: key does not exist in map. Original operator[] would insert "key -> nullptr" pollution.
+    // Fixed find-based code does not insert.
+    moduleManager.appLibPathMap_.clear();
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u);
+    const std::string keyMissing = "test.app.path.nonexistent";
+    ret = moduleManager.GetNativeModulePath(moduleName, keyMissing.c_str(), "", true,
+        nativeModulePath, NAPI_PATH_MAX);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u); // not polluted by operator[]
+
+    // AC-4.3: key exists with non-empty value. Behavior unchanged: prefix taken from map,
+    // enters if-branch (prefix != nullptr), nativeModulePath[0] starts with injected prefix.
+    const std::string keyValid = "test.app.path.valid";
+    const std::string injectedPrefix = "/some/valid/prefix";
+    moduleManager.appLibPathMap_[keyValid] = const_cast<char*>(injectedPrefix.c_str());
+    ret = moduleManager.GetNativeModulePath(moduleName, keyValid.c_str(), "", true,
+        nativeModulePath, NAPI_PATH_MAX);
+    EXPECT_TRUE(ret);
+    EXPECT_NE(strstr(nativeModulePath[0], injectedPrefix.c_str()), nullptr);
+
+    // Cleanup
+    moduleManager.appLibPathMap_.clear();
+
+    GTEST_LOG_(INFO) << "GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash
+ * @tc.desc: test SetAppLibPath does not dereference empty string back() when appLibPath is empty or all-empty
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+
+    // AC-5.1: empty vector. Original buggy code: tmpPath stays "" -> tmpPath.back() is UB (likely crash).
+    // Fixed code: short-circuit via !tmpPath.empty(), no back() call, no crash.
+    std::vector<std::string> emptyVec;
+    moduleManager.SetAppLibPath("test.module.empty_vector", emptyVec, false);
+    // Reaching this assertion means no crash occurred.
+    SUCCEED();
+
+    // AC-5.2: all elements are empty strings. Loop skips all -> tmpPath stays "" -> same UB on buggy code.
+    std::vector<std::string> allEmptyStringsVec = {"", "", ""};
+    moduleManager.SetAppLibPath("test.module.all_empty_strings", allEmptyStringsVec, false);
+    SUCCEED();
+
+    // AC-5.3: at least one non-empty element. Behavior unchanged: tmpPath = "/path1:/path2:" -> pop_back -> "/path1:/path2".
+    std::vector<std::string> normalVec = {"/path1", "/path2"};
+    moduleManager.SetAppLibPath("test.module.normal", normalVec, false);
+    auto it = moduleManager.appLibPathMap_.find("test.module.normal");
+    ASSERT_NE(it, moduleManager.appLibPathMap_.end());
+    ASSERT_NE(it->second, nullptr);
+    EXPECT_EQ(std::string(it->second), "/path1:/path2");
+
+    // Cleanup: each char* was strdup-allocated on heap; free before clear to avoid test leak.
+    for (auto& entry : moduleManager.appLibPathMap_) {
+        if (entry.second != nullptr) {
+            free(entry.second);
+            entry.second = nullptr;
+        }
+    }
+    moduleManager.appLibPathMap_.clear();
+
+    GTEST_LOG_(INFO) << "SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash end";
+}
+
+/*
+ * @tc.name: IsSafeRelativePath_PathValidationTest
+ * @tc.desc: test NativeModuleManager::IsSafeRelativePath validates relativePath via whitelist (no leading slash,
+ *           non-empty/non-"."/non-".." segments, alnum/_/./ chars only)
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, IsSafeRelativePath_PathValidationTest, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest starts";
+
+    // AC-6.1: ".." as substring but not as full segment -> accept (eliminates original false positive)
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("my..pkg"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a..b/c"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example..foo"));
+
+    // AC-6.2: absolute path -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/etc/passwd"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/module"));
+
+    // AC-6.3: segment is . / .. / empty -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/./b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/../b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a//b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("."));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath(".."));
+
+    // AC-6.4: non-whitelisted char -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a;b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a$b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("%2e"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a\\b")); // backslash
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a b"));  // space
+
+    // AC-6.5: legitimate relative path -> accept (backward compat)
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath(""));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module/sub"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a.b.c"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example.foo"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module_name"));
+
+    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest end";
+}
+
+/*
+ * @tc.name: IsValidLibNameStrict_LibNameValidationTest
+ * @tc.desc: test NativeModuleManager::IsValidLibNameStrict validates lib name via strict charset
+ *           (alnum/_/-/. only, must end with .so, no "..." sequence, size < NAME_MAX)
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, IsValidLibNameStrict_LibNameValidationTest, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "IsValidLibNameStrict_LibNameValidationTest starts";
+
+    // AC-7.1: contains colon -> reject (namespace injection vector via dlns_inherit ":")
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("liba:b.so"));
+
+    // AC-7.2: contains space/slash/backslash/non-whitelist char -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib/a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib\\a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib$a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib%a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib:a.so"));   // dup safety with AC-7.1
+
+    // AC-7.3: contains "..." sequence -> reject (path-traversal-style tricks)
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib...so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("a...b.so"));
+
+    // AC-7.4: does not end with .so -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("libfoo"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("libfoo.txt"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib.so.txt"));
+
+    // AC-7.5: empty or oversized (>= NAME_MAX) -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(""));
+    std::string oversized(NAME_MAX, 'a');   // length == NAME_MAX -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(oversized));
+
+    // AC-7.6: legitimate names -> accept (backward compat)
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("libfoo.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib_foo-bar.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib123.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("a.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib.so"));   // boundary: just ".so" suffix
+
+    GTEST_LOG_(INFO) << "IsValidLibNameStrict_LibNameValidationTest end";
+}
