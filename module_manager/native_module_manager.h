@@ -167,6 +167,8 @@ private:
     bool IsExistedPath(const char* pathKey) const;
     static bool IsSafeRelativePath(const std::string& p);
     static bool IsValidLibNameStrict(const std::string& libName);
+    bool RemoveNativeModuleByCacheLocked(const std::string& moduleKey);
+    bool RemoveNativeModuleLocked(const std::string& moduleKey);
     void EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
     bool RemoveModuleLib(const std::string moduleKey);
     void EmplaceModuleBuffer(const std::string moduleKey, const uint8_t* lib);

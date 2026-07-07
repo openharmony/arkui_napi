@@ -258,20 +258,38 @@ bool NativeModuleManager::RemoveNativeModule(const std::string& moduleKey)
     return ((handleRemoved || handleAbcRemoved) && moduleRemoved);
 }
 
+bool NativeModuleManager::RemoveNativeModuleLocked(const std::string& moduleKey)
+{
+    // Caller holds moduleLibMutex_ and nativeModuleListMutex_
+    // moduleLibMap_ entry already erased by caller (UnloadNativeModule)
+    bool bufferRemoved = RemoveModuleBuffer(moduleKey);
+    bool moduleRemoved = RemoveNativeModuleByCacheLocked(moduleKey);
+    MODULEMNG_HILOG_DEBUG("bufferRemoved is %{public}d, moduleRemoved is %{public}d",
+        bufferRemoved, moduleRemoved);
+    return moduleRemoved;
+}
+
 bool NativeModuleManager::UnloadNativeModule(const std::string& moduleKey)
 {
     MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
-    LIBHANDLE handle = GetNativeModuleHandle(moduleKey);
-    if (handle == nullptr) {
-        MODULEMNG_HILOG_ERROR("failed");
+    LIBHANDLE handle = nullptr;
+    bool removed = false;
+    {
+        std::lock_guard<std::mutex> lk1(moduleLibMutex_);
+        std::lock_guard<std::mutex> lk2(nativeModuleListMutex_);
+        auto it = moduleLibMap_.find(moduleKey);
+        if (it == moduleLibMap_.end()) {
+            MODULEMNG_HILOG_ERROR("module '%{public}s' not found in lib map", moduleKey.c_str());
+            return false;
+        }
+        handle = it->second;
+        moduleLibMap_.erase(it);
+        removed = RemoveNativeModuleLocked(moduleKey);
+    }
+    if (!removed) {
+        MODULEMNG_HILOG_ERROR("remove native module failed for '%{public}s'", moduleKey.c_str());
         return false;
     }
-
-    if (RemoveNativeModule(moduleKey) == false) {
-        MODULEMNG_HILOG_ERROR("failed");
-        return false;
-    }
-
     return UnloadModuleLibrary(handle);
 }
 
@@ -1574,6 +1592,63 @@ void NativeModuleManager::RegisterByBuffer(const std::string& moduleKey, const u
 bool NativeModuleManager::RemoveNativeModuleByCache(const std::string& moduleKey)
 {
     std::lock_guard<std::mutex> lock(nativeModuleListMutex_);
+    if (headNativeModule_ == nullptr) {
+        MODULEMNG_HILOG_WARN("Module list empty");
+        return false;
+    }
+    NativeModule* nativeModule = headNativeModule_;
+    if (nativeModule->moduleName && !strcasecmp(nativeModule->moduleName, moduleKey.c_str())) {
+        if (headNativeModule_ == tailNativeModule_) {
+            tailNativeModule_ = nullptr;
+        }
+        headNativeModule_ = headNativeModule_->next;
+        free(const_cast<char *>(nativeModule->name));
+        if (nativeModule->moduleName) {
+            free(const_cast<char *>(nativeModule->moduleName));
+        }
+        if (nativeModule->jsABCCode) {
+            delete[] nativeModule->jsABCCode;
+        }
+        if (nativeModule->systemFilePath && nativeModule->systemFilePath[0] != '\0') {
+            free(const_cast<char *>(nativeModule->systemFilePath));
+        }
+        delete nativeModule;
+        MODULEMNG_HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
+        return true;
+    }
+    bool moduleDeleted = false;
+    NativeModule* prev = headNativeModule_;
+    NativeModule* curr = prev->next;
+    while (curr != nullptr) {
+        if (curr->moduleName && !strcasecmp(curr->moduleName, moduleKey.c_str())) {
+            if (curr == tailNativeModule_) {
+                tailNativeModule_ = prev;
+            }
+            prev->next = curr->next;
+            free(const_cast<char *>(curr->name));
+            if (curr->moduleName) {
+                free(const_cast<char *>(curr->moduleName));
+            }
+            if (curr->jsABCCode) {
+                delete[] curr->jsABCCode;
+            }
+            if (curr->systemFilePath && curr->systemFilePath[0] != '\0') {
+                free(const_cast<char *>(curr->systemFilePath));
+            }
+            delete curr;
+            MODULEMNG_HILOG_DEBUG("module %{public}s deleted from cache", moduleKey.c_str());
+            moduleDeleted = true;
+            break;
+        }
+        prev = prev->next;
+        curr = prev->next;
+    }
+    return moduleDeleted;
+}
+
+bool NativeModuleManager::RemoveNativeModuleByCacheLocked(const std::string& moduleKey)
+{
+    // Caller holds nativeModuleListMutex_
     if (headNativeModule_ == nullptr) {
         MODULEMNG_HILOG_WARN("Module list empty");
         return false;

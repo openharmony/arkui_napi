@@ -2208,3 +2208,20 @@ HWTEST_F(ModuleManagerTest, IsValidLibNameStrict_LibNameValidationTest, TestSize
 
     GTEST_LOG_(INFO) << "IsValidLibNameStrict_LibNameValidationTest end";
 }
+
+/**
+ * @tc.name: UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely
+ * @tc.desc: 验证 UnloadNativeModule 在 moduleLibMap_ 不存在 key 时安全早退（TOCTOU 加固后的 find==end() 路径）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #8
+ */
+HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely, TestSize.Level1)
+{
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    // moduleLibMap_ 默认为空（SetUp 不主动填充），调用应走双锁临界区的 find == end() 早退路径，
+    // 返回 false 且不触发 dlclose（不会因悬空指针崩溃）。
+    bool result = moduleManager->UnloadNativeModule("test_unload_no_exist_key");
+    EXPECT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely end";
+}
