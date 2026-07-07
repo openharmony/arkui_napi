@@ -1496,6 +1496,14 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
 
         tailNativeModule_->moduleName = moduleName;
         tailNativeModule_->systemFilePath = strdup(loadPath);
+        if (tailNativeModule_->systemFilePath == nullptr) {
+            SetLoadErrInfo(loadErrInfo, "internal error: out of memory");
+            MODULEMNG_HILOG_ERROR("strdup systemFilePath failed");
+            free(const_cast<char*>(tailNativeModule_->moduleName));
+            tailNativeModule_->moduleName = nullptr;
+            SetLoadingNativeModuleKey("");
+            return nullptr;
+        }
         if (tailNativeModule_->name && strcmp(tailNativeModule_->moduleName, tailNativeModule_->name)) {
             MODULEMNG_HILOG_WARN("%{public}s Name mismatch: %{public}s != %{public}s",
                 isAppModule ? "app module:" : "", tailNativeModule_->moduleName, tailNativeModule_->name);
