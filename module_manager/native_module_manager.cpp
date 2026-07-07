@@ -176,9 +176,16 @@ void NativeModuleManager::EmplaceModuleLib(std::string moduleKey, const LIBHANDL
 {
     MODULEMNG_HILOG_DEBUG("module:'%{public}s'", moduleKey.c_str());
     std::lock_guard<std::mutex> lock(moduleLibMutex_);
-    if (lib != nullptr) {
-        moduleLibMap_.emplace(moduleKey, lib);
+    if (lib == nullptr) {
+        return;
     }
+    auto it = moduleLibMap_.find(moduleKey);
+    if (it != moduleLibMap_.end()) {
+        MODULEMNG_HILOG_WARN("module '%{public}s' already exists, discard duplicate handle", moduleKey.c_str());
+        UnloadModuleLibrary(lib);  // discard duplicate handle, refcount -1
+        return;
+    }
+    moduleLibMap_.emplace(moduleKey, lib);
 }
 
 bool NativeModuleManager::RemoveModuleLib(const std::string moduleKey)

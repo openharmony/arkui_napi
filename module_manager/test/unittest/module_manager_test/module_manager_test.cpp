@@ -2225,3 +2225,39 @@ HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturn
 
     GTEST_LOG_(INFO) << "UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely end";
 }
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr
+ * @tc.desc: 验证 EmplaceModuleLib 在 lib == nullptr 时早退，不触碰 map（AC-9.1）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #9
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, TestSize.Level1)
+{
+    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    size_t before = mgr.moduleLibMap_.size();
+    mgr.EmplaceModuleLib("test_emplace_nullptr_key_9", nullptr);
+    EXPECT_EQ(mgr.moduleLibMap_.size(), before);
+    EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_nullptr_key_9"), 0u);
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr end";
+}
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists
+ * @tc.desc: 验证 EmplaceModuleLib 在 key 不存在时 emplace 入库（AC-9.2）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #9
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, TestSize.Level1)
+{
+    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    LIBHANDLE sentinel = reinterpret_cast<LIBHANDLE>(0xDEADBEEF);
+    mgr.EmplaceModuleLib("test_emplace_new_key_9", sentinel);
+    EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_new_key_9"), 1u);
+    EXPECT_EQ(mgr.moduleLibMap_["test_emplace_new_key_9"], sentinel);
+    // sentinel 不是真实 dlopen 句柄，不能 dlclose，手动 erase 清理避免污染后续测试
+    mgr.moduleLibMap_.erase("test_emplace_new_key_9");
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
+}
