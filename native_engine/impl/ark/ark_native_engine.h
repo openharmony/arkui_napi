@@ -344,6 +344,7 @@ public:
     void PostFinalizeTasks();
     void PostAsyncTask(panda::AsyncNativeCallbacksPack *callbacksPack);
     void PostTriggerGCTask(panda::TriggerGCData& data, GCTaskFinishedCallback callback = nullptr) override;
+    void InitPostTaskToThreadCallback();
 
     ArkFinalizersPack &GetArkFinalizersPack()
     {
@@ -572,5 +573,9 @@ private:
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
     AppStateNotifier interopAppState_ {};
     NativeReference *globalCheckCallbackRef_ { nullptr };
+    uv_async_t threadTaskAsync_ {};
+    bool threadTaskAsyncInitialized_ = false;
+    std::mutex threadTaskMutex_;
+    std::function<void()> pendingThreadTask_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
