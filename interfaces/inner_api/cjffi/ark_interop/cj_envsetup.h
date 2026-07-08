@@ -40,6 +40,8 @@ enum SanitizerKind {
     HWASAN,
 };
 
+struct CJEventReportInfo;
+
 struct CJEnvMethods {
     void (*initCJAppNS)(const std::string& path) = nullptr;
     void (*initCJSDKNS)(const std::string& path) = nullptr;
@@ -57,6 +59,12 @@ struct CJEnvMethods {
     bool (*checkLoadCJLibrary)() = nullptr;
     void (*registerArkVMInRuntime)(unsigned long long arkVM) = nullptr;
     void (*registerStackInfoCallbacks)(UpdateStackInfoFuncType uFunc) = nullptr;
+    void (*setAppVersion)(std::string& version) = nullptr;
+    void (*dumpHeapSnapshot) (int fd) = nullptr;
+    void (*forceFullGC) () = nullptr;
+    void (*registerEventHandler)(const CJEventReportInfo& reportInfo) = nullptr;
+    void (*setMainNAPIEnv)(void* env) = nullptr;
+    void* (*getMainNAPIEnv)() = nullptr;
 };
 
 class CJEnv {

@@ -1008,7 +1008,8 @@ ARKTS_Value ARKTS_RequireArkModule(ARKTS_Env env, const char* path, size_t pathL
     if (kind == ARKTS_NativeModule) {
         result = JSNApi::ExecuteNativeModule(vm, srcPath);
     } else {
-        result = JSNApi::GetModuleNameSpaceFromFile(vm, srcPath);
+        std::string moduleInfo = JSNApi::GetBundleName(vm) + "/" + JSNApi::GetModuleName(vm);
+        result = JSNApi::GetModuleNameSpaceWithModuleInfoForNormalApp(vm, srcPath, moduleInfo);
     }
     ARKTSInner_ReportJSErrors(env, false);
     return ARKTS_FromHandle(result);
