@@ -415,3 +415,129 @@ HWTEST_F(NapiHybridTest, NapiIsHybridVMTest004, testing::ext::TestSize.Level1)
 
     napi_set_is_hybrid_vm(env, false);
 }
+
+/**
+ * @tc.name: NapiMarkWorkerThreadTest
+ * @tc.desc: Test napi_mark_worker_thread with nullptr env
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest001, testing::ext::TestSize.Level1)
+{
+    auto res = napi_mark_worker_thread(nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiMarkWorkerThreadTest
+ * @tc.desc: Test napi_mark_worker_thread with valid env
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_mark_worker_thread(env);
+    ASSERT_EQ(res, napi_ok);
+}
+
+/**
+ * @tc.name: NapiMarkWorkerThreadTest
+ * @tc.desc: Test napi_mark_worker_thread actually sets WorkerThread type
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    // Default should be MainThread
+    ASSERT_TRUE(engine_->IsMainThread());
+
+    auto res = napi_mark_worker_thread(env);
+    ASSERT_EQ(res, napi_ok);
+
+    // After marking, should be WorkerThread and not MainThread
+    ASSERT_TRUE(engine_->IsWorkerThread());
+    ASSERT_FALSE(engine_->IsMainThread());
+}
+
+/**
+ * @tc.name: NapiMarkWorkerThreadTest
+ * @tc.desc: Test napi_mark_worker_thread is idempotent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res1 = napi_mark_worker_thread(env);
+    ASSERT_EQ(res1, napi_ok);
+    ASSERT_TRUE(engine_->IsWorkerThread());
+
+    // Calling again should still succeed
+    auto res2 = napi_mark_worker_thread(env);
+    ASSERT_EQ(res2, napi_ok);
+    ASSERT_TRUE(engine_->IsWorkerThread());
+}
+
+/**
+ * @tc.name: NapiIsWorkerThreadTest
+ * @tc.desc: Test napi_is_worker_thread with nullptr env
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest001, testing::ext::TestSize.Level1)
+{
+    bool result = true;
+    auto res = napi_is_worker_thread(nullptr, &result);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsWorkerThreadTest
+ * @tc.desc: Test napi_is_worker_thread with nullptr result pointer
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest002, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    auto res = napi_is_worker_thread(env, nullptr);
+    ASSERT_EQ(res, napi_invalid_arg);
+}
+
+/**
+ * @tc.name: NapiIsWorkerThreadTest
+ * @tc.desc: Test napi_is_worker_thread returns false for default MainThread
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest003, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    bool result = true;
+    auto res = napi_is_worker_thread(env, &result);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_FALSE(result);
+}
+
+/**
+ * @tc.name: NapiIsWorkerThreadTest
+ * @tc.desc: Test napi_is_worker_thread returns true after napi_mark_worker_thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest004, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    ASSERT_EQ(napi_mark_worker_thread(env), napi_ok);
+
+    bool result = false;
+    auto res = napi_is_worker_thread(env, &result);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_TRUE(result);
+}
