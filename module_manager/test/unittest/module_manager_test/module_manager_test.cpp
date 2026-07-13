@@ -2395,3 +2395,94 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestS
 
     GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrForEmptyFile end";
 }
+
+/**
+ * @tc.name: CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty
+ * @tc.desc: 空链表首次调用 CreateHeadNativeModule 应返回 true，head/tail 同指向新节点（AC-12.1）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #12
+ */
+HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_EQ(moduleManager.headNativeModule_, nullptr);
+    ASSERT_EQ(moduleManager.tailNativeModule_, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateHeadNativeModule());
+    EXPECT_NE(moduleManager.headNativeModule_, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.headNativeModule_->next, nullptr);
+
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty end";
+}
+
+/**
+ * @tc.name: CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists
+ * @tc.desc: 已有节点时再次调用应前插新 head，旧 head 串到 next（AC-12.2）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #12
+ */
+HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(moduleManager.CreateHeadNativeModule());
+    NativeModule* oldHead = moduleManager.headNativeModule_;
+    ASSERT_NE(oldHead, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateHeadNativeModule());
+    EXPECT_NE(moduleManager.headNativeModule_, oldHead);
+    EXPECT_EQ(moduleManager.headNativeModule_->next, oldHead);
+    EXPECT_EQ(moduleManager.tailNativeModule_, oldHead);
+
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists end";
+}
+
+/**
+ * @tc.name: CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty
+ * @tc.desc: 空链表首次调用 CreateTailNativeModule 应返回 true，head/tail 同指向新节点（AC-12.3）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #12
+ */
+HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_EQ(moduleManager.headNativeModule_, nullptr);
+    ASSERT_EQ(moduleManager.tailNativeModule_, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateTailNativeModule());
+    EXPECT_NE(moduleManager.tailNativeModule_, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.tailNativeModule_->next, nullptr);
+
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty end";
+}
+
+/**
+ * @tc.name: CreateTailNativeModule_ShouldAppendNewTailWhenListExists
+ * @tc.desc: 已有节点时再次调用应追加新 tail，旧 tail->next 指向新 tail（AC-12.4）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #12
+ */
+HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldAppendNewTailWhenListExists, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldAppendNewTailWhenListExists starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(moduleManager.CreateTailNativeModule());
+    NativeModule* oldTail = moduleManager.tailNativeModule_;
+    ASSERT_NE(oldTail, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateTailNativeModule());
+    EXPECT_NE(moduleManager.tailNativeModule_, oldTail);
+    EXPECT_EQ(oldTail->next, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.tailNativeModule_->next, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, oldTail);
+
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldAppendNewTailWhenListExists end";
+}

@@ -23,6 +23,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <new>
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -416,14 +417,14 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
 bool NativeModuleManager::CreateHeadNativeModule()
 {
     if (headNativeModule_ == tailNativeModule_ && tailNativeModule_ == nullptr) {
-        headNativeModule_ = new NativeModule();
+        headNativeModule_ = new (std::nothrow) NativeModule();
         if (headNativeModule_ == nullptr) {
             MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         tailNativeModule_ = headNativeModule_;
     } else {
-        auto head = new NativeModule();
+        auto head = new (std::nothrow) NativeModule();
         if (head == nullptr) {
             MODULEMNG_HILOG_ERROR("failed");
             return false;
@@ -439,14 +440,14 @@ bool NativeModuleManager::CreateHeadNativeModule()
 bool NativeModuleManager::CreateTailNativeModule()
 {
     if (headNativeModule_ == tailNativeModule_ && tailNativeModule_ == nullptr) {
-        headNativeModule_ = new NativeModule();
+        headNativeModule_ = new (std::nothrow) NativeModule();
         if (headNativeModule_ == nullptr) {
             MODULEMNG_HILOG_ERROR("failed");
             return false;
         }
         tailNativeModule_ = headNativeModule_;
     } else {
-        auto tail = new NativeModule();
+        auto tail = new (std::nothrow) NativeModule();
         if (tail == nullptr) {
             MODULEMNG_HILOG_ERROR("failed");
             return false;
