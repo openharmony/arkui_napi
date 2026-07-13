@@ -73,9 +73,6 @@ static void ClassifyLoadError(std::string* loadErrInfo, const LoadErrorContext& 
         return;
     }
     if (ctx.dlopenFailed) {
-        // 问题 #20：dlopenErrMsg 已是 LoadModuleLibrary 直接写入的原始 dlerror/GetLastError
-        // 字符串（未加 "failed " 前缀），无需再剥离；消除 dlerror 自身以 "failed " 开头
-        // 或多层嵌套前缀导致的分类退化。
         *loadErrInfo = "dlopen failed: " + ctx.dlopenErrMsg;
     } else if (ctx.isAppModule && !ctx.pathRegistered) {
         *loadErrInfo = std::string("app lib path not registered in namespace '") + ctx.path + "'";
@@ -132,8 +129,6 @@ NativeModuleManager::~NativeModuleManager()
         delete[] sharedLibsSonames_;
     }
 #endif
-    // 问题 #17：原裸 lock/unlock 在 free 抛异常时会跳过 unlock 导致死锁，
-    // 改用 lock_guard 保证异常路径也能解锁。
     {
         std::lock_guard<std::mutex> lock(appLibPathMapMutex_);
         for (const auto& item : appLibPathMap_) {
@@ -142,10 +137,8 @@ NativeModuleManager::~NativeModuleManager()
         appLibPathMap_.clear();
     }
 
-    // 问题 #17：原 while(size>0) + erase(begin()) 遍历无锁，并发访问 nativeEngineList_
-    // 会触发竞态；erase(begin()) 在 std::map 上为 O(n²)。改为先在锁内 swap 出全部
-    // 元素，锁外逐个 delete（避免 NativeEngine 析构回持同一 mutex 造成死锁，
-    // 与问题 #8 UnloadNativeModule "锁外 dlclose" 同模式）。
+    // Swap out under lock, delete outside lock to avoid deadlock if NativeEngine
+    // destructor re-enters nativeEngineListMutex_.
     std::map<std::string, NativeEngine*> enginesToDestroy;
     {
         std::lock_guard<std::mutex> lock(nativeEngineListMutex_);
@@ -161,9 +154,6 @@ NativeModuleManager::~NativeModuleManager()
 
 NativeModuleManager* NativeModuleManager::GetInstance()
 {
-    // 问题 #16：原 double-checked locking 在锁外裸读 instance_，弱内存模型架构
-    // (如部分 ARM) 上可能读到未完全构造的对象。改用 std::atomic + acquire/release
-    // 内存序建立 happens-before 关系，保证读到非空指针时对象已构造完毕。
     NativeModuleManager* ptr = instance_.load(std::memory_order_acquire);
     if (ptr == nullptr) {
         std::lock_guard<std::mutex> lock(g_instanceMutex);
@@ -1299,8 +1289,6 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        // 问题 #20：同步写一份未加 "failed " 前缀的原始错误到 dlopenRawErr，
-        // 供 ClassifyLoadError 直接消费，避免脆弱的字符串前缀剥离。
         dlopenRawErr = std::to_string(GetLastError());
         errInfo += "failed " + dlopenRawErr;
         MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
@@ -1356,8 +1344,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         MODULEMNG_HILOG_DEBUG("failed");
         return lib;
     }
-    // 问题 #11：tellg() 在流错误或非 seekable 设备文件上返回 -1，
-    // 经 static_cast<size_t> 变为约 18EB，使 make_unique 抛 bad_alloc 或 read 越界。
     std::streampos pos = inFile.tellg();
     if (pos < 0) {
         MODULEMNG_HILOG_ERROR("tellg failed, invalid file size: %{public}s", filePath.c_str());
@@ -1365,7 +1351,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         len = 0;
         return nullptr;
     }
-    // 限制上限防止异常文件耗尽内存（ABC 文件正常远小于 256MB）。
     constexpr size_t maxAbcFileSize = 256 * 1024 * 1024; // 256MB
     size_t fileSize = static_cast<size_t>(pos);
     if (fileSize == 0 || fileSize > maxAbcFileSize) {
@@ -1385,10 +1370,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
 
     std::unique_ptr<uint8_t[]> buffer;
     {
-        // 问题 #22：ABC 文件读取（含大块 make_unique + read）是磁盘加载阶段的主要耗时点，
-        // 用独立 trace 片段包裹实际 IO，与上层粗粒度 LoadNativeModule trace 区分，
-        // 便于 systrace 定位是 IO 还是 dlopen / onLoad 拖慢。
-        // 用花括号限制作用域，保证 StartTrace/FinishTrace 在任何后续错误路径下都成对。
 #ifdef ENABLE_HITRACE
         StartTrace(HITRACE_TAG_ACE, "GetFileBuffer::read");
 #endif
@@ -1399,7 +1380,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         FinishTrace(HITRACE_TAG_ACE);
 #endif
     }
-    // 校验实际读取字节数，防止文件在打开后长度被截断导致缓冲区部分未填充。
     if (static_cast<size_t>(inFile.gcount()) != len) {
         MODULEMNG_HILOG_ERROR("short read: expected %{public}zu, got %{public}zu",
             len, static_cast<size_t>(inFile.gcount()));
@@ -1446,8 +1426,6 @@ void NativeModuleManager::Napi_onLoadCallback(LIBHANDLE lib, const char* moduleN
 {
     auto onLoadFunc = reinterpret_cast<NapiOnLoadCallback>(LIBSYM(lib, "napi_onLoad"));
     if (onLoadFunc != nullptr) {
-        // 问题 #22：模块自身 init 代码可能任意慢，独立 trace 片段便于在 systrace 中定位
-        // 是哪个 NAPI 模块的 onLoad 拖慢启动，而非笼统的 "LoadNativeModule"。
 #ifdef ENABLE_HITRACE
         StartTrace(HITRACE_TAG_ACE, "napi_onLoad");
 #endif
@@ -1493,7 +1471,6 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         if ((isAppModule && IsExistedPath(path)) ||
             (!isAppModule && nativeModulePath[0][0] != '\0' && access(nativeModulePath[0], F_OK) == 0)) {
             dlopenFailed = true;
-            // 问题 #20：直接保存原始 dlerror，不再让 ClassifyLoadError 剥离 "failed " 前缀
             dlopenErrMsg = firstRawErr;
         }
         loadPath = nativeModulePath[1];

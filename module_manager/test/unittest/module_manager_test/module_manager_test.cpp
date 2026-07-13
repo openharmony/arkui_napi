@@ -1538,22 +1538,20 @@ HWTEST_F(ModuleManagerTest, Destructor_ShouldFreeAppLibPathMapMemory, TestSize.L
 
 /*
  * @tc.name: Destructor_ShouldClearNativeEngineListSafely
- * @tc.desc: 析构时应安全清空 nativeEngineList_（AC-17.1 swap + 锁外 delete 路径）
+ * @tc.desc: Destructor safely clears nativeEngineList_ (AC-17.1 swap + outside-lock delete)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #17
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, Destructor_ShouldClearNativeEngineListSafely, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely starts";
     {
         NativeModuleManager moduleManager;
-        // 直接入库 nullptr 值，析构会 swap 出整个 map 后对 nullptr delete（no-op）
         moduleManager.nativeEngineList_.emplace("engine.k1", nullptr);
         moduleManager.nativeEngineList_.emplace("engine.k2", nullptr);
         moduleManager.nativeEngineList_.emplace("engine.k3", nullptr);
         EXPECT_EQ(moduleManager.nativeEngineList_.size(), 3u);
     }
-    // 出作用域即调用析构，若走到死锁/UB 会在用例进程中暴露
     GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely end";
 }
 
@@ -1876,7 +1874,7 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     EXPECT_EQ(result, nullptr);
     // dlopenFailed should be true, loadErrInfo should contain "dlopen failed"
     EXPECT_NE(loadErrInfo.find("dlopen failed"), std::string::npos);
-    // 问题 #20 回归保护：raw dlerror 直传，不应出现 "dlopen failed: failed " 双前缀
+    // raw dlerror is forwarded as-is, no "failed " prefix should leak into output
     EXPECT_EQ(loadErrInfo.find("dlopen failed: failed "), std::string::npos);
 
     // Clean up temp file
@@ -2235,15 +2233,13 @@ HWTEST_F(ModuleManagerTest, IsValidLibNameStrict_LibNameValidationTest, TestSize
 
 /**
  * @tc.name: UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely
- * @tc.desc: 验证 UnloadNativeModule 在 moduleLibMap_ 不存在 key 时安全早退（TOCTOU 加固后的 find==end() 路径）
+ * @tc.desc: UnloadNativeModule returns false safely when key not in moduleLibMap_ (TOCTOU-hardened find==end() path)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #8
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely, TestSize.Level1)
 {
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    // moduleLibMap_ 默认为空（SetUp 不主动填充），调用应走双锁临界区的 find == end() 早退路径，
-    // 返回 false 且不触发 dlclose（不会因悬空指针崩溃）。
     bool result = moduleManager->UnloadNativeModule("test_unload_no_exist_key");
     EXPECT_FALSE(result);
 
@@ -2252,9 +2248,9 @@ HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturn
 
 /**
  * @tc.name: EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr
- * @tc.desc: 验证 EmplaceModuleLib 在 lib == nullptr 时早退，不触碰 map（AC-9.1）
+ * @tc.desc: EmplaceModuleLib early-returns when lib is nullptr, leaving the map untouched (AC-9.1)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #9
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, TestSize.Level1)
 {
@@ -2269,9 +2265,9 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, T
 
 /**
  * @tc.name: EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists
- * @tc.desc: 验证 EmplaceModuleLib 在 key 不存在时 emplace 入库（AC-9.2）
+ * @tc.desc: EmplaceModuleLib emplaces a new entry when the key is absent (AC-9.2)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #9
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, TestSize.Level1)
 {
@@ -2280,7 +2276,7 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, Test
     mgr.EmplaceModuleLib("test_emplace_new_key_9", sentinel);
     EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_new_key_9"), 1u);
     EXPECT_EQ(mgr.moduleLibMap_["test_emplace_new_key_9"], sentinel);
-    // sentinel 不是真实 dlopen 句柄，不能 dlclose，手动 erase 清理避免污染后续测试
+    // sentinel is not a real dlopen handle; erase manually to avoid dlclose contamination.
     mgr.moduleLibMap_.erase("test_emplace_new_key_9");
 
     GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
@@ -2291,7 +2287,7 @@ constexpr char GET_FILE_BUFFER_TEST_DIR[] = "/data/local/tmp";
 constexpr char GET_FILE_BUFFER_TEST_FILE[] = "/data/local/tmp/napi_getfilebuffer_test_11.bin";
 constexpr char GET_FILE_BUFFER_TEST_KEY[] = "test.getfilebuffer.11";
 
-// Helper：写入指定字节的测试文件。返回是否成功。
+// Write a test file with the given bytes. Returns true on success.
 bool WriteTestFile(const std::string& path, const std::vector<uint8_t>& bytes)
 {
     std::ofstream out(path, std::ios::binary | std::ios::trunc);
@@ -2305,7 +2301,7 @@ bool WriteTestFile(const std::string& path, const std::vector<uint8_t>& bytes)
     return out.good() || bytes.empty();
 }
 
-// Helper，清理测试产物与缓存（缓存中的 raw 指针需手动 delete[]）。
+// Erase and delete[] a cached buffer (map owns raw pointers).
 void CleanupModuleBuffer(NativeModuleManager& mgr, const std::string& key)
 {
     auto it = mgr.moduleBufMap_.find(key);
@@ -2318,9 +2314,9 @@ void CleanupModuleBuffer(NativeModuleManager& mgr, const std::string& key)
 
 /**
  * @tc.name: GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile
- * @tc.desc: 正常 ABC 文件应返回非空 buffer，len 等于文件大小，内容一致（AC-11.1/11.3）
+ * @tc.desc: GetFileBuffer returns non-null buffer with len matching file size and content (AC-11.1/11.3)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #11
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile, TestSize.Level1)
 {
@@ -2345,9 +2341,9 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnBufferAndMatchLenForNormal
 
 /**
  * @tc.name: GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache
- * @tc.desc: 同一 moduleKey 二次调用应命中缓存返回相同指针，且不再读取文件（AC-11.4）
+ * @tc.desc: Second call with same moduleKey hits cache and returns the same pointer (AC-11.4)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #11
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache, TestSize.Level1)
 {
@@ -2361,7 +2357,7 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFro
     const uint8_t* buf1 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len1);
     ASSERT_NE(buf1, nullptr);
 
-    // 删除源文件以确保二次调用不依赖磁盘读取
+    // Remove source file so the second call must hit cache.
     std::remove(GET_FILE_BUFFER_TEST_FILE);
 
     size_t len2 = 0;
@@ -2376,9 +2372,9 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFro
 
 /**
  * @tc.name: GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist
- * @tc.desc: 文件不存在(is_open 失败)时应返回 nullptr，len 保持 0（AC-11.2）
+ * @tc.desc: GetFileBuffer returns nullptr and keeps len == 0 when file does not exist (AC-11.2)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #11
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist, TestSize.Level1)
 {
@@ -2388,7 +2384,7 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExis
     std::string nonExisting = std::string(GET_FILE_BUFFER_TEST_DIR) + "/napi_not_exist_11.bin";
     std::remove(nonExisting.c_str());
 
-    size_t len = 1; // 故意非 0，校验函数未写出
+    size_t len = 1; // non-zero default; function should overwrite on failure
     const uint8_t* buf = moduleManager.GetFileBuffer(nonExisting, "test.getfilebuffer.notexist", len);
     EXPECT_EQ(buf, nullptr);
 
@@ -2397,9 +2393,9 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExis
 
 /**
  * @tc.name: GetFileBuffer_ShouldReturnNullptrForEmptyFile
- * @tc.desc: 空文件 tellg() 返回 0，按修复后逻辑直接拒绝，返回 nullptr（AC-11.5 fileSize==0 早退）
+ * @tc.desc: Empty file is rejected (fileSize == 0 early-return), returns nullptr (AC-11.5)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #11
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestSize.Level1)
 {
@@ -2408,7 +2404,7 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestS
     NativeModuleManager moduleManager;
     ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, {}));
 
-    size_t len = 1; // 故意非 0，校验函数清零
+    size_t len = 1; // non-zero default; function should reset to 0
     const uint8_t* buf = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len);
     EXPECT_EQ(buf, nullptr);
     EXPECT_EQ(len, 0u);
@@ -2420,9 +2416,9 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestS
 
 /**
  * @tc.name: CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty
- * @tc.desc: 空链表首次调用 CreateHeadNativeModule 应返回 true，head/tail 同指向新节点（AC-12.1）
+ * @tc.desc: CreateHeadNativeModule initialises head/tail to the same new node on empty list (AC-12.1)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #12
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
 {
@@ -2442,9 +2438,9 @@ HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldInitHeadAndTailWhenList
 
 /**
  * @tc.name: CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists
- * @tc.desc: 已有节点时再次调用应前插新 head，旧 head 串到 next（AC-12.2）
+ * @tc.desc: CreateHeadNativeModule prepends a new head and links old head as ->next (AC-12.2)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #12
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists, TestSize.Level1)
 {
@@ -2465,9 +2461,9 @@ HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldPrependNewHeadWhenListE
 
 /**
  * @tc.name: CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty
- * @tc.desc: 空链表首次调用 CreateTailNativeModule 应返回 true，head/tail 同指向新节点（AC-12.3）
+ * @tc.desc: CreateTailNativeModule initialises head/tail to the same new node on empty list (AC-12.3)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #12
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
 {
@@ -2487,9 +2483,9 @@ HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldInitHeadAndTailWhenList
 
 /**
  * @tc.name: CreateTailNativeModule_ShouldAppendNewTailWhenListExists
- * @tc.desc: 已有节点时再次调用应追加新 tail，旧 tail->next 指向新 tail（AC-12.4）
+ * @tc.desc: CreateTailNativeModule appends a new tail and links old tail ->next to it (AC-12.4)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #12
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldAppendNewTailWhenListExists, TestSize.Level1)
 {
@@ -2511,9 +2507,9 @@ HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldAppendNewTailWhenListEx
 
 /**
  * @tc.name: GetInstance_ShouldReturnStablePointerAcrossCalls
- * @tc.desc: 同一线程多次调用 GetInstance 应返回相同指针（AC-16.1）
+ * @tc.desc: Repeated GetInstance calls from one thread return the same pointer (AC-16.1)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #16
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnStablePointerAcrossCalls, TestSize.Level1)
 {
@@ -2529,9 +2525,9 @@ HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnStablePointerAcrossCalls, Te
 
 /**
  * @tc.name: GetInstance_ShouldReturnSamePointerUnderConcurrency
- * @tc.desc: 多线程并发首次/重复调用 GetInstance 都应返回相同指针（AC-16.2 回归保护）
+ * @tc.desc: Concurrent GetInstance calls from multiple threads all return the same pointer (AC-16.2)
  * @tc.type: FUNC
- * @tc.require: issue #2157 问题 #16
+ * @tc.require: issue #2157
  */
 HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnSamePointerUnderConcurrency, TestSize.Level1)
 {
@@ -2560,7 +2556,7 @@ HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnSamePointerUnderConcurrency,
     for (auto& t : threads) {
         t.join();
     }
-    // 所有线程看到的指针必须一致
+    // All threads must observe the same instance pointer.
     NativeModuleManager* expected = results[0];
     EXPECT_NE(expected, nullptr);
     for (int i = 1; i < threadCount; ++i) {
