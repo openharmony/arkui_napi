@@ -1537,6 +1537,27 @@ HWTEST_F(ModuleManagerTest, Destructor_ShouldFreeAppLibPathMapMemory, TestSize.L
 }
 
 /*
+ * @tc.name: Destructor_ShouldClearNativeEngineListSafely
+ * @tc.desc: 析构时应安全清空 nativeEngineList_（AC-17.1 swap + 锁外 delete 路径）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #17
+ */
+HWTEST_F(ModuleManagerTest, Destructor_ShouldClearNativeEngineListSafely, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely starts";
+    {
+        NativeModuleManager moduleManager;
+        // 直接入库 nullptr 值，析构会 swap 出整个 map 后对 nullptr delete（no-op）
+        moduleManager.nativeEngineList_.emplace("engine.k1", nullptr);
+        moduleManager.nativeEngineList_.emplace("engine.k2", nullptr);
+        moduleManager.nativeEngineList_.emplace("engine.k3", nullptr);
+        EXPECT_EQ(moduleManager.nativeEngineList_.size(), 3u);
+    }
+    // 出作用域即调用析构，若走到死锁/UB 会在用例进程中暴露
+    GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely end";
+}
+
+/*
  * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle
  * @tc.desc: test RemoveNativeModuleByCache should free memory when remove middle node
  * @tc.type: FUNC

@@ -133,20 +133,29 @@ NativeModuleManager::~NativeModuleManager()
         delete[] sharedLibsSonames_;
     }
 #endif
-    appLibPathMapMutex_.lock();
-    for (const auto& item : appLibPathMap_) {
-        free(item.second);
-    }
-    std::map<std::string, char*>().swap(appLibPathMap_);
-    appLibPathMapMutex_.unlock();
-
-    while (nativeEngineList_.size() > 0) {
-        NativeEngine* wraper = nativeEngineList_.begin()->second;
-        if (wraper != nullptr) {
-            delete wraper;
-            wraper = nullptr;
+    // 问题 #17：原裸 lock/unlock 在 free 抛异常时会跳过 unlock 导致死锁，
+    // 改用 lock_guard 保证异常路径也能解锁。
+    {
+        std::lock_guard<std::mutex> lock(appLibPathMapMutex_);
+        for (const auto& item : appLibPathMap_) {
+            free(item.second);
         }
-        nativeEngineList_.erase(nativeEngineList_.begin());
+        appLibPathMap_.clear();
+    }
+
+    // 问题 #17：原 while(size>0) + erase(begin()) 遍历无锁，并发访问 nativeEngineList_
+    // 会触发竞态；erase(begin()) 在 std::map 上为 O(n²)。改为先在锁内 swap 出全部
+    // 元素，锁外逐个 delete（避免 NativeEngine 析构回持同一 mutex 造成死锁，
+    // 与问题 #8 UnloadNativeModule "锁外 dlclose" 同模式）。
+    std::map<std::string, NativeEngine*> enginesToDestroy;
+    {
+        std::lock_guard<std::mutex> lock(nativeEngineListMutex_);
+        enginesToDestroy.swap(nativeEngineList_);
+    }
+    for (const auto& item : enginesToDestroy) {
+        if (item.second != nullptr) {
+            delete item.second;
+        }
     }
     pthread_mutex_destroy(&mutex_);
 }
