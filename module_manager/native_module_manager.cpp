@@ -90,7 +90,7 @@ constexpr char MODULE_NS[] = "moduleNs_";
 #endif
 } // namespace
 
-NativeModuleManager* NativeModuleManager::instance_ = NULL;
+std::atomic<NativeModuleManager*> NativeModuleManager::instance_ { nullptr };
 std::mutex g_instanceMutex;
 
 NativeModuleManager::NativeModuleManager()
@@ -153,14 +153,20 @@ NativeModuleManager::~NativeModuleManager()
 
 NativeModuleManager* NativeModuleManager::GetInstance()
 {
-    if (instance_ == NULL) {
+    // 问题 #16：原 double-checked locking 在锁外裸读 instance_，弱内存模型架构
+    // (如部分 ARM) 上可能读到未完全构造的对象。改用 std::atomic + acquire/release
+    // 内存序建立 happens-before 关系，保证读到非空指针时对象已构造完毕。
+    NativeModuleManager* ptr = instance_.load(std::memory_order_acquire);
+    if (ptr == nullptr) {
         std::lock_guard<std::mutex> lock(g_instanceMutex);
-        if (instance_ == NULL) {
-            instance_ = new NativeModuleManager();
+        ptr = instance_.load(std::memory_order_relaxed);
+        if (ptr == nullptr) {
+            ptr = new NativeModuleManager();
+            instance_.store(ptr, std::memory_order_release);
             MODULEMNG_HILOG_DEBUG("create native module manager instance");
         }
     }
-    return instance_;
+    return ptr;
 }
 
 void NativeModuleManager::SetNativeEngine(std::string moduleKey, NativeEngine* nativeEngine)

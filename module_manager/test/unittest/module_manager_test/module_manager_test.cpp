@@ -19,6 +19,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "dlsym_mock_guard.h"
@@ -2483,4 +2484,65 @@ HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldAppendNewTailWhenListEx
     EXPECT_EQ(moduleManager.headNativeModule_, oldTail);
 
     GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldAppendNewTailWhenListExists end";
+}
+
+/**
+ * @tc.name: GetInstance_ShouldReturnStablePointerAcrossCalls
+ * @tc.desc: 同一线程多次调用 GetInstance 应返回相同指针（AC-16.1）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #16
+ */
+HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnStablePointerAcrossCalls, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnStablePointerAcrossCalls starts";
+
+    NativeModuleManager* p1 = NativeModuleManager::GetInstance();
+    NativeModuleManager* p2 = NativeModuleManager::GetInstance();
+    EXPECT_NE(p1, nullptr);
+    EXPECT_EQ(p1, p2);
+
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnStablePointerAcrossCalls end";
+}
+
+/**
+ * @tc.name: GetInstance_ShouldReturnSamePointerUnderConcurrency
+ * @tc.desc: 多线程并发首次/重复调用 GetInstance 都应返回相同指针（AC-16.2 回归保护）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #16
+ */
+HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnSamePointerUnderConcurrency, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnSamePointerUnderConcurrency starts";
+
+    constexpr int threadCount = 16;
+    constexpr int iterPerThread = 200;
+    std::vector<NativeModuleManager*> results(threadCount, nullptr);
+    std::vector<std::thread> threads;
+    threads.reserve(threadCount);
+
+    for (int i = 0; i < threadCount; ++i) {
+        threads.emplace_back([&results, i]() {
+            NativeModuleManager* last = nullptr;
+            for (int j = 0; j < iterPerThread; ++j) {
+                NativeModuleManager* cur = NativeModuleManager::GetInstance();
+                ASSERT_NE(cur, nullptr);
+                if (last != nullptr) {
+                    ASSERT_EQ(cur, last);
+                }
+                last = cur;
+            }
+            results[i] = last;
+        });
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+    // 所有线程看到的指针必须一致
+    NativeModuleManager* expected = results[0];
+    EXPECT_NE(expected, nullptr);
+    for (int i = 1; i < threadCount; ++i) {
+        EXPECT_EQ(results[i], expected) << "thread " << i << " saw different instance pointer";
+    }
+
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnSamePointerUnderConcurrency end";
 }

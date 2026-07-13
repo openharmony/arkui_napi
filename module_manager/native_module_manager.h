@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 #define FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <mutex>
@@ -199,7 +200,7 @@ private:
     NativeModule* tailNativeModule_ = nullptr;
     std::string loadingModuleKey_;
 
-    static NativeModuleManager *instance_;
+    static std::atomic<NativeModuleManager*> instance_;
     pthread_mutex_t mutex_;
     std::string prefix_;
     bool isAppModule_ = false;
