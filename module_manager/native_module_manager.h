@@ -82,7 +82,6 @@ struct NativeModuleHeadTailStruct {
 class NAPI_EXPORT NativeModuleManager {
 public:
     static NativeModuleManager* GetInstance();
-    static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
     void InheritNamespaceEachOther(const std::string& src, const std::string& dst);
