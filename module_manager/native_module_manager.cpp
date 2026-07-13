@@ -384,7 +384,7 @@ void NativeModuleManager::Register(NativeModule* nativeModule)
         tailNativeModule_->fileName = nativeModule->fileName;
         tailNativeModule_->isAppModule = isAppModule_;
         tailNativeModule_->name = moduleName;
-        tailNativeModule_->moduleName = nullptr;  /* we update moduleName latter */
+        tailNativeModule_->moduleName = nullptr;  /* we update moduleName later */
         tailNativeModule_->refCount = nativeModule->refCount;
         tailNativeModule_->registerCallback = nativeModule->registerCallback;
         tailNativeModule_->getJSCode = nativeModule->getJSCode;
@@ -777,7 +777,7 @@ void NativeModuleManager::InheritNamespaceEachOther(const std::string& src, cons
 void NativeModuleManager::SetAppLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath,
                                         const bool& isSystemApp)
 {
-    MODULEMNG_HILOG_DEBUG("moduleName is %{public}s, isisSystemApp is %{public}d", moduleName.c_str(), isSystemApp);
+    MODULEMNG_HILOG_DEBUG("moduleName is %{public}s, isSystemApp is %{public}d", moduleName.c_str(), isSystemApp);
 
     std::string tmpPath = "";
     for (size_t i = 0; i < appLibPath.size(); i++) {
