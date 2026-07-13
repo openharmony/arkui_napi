@@ -73,11 +73,10 @@ static void ClassifyLoadError(std::string* loadErrInfo, const LoadErrorContext& 
         return;
     }
     if (ctx.dlopenFailed) {
-        std::string rawErr = ctx.dlopenErrMsg;
-        if (rawErr.find("failed ") == 0) {
-            rawErr = rawErr.substr(strlen("failed "));
-        }
-        *loadErrInfo = "dlopen failed: " + rawErr;
+        // 问题 #20：dlopenErrMsg 已是 LoadModuleLibrary 直接写入的原始 dlerror/GetLastError
+        // 字符串（未加 "failed " 前缀），无需再剥离；消除 dlerror 自身以 "failed " 开头
+        // 或多层嵌套前缀导致的分类退化。
+        *loadErrInfo = "dlopen failed: " + ctx.dlopenErrMsg;
     } else if (ctx.isAppModule && !ctx.pathRegistered) {
         *loadErrInfo = std::string("app lib path not registered in namespace '") + ctx.path + "'";
     } else {
@@ -1278,7 +1277,8 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const char* path,
-    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
+    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason,
+    std::string& dlopenRawErr)
 {
     if (strlen(path) == 0) {
         errInfo += "load module " + moduleKey  + " failed.";
@@ -1299,7 +1299,10 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        errInfo += "failed " + std::to_string(GetLastError());
+        // 问题 #20：同步写一份未加 "failed " 前缀的原始错误到 dlopenRawErr，
+        // 供 ClassifyLoadError 直接消费，避免脆弱的字符串前缀剥离。
+        dlopenRawErr = std::to_string(GetLastError());
+        errInfo += "failed " + dlopenRawErr;
         MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
@@ -1313,7 +1316,8 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-        errInfo += "failed " +  std::string(dlerrMsg);
+        dlopenRawErr = std::string(dlerrMsg);
+        errInfo += "failed " +  dlopenRawErr;
     }
 
 #elif defined(IOS_PLATFORM)
@@ -1331,7 +1335,8 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr :
             std::string(path) + " not exist";
-        errInfo += "failed " +  std::string(dlerrMsg);
+        dlopenRawErr = std::string(dlerrMsg);
+        errInfo += "failed " +  dlopenRawErr;
     }
 #endif
 #ifdef ENABLE_HITRACE
@@ -1457,7 +1462,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     MODULEMNG_HILOG_DEBUG("moduleName:%{public}s. path:%{public}s", moduleName, loadPath);
     uint32_t errReason0 = MODULE_LOAD_SUCCESS;
     std::string firstErrInfo;
-    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, firstErrInfo, errReason0);
+    std::string firstRawErr;
+    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, firstErrInfo, errReason0, firstRawErr);
     bool dlopenFailed = false;
     std::string dlopenErrMsg;
     std::string secondErrInfo;
@@ -1466,17 +1472,19 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         if ((isAppModule && IsExistedPath(path)) ||
             (!isAppModule && nativeModulePath[0][0] != '\0' && access(nativeModulePath[0], F_OK) == 0)) {
             dlopenFailed = true;
-            dlopenErrMsg = firstErrInfo;
+            // 问题 #20：直接保存原始 dlerror，不再让 ClassifyLoadError 剥离 "failed " 前缀
+            dlopenErrMsg = firstRawErr;
         }
         loadPath = nativeModulePath[1];
         MODULEMNG_HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
-        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, secondErrInfo, errReason1);
+        std::string secondRawErr;
+        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, secondErrInfo, errReason1, secondRawErr);
         if (lib == nullptr) {
             if ((isAppModule && IsExistedPath(path)) ||
                 (!isAppModule && nativeModulePath[1][0] != '\0' && access(nativeModulePath[1], F_OK) == 0)) {
                 dlopenFailed = true;
-                dlopenErrMsg = secondErrInfo;
+                dlopenErrMsg = secondRawErr;
             }
             // Reconstruct original errInfo format
             errInfo = "First: " + firstErrInfo + ".Second: " + secondErrInfo;
