@@ -1383,9 +1383,22 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         return lib;
     }
 
-    std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(len);
-    inFile.seekg(0);
-    inFile.read(reinterpret_cast<char*>(buffer.get()), len);
+    std::unique_ptr<uint8_t[]> buffer;
+    {
+        // 问题 #22：ABC 文件读取（含大块 make_unique + read）是磁盘加载阶段的主要耗时点，
+        // 用独立 trace 片段包裹实际 IO，与上层粗粒度 LoadNativeModule trace 区分，
+        // 便于 systrace 定位是 IO 还是 dlopen / onLoad 拖慢。
+        // 用花括号限制作用域，保证 StartTrace/FinishTrace 在任何后续错误路径下都成对。
+#ifdef ENABLE_HITRACE
+        StartTrace(HITRACE_TAG_ACE, "GetFileBuffer::read");
+#endif
+        buffer = std::make_unique<uint8_t[]>(len);
+        inFile.seekg(0);
+        inFile.read(reinterpret_cast<char*>(buffer.get()), len);
+#ifdef ENABLE_HITRACE
+        FinishTrace(HITRACE_TAG_ACE);
+#endif
+    }
     // 校验实际读取字节数，防止文件在打开后长度被截断导致缓冲区部分未填充。
     if (static_cast<size_t>(inFile.gcount()) != len) {
         MODULEMNG_HILOG_ERROR("short read: expected %{public}zu, got %{public}zu",
@@ -1433,7 +1446,15 @@ void NativeModuleManager::Napi_onLoadCallback(LIBHANDLE lib, const char* moduleN
 {
     auto onLoadFunc = reinterpret_cast<NapiOnLoadCallback>(LIBSYM(lib, "napi_onLoad"));
     if (onLoadFunc != nullptr) {
+        // 问题 #22：模块自身 init 代码可能任意慢，独立 trace 片段便于在 systrace 中定位
+        // 是哪个 NAPI 模块的 onLoad 拖慢启动，而非笼统的 "LoadNativeModule"。
+#ifdef ENABLE_HITRACE
+        StartTrace(HITRACE_TAG_ACE, "napi_onLoad");
+#endif
         onLoadFunc();
+#ifdef ENABLE_HITRACE
+        FinishTrace(HITRACE_TAG_ACE);
+#endif
         MODULEMNG_HILOG_INFO("napi_onLoad call, module:%{public}s", moduleName);
     }
 }
