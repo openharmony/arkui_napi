@@ -16,8 +16,10 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include "dlsym_mock_guard.h"
 #include "mock_native_module_manager.h"
@@ -2260,4 +2262,136 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, Test
     mgr.moduleLibMap_.erase("test_emplace_new_key_9");
 
     GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
+}
+
+namespace {
+constexpr char GET_FILE_BUFFER_TEST_DIR[] = "/data/local/tmp";
+constexpr char GET_FILE_BUFFER_TEST_FILE[] = "/data/local/tmp/napi_getfilebuffer_test_11.bin";
+constexpr char GET_FILE_BUFFER_TEST_KEY[] = "test.getfilebuffer.11";
+
+// Helper：写入指定字节的测试文件。返回是否成功。
+bool WriteTestFile(const std::string& path, const std::vector<uint8_t>& bytes)
+{
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    if (!out.is_open()) {
+        return false;
+    }
+    if (!bytes.empty()) {
+        out.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    }
+    out.close();
+    return out.good() || bytes.empty();
+}
+
+// Helper，清理测试产物与缓存（缓存中的 raw 指针需手动 delete[]）。
+void CleanupModuleBuffer(NativeModuleManager& mgr, const std::string& key)
+{
+    auto it = mgr.moduleBufMap_.find(key);
+    if (it != mgr.moduleBufMap_.end()) {
+        delete[] it->second;
+        mgr.moduleBufMap_.erase(it);
+    }
+}
+} // namespace
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile
+ * @tc.desc: 正常 ABC 文件应返回非空 buffer，len 等于文件大小，内容一致（AC-11.1/11.3）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #11
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile starts";
+
+    NativeModuleManager moduleManager;
+    std::vector<uint8_t> payload = {0x41, 0x42, 0x43, 0x44, 0x45}; // "ABCDE"
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, payload));
+
+    size_t len = 0;
+    const uint8_t* buf = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len);
+    EXPECT_NE(buf, nullptr);
+    EXPECT_EQ(len, payload.size());
+    if (buf != nullptr && len == payload.size()) {
+        EXPECT_EQ(memcmp(buf, payload.data(), len), 0);
+    }
+    CleanupModuleBuffer(moduleManager, GET_FILE_BUFFER_TEST_KEY);
+    std::remove(GET_FILE_BUFFER_TEST_FILE);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache
+ * @tc.desc: 同一 moduleKey 二次调用应命中缓存返回相同指针，且不再读取文件（AC-11.4）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #11
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache starts";
+
+    NativeModuleManager moduleManager;
+    std::vector<uint8_t> payload = {0x10, 0x20, 0x30};
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, payload));
+
+    size_t len1 = 0;
+    const uint8_t* buf1 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len1);
+    ASSERT_NE(buf1, nullptr);
+
+    // 删除源文件以确保二次调用不依赖磁盘读取
+    std::remove(GET_FILE_BUFFER_TEST_FILE);
+
+    size_t len2 = 0;
+    const uint8_t* buf2 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len2);
+    EXPECT_EQ(buf2, buf1);
+    EXPECT_EQ(len2, len1);
+
+    CleanupModuleBuffer(moduleManager, GET_FILE_BUFFER_TEST_KEY);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist
+ * @tc.desc: 文件不存在(is_open 失败)时应返回 nullptr，len 保持 0（AC-11.2）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #11
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist starts";
+
+    NativeModuleManager moduleManager;
+    std::string nonExisting = std::string(GET_FILE_BUFFER_TEST_DIR) + "/napi_not_exist_11.bin";
+    std::remove(nonExisting.c_str());
+
+    size_t len = 1; // 故意非 0，校验函数未写出
+    const uint8_t* buf = moduleManager.GetFileBuffer(nonExisting, "test.getfilebuffer.notexist", len);
+    EXPECT_EQ(buf, nullptr);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnNullptrForEmptyFile
+ * @tc.desc: 空文件 tellg() 返回 0，按修复后逻辑直接拒绝，返回 nullptr（AC-11.5 fileSize==0 早退）
+ * @tc.type: FUNC
+ * @tc.require: issue #2157 问题 #11
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrForEmptyFile starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, {}));
+
+    size_t len = 1; // 故意非 0，校验函数清零
+    const uint8_t* buf = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len);
+    EXPECT_EQ(buf, nullptr);
+    EXPECT_EQ(len, 0u);
+    EXPECT_EQ(moduleManager.moduleBufMap_.count(GET_FILE_BUFFER_TEST_KEY), 0u);
+    std::remove(GET_FILE_BUFFER_TEST_FILE);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrForEmptyFile end";
 }

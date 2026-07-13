@@ -1346,7 +1346,25 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         MODULEMNG_HILOG_DEBUG("failed");
         return lib;
     }
-    len = static_cast<size_t>(inFile.tellg());
+    // 问题 #11：tellg() 在流错误或非 seekable 设备文件上返回 -1，
+    // 经 static_cast<size_t> 变为约 18EB，使 make_unique 抛 bad_alloc 或 read 越界。
+    std::streampos pos = inFile.tellg();
+    if (pos < 0) {
+        MODULEMNG_HILOG_ERROR("tellg failed, invalid file size: %{public}s", filePath.c_str());
+        inFile.close();
+        len = 0;
+        return nullptr;
+    }
+    // 限制上限防止异常文件耗尽内存（ABC 文件正常远小于 256MB）。
+    constexpr size_t maxAbcFileSize = 256 * 1024 * 1024; // 256MB
+    size_t fileSize = static_cast<size_t>(pos);
+    if (fileSize == 0 || fileSize > maxAbcFileSize) {
+        MODULEMNG_HILOG_ERROR("invalid abc file size: %{public}zu", fileSize);
+        inFile.close();
+        len = 0;
+        return nullptr;
+    }
+    len = fileSize;
     std::string abcModuleKey = moduleKey;
     lib = GetBufferHandle(abcModuleKey);
     if (lib != nullptr) {
@@ -1358,6 +1376,14 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     std::unique_ptr<uint8_t[]> buffer = std::make_unique<uint8_t[]>(len);
     inFile.seekg(0);
     inFile.read(reinterpret_cast<char*>(buffer.get()), len);
+    // 校验实际读取字节数，防止文件在打开后长度被截断导致缓冲区部分未填充。
+    if (static_cast<size_t>(inFile.gcount()) != len) {
+        MODULEMNG_HILOG_ERROR("short read: expected %{public}zu, got %{public}zu",
+            len, static_cast<size_t>(inFile.gcount()));
+        inFile.close();
+        len = 0;
+        return nullptr;
+    }
     inFile.close();
     lib = buffer.release();
     EmplaceModuleBuffer(abcModuleKey, lib);
