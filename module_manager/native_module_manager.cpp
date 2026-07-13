@@ -255,17 +255,6 @@ const uint8_t* NativeModuleManager::GetBufferHandle(const std::string& moduleKey
     return it->second;
 }
 
-bool NativeModuleManager::RemoveNativeModule(const std::string& moduleKey)
-{
-    bool handleAbcRemoved = RemoveModuleBuffer(moduleKey);
-    bool handleRemoved = RemoveModuleLib(moduleKey);
-    bool moduleRemoved = RemoveNativeModuleByCache(moduleKey);
-
-    MODULEMNG_HILOG_DEBUG("handleAbcRemoved is %{public}d, handleRemoved is %{public}d, moduleRemoved is %{public}d",
-        handleAbcRemoved, handleRemoved, moduleRemoved);
-    return ((handleRemoved || handleAbcRemoved) && moduleRemoved);
-}
-
 bool NativeModuleManager::RemoveNativeModuleLocked(const std::string& moduleKey)
 {
     // Caller holds moduleLibMutex_ and nativeModuleListMutex_

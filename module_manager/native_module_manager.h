@@ -178,7 +178,6 @@ private:
     bool CreateHeadNativeModule();
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
     bool RemoveNativeModuleByCache(const std::string& moduleKey);
-    bool RemoveNativeModule(const std::string& moduleKey);
     bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule,
         const NativeModule* matchLoadingNativeModule);
     void MoveApiAllowListCheckerPtr(

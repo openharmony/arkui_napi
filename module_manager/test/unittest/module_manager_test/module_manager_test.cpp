@@ -318,7 +318,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
 
 /*
  * @tc.name: LoadNativeModuleTest_013
- * @tc.desc: test NativeModule's RemoveNativeModule function
+ * @tc.desc: test NativeModule's UnloadNativeModule function on missing key
  * @tc.type: FUNC
  * @tc.require: #I76XTV
  */
@@ -339,7 +339,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_013, TestSize.Level1)
 
 /*
  * @tc.name: LoadNativeModuleTest_014
- * @tc.desc: test NativeModule's RemoveNativeModule function
+ * @tc.desc: test NativeModule's RemoveModuleLib/UnloadNativeModule on missing key
  * @tc.type: FUNC
  * @tc.require: #I76XTV
  */
@@ -355,8 +355,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_014, TestSize.Level1)
     bool result = moduleManager->RemoveModuleLib(moduleKey1);
     EXPECT_EQ(result, false);
 
-    bool result2 = moduleManager->RemoveNativeModule(moduleKey1);
-    EXPECT_EQ(result2, false);
     bool result3 = moduleManager->UnloadNativeModule(moduleKey1);
     EXPECT_EQ(result3, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 end";
