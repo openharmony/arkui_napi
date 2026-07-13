@@ -319,7 +319,7 @@ std::string NativeModuleManager::GetModuleFileName(const char* moduleName, bool 
         std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
         loadPath = std::string(appLibPathMap_[pathKey]) + "/" + nativeModulePath[0];
     }
-    MODULEMNG_HILOG_ERROR("failed");
+    MODULEMNG_HILOG_INFO("module:%{public}s, loadPath:%{public}s", moduleName, loadPath.c_str());
     return loadPath;
 }
 
