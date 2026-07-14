@@ -451,6 +451,10 @@ HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest003, testing::ext::TestSize.Lev
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
+    // Save original thread type and ensure MainThread for test
+    bool wasWorkerThread = engine_->IsWorkerThread();
+    engine_->MarkMainThread();
+
     // Default should be MainThread
     ASSERT_TRUE(engine_->IsMainThread());
 
@@ -460,6 +464,11 @@ HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadTest003, testing::ext::TestSize.Lev
     // After marking, should be WorkerThread and not MainThread
     ASSERT_TRUE(engine_->IsWorkerThread());
     ASSERT_FALSE(engine_->IsMainThread());
+
+    // Restore original thread type
+    if (wasWorkerThread) {
+        engine_->MarkWorkerThread();
+    }
 }
 
 /**
@@ -518,10 +527,19 @@ HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest003, testing::ext::TestSize.Level
     ASSERT_NE(engine_, nullptr);
     napi_env env = reinterpret_cast<napi_env>(engine_);
 
+    // Save original thread type and ensure MainThread for test
+    bool wasWorkerThread = engine_->IsWorkerThread();
+    engine_->MarkMainThread();
+
     bool result = true;
     auto res = napi_is_worker_thread(env, &result);
     ASSERT_EQ(res, napi_ok);
     ASSERT_FALSE(result);
+
+    // Restore original thread type
+    if (wasWorkerThread) {
+        engine_->MarkWorkerThread();
+    }
 }
 
 /**
