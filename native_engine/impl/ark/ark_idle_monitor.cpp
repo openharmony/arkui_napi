@@ -949,9 +949,9 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
 #if defined(ENABLE_EVENT_HANDLER)
     // try trigger shared gc
     auto mainThreadSharedTask = [this]() {
-        HILOG_DEBUG("ArkIdleMonitor: try trigger shared full gc");
+        HILOG_DEBUG("ArkIdleMonitor: try trigger shared cc");
         std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
-        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_CC);
         gcFinishCV_.notify_one();
     };
     if (CheckIfInBackgroundInCompressGC()) {
@@ -964,7 +964,7 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         HILOG_WARN("ArkIdleMonitor: app is not in idle or in background.");
     }
 #elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
+    TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE::SHARED_CC);
 #endif
 }
 
