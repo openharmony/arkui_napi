@@ -2221,6 +2221,13 @@ HWTEST_F(ModuleManagerTest, IsValidLibNameStrict_LibNameValidationTest, TestSize
     std::string oversized(NAME_MAX, 'a');   // length == NAME_MAX -> reject
     EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(oversized));
 
+    // AC-7.7: names shorter than ".so" suffix must not underflow substr()/compare()
+    // (greylist data is untrusted — size() < 3 used to throw std::out_of_range)
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("a"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("ab"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(".so"));   // size == 3, no name stem
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("x.s"));    // size == 3, wrong suffix
+
     // AC-7.6: legitimate names -> accept (backward compat)
     EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("libfoo.so"));
     EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib_foo-bar.so"));

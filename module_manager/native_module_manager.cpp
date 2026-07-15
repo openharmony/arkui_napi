@@ -263,6 +263,10 @@ bool NativeModuleManager::RemoveNativeModuleLocked(const std::string& moduleKey)
 {
     // Caller holds moduleLibMutex_ and nativeModuleListMutex_
     // moduleLibMap_ entry already erased by caller (UnloadNativeModule)
+    // bufferRemoved only indicates whether an ABC buffer entry existed in moduleBufMap_
+    // (pure-native or pure-JS modules have none). It is a diagnostic signal, not a failure:
+    // the buffer memory is owned by NativeModule::jsABCCode; the map entry is just an index.
+    // moduleRemoved is the authoritative result that drives whether the caller dlclose()s.
     bool bufferRemoved = RemoveModuleBuffer(moduleKey);
     bool moduleRemoved = RemoveNativeModuleByCacheLocked(moduleKey);
     MODULEMNG_HILOG_DEBUG("bufferRemoved is %{public}d, moduleRemoved is %{public}d",
@@ -1076,7 +1080,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
     }
 
     const char* prefix = nullptr;
-    if (isAppModule) {
+    if (isAppModule && path != nullptr) {
         std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
         auto it = appLibPathMap_.find(path);
         if (it != appLibPathMap_.end()) {
@@ -1838,10 +1842,13 @@ bool NativeModuleManager::IsSafeRelativePath(const std::string& p)
 
 bool NativeModuleManager::IsValidLibNameStrict(const std::string& libName)
 {
-    if (libName.empty() || libName.size() >= NAME_MAX) {
+    // Greylist data is externally supplied and cannot be trusted. Guard the suffix
+    // check first: substr(size()-3) underflows when size() < 3 and throws std::out_of_range.
+    // The shortest legal name is "x.so" (4 bytes), so reject anything shorter than 4.
+    if (libName.size() < 4 || libName.size() >= NAME_MAX) {
         return false;
     }
-    if (libName.substr(libName.size() - 3) != ".so") {
+    if (libName.compare(libName.size() - 3, 3, ".so") != 0) {
         return false;
     }
     for (char c : libName) {
