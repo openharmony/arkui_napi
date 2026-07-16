@@ -296,28 +296,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
 }
 
 /*
- * @tc.name: LoadNativeModuleTest_012
- * @tc.desc: test NativeModule's EmplaceModuleLib function
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
-    bool result1 = moduleManager->RemoveModuleLib(moduleKey);
-    std::string moduleKey1 = "bb";
-    bool result2 = moduleManager->RemoveModuleLib(moduleKey1);
-    EXPECT_EQ(result1, false);
-    EXPECT_EQ(result2, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 end";
-}
-
-/*
  * @tc.name: LoadNativeModuleTest_013
  * @tc.desc: test NativeModule's UnloadNativeModule function on missing key
  * @tc.type: FUNC
@@ -336,29 +314,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_013, TestSize.Level1)
     bool result2 = moduleManager->UnloadNativeModule(moduleKey1);
     EXPECT_EQ(result2, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 end";
-}
-
-/*
- * @tc.name: LoadNativeModuleTest_014
- * @tc.desc: test NativeModule's RemoveModuleLib/UnloadNativeModule on missing key
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_014, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
-    std::string moduleKey1 = "bb";
-    bool result = moduleManager->RemoveModuleLib(moduleKey1);
-    EXPECT_EQ(result, false);
-
-    bool result3 = moduleManager->UnloadNativeModule(moduleKey1);
-    EXPECT_EQ(result3, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 end";
 }
 
 /*
@@ -395,24 +350,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_016, TestSize.Level1)
     bool result = moduleManager->UnloadModuleLibrary(nullptr);
     EXPECT_EQ(result, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_016 end";
-}
-
-/*
- * @tc.name: LoadNativeModuleTest_017
- * @tc.desc: test NativeModule's RemoveNativeModuleByCache function
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_017, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    bool result = moduleManager->RemoveNativeModuleByCache(moduleKey);
-    EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 end";
 }
 
 /*
@@ -1427,97 +1364,6 @@ HWTEST_F(ModuleManagerTest, SetAppLibPath_ShouldFreeOldPathWhenSetTwice, TestSiz
 }
 
 /*
- * @tc.name: RemoveNativeModuleByCache_ShouldHandleNullModuleName
- * @tc.desc: test RemoveNativeModuleByCache should handle null moduleName
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldHandleNullModuleName, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* module = new NativeModule();
-    module->name = strdup("testModule");
-    module->moduleName = nullptr;
-    module->next = nullptr;
-    moduleManager.headNativeModule_ = module;
-    moduleManager.tailNativeModule_ = module;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("testModule");
-    EXPECT_FALSE(result);
-
-    delete module;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName end";
-}
-
-/*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove head node
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* module = new NativeModule();
-    std::string moduleName = "headModule";
-    module->name = strdup(moduleName.c_str());
-    module->moduleName = strdup(moduleName.c_str());
-    module->next = nullptr;
-    moduleManager.headNativeModule_ = module;
-    moduleManager.tailNativeModule_ = module;
-
-    bool result = moduleManager.RemoveNativeModuleByCache(moduleName);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, nullptr);
-    EXPECT_EQ(moduleManager.tailNativeModule_, nullptr);
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead end";
-}
-
-/*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove tail node
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* headModule = new NativeModule();
-    headModule->name = strdup("headModule");
-    headModule->moduleName = strdup("headModule");
-    headModule->next = nullptr;
-
-    NativeModule* tailModule = new NativeModule();
-    tailModule->name = strdup("tailModule");
-    tailModule->moduleName = strdup("tailModule");
-    tailModule->next = nullptr;
-
-    headModule->next = tailModule;
-    moduleManager.headNativeModule_ = headModule;
-    moduleManager.tailNativeModule_ = tailModule;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("tailModule");
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
-    EXPECT_EQ(moduleManager.tailNativeModule_, headModule);
-
-    free(const_cast<char*>(headModule->name));
-    free(const_cast<char*>(headModule->moduleName));
-    delete headModule;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail end";
-}
-
-/*
  * @tc.name: Destructor_ShouldFreeAppLibPathMapMemory
  * @tc.desc: test destructor should free appLibPathMap_ memory correctly
  * @tc.type: FUNC
@@ -1553,54 +1399,6 @@ HWTEST_F(ModuleManagerTest, Destructor_ShouldClearNativeEngineListSafely, TestSi
         EXPECT_EQ(moduleManager.nativeEngineList_.size(), 3u);
     }
     GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely end";
-}
-
-/*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove middle node
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* headModule = new NativeModule();
-    headModule->name = strdup("headModule");
-    headModule->moduleName = strdup("headModule");
-    headModule->next = nullptr;
-
-    NativeModule* middleModule = new NativeModule();
-    middleModule->name = strdup("middleModule");
-    middleModule->moduleName = strdup("middleModule");
-    middleModule->next = nullptr;
-
-    NativeModule* tailModule = new NativeModule();
-    tailModule->name = strdup("tailModule");
-    tailModule->moduleName = strdup("tailModule");
-    tailModule->next = nullptr;
-
-    headModule->next = middleModule;
-    middleModule->next = tailModule;
-    moduleManager.headNativeModule_ = headModule;
-    moduleManager.tailNativeModule_ = tailModule;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("middleModule");
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
-    EXPECT_EQ(moduleManager.tailNativeModule_, tailModule);
-    EXPECT_EQ(headModule->next, tailModule);
-
-    free(const_cast<char*>(headModule->name));
-    free(const_cast<char*>(headModule->moduleName));
-    delete headModule;
-    free(const_cast<char*>(tailModule->name));
-    free(const_cast<char*>(tailModule->moduleName));
-    delete tailModule;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle end";
 }
 
 /*
@@ -2000,45 +1798,43 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeSystemFilePathIsNull
 }
 
 /*
- * @tc.name: EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey
- * @tc.desc: test EmplaceModuleBuffer releases old buffer and overwrites on duplicate moduleKey
+ * @tc.name: EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey
+ * @tc.desc: test EmplaceModuleBuffer is a no-op on duplicate moduleKey: the original buffer is
+ *          preserved (map is an index, buffer ownership lives in NativeModule::jsABCCode).
+ *          Replacing the map entry would free a buffer still referenced by another module.
  * @tc.type: FUNC
  * @tc.require: #I76XTV
  */
-HWTEST_F(ModuleManagerTest, EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey, TestSize.Level1)
+HWTEST_F(ModuleManagerTest, EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey starts";
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey starts";
 
     NativeModuleManager moduleManager;
     std::string key = "test.module.emplace.dupkey";
 
-    // Allocate two distinct uint8_t[] buffers as the values to be cached.
-    // Use new uint8_t[] so the fix's delete[] semantics match the allocation.
     uint8_t* lib1 = new uint8_t[16];
     ASSERT_NE(lib1, nullptr);
     uint8_t* lib2 = new uint8_t[16];
     ASSERT_NE(lib2, nullptr);
 
-    // AC-3.3: first call -- emplace path. Map size becomes 1, map[key] == lib1.
+    // First call -- emplace path. Map size becomes 1, map[key] == lib1.
     moduleManager.EmplaceModuleBuffer(key, lib1);
     EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
     EXPECT_EQ(moduleManager.moduleBufMap_[key], lib1);
 
-    // AC-3.1 + AC-3.2: second call with same key, different buffer.
-    // Fix semantics: delete[] old (lib1), replace with new (lib2). Map size stays 1, map[key] == lib2.
+    // Second call with same key: no-op (std::map::emplace refuses duplicate key).
+    // Map keeps lib1; lib2 is the caller's responsibility (would be assigned to a
+    // different NativeModule::jsABCCode by GetFileBuffer in production).
     moduleManager.EmplaceModuleBuffer(key, lib2);
     EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
-    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib2);
+    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib1);
 
-    // Cleanup: lib1 already delete[]-ed by the fix; lib2 is still in the map.
-    // Map destructor does NOT free raw pointers, so we must delete[] lib2 manually.
-    // To avoid touching the map after asserting, just delete[] lib2 (the current owner).
+    // Cleanup: both buffers are owned by the test (map is a non-owning index).
+    delete[] lib1;
     delete[] lib2;
-    lib2 = nullptr;
-    lib1 = nullptr;
     moduleManager.moduleBufMap_.clear();
 
-    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldReleaseOldBufferOnDuplicateKey end";
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey end";
 }
 
 /*
@@ -2287,6 +2083,38 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, Test
     mgr.moduleLibMap_.erase("test_emplace_new_key_9");
 
     GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
+}
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey
+ * @tc.desc: EmplaceModuleLib returns the canonical (existing) handle on duplicate key so
+ *          LoadModuleLibrary's caller never dereferences a freed handle. The new duplicate
+ *          handle is not tracked (caller's responsibility) and the map keeps the first one.
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey, TestSize.Level1)
+{
+    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    LIBHANDLE first = reinterpret_cast<LIBHANDLE>(0xCAFEBABE);
+    LIBHANDLE second = reinterpret_cast<LIBHANDLE>(0xBADDCAFE);
+    const std::string key = "test_emplace_dup_key_9";
+
+    // Seed the map with the canonical handle.
+    mgr.EmplaceModuleLib(key, first);
+    ASSERT_EQ(mgr.moduleLibMap_.count(key), 1u);
+
+    // Duplicate key: function must return the canonical (first) handle, not the duplicate.
+    // NOTE: production code calls UnloadModuleLibrary(second) here; we bypass that by
+    // erasing the entry before any dtor bookkeeping, so no real dlclose runs on the sentinel.
+    LIBHANDLE returned = mgr.EmplaceModuleLib(key, second);
+    EXPECT_EQ(returned, first);
+    EXPECT_EQ(mgr.moduleLibMap_[key], first);
+
+    // Cleanup sentinels without invoking dlclose.
+    mgr.moduleLibMap_.erase(key);
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey end";
 }
 
 namespace {

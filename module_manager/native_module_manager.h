@@ -169,8 +169,7 @@ private:
     static bool IsValidLibNameStrict(const std::string& libName);
     bool RemoveNativeModuleByCacheLocked(const std::string& moduleKey);
     bool RemoveNativeModuleLocked(const std::string& moduleKey);
-    void EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
-    bool RemoveModuleLib(const std::string moduleKey);
+    LIBHANDLE EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
     void EmplaceModuleBuffer(const std::string moduleKey, const uint8_t* lib);
     bool RemoveModuleBuffer(const std::string moduleKey);
     const uint8_t* GetBufferHandle(const std::string& moduleKey) const;
@@ -178,7 +177,6 @@ private:
     bool CreateTailNativeModule();
     bool CreateHeadNativeModule();
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
-    bool RemoveNativeModuleByCache(const std::string& moduleKey);
     bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule,
         const NativeModule* matchLoadingNativeModule);
     void MoveApiAllowListCheckerPtr(
