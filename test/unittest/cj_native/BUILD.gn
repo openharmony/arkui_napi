@@ -102,6 +102,10 @@ group("cj_native_unittest") {
   deps = [
     ":test_ark_interop",
     ":test_ffi_data",
-    ":test_cj_backtrace",
   ]
+  if (is_ohos && (current_cpu == "arm64" || current_cpu == "x86_64")) {
+    deps += [
+      ":test_cj_backtrace"
+    ]
+  }
 }
