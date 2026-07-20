@@ -2055,7 +2055,8 @@ HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturn
  */
 HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, TestSize.Level1)
 {
-    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    // Use a stack instance to avoid contaminating the global singleton's moduleLibMap_.
+    NativeModuleManager mgr;
     size_t before = mgr.moduleLibMap_.size();
     mgr.EmplaceModuleLib("test_emplace_nullptr_key_9", nullptr);
     EXPECT_EQ(mgr.moduleLibMap_.size(), before);
@@ -2072,13 +2073,12 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, T
  */
 HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, TestSize.Level1)
 {
-    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    // Use a stack instance so the sentinel pointer never leaks into the global singleton.
+    NativeModuleManager mgr;
     LIBHANDLE sentinel = reinterpret_cast<LIBHANDLE>(0xDEADBEEF);
     mgr.EmplaceModuleLib("test_emplace_new_key_9", sentinel);
     EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_new_key_9"), 1u);
     EXPECT_EQ(mgr.moduleLibMap_["test_emplace_new_key_9"], sentinel);
-    // sentinel is not a real dlopen handle; erase manually to avoid dlclose contamination.
-    mgr.moduleLibMap_.erase("test_emplace_new_key_9");
 
     GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
 }
@@ -2093,7 +2093,8 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, Test
  */
 HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey, TestSize.Level1)
 {
-    NativeModuleManager& mgr = NativeModuleManager::GetInstance();
+    // Use a stack instance so the sentinel pointers never leak into the global singleton.
+    NativeModuleManager mgr;
     LIBHANDLE first = reinterpret_cast<LIBHANDLE>(0xCAFEBABE);
     LIBHANDLE second = reinterpret_cast<LIBHANDLE>(0xBADDCAFE);
     const std::string key = "test_emplace_dup_key_9";
@@ -2103,14 +2104,13 @@ HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplic
     ASSERT_EQ(mgr.moduleLibMap_.count(key), 1u);
 
     // Duplicate key: function must return the canonical (first) handle, not the duplicate.
-    // NOTE: production code calls UnloadModuleLibrary(second) here; we bypass that by
-    // erasing the entry before any dtor bookkeeping, so no real dlclose runs on the sentinel.
+    // After revert 61746b9d, production code no longer calls UnloadModuleLibrary(second)
+    // (the duplicate handle is leaked to avoid dlclose refcount risk); the map keeps the
+    // first handle. The stack instance's destructor does not iterate moduleLibMap_, so the
+    // sentinel pointers simply leak in the test process -- no dlclose contamination.
     LIBHANDLE returned = mgr.EmplaceModuleLib(key, second);
     EXPECT_EQ(returned, first);
     EXPECT_EQ(mgr.moduleLibMap_[key], first);
-
-    // Cleanup sentinels without invoking dlclose.
-    mgr.moduleLibMap_.erase(key);
 
     GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey end";
 }
