@@ -194,9 +194,9 @@ LIBHANDLE NativeModuleManager::EmplaceModuleLib(std::string moduleKey, const LIB
     auto it = moduleLibMap_.find(moduleKey);
     if (it != moduleLibMap_.end()) {
         MODULEMNG_HILOG_WARN("module '%{public}s' already exists, discard duplicate handle", moduleKey.c_str());
-        UnloadModuleLibrary(lib);  // discard duplicate handle, refcount -1
-        // Return the canonical handle tracked in the map so LoadModuleLibrary's caller
-        // never observes a freed handle (use-after-free in subsequent dlsym).
+        // Leak the new duplicate handle (original behavior). dlclose was reverted to avoid
+        // refcount risk; the LIBHANDLE return still hands back the canonical tracked handle
+        // so callers never observe a freed pointer.
         return it->second;
     }
     moduleLibMap_.emplace(moduleKey, lib);
