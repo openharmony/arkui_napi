@@ -440,7 +440,6 @@ TEST_F(ArkInteropTest, CJAsyncCallback)
     {
         MockContext mockCtx(engine, false);
         auto env = mockCtx.GetEnv();
-        auto scope = ARKTS_OpenScope(env);
 
         bool invoked = false;
         std::condition_variable cv;
@@ -459,8 +458,6 @@ TEST_F(ArkInteropTest, CJAsyncCallback)
             cv.wait_for(lock, std::chrono::milliseconds(checkDuration));
         }
         EXPECT_TRUE(invoked);
-
-        ARKTS_CloseScope(env, scope);
     }
     std::thread destroyer([engine] { ARKTS_DestroyEngine(engine); });
     destroyer.join();
