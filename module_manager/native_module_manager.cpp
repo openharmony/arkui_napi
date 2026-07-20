@@ -1319,11 +1319,10 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
 const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     const std::string& moduleKey, size_t &len)
 {
-    const uint8_t* lib = nullptr;
     std::ifstream inFile(filePath, std::ios::ate | std::ios::binary);
     if (!inFile.is_open()) {
         MODULEMNG_HILOG_DEBUG("failed");
-        return lib;
+        return nullptr;
     }
     std::streampos pos = inFile.tellg();
     if (pos < 0) {
@@ -1339,12 +1338,11 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         return nullptr;
     }
     len = fileSize;
-    std::string abcModuleKey = moduleKey;
-    lib = GetBufferHandle(abcModuleKey);
-    if (lib != nullptr) {
+    const uint8_t* cached = GetBufferHandle(moduleKey);
+    if (cached != nullptr) {
         MODULEMNG_HILOG_DEBUG("module:%{public}s", moduleKey.c_str());
         inFile.close();
-        return lib;
+        return cached;
     }
 
     std::unique_ptr<uint8_t[]> buffer;
@@ -1366,8 +1364,8 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
         return nullptr;
     }
     inFile.close();
-    lib = buffer.release();
-    EmplaceModuleBuffer(abcModuleKey, lib);
+    const uint8_t* lib = buffer.release();
+    EmplaceModuleBuffer(moduleKey, lib);
     return lib;
 }
 
@@ -1631,12 +1629,8 @@ bool NativeModuleManager::RemoveNativeModuleByCacheLocked(const std::string& mod
         }
         headNativeModule_ = headNativeModule_->next;
         free(const_cast<char *>(nativeModule->name));
-        if (nativeModule->moduleName) {
-            free(const_cast<char *>(nativeModule->moduleName));
-        }
-        if (nativeModule->jsABCCode) {
-            delete[] nativeModule->jsABCCode;
-        }
+        if (nativeModule->moduleName) free(const_cast<char *>(nativeModule->moduleName));
+        if (nativeModule->jsABCCode) delete[] nativeModule->jsABCCode;
         if (nativeModule->systemFilePath && nativeModule->systemFilePath[0] != '\0') {
             free(const_cast<char *>(nativeModule->systemFilePath));
         }
@@ -1654,12 +1648,8 @@ bool NativeModuleManager::RemoveNativeModuleByCacheLocked(const std::string& mod
             }
             prev->next = curr->next;
             free(const_cast<char *>(curr->name));
-            if (curr->moduleName) {
-                free(const_cast<char *>(curr->moduleName));
-            }
-            if (curr->jsABCCode) {
-                delete[] curr->jsABCCode;
-            }
+            if (curr->moduleName) free(const_cast<char *>(curr->moduleName));
+            if (curr->jsABCCode) delete[] curr->jsABCCode;
             if (curr->systemFilePath && curr->systemFilePath[0] != '\0') {
                 free(const_cast<char *>(curr->systemFilePath));
             }
