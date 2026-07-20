@@ -80,7 +80,11 @@ static void ClassifyLoadError(std::string* loadErrInfo, const LoadErrorContext& 
         return;
     }
     if (ctx.dlopenFailed) {
-        *loadErrInfo = "dlopen failed: " + ctx.dlopenErrMsg;
+        std::string rawErr = ctx.dlopenErrMsg;
+        if (rawErr.find("failed ") == 0) {
+            rawErr = rawErr.substr(strlen("failed "));
+        }
+        *loadErrInfo = "dlopen failed: " + rawErr;
     } else if (ctx.isAppModule && !ctx.pathRegistered) {
         *loadErrInfo = std::string("app lib path not registered in namespace '") + ctx.path + "'";
     } else {
@@ -1247,8 +1251,7 @@ bool NativeModuleManager::GetNativeModulePath(const char* moduleName, const char
 }
 
 LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const char* path,
-    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason,
-    std::string& dlopenRawErr)
+    const char* pathKey, const bool isAppModule, std::string& errInfo, uint32_t& errReason)
 {
     if (strlen(path) == 0) {
         errInfo += "load module " + moduleKey  + " failed.";
@@ -1269,8 +1272,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     }
     lib = LoadLibrary(path);
     if (lib == nullptr) {
-        dlopenRawErr = std::to_string(GetLastError());
-        errInfo += "failed " + dlopenRawErr;
+        errInfo += "failed " + std::to_string(GetLastError());
         MODULEMNG_HILOG_WARN("%{public}s", errInfo.c_str());
     }
 #elif defined(MAC_PLATFORM) || defined(__BIONIC__) || defined(LINUX_PLATFORM)
@@ -1284,8 +1286,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
     if (lib == nullptr) {
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr : "dlerror msg is empty";
-        dlopenRawErr = std::string(dlerrMsg);
-        errInfo += "failed " +  dlopenRawErr;
+        errInfo += "failed " +  std::string(dlerrMsg);
     }
 
 #elif defined(IOS_PLATFORM)
@@ -1303,8 +1304,7 @@ LIBHANDLE NativeModuleManager::LoadModuleLibrary(std::string& moduleKey, const c
         char* dlerr = dlerror();
         auto dlerrMsg = dlerr != nullptr ? dlerr :
             std::string(path) + " not exist";
-        dlopenRawErr = std::string(dlerrMsg);
-        errInfo += "failed " +  dlopenRawErr;
+        errInfo += "failed " +  std::string(dlerrMsg);
     }
 #endif
 #ifdef ENABLE_HITRACE
@@ -1439,8 +1439,7 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     MODULEMNG_HILOG_DEBUG("moduleName:%{public}s. path:%{public}s", moduleName, loadPath);
     uint32_t errReason0 = MODULE_LOAD_SUCCESS;
     std::string firstErrInfo;
-    std::string firstRawErr;
-    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, firstErrInfo, errReason0, firstRawErr);
+    LIBHANDLE lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, firstErrInfo, errReason0);
     bool dlopenFailed = false;
     std::string dlopenErrMsg;
     std::string secondErrInfo;
@@ -1449,18 +1448,17 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
         if ((isAppModule && IsExistedPath(path)) ||
             (!isAppModule && nativeModulePath[0][0] != '\0' && access(nativeModulePath[0], F_OK) == 0)) {
             dlopenFailed = true;
-            dlopenErrMsg = firstRawErr;
+            dlopenErrMsg = firstErrInfo;
         }
         loadPath = nativeModulePath[1];
         MODULEMNG_HILOG_DEBUG("try to load secondary module path: %{public}s", loadPath);
         uint32_t errReason1 = MODULE_LOAD_SUCCESS;
-        std::string secondRawErr;
-        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, secondErrInfo, errReason1, secondRawErr);
+        lib = LoadModuleLibrary(moduleKey, loadPath, path, isAppModule, secondErrInfo, errReason1);
         if (lib == nullptr) {
             if ((isAppModule && IsExistedPath(path)) ||
                 (!isAppModule && nativeModulePath[1][0] != '\0' && access(nativeModulePath[1], F_OK) == 0)) {
                 dlopenFailed = true;
-                dlopenErrMsg = secondRawErr;
+                dlopenErrMsg = secondErrInfo;
             }
             // Reconstruct original errInfo format
             errInfo = "First: " + firstErrInfo + ".Second: " + secondErrInfo;

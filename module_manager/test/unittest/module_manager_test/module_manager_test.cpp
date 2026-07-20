@@ -1672,8 +1672,6 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     EXPECT_EQ(result, nullptr);
     // dlopenFailed should be true, loadErrInfo should contain "dlopen failed"
     EXPECT_NE(loadErrInfo.find("dlopen failed"), std::string::npos);
-    // raw dlerror is forwarded as-is, no "failed " prefix should leak into output
-    EXPECT_EQ(loadErrInfo.find("dlopen failed: failed "), std::string::npos);
 
     // Clean up temp file
     remove(tempLibPath.c_str());

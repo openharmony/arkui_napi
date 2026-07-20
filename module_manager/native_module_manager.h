@@ -159,7 +159,7 @@ private:
                                           bool checkLoadingNativeModule = false);
     bool CheckModuleExist(const char* modulePath);
     LIBHANDLE LoadModuleLibrary(std::string& moduleKey, const char* path, const char* pathKey,
-        const bool isAppModule, std::string& errInfo, uint32_t& errReason, std::string& dlopenRawErr);
+        const bool isAppModule, std::string& errInfo, uint32_t& errReason);
     const uint8_t* GetFileBuffer(const std::string& filePath, const std::string& moduleKey, size_t &len);
     bool UnloadModuleLibrary(LIBHANDLE handle);
     bool CloseModuleLibrary(LIBHANDLE handle);
