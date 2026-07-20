@@ -631,9 +631,6 @@ ArkNativeEngine::~ArkNativeEngine()
         JSNApi::SetCancelTimerCallback(vm_, nullptr);
         NativeTimerCallbackInfo::ReleaseTimerList(this);
         JSNApi::SetPostTaskToThreadCallback(vm_, nullptr);
-        if (threadTaskAsyncInitialized_) {
-            uv_close(reinterpret_cast<uv_handle_t*>(&threadTaskAsync_), nullptr);
-        }
         // destroy looper resource on the ark native engine
         Deinit();
         if (JSNApi::IsJSMainThreadOfEcmaVM(vm_)) {
