@@ -1765,8 +1765,6 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeSystemFilePathIsNull
 
     std::string target = "test.module.syspath.nullptr.target";
     // AC-2.1: outer-if holds (moduleName match), systemFilePath==nullptr -> must not crash.
-    // Per minimum-fix semantics: nullptr short-circuits while (label stays 0);
-    // L1641 if holds via (label < NATIVE_PATH_NUMBER) -> node is treated as path-0 match and returned.
     NativeModule* result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
         cacheNativeModule, cacheHeadTailStruct, false);
     EXPECT_EQ(result, nodeX);
@@ -1851,7 +1849,7 @@ HWTEST_F(ModuleManagerTest, GetNativeModulePath_WhenAppLibPathValueIsNullptrShou
 
     // AC-4.1: appLibPathMap_ has key with nullptr value.
     // Original buggy code: prefix = appLibPathMap_[path] returns nullptr -> enters if-branch ->
-    // sprintf_s("%s/...", nullptr, ...) on non-Android -> crash.
+    // sprintf_s("%s/...", nullptr, ...) on non-OH-platform -> crash.
     // Fixed code: prefix != nullptr short-circuits to fallback branch, no crash, no map pollution.
     const std::string keyNull = "test.app.path.nullptr";
     moduleManager.appLibPathMap_[keyNull] = nullptr;
@@ -1913,7 +1911,8 @@ HWTEST_F(ModuleManagerTest, SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash, T
     moduleManager.SetAppLibPath("test.module.all_empty_strings", allEmptyStringsVec, false);
     SUCCEED();
 
-    // AC-5.3: at least one non-empty element. Behavior unchanged: tmpPath = "/path1:/path2:" -> pop_back -> "/path1:/path2".
+    // AC-5.3: at least one non-empty element. Behavior unchanged:
+    // tmpPath = "/path1:/path2:" -> pop_back -> "/path1:/path2".
     std::vector<std::string> normalVec = {"/path1", "/path2"};
     moduleManager.SetAppLibPath("test.module.normal", normalVec, false);
     auto it = moduleManager.appLibPathMap_.find("test.module.normal");

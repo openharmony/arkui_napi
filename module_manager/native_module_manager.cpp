@@ -28,7 +28,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// NAME_MAX (typically 255 on Linux/bionic) is not reliably exposed by <climits>
+// NAME_MAX (typically 255 on Linux) is not reliably exposed by <climits>
 // across all OH build toolchains. Provide a local fallback so IsValidLibNameStrict
 // compiles deterministically.
 #ifndef NAME_MAX
@@ -1758,12 +1758,15 @@ bool NativeModuleManager::IsSafeRelativePath(const std::string& p)
 bool NativeModuleManager::IsValidLibNameStrict(const std::string& libName)
 {
     // Greylist data is externally supplied and cannot be trusted. Guard the suffix
-    // check first: substr(size()-3) underflows when size() < 3 and throws std::out_of_range.
-    // The shortest legal name is "x.so" (4 bytes), so reject anything shorter than 4.
-    if (libName.size() < 4 || libName.size() >= NAME_MAX) {
+    // check first: substr(size()-soSuffixLen) underflows when size() < soSuffixLen and
+    // throws std::out_of_range. The shortest legal name is "x.so" (4 bytes), so reject
+    // anything shorter than minSoNameLen.
+    constexpr std::string::size_type soSuffixLen = 3;
+    constexpr std::string::size_type minSoNameLen = 4;
+    if (libName.size() < minSoNameLen || libName.size() >= NAME_MAX) {
         return false;
     }
-    if (libName.compare(libName.size() - 3, 3, ".so") != 0) {
+    if (libName.compare(libName.size() - soSuffixLen, soSuffixLen, ".so") != 0) {
         return false;
     }
     for (char c : libName) {
