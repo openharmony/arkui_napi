@@ -1328,7 +1328,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     std::streampos pos = inFile.tellg();
     if (pos < 0) {
         MODULEMNG_HILOG_ERROR("tellg failed, invalid file size: %{public}s", filePath.c_str());
-        inFile.close();
         len = 0;
         return nullptr;
     }
@@ -1336,7 +1335,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     size_t fileSize = static_cast<size_t>(pos);
     if (fileSize == 0 || fileSize > maxAbcFileSize) {
         MODULEMNG_HILOG_ERROR("invalid abc file size: %{public}zu", fileSize);
-        inFile.close();
         len = 0;
         return nullptr;
     }
@@ -1364,7 +1362,6 @@ const uint8_t* NativeModuleManager::GetFileBuffer(const std::string& filePath,
     if (static_cast<size_t>(inFile.gcount()) != len) {
         MODULEMNG_HILOG_ERROR("short read: expected %{public}zu, got %{public}zu",
             len, static_cast<size_t>(inFile.gcount()));
-        inFile.close();
         len = 0;
         return nullptr;
     }
