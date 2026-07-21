@@ -12,6 +12,7 @@ ArkNativeEngine 继承 NativeEngine，桥接 Ark VM 与 NAPI 抽象层。构造�
 |---|---|---|---|
 | napi_env → 引擎 | 通过 engine 实例 | `reinterpret_cast<NativeEngine*>(env)`（native_api_internal.h:56,79） | 同一指针两视角 |
 | napi_value → JS 值 | engine 特定 | `reinterpret_cast` 到 `panda::Local<panda::JSValueRef>`（native_utils.h:28-36） | 零拷贝，无 "NativeValue" 类 |
+| `napi_value` 生命周期 | 当前 HandleScope 内的局部 handle | 跨作用域保存必须使用强 `napi_ref`（引用计数大于 0），使用时再通过 `napi_get_reference_value` 取回 | 原始 handle 不能作为成员、容器元素、缓存或异步结果的稳定后端 |
 | HandleScope | 自有 | `HandleScopeWrapper` 封装 `panda::LocalScope`（native_api.cpp:64-70） | 直接映射 |
 | CallbackScope | 自有 | `NativeCallbackScope` 内含 LocalScope+异常+async hook（native_callback_scope_manager.cpp:25） | 独立于 HandleScope |
 | NativeScopeManager | — | 已废弃 `// To be delete`（scope_manager/native_scope_manager.h:19） | 不要使用 |
@@ -34,7 +35,8 @@ ArkNativeEngine 继承 NativeEngine，桥接 Ark VM 与 NAPI 抽象层。构造�
 
 - 不要在 NativeEngine 基类写引擎特定逻辑。原因：基类是跨引擎契约。
 - 不要跨线程传递 napi_env。原因：CROSS_THREAD_CHECK 会检查。
-- 不要脱离作用域持有 napi_value。原因：可能被 GC 回收。
+- 不要把原始 `napi_value` 作为成员变量、容器元素、缓存或异步结果跨越创建它的 HandleScope。必须用强 `napi_ref` 管理实际对象生命周期，并在每次访问或类型判断前通过 `napi_get_reference_value` 取得当前有效的 `napi_value`。原因：原始 handle 不受引用生命周期管理，作用域关闭或栈回收后可能失效；引用计数为 0 的弱引用也不能保证对象存活。
+- 强 `napi_ref` 只延长对象生命周期；取回的值仍必须在对应 `napi_env` 的 VM 线程和当前作用域内使用。
 - 不要用普通 Scope 替代 CallbackScope。原因：CallbackScope 有异常处理语义。
 - 不要跨 Worker 使用普通引用。原因：需 Sendable 变体。
 - 必须 在回调作用域关闭后检查 pending exception。
@@ -51,7 +53,7 @@ ArkNativeEngine 继承 NativeEngine，桥接 Ark VM 与 NAPI 抽象层。构造�
 
 - [ ] 改动是否影响所有引擎实现，还是仅 Ark？
 - [ ] napi_value 是否在作用域内使用完毕？
-- [ ] 跨作用域持有的值是否已转 NativeReference？
+- [ ] 成员、容器、缓存或异步结果中的值是否用强 `napi_ref` 持有，并在访问或类型判断前通过 `napi_get_reference_value` 重新取值？
 - [ ] 回调是否在 CallbackScope 内执行？
 - [ ] env 是否在正确的线程？
 - [ ] 引用类型选择是否正确（普通/Sendable/Hybrid）？
@@ -66,6 +68,7 @@ ArkNativeEngine 继承 NativeEngine，桥接 Ark VM 与 NAPI 抽象层。构造�
 | NativeEngine 基类 | `native_engine/native_engine.{h,cpp}` |
 | env→NativeEngine 转换 | `native_engine/native_api_internal.h` |
 | napi_value↔JSValueRef | `native_engine/native_utils.h` |
+| 引用创建、取值与删除 | `native_engine/native_api.cpp`（`napi_create_reference`、`napi_get_reference_value`、`napi_delete_reference`） |
 | NativeValue/Property/Deferred/Event | `native_engine/native_value.h`、`native_property.h`、`native_deferred.h`、`native_event.{h,cpp}` |
 | NativeContainerScope | `native_engine/native_container_scope.h` |
 | env 创建 | `native_engine/native_create_env.{h,cpp}` |
@@ -83,10 +86,8 @@ ArkNativeEngine 继承 NativeEngine，桥接 Ark VM 与 NAPI 抽象层。构造�
 |---|---|
 | 引擎测试 | `test/unittest/engine/test_ark.cpp` |
 | 空闲监控 | `test/unittest/test_ark_idle_monitor.cpp` |
-| 基础测试 | `test/unittest/test_napi.cpp` |
-| 上下文测试 | `test/unittest/test_napi_context.cpp` |
+| 引用生命周期与类型查询 | `test/unittest/test_napi.cpp`、`test_napi_context.cpp`、`test_napi_global_ref_track.cpp` |
 | pending exception | `test/unittest/test_napi_pendingexception.cpp` |
-| 全局引用追踪 | `test/unittest/test_napi_global_ref_track.cpp` |
 | 性能/临界 | `test/unittest/test_napi_performance.cpp`、`test_napi_critical.cpp` |
 | Hybrid/Sendable | `test/unittest/test_napi_hybrid.cpp`、`test_sendable_napi.cpp` |
 | Fuzz | `test/fuzztest/loadarkmodule_fuzzer/`、`executejsbin_fuzzer/`、`runactor_fuzzer/` |

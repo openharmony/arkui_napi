@@ -46,6 +46,8 @@ target_cpu == "arm64" && !is_arkui_x && is_ohos && !is_emulator
 
 BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_manager_config`(config) → `pac_data_protector_feature`/`ace_napi_static`(source_set) → `ace_napi`(is_arkui_x 时 static_library，否则 shared_library) → `ace_napi_test` → CJ FFI targets(`cj_bind_native`/`cj_bind_ffi`/`cj_ffi_libraries`) → `napi_packages`/`napi_packages_test`(group)。依赖：ace_napi 依赖 ets_runtime、libuv、icu、c_utils、hilog、hitrace、hiview、eventhandler、ffrt、bounds_checking_function 等 17 个部件；对外暴露 6 组 inner_kits（ace_napi/cj_bind_ffi/cj_bind_native/ark_interop/napi_packages）。hb 构建流程：独立项目（`//foundation/arkui` 下仅 napi）用 `hb build napi -i`(不含测试)/`-t`(含测试)，依赖更新 `bash ./build/prebuilts_config.sh`。PGO 构建路径：`napi_feature_enable_pgo=true` + `napi_feature_pgo_path` 传入 profdata 目录，编译时 `-fprofile-use=${path}/libace_napi.profdata`，链接时 `-Wl,-mllvm,-align-all-functions=4`（BUILD.gn:220-231,273-281）。
 
+`source_set` 拆分会改变对象文件和依赖的传播边界。条件实现必须保证开关关闭时有编译来源、开启时不重复编译，并让静态库、共享库、测试和预览器等最终消费者获得完整符号。
+
 ## 边界与身份
 
 | 概念 | 是什么 | 不是什么 | 常见误用 |
@@ -56,6 +58,9 @@ BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_m
 | data_protector | ARM64 OHOS 内存保护 | 通用安全层 | 在非 ARM64 依赖其行为 |
 | declare_args | 可外部覆盖的特性开关 | 硬编码常量 | 当作不可变配置 |
 | bundle.json | 部件元数据 | 构建脚本 | 在 bundle.json 写构建逻辑 |
+| source_set | 携带对象文件、编译属性和依赖的中间目标 | 仅用于整理文件的逻辑分组 | 新增后只验证单一产品构建，遗漏 DLL/静态库消费者 |
+| public_deps | 将依赖作为当前目标的公共依赖继续暴露给消费者 | 修复缺符号问题的通用开关 | 未分析依赖传播需求就机械替换 `deps` |
+| `NAPI_EXPORT` | 跨平台默认可见性标记 | 仅文档注解 | 实现移出头文件或跨 target 后漏标，预览器运行时找不到符号 |
 
 ## 约束规则
 
@@ -66,6 +71,8 @@ BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_m
 - 必须 在新增特性开关时用 `declare_args()`。原因：declare_args 允许外部构建配置覆盖，硬编码无法覆盖。
 - 不要 引入未经评审的第三方依赖。原因：依赖引入影响安全和兼容性，需评审。
 - 避免 在公共头文件中包含平台特定头文件。原因：破坏 API 跨平台兼容性。
+- 必须 新增或拆分 `source_set` 时检查全部最终消费者，并把共同实现接入最低公共依赖层；条件源码必须在特性关闭时可编译、开启时不重复。原因：不同产物的链接链路可能缺符号或重复定义。
+- 必须 在函数或类实现从头文件内联代码改为独立 `.cpp`、或跨 GN target 使用时复查 `NAPI_EXPORT` 和最终 DLL 导出表。原因：编译成功不代表运行时符号可见，缺失导出可表现为预览器黑屏或加载失败。
 
 - PGO 约束：需 5 个前置条件——`is_ohos` + LLVM 编译器 + `defined(enhanced_opt) && enhanced_opt` + `napi_feature_enable_pgo` + `napi_feature_pgo_path`。profdata 文件名固定 `libace_napi.profdata`。编译时加 `-Wno-error=backend-plugin`/`-Wno-profile-instr-out-of-date`/`-Wno-profile-instr-unprofiled` 容忍 profdata 不完全匹配。
 - hb 与 build.sh 选择：`//foundation/arkui` 下仅有 napi→用 hb（轻量，无需 product-name/target-cpu）；有额外子目录→可用 build.sh，执行前确认 `target-cpu` 为 `arm` 或 `arm64`（示例：`--product-name rk3568 --target-cpu <target-cpu> --build-target ace_napi`）。
@@ -90,6 +97,8 @@ BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_m
 - [ ] 公共头是否避免平台特定 include？
 - [ ] `ace_napi.versionscript` 是否与 API 变更同步？
 - [ ] `bundle.json` 部件元数据是否更新？
+- [ ] `source_set` 变更是否覆盖全部消费者，并保证条件源码不缺失、不重复？
+- [ ] 跨 target 符号是否正确导出，并完成特性开/关、设备/宿主、静态库/DLL 和预览器验证？
 
 ## 代码和测试
 
@@ -108,6 +117,7 @@ BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_m
 | 数据保护 | `utils/data_protector.{h,cpp}` |
 | Unix 平台文件 | `utils/platform/unix_like/file.cpp` |
 | Windows 平台文件 | `utils/platform/windows/file.cpp` |
+| DLL 导出宏 | `utils/macros.h`（`NAPI_EXPORT`） |
 
 ### 测试锚点
 
@@ -117,3 +127,4 @@ BUILD.gn 含 17 个 target：`ace_napi_config`/`data_protector_config`/`module_m
 | 测试入口 | `test/unittest/test.h`（engine 层） |
 | 构建目标 | `//foundation/arkui/napi:napi_packages`（含测试） |
 | 构建目标（仅库） | `//foundation/arkui/napi:ace_napi` |
+| source_set/DLL 变更 | 构建 `ace_napi` 与 `ace_napi_test`；分别覆盖特性开/关和设备/宿主工具链；用 `llvm-nm`/`readelf`（ELF）或 `dumpbin /exports`（DLL）核对符号，并运行 DevEco Studio 预览器冒烟测试 |
