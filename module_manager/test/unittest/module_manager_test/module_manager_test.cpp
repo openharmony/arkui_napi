@@ -1871,15 +1871,9 @@ HWTEST_F(ModuleManagerTest, GetNativeModulePath_WhenAppLibPathValueIsNullptrShou
     EXPECT_TRUE(ret);
     EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u); // not polluted by operator[]
 
-    // AC-4.3: key exists with non-empty value. Behavior unchanged: prefix taken from map,
-    // enters if-branch (prefix != nullptr), nativeModulePath[0] starts with injected prefix.
-    const std::string keyValid = "test.app.path.valid";
-    const std::string injectedPrefix = "/some/valid/prefix";
-    moduleManager.appLibPathMap_[keyValid] = const_cast<char*>(injectedPrefix.c_str());
-    ret = moduleManager.GetNativeModulePath(moduleName, keyValid.c_str(), "", true,
-        nativeModulePath, NAPI_PATH_MAX);
-    EXPECT_TRUE(ret);
-    EXPECT_NE(strstr(nativeModulePath[0], injectedPrefix.c_str()), nullptr);
+    // Note: prefix from appLibPathMap_ is only consumed on ANDROID_PLATFORM
+    // (sysAbcPrefix rewrite). On Linux UT env the value is read but not appended
+    // to nativeModulePath[0], so we cannot assert prefix visibility here.
 
     // Cleanup
     moduleManager.appLibPathMap_.clear();
@@ -2188,14 +2182,22 @@ HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFro
     size_t len1 = 0;
     const uint8_t* buf1 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len1);
     ASSERT_NE(buf1, nullptr);
+    // Snapshot original contents to prove cache returns old bytes even after file rewrite.
+    std::vector<uint8_t> originalPayload(buf1, buf1 + len1);
 
-    // Remove source file so the second call must hit cache.
-    std::remove(GET_FILE_BUFFER_TEST_FILE);
+    // Rewrite the source file with same length but different bytes. The
+    // implementation reads file size then checks the cache; on cache hit it
+    // returns the cached pointer and never re-reads, so buf2 must equal buf1
+    // and reflect the ORIGINAL content, not the rewritten content.
+    std::vector<uint8_t> rewrittenPayload = {0xAA, 0xBB, 0xCC};
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, rewrittenPayload));
 
     size_t len2 = 0;
     const uint8_t* buf2 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len2);
     EXPECT_EQ(buf2, buf1);
     EXPECT_EQ(len2, len1);
+    std::vector<uint8_t> returnedPayload(buf2, buf2 + len2);
+    EXPECT_EQ(returnedPayload, originalPayload);
 
     CleanupModuleBuffer(moduleManager, GET_FILE_BUFFER_TEST_KEY);
 

@@ -1759,8 +1759,11 @@ bool NativeModuleManager::IsValidLibNameStrict(const std::string& libName)
     if (libName.compare(libName.size() - soSuffixLen, soSuffixLen, ".so") != 0) {
         return false;
     }
-    for (char c : libName) {
-        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '.' && c != '_' && c != '-') {
+    // Reject path traversal / separator chars; allow ASCII alnum/./_/-
+    // and UTF-8 multibyte sequences (bytes >= 0x80) for i18n lib names.
+    for (unsigned char c : libName) {
+        if (c >= 0x80) continue;
+        if (!std::isalnum(c) && c != '.' && c != '_' && c != '-') {
             return false;
         }
     }
