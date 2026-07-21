@@ -1871,9 +1871,10 @@ HWTEST_F(ModuleManagerTest, GetNativeModulePath_WhenAppLibPathValueIsNullptrShou
     EXPECT_TRUE(ret);
     EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u); // not polluted by operator[]
 
-    // Note: prefix from appLibPathMap_ is only consumed on ANDROID_PLATFORM
-    // (sysAbcPrefix rewrite). On Linux UT env the value is read but not appended
-    // to nativeModulePath[0], so we cannot assert prefix visibility here.
+    // Note: prefix from appLibPathMap_ is only consumed inside the mobile
+    // cross-platform branch (sysAbcPrefix rewrite). On the Linux UT env the
+    // value is read but not appended to nativeModulePath[0], so we cannot
+    // assert prefix visibility here.
 
     // Cleanup
     moduleManager.appLibPathMap_.clear();
