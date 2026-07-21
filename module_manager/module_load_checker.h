@@ -49,7 +49,7 @@ public:
     bool DiskCheckOnly();
 
     /**
-     * @brief Set the moudle checker delegate
+     * @brief Set the module checker delegate
      *
      * @param moduleCheckerDelegate
      */

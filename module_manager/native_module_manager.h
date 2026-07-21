@@ -16,6 +16,7 @@
 #ifndef FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 #define FOUNDATION_ACE_NAPI_MODULE_MANAGER_NATIVE_MODULE_MANAGER_H
 
+#include <atomic>
 #include <cstdint>
 #include <map>
 #include <mutex>
@@ -82,7 +83,6 @@ struct NativeModuleHeadTailStruct {
 class NAPI_EXPORT NativeModuleManager {
 public:
     static NativeModuleManager* GetInstance();
-    static uint64_t Release();
 
     void Register(NativeModule* nativeModule);
     void InheritNamespaceEachOther(const std::string& src, const std::string& dst);
@@ -165,8 +165,11 @@ private:
     bool CloseModuleLibrary(LIBHANDLE handle);
     void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path, const bool& isSystemApp);
     bool IsExistedPath(const char* pathKey) const;
-    void EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
-    bool RemoveModuleLib(const std::string moduleKey);
+    static bool IsSafeRelativePath(const std::string& p);
+    static bool IsValidLibNameStrict(const std::string& libName);
+    bool RemoveNativeModuleByCacheLocked(const std::string& moduleKey);
+    bool RemoveNativeModuleLocked(const std::string& moduleKey);
+    LIBHANDLE EmplaceModuleLib(const std::string moduleKey, LIBHANDLE lib);
     void EmplaceModuleBuffer(const std::string moduleKey, const uint8_t* lib);
     bool RemoveModuleBuffer(const std::string moduleKey);
     const uint8_t* GetBufferHandle(const std::string& moduleKey) const;
@@ -174,8 +177,6 @@ private:
     bool CreateTailNativeModule();
     bool CreateHeadNativeModule();
     LIBHANDLE GetNativeModuleHandle(const std::string& moduleKey) const;
-    bool RemoveNativeModuleByCache(const std::string& moduleKey);
-    bool RemoveNativeModule(const std::string& moduleKey);
     bool CheckNativeListChanged(const NativeModule* cacheHeadNativeModule, const NativeModule* cacheTailNativeModule,
         const NativeModule* matchLoadingNativeModule);
     void MoveApiAllowListCheckerPtr(
@@ -197,7 +198,7 @@ private:
     NativeModule* tailNativeModule_ = nullptr;
     std::string loadingModuleKey_;
 
-    static NativeModuleManager *instance_;
+    static std::atomic<NativeModuleManager*> instance_;
     pthread_mutex_t mutex_;
     std::string prefix_;
     bool isAppModule_ = false;

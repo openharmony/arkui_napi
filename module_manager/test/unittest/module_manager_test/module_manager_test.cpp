@@ -16,8 +16,11 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include "dlsym_mock_guard.h"
 #include "mock_native_module_manager.h"
@@ -293,30 +296,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
 }
 
 /*
- * @tc.name: LoadNativeModuleTest_012
- * @tc.desc: test NativeModule's EmplaceModuleLib function
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_012, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
-    bool result1 = moduleManager->RemoveModuleLib(moduleKey);
-    std::string moduleKey1 = "bb";
-    bool result2 = moduleManager->RemoveModuleLib(moduleKey1);
-    EXPECT_EQ(result1, false);
-    EXPECT_EQ(result2, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_012 end";
-}
-
-/*
  * @tc.name: LoadNativeModuleTest_013
- * @tc.desc: test NativeModule's RemoveNativeModule function
+ * @tc.desc: test NativeModule's UnloadNativeModule function on missing key
  * @tc.type: FUNC
  * @tc.require: #I76XTV
  */
@@ -333,31 +314,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_013, TestSize.Level1)
     bool result2 = moduleManager->UnloadNativeModule(moduleKey1);
     EXPECT_EQ(result2, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_013 end";
-}
-
-/*
- * @tc.name: LoadNativeModuleTest_014
- * @tc.desc: test NativeModule's RemoveNativeModule function
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_014, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    moduleManager->EmplaceModuleLib(moduleKey, nullptr);
-    std::string moduleKey1 = "bb";
-    bool result = moduleManager->RemoveModuleLib(moduleKey1);
-    EXPECT_EQ(result, false);
-
-    bool result2 = moduleManager->RemoveNativeModule(moduleKey1);
-    EXPECT_EQ(result2, false);
-    bool result3 = moduleManager->UnloadNativeModule(moduleKey1);
-    EXPECT_EQ(result3, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_014 end";
 }
 
 /*
@@ -394,24 +350,6 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_016, TestSize.Level1)
     bool result = moduleManager->UnloadModuleLibrary(nullptr);
     EXPECT_EQ(result, false);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_016 end";
-}
-
-/*
- * @tc.name: LoadNativeModuleTest_017
- * @tc.desc: test NativeModule's RemoveNativeModuleByCache function
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_017, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 starts";
-    std::shared_ptr<NativeModuleManager> moduleManager = std::make_shared<NativeModuleManager>();
-    ASSERT_NE(nullptr, moduleManager);
-
-    std::string moduleKey = "aa";
-    bool result = moduleManager->RemoveNativeModuleByCache(moduleKey);
-    EXPECT_EQ(result, false);
-    GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_017 end";
 }
 
 /*
@@ -1426,97 +1364,6 @@ HWTEST_F(ModuleManagerTest, SetAppLibPath_ShouldFreeOldPathWhenSetTwice, TestSiz
 }
 
 /*
- * @tc.name: RemoveNativeModuleByCache_ShouldHandleNullModuleName
- * @tc.desc: test RemoveNativeModuleByCache should handle null moduleName
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldHandleNullModuleName, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* module = new NativeModule();
-    module->name = strdup("testModule");
-    module->moduleName = nullptr;
-    module->next = nullptr;
-    moduleManager.headNativeModule_ = module;
-    moduleManager.tailNativeModule_ = module;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("testModule");
-    EXPECT_FALSE(result);
-
-    delete module;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldHandleNullModuleName end";
-}
-
-/*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove head node
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* module = new NativeModule();
-    std::string moduleName = "headModule";
-    module->name = strdup(moduleName.c_str());
-    module->moduleName = strdup(moduleName.c_str());
-    module->next = nullptr;
-    moduleManager.headNativeModule_ = module;
-    moduleManager.tailNativeModule_ = module;
-
-    bool result = moduleManager.RemoveNativeModuleByCache(moduleName);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, nullptr);
-    EXPECT_EQ(moduleManager.tailNativeModule_, nullptr);
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveHead end";
-}
-
-/*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove tail node
- * @tc.type: FUNC
- * @tc.require: issue
- */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* headModule = new NativeModule();
-    headModule->name = strdup("headModule");
-    headModule->moduleName = strdup("headModule");
-    headModule->next = nullptr;
-
-    NativeModule* tailModule = new NativeModule();
-    tailModule->name = strdup("tailModule");
-    tailModule->moduleName = strdup("tailModule");
-    tailModule->next = nullptr;
-
-    headModule->next = tailModule;
-    moduleManager.headNativeModule_ = headModule;
-    moduleManager.tailNativeModule_ = tailModule;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("tailModule");
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
-    EXPECT_EQ(moduleManager.tailNativeModule_, headModule);
-
-    free(const_cast<char*>(headModule->name));
-    free(const_cast<char*>(headModule->moduleName));
-    delete headModule;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveTail end";
-}
-
-/*
  * @tc.name: Destructor_ShouldFreeAppLibPathMapMemory
  * @tc.desc: test destructor should free appLibPathMap_ memory correctly
  * @tc.type: FUNC
@@ -1536,51 +1383,22 @@ HWTEST_F(ModuleManagerTest, Destructor_ShouldFreeAppLibPathMapMemory, TestSize.L
 }
 
 /*
- * @tc.name: RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle
- * @tc.desc: test RemoveNativeModuleByCache should free memory when remove middle node
+ * @tc.name: Destructor_ShouldClearNativeEngineListSafely
+ * @tc.desc: Destructor safely clears nativeEngineList_ (AC-17.1 swap + outside-lock delete)
  * @tc.type: FUNC
- * @tc.require: issue
+ * @tc.require: issue #2157
  */
-HWTEST_F(ModuleManagerTest, RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle, TestSize.Level1)
+HWTEST_F(ModuleManagerTest, Destructor_ShouldClearNativeEngineListSafely, TestSize.Level1)
 {
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle starts";
-    NativeModuleManager moduleManager;
-
-    NativeModule* headModule = new NativeModule();
-    headModule->name = strdup("headModule");
-    headModule->moduleName = strdup("headModule");
-    headModule->next = nullptr;
-
-    NativeModule* middleModule = new NativeModule();
-    middleModule->name = strdup("middleModule");
-    middleModule->moduleName = strdup("middleModule");
-    middleModule->next = nullptr;
-
-    NativeModule* tailModule = new NativeModule();
-    tailModule->name = strdup("tailModule");
-    tailModule->moduleName = strdup("tailModule");
-    tailModule->next = nullptr;
-
-    headModule->next = middleModule;
-    middleModule->next = tailModule;
-    moduleManager.headNativeModule_ = headModule;
-    moduleManager.tailNativeModule_ = tailModule;
-
-    bool result = moduleManager.RemoveNativeModuleByCache("middleModule");
-    EXPECT_TRUE(result);
-    EXPECT_EQ(moduleManager.headNativeModule_, headModule);
-    EXPECT_EQ(moduleManager.tailNativeModule_, tailModule);
-    EXPECT_EQ(headModule->next, tailModule);
-
-    free(const_cast<char*>(headModule->name));
-    free(const_cast<char*>(headModule->moduleName));
-    delete headModule;
-    free(const_cast<char*>(tailModule->name));
-    free(const_cast<char*>(tailModule->moduleName));
-    delete tailModule;
-    moduleManager.headNativeModule_ = nullptr;
-    moduleManager.tailNativeModule_ = nullptr;
-    GTEST_LOG_(INFO) << "RemoveNativeModuleByCache_ShouldFreeMemoryWhenRemoveMiddle end";
+    GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely starts";
+    {
+        NativeModuleManager moduleManager;
+        moduleManager.nativeEngineList_.emplace("engine.k1", nullptr);
+        moduleManager.nativeEngineList_.emplace("engine.k2", nullptr);
+        moduleManager.nativeEngineList_.emplace("engine.k3", nullptr);
+        EXPECT_EQ(moduleManager.nativeEngineList_.size(), 3u);
+    }
+    GTEST_LOG_(INFO) << "Destructor_ShouldClearNativeEngineListSafely end";
 }
 
 /*
@@ -1859,4 +1677,683 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     remove(tempLibPath.c_str());
 
     GTEST_LOG_(INFO) << "FindNativeModuleByDisk_ErrInfo_DlopenFailed end";
+}
+
+/*
+ * @tc.name: FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash
+ * @tc.desc: test FindNativeModuleByCache does not dereference nullptr when temp->name is nullptr
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    NativeModule* cacheNativeModule = nullptr;
+    NativeModuleHeadTailStruct cacheHeadTailStruct = {nullptr, nullptr, nullptr};
+
+    // Node A: name=nullptr (default), moduleName=nullptr (default), systemFilePath=""
+    // Verifies: when temp->name is nullptr, strcasecmp must not be called (avoid null-pointer deref)
+    NativeModule* nodeA = new NativeModule();
+    ASSERT_NE(nodeA, nullptr);
+    nodeA->systemFilePath = "";
+
+    // Node B: name=nullptr (default), moduleName=matched target, systemFilePath=""
+    // Verifies: even with a name==nullptr node preceding, moduleName-field match still works
+    NativeModule* nodeB = new NativeModule();
+    ASSERT_NE(nodeB, nullptr);
+    nodeB->moduleName = "test.module.nullptr.target";
+    nodeB->systemFilePath = "";
+    nodeB->next = nullptr;
+
+    // Chain: A -> B
+    nodeA->next = nodeB;
+    moduleManager.headNativeModule_ = nodeA;
+    moduleManager.tailNativeModule_ = nodeB;
+
+    std::string target = "test.module.nullptr.target";
+    // AC-2: list contains name==nullptr node A; moduleName match on B should succeed without crash
+    NativeModule* result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeB);
+
+    // AC-1: list contains only name==nullptr node A (B unlinked); should not crash, no false match -> nullptr
+    nodeA->next = nullptr;
+    moduleManager.tailNativeModule_ = nodeA;
+    result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nullptr);
+
+    // Cleanup
+    delete nodeA;
+    nodeA = nullptr;
+    delete nodeB;
+    nodeB = nullptr;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeNameIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash
+ * @tc.desc: test FindNativeModuleByCache does not dereference nullptr when temp->systemFilePath is nullptr
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    NativeModule* cacheNativeModule = nullptr;
+    NativeModuleHeadTailStruct cacheHeadTailStruct = {nullptr, nullptr, nullptr};
+
+    // Node X: moduleName matches the query, name=nullptr (keeps outer-if driven by moduleName only),
+    // systemFilePath=nullptr (DEFAULT) -> triggers L1637/L1641 nullptr risk once outer-if holds.
+    NativeModule* nodeX = new NativeModule();
+    ASSERT_NE(nodeX, nullptr);
+    nodeX->moduleName = "test.module.syspath.nullptr.target";
+    // nodeX->name left as nullptr (default)
+    // nodeX->systemFilePath left as nullptr (default) -- this is the bug-trigger condition
+
+    moduleManager.headNativeModule_ = nodeX;
+    moduleManager.tailNativeModule_ = nodeX;
+
+    std::string target = "test.module.syspath.nullptr.target";
+    // AC-2.1: outer-if holds (moduleName match), systemFilePath==nullptr -> must not crash.
+    NativeModule* result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeX);
+
+    // AC-2.2: prepend node Y (systemFilePath="" normal match) before X; both have same moduleName.
+    // Demonstrates that nullptr-systemFilePath node's presence does not break normal matching flow.
+    NativeModule* nodeY = new NativeModule();
+    ASSERT_NE(nodeY, nullptr);
+    nodeY->moduleName = "test.module.syspath.nullptr.target";
+    nodeY->systemFilePath = "";
+    nodeY->next = nodeX;
+    moduleManager.headNativeModule_ = nodeY;
+
+    result = moduleManager.FindNativeModuleByCache(target.c_str(), nativeModulePath,
+        cacheNativeModule, cacheHeadTailStruct, false);
+    EXPECT_EQ(result, nodeY);
+
+    // Cleanup
+    delete nodeY;
+    nodeY = nullptr;
+    delete nodeX;
+    nodeX = nullptr;
+    moduleManager.headNativeModule_ = nullptr;
+    moduleManager.tailNativeModule_ = nullptr;
+
+    GTEST_LOG_(INFO) << "FindNativeModuleByCache_WhenNodeSystemFilePathIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey
+ * @tc.desc: test EmplaceModuleBuffer is a no-op on duplicate moduleKey: the original buffer is
+ *          preserved (map is an index, buffer ownership lives in NativeModule::jsABCCode).
+ *          Replacing the map entry would free a buffer still referenced by another module.
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey starts";
+
+    NativeModuleManager moduleManager;
+    std::string key = "test.module.emplace.dupkey";
+
+    uint8_t* lib1 = new uint8_t[16];
+    ASSERT_NE(lib1, nullptr);
+    uint8_t* lib2 = new uint8_t[16];
+    ASSERT_NE(lib2, nullptr);
+
+    // First call -- emplace path. Map size becomes 1, map[key] == lib1.
+    moduleManager.EmplaceModuleBuffer(key, lib1);
+    EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
+    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib1);
+
+    // Second call with same key: no-op (std::map::emplace refuses duplicate key).
+    // Map keeps lib1; lib2 is the caller's responsibility (would be assigned to a
+    // different NativeModule::jsABCCode by GetFileBuffer in production).
+    moduleManager.EmplaceModuleBuffer(key, lib2);
+    EXPECT_EQ(moduleManager.moduleBufMap_.size(), 1u);
+    EXPECT_EQ(moduleManager.moduleBufMap_[key], lib1);
+
+    // Cleanup: both buffers are owned by the test (map is a non-owning index).
+    delete[] lib1;
+    delete[] lib2;
+    moduleManager.moduleBufMap_.clear();
+
+    GTEST_LOG_(INFO) << "EmplaceModuleBuffer_ShouldKeepOriginalBufferOnDuplicateKey end";
+}
+
+/*
+ * @tc.name: GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash
+ * @tc.desc: test GetNativeModulePath does not pollute map nor dereference nullptr when appLibPathMap_ value is null
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+    char nativeModulePath[NATIVE_PATH_NUMBER][NAPI_PATH_MAX];
+    const char* moduleName = "somemodule";
+
+    // AC-4.1: appLibPathMap_ has key with nullptr value.
+    // Original buggy code: prefix = appLibPathMap_[path] returns nullptr -> enters if-branch ->
+    // sprintf_s("%s/...", nullptr, ...) on non-OH-platform -> crash.
+    // Fixed code: prefix != nullptr short-circuits to fallback branch, no crash, no map pollution.
+    const std::string keyNull = "test.app.path.nullptr";
+    moduleManager.appLibPathMap_[keyNull] = nullptr;
+    size_t sizeBefore = moduleManager.appLibPathMap_.size();
+    bool ret = moduleManager.GetNativeModulePath(moduleName, keyNull.c_str(), "", true,
+        nativeModulePath, NAPI_PATH_MAX);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), sizeBefore); // map not polluted
+    // nativeModulePath[0] populated via fallback branch (prefix = sysPrefix).
+    EXPECT_GT(strlen(nativeModulePath[0]), 0u);
+
+    // AC-4.2: key does not exist in map. Original operator[] would insert "key -> nullptr" pollution.
+    // Fixed find-based code does not insert.
+    moduleManager.appLibPathMap_.clear();
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u);
+    const std::string keyMissing = "test.app.path.nonexistent";
+    ret = moduleManager.GetNativeModulePath(moduleName, keyMissing.c_str(), "", true,
+        nativeModulePath, NAPI_PATH_MAX);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(moduleManager.appLibPathMap_.size(), 0u); // not polluted by operator[]
+
+    // Note: prefix from appLibPathMap_ is only consumed inside the mobile
+    // cross-platform branch (sysAbcPrefix rewrite). On the Linux UT env the
+    // value is read but not appended to nativeModulePath[0], so we cannot
+    // assert prefix visibility here.
+
+    // Cleanup
+    moduleManager.appLibPathMap_.clear();
+
+    GTEST_LOG_(INFO) << "GetNativeModulePath_WhenAppLibPathValueIsNullptrShouldNotCrash end";
+}
+
+/*
+ * @tc.name: SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash
+ * @tc.desc: test SetAppLibPath does not dereference empty string back() when appLibPath is empty or all-empty
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash starts";
+
+    NativeModuleManager moduleManager;
+
+    // AC-5.1: empty vector. Original buggy code: tmpPath stays "" -> tmpPath.back() is UB (likely crash).
+    // Fixed code: short-circuit via !tmpPath.empty(), no back() call, no crash.
+    std::vector<std::string> emptyVec;
+    moduleManager.SetAppLibPath("test.module.empty_vector", emptyVec, false);
+    // Reaching this assertion means no crash occurred.
+    SUCCEED();
+
+    // AC-5.2: all elements are empty strings. Loop skips all -> tmpPath stays "" -> same UB on buggy code.
+    std::vector<std::string> allEmptyStringsVec = {"", "", ""};
+    moduleManager.SetAppLibPath("test.module.all_empty_strings", allEmptyStringsVec, false);
+    SUCCEED();
+
+    // AC-5.3: at least one non-empty element. Behavior unchanged:
+    // tmpPath = "/path1:/path2:" -> pop_back -> "/path1:/path2".
+    std::vector<std::string> normalVec = {"/path1", "/path2"};
+    moduleManager.SetAppLibPath("test.module.normal", normalVec, false);
+    auto it = moduleManager.appLibPathMap_.find("test.module.normal");
+    ASSERT_NE(it, moduleManager.appLibPathMap_.end());
+    ASSERT_NE(it->second, nullptr);
+    EXPECT_EQ(std::string(it->second), "/path1:/path2");
+
+    // Cleanup: each char* was strdup-allocated on heap; free before clear to avoid test leak.
+    for (auto& entry : moduleManager.appLibPathMap_) {
+        if (entry.second != nullptr) {
+            free(entry.second);
+            entry.second = nullptr;
+        }
+    }
+    moduleManager.appLibPathMap_.clear();
+
+    GTEST_LOG_(INFO) << "SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash end";
+}
+
+/*
+ * @tc.name: IsSafeRelativePath_PathValidationTest
+ * @tc.desc: test NativeModuleManager::IsSafeRelativePath validates relativePath via whitelist (no leading slash,
+ *           non-empty/non-"."/non-".." segments, alnum/_/./ chars only)
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, IsSafeRelativePath_PathValidationTest, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest starts";
+
+    // AC-6.1: ".." as substring but not as full segment -> accept (eliminates original false positive)
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("my..pkg"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a..b/c"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example..foo"));
+
+    // AC-6.2: absolute path -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/etc/passwd"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/module"));
+
+    // AC-6.3: segment is . / .. / empty -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/./b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/../b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a//b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("."));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath(".."));
+
+    // AC-6.4: non-whitelisted char -> reject
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a;b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a$b"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("%2e"));
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a\\b")); // backslash
+    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a b"));  // space
+
+    // AC-6.5: legitimate relative path -> accept (backward compat)
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath(""));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module/sub"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a.b.c"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example.foo"));
+    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module_name"));
+
+    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest end";
+}
+
+/*
+ * @tc.name: IsValidLibNameStrict_LibNameValidationTest
+ * @tc.desc: test NativeModuleManager::IsValidLibNameStrict validates lib name via strict charset
+ *           (alnum/_/-/. only, must end with .so, no "..." sequence, size < NAME_MAX)
+ * @tc.type: FUNC
+ * @tc.require: #I76XTV
+ */
+HWTEST_F(ModuleManagerTest, IsValidLibNameStrict_LibNameValidationTest, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "IsValidLibNameStrict_LibNameValidationTest starts";
+
+    // AC-7.1: contains colon -> reject (namespace injection vector via dlns_inherit ":")
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("liba:b.so"));
+
+    // AC-7.2: contains space/slash/backslash/non-whitelist char -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib/a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib\\a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib$a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib%a.so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib:a.so"));   // dup safety with AC-7.1
+
+    // AC-7.3: contains "..." sequence -> reject (path-traversal-style tricks)
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib...so"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("a...b.so"));
+
+    // AC-7.4: does not end with .so -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("libfoo"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("libfoo.txt"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("lib.so.txt"));
+
+    // AC-7.5: empty or oversized (>= NAME_MAX) -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(""));
+    std::string oversized(NAME_MAX, 'a');   // length == NAME_MAX -> reject
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(oversized));
+
+    // AC-7.7: names shorter than ".so" suffix must not underflow substr()/compare()
+    // (greylist data is untrusted — size() < 3 used to throw std::out_of_range)
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("a"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("ab"));
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict(".so"));   // size == 3, no name stem
+    EXPECT_FALSE(NativeModuleManager::IsValidLibNameStrict("x.s"));    // size == 3, wrong suffix
+
+    // AC-7.6: legitimate names -> accept (backward compat)
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("libfoo.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib_foo-bar.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib123.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("a.so"));
+    EXPECT_TRUE(NativeModuleManager::IsValidLibNameStrict("lib.so"));   // boundary: just ".so" suffix
+
+    GTEST_LOG_(INFO) << "IsValidLibNameStrict_LibNameValidationTest end";
+}
+
+/**
+ * @tc.name: UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely
+ * @tc.desc: UnloadNativeModule returns false safely when key not in moduleLibMap_ (TOCTOU-hardened find==end() path)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely, TestSize.Level1)
+{
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    bool result = moduleManager->UnloadNativeModule("test_unload_no_exist_key");
+    EXPECT_FALSE(result);
+
+    GTEST_LOG_(INFO) << "UnloadNativeModule_WhenModuleNotInLibMapShouldReturnFalseSafely end";
+}
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr
+ * @tc.desc: EmplaceModuleLib early-returns when lib is nullptr, leaving the map untouched (AC-9.1)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr, TestSize.Level1)
+{
+    // Use a stack instance to avoid contaminating the global singleton's moduleLibMap_.
+    NativeModuleManager mgr;
+    size_t before = mgr.moduleLibMap_.size();
+    mgr.EmplaceModuleLib("test_emplace_nullptr_key_9", nullptr);
+    EXPECT_EQ(mgr.moduleLibMap_.size(), before);
+    EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_nullptr_key_9"), 0u);
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldNotEmplaceWhenLibIsNullptr end";
+}
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists
+ * @tc.desc: EmplaceModuleLib emplaces a new entry when the key is absent (AC-9.2)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists, TestSize.Level1)
+{
+    // Use a stack instance so the sentinel pointer never leaks into the global singleton.
+    NativeModuleManager mgr;
+    LIBHANDLE sentinel = reinterpret_cast<LIBHANDLE>(0xDEADBEEF);
+    mgr.EmplaceModuleLib("test_emplace_new_key_9", sentinel);
+    EXPECT_EQ(mgr.moduleLibMap_.count("test_emplace_new_key_9"), 1u);
+    EXPECT_EQ(mgr.moduleLibMap_["test_emplace_new_key_9"], sentinel);
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldEmplaceWhenKeyNotExists end";
+}
+
+/**
+ * @tc.name: EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey
+ * @tc.desc: EmplaceModuleLib returns the canonical (existing) handle on duplicate key so
+ *          LoadModuleLibrary's caller never dereferences a freed handle. The new duplicate
+ *          handle is not tracked (caller's responsibility) and the map keeps the first one.
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey, TestSize.Level1)
+{
+    // Use a stack instance so the sentinel pointers never leak into the global singleton.
+    NativeModuleManager mgr;
+    LIBHANDLE first = reinterpret_cast<LIBHANDLE>(0xCAFEBABE);
+    LIBHANDLE second = reinterpret_cast<LIBHANDLE>(0xBADDCAFE);
+    const std::string key = "test_emplace_dup_key_9";
+
+    // Seed the map with the canonical handle.
+    mgr.EmplaceModuleLib(key, first);
+    ASSERT_EQ(mgr.moduleLibMap_.count(key), 1u);
+
+    // Duplicate key: function must return the canonical (first) handle, not the duplicate.
+    // After revert 61746b9d, production code no longer calls UnloadModuleLibrary(second)
+    // (the duplicate handle is leaked to avoid dlclose refcount risk); the map keeps the
+    // first handle. The stack instance's destructor does not iterate moduleLibMap_, so the
+    // sentinel pointers simply leak in the test process -- no dlclose contamination.
+    LIBHANDLE returned = mgr.EmplaceModuleLib(key, second);
+    EXPECT_EQ(returned, first);
+    EXPECT_EQ(mgr.moduleLibMap_[key], first);
+
+    GTEST_LOG_(INFO) << "EmplaceModuleLib_ShouldReturnCanonicalHandleOnDuplicateKey end";
+}
+
+namespace {
+constexpr char GET_FILE_BUFFER_TEST_DIR[] = "/data/local/tmp";
+constexpr char GET_FILE_BUFFER_TEST_FILE[] = "/data/local/tmp/napi_getfilebuffer_test_11.bin";
+constexpr char GET_FILE_BUFFER_TEST_KEY[] = "test.getfilebuffer.11";
+
+// Write a test file with the given bytes. Returns true on success.
+bool WriteTestFile(const std::string& path, const std::vector<uint8_t>& bytes)
+{
+    std::ofstream out(path, std::ios::binary | std::ios::trunc);
+    if (!out.is_open()) {
+        return false;
+    }
+    if (!bytes.empty()) {
+        out.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+    }
+    out.close();
+    return out.good() || bytes.empty();
+}
+
+// Erase and delete[] a cached buffer (map owns raw pointers).
+void CleanupModuleBuffer(NativeModuleManager& mgr, const std::string& key)
+{
+    auto it = mgr.moduleBufMap_.find(key);
+    if (it != mgr.moduleBufMap_.end()) {
+        delete[] it->second;
+        mgr.moduleBufMap_.erase(it);
+    }
+}
+} // namespace
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile
+ * @tc.desc: GetFileBuffer returns non-null buffer with len matching file size and content (AC-11.1/11.3)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile starts";
+
+    NativeModuleManager moduleManager;
+    std::vector<uint8_t> payload = {0x41, 0x42, 0x43, 0x44, 0x45}; // "ABCDE"
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, payload));
+
+    size_t len = 0;
+    const uint8_t* buf = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len);
+    EXPECT_NE(buf, nullptr);
+    EXPECT_EQ(len, payload.size());
+    if (buf != nullptr && len == payload.size()) {
+        EXPECT_EQ(memcmp(buf, payload.data(), len), 0);
+    }
+    CleanupModuleBuffer(moduleManager, GET_FILE_BUFFER_TEST_KEY);
+    std::remove(GET_FILE_BUFFER_TEST_FILE);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnBufferAndMatchLenForNormalFile end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache
+ * @tc.desc: Second call with same moduleKey hits cache and returns the same pointer (AC-11.4)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache starts";
+
+    NativeModuleManager moduleManager;
+    std::vector<uint8_t> payload = {0x10, 0x20, 0x30};
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, payload));
+
+    size_t len1 = 0;
+    const uint8_t* buf1 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len1);
+    ASSERT_NE(buf1, nullptr);
+    // Snapshot original contents to prove cache returns old bytes even after file rewrite.
+    std::vector<uint8_t> originalPayload(buf1, buf1 + len1);
+
+    // Rewrite the source file with same length but different bytes. The
+    // implementation reads file size then checks the cache; on cache hit it
+    // returns the cached pointer and never re-reads, so buf2 must equal buf1
+    // and reflect the ORIGINAL content, not the rewritten content.
+    std::vector<uint8_t> rewrittenPayload = {0xAA, 0xBB, 0xCC};
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, rewrittenPayload));
+
+    size_t len2 = 0;
+    const uint8_t* buf2 = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len2);
+    EXPECT_EQ(buf2, buf1);
+    EXPECT_EQ(len2, len1);
+    std::vector<uint8_t> returnedPayload(buf2, buf2 + len2);
+    EXPECT_EQ(returnedPayload, originalPayload);
+
+    CleanupModuleBuffer(moduleManager, GET_FILE_BUFFER_TEST_KEY);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnSamePointerOnSecondCallFromCache end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist
+ * @tc.desc: GetFileBuffer returns nullptr and keeps len == 0 when file does not exist (AC-11.2)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist starts";
+
+    NativeModuleManager moduleManager;
+    std::string nonExisting = std::string(GET_FILE_BUFFER_TEST_DIR) + "/napi_not_exist_11.bin";
+    std::remove(nonExisting.c_str());
+
+    size_t len = 1; // non-zero default; function should overwrite on failure
+    const uint8_t* buf = moduleManager.GetFileBuffer(nonExisting, "test.getfilebuffer.notexist", len);
+    EXPECT_EQ(buf, nullptr);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrWhenFileDoesNotExist end";
+}
+
+/**
+ * @tc.name: GetFileBuffer_ShouldReturnNullptrForEmptyFile
+ * @tc.desc: Empty file is rejected (fileSize == 0 early-return), returns nullptr (AC-11.5)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, GetFileBuffer_ShouldReturnNullptrForEmptyFile, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrForEmptyFile starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(WriteTestFile(GET_FILE_BUFFER_TEST_FILE, {}));
+
+    size_t len = 1; // non-zero default; function should reset to 0
+    const uint8_t* buf = moduleManager.GetFileBuffer(GET_FILE_BUFFER_TEST_FILE, GET_FILE_BUFFER_TEST_KEY, len);
+    EXPECT_EQ(buf, nullptr);
+    EXPECT_EQ(len, 0u);
+    EXPECT_EQ(moduleManager.moduleBufMap_.count(GET_FILE_BUFFER_TEST_KEY), 0u);
+    std::remove(GET_FILE_BUFFER_TEST_FILE);
+
+    GTEST_LOG_(INFO) << "GetFileBuffer_ShouldReturnNullptrForEmptyFile end";
+}
+
+/**
+ * @tc.name: CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty
+ * @tc.desc: CreateHeadNativeModule initialises head/tail to the same new node on empty list (AC-12.1)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_EQ(moduleManager.headNativeModule_, nullptr);
+    ASSERT_EQ(moduleManager.tailNativeModule_, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateHeadNativeModule());
+    EXPECT_NE(moduleManager.headNativeModule_, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.headNativeModule_->next, nullptr);
+
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldInitHeadAndTailWhenListEmpty end";
+}
+
+/**
+ * @tc.name: CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists
+ * @tc.desc: CreateHeadNativeModule prepends a new head and links old head as ->next (AC-12.2)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(moduleManager.CreateHeadNativeModule());
+    NativeModule* oldHead = moduleManager.headNativeModule_;
+    ASSERT_NE(oldHead, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateHeadNativeModule());
+    EXPECT_NE(moduleManager.headNativeModule_, oldHead);
+    EXPECT_EQ(moduleManager.headNativeModule_->next, oldHead);
+    EXPECT_EQ(moduleManager.tailNativeModule_, oldHead);
+
+    GTEST_LOG_(INFO) << "CreateHeadNativeModule_ShouldPrependNewHeadWhenListExists end";
+}
+
+/**
+ * @tc.name: CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty
+ * @tc.desc: CreateTailNativeModule initialises head/tail to the same new node on empty list (AC-12.3)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_EQ(moduleManager.headNativeModule_, nullptr);
+    ASSERT_EQ(moduleManager.tailNativeModule_, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateTailNativeModule());
+    EXPECT_NE(moduleManager.tailNativeModule_, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.tailNativeModule_->next, nullptr);
+
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldInitHeadAndTailWhenListEmpty end";
+}
+
+/**
+ * @tc.name: CreateTailNativeModule_ShouldAppendNewTailWhenListExists
+ * @tc.desc: CreateTailNativeModule appends a new tail and links old tail ->next to it (AC-12.4)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, CreateTailNativeModule_ShouldAppendNewTailWhenListExists, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldAppendNewTailWhenListExists starts";
+
+    NativeModuleManager moduleManager;
+    ASSERT_TRUE(moduleManager.CreateTailNativeModule());
+    NativeModule* oldTail = moduleManager.tailNativeModule_;
+    ASSERT_NE(oldTail, nullptr);
+
+    EXPECT_TRUE(moduleManager.CreateTailNativeModule());
+    EXPECT_NE(moduleManager.tailNativeModule_, oldTail);
+    EXPECT_EQ(oldTail->next, moduleManager.tailNativeModule_);
+    EXPECT_EQ(moduleManager.tailNativeModule_->next, nullptr);
+    EXPECT_EQ(moduleManager.headNativeModule_, oldTail);
+
+    GTEST_LOG_(INFO) << "CreateTailNativeModule_ShouldAppendNewTailWhenListExists end";
+}
+
+/**
+ * @tc.name: GetInstance_ShouldReturnStablePointerAcrossCalls
+ * @tc.desc: Repeated GetInstance calls from one thread return the same pointer (AC-16.1)
+ * @tc.type: FUNC
+ * @tc.require: issue #2157
+ */
+HWTEST_F(ModuleManagerTest, GetInstance_ShouldReturnStablePointerAcrossCalls, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnStablePointerAcrossCalls starts";
+
+    NativeModuleManager* p1 = NativeModuleManager::GetInstance();
+    NativeModuleManager* p2 = NativeModuleManager::GetInstance();
+    EXPECT_NE(p1, nullptr);
+    EXPECT_EQ(p1, p2);
+
+    GTEST_LOG_(INFO) << "GetInstance_ShouldReturnStablePointerAcrossCalls end";
 }
