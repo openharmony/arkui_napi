@@ -559,3 +559,26 @@ HWTEST_F(NapiHybridTest, NapiIsWorkerThreadTest004, testing::ext::TestSize.Level
     ASSERT_EQ(res, napi_ok);
     ASSERT_TRUE(result);
 }
+
+/**
+ * @tc.name: NapiMarkWorkerThreadInitWorkerFuncTest001
+ * @tc.desc: Test napi_mark_worker_thread triggers CallInitWorkerFunc when initWorkerFunc is set
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiMarkWorkerThreadInitWorkerFuncTest001, testing::ext::TestSize.Level1)
+{
+    ASSERT_NE(engine_, nullptr);
+    napi_env env = reinterpret_cast<napi_env>(engine_);
+
+    bool initWorkerFuncCalled = false;
+    auto originalFunc = engine_->GetInitWorkerFunc();
+    engine_->SetInitWorkerFunc([&initWorkerFuncCalled](NativeEngine* engine) {
+        initWorkerFuncCalled = true;
+    });
+
+    auto res = napi_mark_worker_thread(env);
+    ASSERT_EQ(res, napi_ok);
+    ASSERT_TRUE(initWorkerFuncCalled);
+
+    engine_->SetInitWorkerFunc(originalFunc);
+}

@@ -542,6 +542,7 @@ NAPI_EXTERN napi_status napi_mark_worker_thread(napi_env env)
 
     auto engine = reinterpret_cast<NativeEngine*>(env);
     engine->MarkWorkerThread();
+    engine->CallInitWorkerFunc(engine);
     return GET_RETURN_STATUS(env);
 }
 
