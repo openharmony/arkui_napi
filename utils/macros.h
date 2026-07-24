@@ -19,8 +19,10 @@
 #ifndef NAPI_EXPORT
 #ifdef WINDOWS_PLATFORM
 #define NAPI_EXPORT __declspec(dllexport)
+#define NAPI_HIDDEN
 #else
 #define NAPI_EXPORT __attribute__((visibility("default")))
+#define NAPI_HIDDEN __attribute__((visibility("hidden")))
 #endif
 #endif
 
