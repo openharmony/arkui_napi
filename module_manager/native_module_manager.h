@@ -91,8 +91,10 @@ public:
     void UpdateNamespaceLibPath(const std::string& moduleName, const std::vector<std::string>& appLibPath);
     bool GetLdNamespaceName(const std::string &moduleName, std::string &nsName);
     NativeModule* LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
-        std::string& errInfo, bool internal = false, const char* relativePath = "",
-        std::string* loadErrInfo = nullptr);
+        std::string& errInfo, bool internal = false, const char* relativePath = "");
+    // Variant with loadErrInfo outparam for precise SO load failure diagnostics.
+    NativeModule* LoadNativeModuleWithErrorInfo(const char* moduleName, const char* path, bool isAppModule,
+        std::string& errInfo, bool internal, const char* relativePath, std::string& loadErrInfo);
     void SetNativeEngine(std::string moduleName, NativeEngine* nativeEngine);
     bool UnloadNativeModule(const std::string& moduleKey);
     std::string GetModuleFileName(const char* moduleName, bool isAppModule);
@@ -150,7 +152,7 @@ private:
     bool GetNativeModulePath(const char* moduleName, const char* path, const char* relativePath,
         bool isAppModule, char nativeModulePath[][NAPI_PATH_MAX], int32_t pathLength);
     NativeModule* FindNativeModuleByDisk(const char* moduleName, const char* path, const char* relativePath,
-        bool internal, const bool isAppModule, std::string& errInfo, std::string* loadErrInfo,
+        bool internal, const bool isAppModule, std::string& errInfo, std::string& loadErrInfo,
         char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule);
     NativeModule* FindNativeModuleByCache(const char* moduleName,
                                           char nativeModulePath[][NAPI_PATH_MAX],

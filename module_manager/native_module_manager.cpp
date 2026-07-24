@@ -59,11 +59,9 @@ enum ModuleLoadFailedReason : uint32_t {
     MODULE_NOT_EXIST    = 1,
 };
 
-static inline void SetLoadErrInfo(std::string* loadErrInfo, const std::string& msg)
+static inline void SetLoadErrInfo(std::string& loadErrInfo, const std::string& msg)
 {
-    if (loadErrInfo != nullptr) {
-        *loadErrInfo = msg;
-    }
+    loadErrInfo = msg;
 }
 
 struct LoadErrorContext {
@@ -71,24 +69,21 @@ struct LoadErrorContext {
     std::string dlopenErrMsg;
     bool isAppModule = false;
     bool pathRegistered = false;
-    const char* path = nullptr;
+    std::string path;
 };
 
-static void ClassifyLoadError(std::string* loadErrInfo, const LoadErrorContext& ctx)
+static void ClassifyLoadError(std::string& loadErrInfo, const LoadErrorContext& ctx)
 {
-    if (loadErrInfo == nullptr) {
-        return;
-    }
     if (ctx.dlopenFailed) {
         std::string rawErr = ctx.dlopenErrMsg;
         if (rawErr.find("failed ") == 0) {
             rawErr = rawErr.substr(strlen("failed "));
         }
-        *loadErrInfo = "dlopen failed: " + rawErr;
+        loadErrInfo = "dlopen failed: " + rawErr;
     } else if (ctx.isAppModule && !ctx.pathRegistered) {
-        *loadErrInfo = std::string("app lib path not registered in namespace '") + ctx.path + "'";
+        loadErrInfo = "app lib path not registered in namespace '" + ctx.path + "'";
     } else {
-        *loadErrInfo = "module not found";
+        loadErrInfo = "module not found";
     }
 }
 #if !defined(WINDOWS_PLATFORM) && !defined(MAC_PLATFORM) && !defined(__BIONIC__) && !defined(IOS_PLATFORM) && \
@@ -847,8 +842,8 @@ void NativeModuleManager::MoveApiAllowListCheckerPtr(
     }
 }
 
-NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
-    std::string& errInfo, bool internal, const char* relativePath, std::string* loadErrInfo)
+NativeModule* NativeModuleManager::LoadNativeModuleWithErrorInfo(const char* moduleName, const char* path,
+    bool isAppModule, std::string& errInfo, bool internal, const char* relativePath, std::string& loadErrInfo)
 {
     if (moduleName == nullptr) {
         errInfo = "nullptr";
@@ -1413,9 +1408,16 @@ void NativeModuleManager::Napi_onLoadCallback(LIBHANDLE lib, const char* moduleN
     }
 }
 
+NativeModule* NativeModuleManager::LoadNativeModule(const char* moduleName, const char* path, bool isAppModule,
+    std::string& errInfo, bool internal, const char* relativePath)
+{
+    std::string loadErrInfo; // discarded; 6-param legacy callers do not consume it
+    return LoadNativeModuleWithErrorInfo(moduleName, path, isAppModule, errInfo, internal, relativePath, loadErrInfo);
+}
+
 NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName, const char* path,
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
-    std::string* loadErrInfo, char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
+    std::string& loadErrInfo, char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
 {
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
@@ -1485,7 +1487,8 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
             MODULEMNG_HILOG_WARN("%{public}s %{public}s", isAppModule ? ("key:" + moduleKey).c_str() : "",
                 errInfo.c_str());
             // Set precise loadErrInfo for NAPI layer
-            LoadErrorContext ctx = { dlopenFailed, dlopenErrMsg, isAppModule, IsExistedPath(path), path };
+            LoadErrorContext ctx = { dlopenFailed, dlopenErrMsg, isAppModule, IsExistedPath(path),
+                path != nullptr ? path : "<null>" };
             ClassifyLoadError(loadErrInfo, ctx);
             return nullptr;
         }
