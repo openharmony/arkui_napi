@@ -45,6 +45,9 @@
 | last_error 存储 | engine 局部 | **env 局部**（`NativeEngine::lastError_`，native_engine.h:707），非 thread_local | 容易误判 |
 | throw 与 last_error | throw 后 set | throw 调用 `napi_clear_last_error`（**清零**）（native_api.cpp:2683-2774） | 与直觉相反 |
 | exception 优先 | — | `NAPI_PREAMBLE` 先检查 `lastException_.IsEmpty()`，短路返回 `napi_pending_exception`（native_api_internal.h:52-64） | exception > status |
+| 失败状态与 last_error | 返回非 `napi_ok` 时可查询扩展错误 | `env` 有效的失败路径需通过 `napi_set_last_error` 或配套错误宏返回；直接返回错误码不会更新 `lastError_` | 接口返回值与 `napi_get_last_error_info` 可能不一致 |
+| `undefined` 入参 | 非空 JS 值 | `CHECK_ARG` 只检查 handle 是否为 `nullptr`；`undefined` 会继续进入接口的类型校验 | 不能把非空等同于类型合法 |
+| 数值提取失败 | 返回类型错误 | `napi_get_value_int32`/`napi_get_value_uint32` 对非 number 返回 `napi_number_expected`，失败路径不写 `result` | 只有返回 `napi_ok` 时出参才可用 |
 
 ## 约束规则
 
@@ -55,7 +58,9 @@
 - 必须 Worker 退出前手动删除 Sendable 引用。原因：无自动清理。
 - 不要修改公共 API 签名/错误码。原因：对外稳定。
 - 必须 修改 API 后更新 `ace_napi.versionscript`。
-- 必须 线程安全 API 返回错误码时 set/clear_last_error。
+- 必须 有效 `env` 的失败路径通过 `napi_set_last_error` 或配套宏返回，成功路径清除旧错误；不要直接返回非 `napi_ok`。原因：接口状态必须与 `napi_get_last_error_info` 一致。替换错误宏时还必须保持条件极性。
+- 必须 检查每次 NAPI 调用的 `napi_status` 后再使用出参；不要把调用前的哨兵值或旧值当成接口结果。原因：`undefined` 等非空错误类型可能通过指针检查，但类型校验失败时出参保持调用前的值。
+- 必须 在 NAPI 实现中对即将作为数组下标、表索引、枚举分派值、长度或偏移量的数据做独立的类型与范围校验，再访问内存。原因：调用方可能忽略前序转换错误，且有符号 `-1` 转为无符号后会成为极大值。
 - 不要假设 napi_status 最大 21。原因：Ark 专有 22-24。
 - 避免 依赖 AsyncHook 和 AsyncId。原因：空 stub / 返回 0。
 
@@ -69,6 +74,7 @@
 - throw 调用 `napi_clear_last_error`（清零）——throw 后 last_error 为空。
 - `NativeErrorExtendedInfo` 用 `int` 而非 `napi_status`——与标准不同。
 - `last_error` 是 env-local 非 thread_local——容易误判。
+- `undefined` 不会被非空检查拦截；忽略数值提取错误后使用预置的 `-1` 会造成负下标，改为无符号只会将其变为极大值。
 - `NAPI_INNER_EXTERN` 非测试构建触发废弃警告——调用 `napi_adjust_external_memory` 注意。
 - versionscript 仅 arm64 启用——非 arm64 平台不校验符号可见性。
 - napi_status 含 3 个 Ark 专有值(22-24)——不要假设最大 21。
@@ -83,7 +89,10 @@
 - [ ] Sendable 引用是否有手动删除路径？
 - [ ] 公共 API 签名/错误码是否变更？（需评审）
 - [ ] `ace_napi.versionscript` 是否同步更新？
-- [ ] 错误码返回是否配套 set/clear_last_error？
+- [ ] 错误返回与 last_error 是否一致、成功路径是否清除旧错误、错误宏的条件极性是否保持？UT 是否同时断言接口状态和扩展错误？
+- [ ] 每个 NAPI 出参是否只在返回 `napi_ok` 后读取，错误路径是否避免使用旧值或哨兵值？
+- [ ] 数组下标、枚举、长度和偏移量是否在最终使用点做了类型与范围兜底校验？
+- [ ] UT/XTS 是否覆盖 `nullptr`、`undefined`、错误类型和越界值，并断言错误码、出参及无副作用？
 - [ ] 是否避免依赖 AsyncHook/AsyncId？
 
 ## 代码和测试
@@ -102,7 +111,8 @@
 | 公共 API | `interfaces/kits/napi/native_api.h`、`native_engine/native_api.cpp` |
 | 内部 API | `interfaces/inner_api/napi/native_node_api.h`、`native_engine/native_node_api.cpp` |
 | Hybrid API | `interfaces/inner_api/napi/native_node_hybrid_api.h`、`native_engine/native_node_hybrid_api.cpp` |
-| 转换宏/错误宏 | `native_engine/native_api_internal.h` |
+| 转换宏、last_error 设置与查询 | `native_engine/native_api_internal.h`、`native_engine/native_engine.h`、`native_engine/native_api.cpp` |
+| 数值提取与边界校验 | `native_engine/native_api.cpp`（`napi_get_value_int32`、`napi_get_value_uint32` 及使用索引/枚举的接口） |
 | 符号版本 | `ace_napi.versionscript` |
 | NativeErrorExtendedInfo | `native_engine/native_engine.h:53-58` |
 
@@ -115,6 +125,7 @@
 | 引用追踪 | `test/unittest/test_napi_global_ref_track.cpp` |
 | Sendable | `test/unittest/test_sendable_napi.cpp` |
 | 基础/扩展 API | `test/unittest/test_napi.cpp`、`test_napi_ext.cpp` |
+| 错误入参与边界值 | `test/unittest/test_napi.cpp`、`test_napi_errorcode.cpp`、`sample/native_module_systemtest/test_napi.cpp` |
 | Hybrid/白名单 | `test/unittest/test_napi_hybrid.cpp`、`test_ark_api_allowlist.cpp` |
-| 错误码/异常 | `test/unittest/test_napi_errorcode.cpp`、`test_napi_pendingexception.cpp`、`test_napi_critical.cpp` |
+| 错误码、异常与 last_error | `test/unittest/test_napi_errorcode.cpp`、`test_napi_pendingexception.cpp`、`test_napi_critical.cpp`、`test_napi.cpp`（`NapiLoadModuleWithInfoTest004`） |
 | Fuzz | `test/fuzztest/runscriptpath_fuzzer/`、`runscriptbuffer_fuzzer/` |

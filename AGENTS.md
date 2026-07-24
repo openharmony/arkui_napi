@@ -77,11 +77,11 @@ env -C //test/testfwk/developer_test/src \
 
 | 场景关键词 | 先读 |
 | --- | --- |
-| GN 构建、`napi.gni`、`BUILD.gn`、`bundle.json`、特性开关 `declare_args`、PGO、hb、build.sh、versionscript、平台适配 `utils/platform/`、`data_protector`、`OHOS_PLATFORM` 条件编译 | `docs/knowledge/build-platform.md` |
-| ArkNativeEngine、NativeEngine 基类、`napi_env`/`napi_value` 指针 reinterpret、HandleScope/CallbackScope/CriticalScope、ArkIdleMonitor、ArkNativeTimer、ArkFinalizersPack、NativeReference/Sendable/Hybrid、容器作用域、Ark 引擎实现 `impl/ark/` | `docs/knowledge/engine.md` |
+| GN 构建、`source_set`、DLL/so 符号、预览器黑屏、`napi.gni`、`BUILD.gn`、特性开关、PGO、versionscript、平台适配 | `docs/knowledge/build-platform.md` |
+| ArkNativeEngine、`napi_env`/`napi_value`、handle/HandleScope、NativeReference/Sendable/Hybrid、容器作用域、Ark 引擎实现 `impl/ark/` | `docs/knowledge/engine.md` |
 | `napi_module_register`、NativeModuleManager、ModuleLoadChecker、ModuleCheckerDelegate、`nm_register_func`、模块 .so 加载、模块缓存、白名单/校验、`nm_version` | `docs/knowledge/module-manager.md` |
 | Cangjie、CJ FFI、`ark_interop_*`、`cj_ffi`、`cj_envsetup`、`uv_loop_handler`、`cj_fn_invoker`、`cj_backtrace`、`cj_support`、`ARKTS_*` 调用、互操作类型映射/异常传播 | `docs/knowledge/cjffi.md` |
-| 异步 NativeAsyncWork/SafeAsyncWork/TSFN、引用管理/追踪、`NAPI_VERSION`、公共 vs 内部 API、`NativeErrorExtendedInfo`、`napi_set/clear_last_error`、`NAPI_PREAMBLE`、AsyncHook 空 stub、Worker 上限、与 Node.js N-API 差异 | `docs/knowledge/napi-differences.md` |
+| 异步/TSFN、引用追踪、错误入参、数组下标/范围、`napi_status`、`last_error`、公共与内部 API、与 Node.js N-API 差异 | `docs/knowledge/napi-differences.md` |
 | 权限 / 安全 / 线程安全变更（如跨 Worker 引用、env 跨线程、模块加载校验、白名单） | `docs/knowledge/engine.md`（VM 线程安全不变量）+ `docs/knowledge/module-manager.md`（ModuleLoadChecker / 白名单）+ `docs/knowledge/napi-differences.md`（错误码 / 异常传播） |
 | DFX / 日志 / 错误码 / 回溯变更（HiLog、HiTrace、`NativeErrorExtendedInfo`、`napi_set/clear_last_error`、cj_backtrace） | `docs/knowledge/napi-differences.md`（错误处理差异）+ `docs/knowledge/build-platform.md`（`utils/log`）+ `docs/knowledge/cjffi.md`（ark_interop_hitrace / cj_backtrace） |
 
@@ -108,19 +108,20 @@ env -C //test/testfwk/developer_test/src \
 
 | 术语 | 风险提示 | 读 |
 |---|---|---|
-| `napi_env` / `napi_value` | 不是 C++ 类，是指针 reinterpret（env→NativeEngine*，value→JSValueRef）。代码中无 "NativeValue" 类 | `docs/knowledge/engine.md` |
+| `napi_env` / `napi_value` | 是指针 reinterpret；原始 handle 仅在当前作用域有效，跨作用域保存必须使用强 `napi_ref` | `docs/knowledge/engine.md` |
 | HandleScope / CallbackScope / CriticalScope | 三者不可互换：CallbackScope 含异常语义；AsyncWork complete **不在** CallbackScope 内 | `docs/knowledge/engine.md`、`docs/knowledge/napi-differences.md` |
 | NativeScopeManager | 已废弃（源码标 `// To be delete`），不要使用 | `docs/knowledge/engine.md` |
 | SafeAsyncWork / TSFN | env 销毁前未释放 TSFN 触发 HILOG_FATAL；TSFN 队列非 lock-free | `docs/knowledge/napi-differences.md` |
 | Sendable / Hybrid 引用 | 跨 Worker 必须用 Sendable 变体；Sendable 无自动清理，Worker 退出须手动删除 | `docs/knowledge/napi-differences.md` |
 | AsyncHook / AsyncId | 全部空 stub / 固定返回 0，不要依赖其行为 | `docs/knowledge/napi-differences.md` |
 | Worker 上限 | 全局 80 / THREAD_WORKER 64 / LIMITED 16 / OLD 8（部分硬编码） | `docs/knowledge/napi-differences.md` |
-| `napi_set/clear_last_error` | last_error 是 env-local 非 thread_local；throw 调用 `napi_clear_last_error`（清零，与直觉相反） | `docs/knowledge/napi-differences.md` |
+| `napi_set/clear_last_error` | 有效 env 的错误返回必须同步写 last_error；直接返回错误码会留下旧内容 | `docs/knowledge/napi-differences.md` |
 | `NAPI_PREAMBLE` | exception > status：pending exception 优先短路，返回 `napi_pending_exception` | `docs/knowledge/napi-differences.md` |
 | `NAPI_VERSION` / `nm_version` | NAPI_VERSION=8 固定；nm_version 仅透传，**无版本校验逻辑** | `docs/knowledge/napi-differences.md` |
 | `NativeErrorExtendedInfo` | 用 `int errorCode` 而非 `napi_status`；napi_status 含 Ark 专有 22-24，不要假设最大 21 | `docs/knowledge/napi-differences.md` |
 | `ace_napi.versionscript` | 仅 arm64 + build_ext_path 启用；改 API 后必须同步更新 | `docs/knowledge/build-platform.md`、`docs/knowledge/napi-differences.md` |
 | `napi_sources` | 决定编译进 ace_napi 的源文件清单；新增 .cpp 必须加入，否则链接失败 | `docs/knowledge/build-platform.md` |
+| `source_set` / `public_deps` / 预览器黑屏 | target 拆分会改变最终产物的对象文件、依赖传播和导出符号 | `docs/knowledge/build-platform.md` |
 | `declare_args` / `enabled_data_protector` | 特性开关必须用 `declare_args()`；`enabled_data_protector` 由平台自动算，不要手改 | `docs/knowledge/build-platform.md` |
 | data_protector | ARM64 OHOS 自动启用；非 ARM64 不要依赖其行为 | `docs/knowledge/build-platform.md` |
 | hb / build.sh | 独立项目用 hb；非独立项目用 build.sh，需 `--target-cpu arm\|arm64` | `docs/knowledge/build-platform.md` |
@@ -159,7 +160,7 @@ env -C //test/testfwk/developer_test/src \
 - 不要修改公共 API 签名、错误码、生命周期语义，除非任务明确要求
 - 不要在 execute 回调中调用 napi 函数（子线程，VM 非线程安全）
 - 不要跨线程传递 `napi_env`（`CROSS_THREAD_CHECK` 会检查）
-- 不要脱离作用域持有 `napi_value`（可能被 GC 回收）
+- 不要脱离作用域持有原始 `napi_value`；跨作用域保存必须使用强 `napi_ref`，访问时重新取值
 - 不要用普通 Scope 替代 CallbackScope（CallbackScope 含异常处理语义）
 - 不要跨 Worker 用普通引用（需 Sendable 变体）
 - 不要继续使用 NativeScopeManager（已废弃）
@@ -188,7 +189,8 @@ env -C //test/testfwk/developer_test/src \
 - context env 销毁前必须释放所有 TSFN（否则 HILOG_FATAL）
 - Worker 退出前必须手动删除 Sendable 引用（无自动清理）
 - 公共 API 改动后必须更新 `ace_napi.versionscript`
-- 线程安全 API 返回错误码时必须调用 `napi_set_last_error` / `napi_clear_last_error`
+- 有效 `env` 的非 `napi_ok` 返回必须同步设置相同的 last_error；成功路径必须清除旧错误
+- 新增或拆分 `source_set` 必须检查全部最终消费者、条件开关下的源码唯一性和 DLL/so 导出符号
 - 修改 `ark_interop` 时必须同步检查 `cj_support`
 - 互操作调用中必须确保线程约束（Ark VM 线程）
 
@@ -217,10 +219,10 @@ env -C //test/testfwk/developer_test/src \
 | 公共 API 变更 | 运行 `test/unittest/test_napi*`、`test_ark_api_allowlist`；更新 `ace_napi.versionscript`；arm64 构建确认符号可见性 |
 | 引擎 / Ark 实现 | 构建 ace_napi；跑 `test/unittest/test_ark*`、`test_napi*` |
 | 异步 / 引用 / 作用域 | 跑 `test_napi_threadsafe`、`test_worker_manager`、`test_napi_global_ref_track`、`test_sendable_napi`、`test_napi_pendingexception` |
-| DFX / 日志 / 错误码 / 回溯 | 跑 `test/unittest/test_napi_errorcode`、`test_napi_pendingexception`、`test_napi_critical`；CJ 侧跑 `test/unittest/cj_native/test_cj_backtrace` |
+| DFX / 日志 / 错误码 / 回溯 | 错误路径同时断言接口状态和 `napi_get_last_error_info`；跑 `test_napi_errorcode`、`test_napi_pendingexception`、`test_napi_critical`；CJ 侧跑 `test_cj_backtrace` |
 | 模块管理 | 跑 `module_manager/test/unittest/module_manager_test/` + Fuzz `loadarkmodule_fuzzer/` |
 | Cangjie FFI 互操作 | 跑 `test/unittest/cj_native/test_ark_interop*`、`test_cj_backtrace`、`test_ffi_data` |
-| 构建配置 / 平台 | 跑 `ace_napi` 构建；按改动跑 PGO/versionscript 验证 |
+| 构建配置 / 平台 | 跑 `ace_napi` 构建；target/符号变更还需覆盖受影响的静态库、DLL/so、特性开关和预览器冒烟 |
 | 纯测试变更 | 跑改动测试 + 至少一个相邻相关测试 |
 
 ### 5.3 Done 定义
