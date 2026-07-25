@@ -290,8 +290,9 @@ HWTEST_F(ModuleManagerTest, LoadNativeModuleTest_011, TestSize.Level1)
     nativeModulePath[2][0] = 0;
 
     std::string errInfo = "";
+    std::string loadErrInfo;
     EXPECT_EQ(moduleManager->FindNativeModuleByDisk(moduleName, nullptr, nullptr, false, false, errInfo,
-        nullptr, nativeModulePath, nullptr), nullptr);
+        loadErrInfo, nativeModulePath, nullptr), nullptr);
     GTEST_LOG_(INFO) << "ModuleManagerTest, LoadNativeModuleTest_011 end";
 }
 
@@ -1413,8 +1414,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_ModuleNameNull, TestSize.Le
     std::string errInfo = "";
     std::string loadErrInfo = "";
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    NativeModule* module = moduleManager->LoadNativeModule(nullptr, nullptr, false, errInfo, false, nullptr,
-        &loadErrInfo);
+    NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(nullptr, nullptr, false, errInfo,
+        false, nullptr, loadErrInfo);
     EXPECT_EQ(module, nullptr);
     EXPECT_EQ(errInfo, "nullptr");
     EXPECT_EQ(loadErrInfo, "moduleName is nullptr");
@@ -1435,8 +1436,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_RelativePathNull, TestSize.
     std::string errInfo = "";
     std::string loadErrInfo = "";
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    NativeModule* module = moduleManager->LoadNativeModule(moduleName, nullptr, false, errInfo, false, nullptr,
-        &loadErrInfo);
+    NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo,
+        false, nullptr, loadErrInfo);
     EXPECT_EQ(module, nullptr);
     EXPECT_EQ(errInfo, "nullptr");
     EXPECT_EQ(loadErrInfo, "relativePath is nullptr");
@@ -1457,8 +1458,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidRelativePath, TestSi
     std::string errInfo = "";
     std::string loadErrInfo = "";
     NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
-    NativeModule* module = moduleManager->LoadNativeModule(moduleName, nullptr, false, errInfo, false, "../test",
-        &loadErrInfo);
+    NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo,
+        false, "../test", loadErrInfo);
     EXPECT_EQ(module, nullptr);
     EXPECT_EQ(loadErrInfo, "invalid relativePath");
 
@@ -1484,7 +1485,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_RelativePathNotContainDotDo
     EXPECT_EQ(module, nullptr);
     // relativePath does not contain "..", should NOT set "invalid relativePath" in loadErrInfo
     std::string loadErrInfo;
-    module = moduleManager->LoadNativeModule(moduleName, nullptr, false, errInfo, false, "validPath", &loadErrInfo);
+    module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo, false,
+        "validPath", loadErrInfo);
     EXPECT_EQ(module, nullptr);
     EXPECT_NE(loadErrInfo, "invalid relativePath");
 
@@ -1513,8 +1515,8 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_Blocklisted, TestSize.Level
     MockDiskCheckOnly(false);
     MockLoadModuleLibrary(nullptr);
 
-    NativeModule* module = moduleManager->LoadNativeModule(moduleName, nullptr, false, errInfo, false, "path",
-        &loadErrInfo);
+    NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo,
+        false, "path", loadErrInfo);
     EXPECT_EQ(module, nullptr);
     EXPECT_EQ(loadErrInfo, std::string("module ") + moduleName + " is in blocklist");
 
@@ -1567,7 +1569,7 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_ModuleNotFound, TestS
     std::string loadErrInfo = "";
     // isAppModule=false, all paths empty, no dlopen -> "module not found"
     NativeModule* result = moduleManager->FindNativeModuleByDisk("notExistModule", nullptr, "", false, false,
-        errInfo, &loadErrInfo, nativeModulePath, nullptr);
+        errInfo, loadErrInfo, nativeModulePath, nullptr);
     EXPECT_EQ(result, nullptr);
     EXPECT_EQ(loadErrInfo, "module not found");
 
@@ -1596,7 +1598,7 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_AppLibPathNotRegister
     std::string loadErrInfo = "";
     // isAppModule=true, path="default" not registered -> "app lib path not registered in namespace 'default'"
     NativeModule* result = moduleManager->FindNativeModuleByDisk("notExistModule", "default", "", false, true,
-        errInfo, &loadErrInfo, nativeModulePath, nullptr);
+        errInfo, loadErrInfo, nativeModulePath, nullptr);
     EXPECT_EQ(result, nullptr);
     EXPECT_EQ(loadErrInfo, "app lib path not registered in namespace 'default'");
 
@@ -1622,9 +1624,10 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_LoadErrInfoNull, Test
     nativeModulePath[2][0] = 0;
 
     std::string errInfo = "";
-    // loadErrInfo is nullptr, should not crash
+    std::string loadErrInfo;
+    // loadErrInfo is a discarded reference; legacy null-pointer crash test no longer applies
     NativeModule* result = moduleManager->FindNativeModuleByDisk("notExistModule", nullptr, "", false, false,
-        errInfo, nullptr, nativeModulePath, nullptr);
+        errInfo, loadErrInfo, nativeModulePath, nullptr);
     EXPECT_EQ(result, nullptr);
 
     GTEST_LOG_(INFO) << "FindNativeModuleByDisk_ErrInfo_LoadErrInfoNull end";
@@ -1668,7 +1671,7 @@ HWTEST_F(ModuleManagerTest, FindNativeModuleByDisk_ErrInfo_DlopenFailed, TestSiz
     std::string loadErrInfo = "";
     // isAppModule=true, path="default" registered, file exists but dlopen fails
     NativeModule* result = moduleManager->FindNativeModuleByDisk("testDlopenFail", "default", "", false, true,
-        errInfo, &loadErrInfo, nativeModulePath, nullptr);
+        errInfo, loadErrInfo, nativeModulePath, nullptr);
     EXPECT_EQ(result, nullptr);
     // dlopenFailed should be true, loadErrInfo should contain "dlopen failed"
     EXPECT_NE(loadErrInfo.find("dlopen failed"), std::string::npos);

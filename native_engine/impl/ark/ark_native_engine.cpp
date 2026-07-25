@@ -787,7 +787,7 @@ int ArkNativeEngine::CheckAndGetModule(
     NativeModule *&module,
     Local<JSValueRef> &exports,
     std::string &errInfo,
-    std::string *loadErrInfo)
+    std::string &loadErrInfo)
 {
 #ifdef IOS_PLATFORM
     if (isLimitedWorker_) {
@@ -797,7 +797,7 @@ int ArkNativeEngine::CheckAndGetModule(
             return -1;
         }
     }
-    module = moduleManager->LoadNativeModule(
+    module = moduleManager->LoadNativeModuleWithErrorInfo(
         moduleName->ToString(vm_).c_str(), nullptr, false, errInfo, false, "", loadErrInfo);
     return 0;
 #else
@@ -817,15 +817,15 @@ int ArkNativeEngine::CheckAndGetModule(
                 LoadCJModule((napi_env)this, moduleName->ToString(vm_).c_str()));
             return 1;
         }
-        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
+        module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName->ToString(vm_).c_str(),
             path->ToString(vm_).c_str(), isAppModule, errInfo, false, "", loadErrInfo);
     } else if (info->GetArgsNumber() == 4) { // 4:Determine if the number of parameters is equal to 4
         Local<StringRef> path(info->GetCallArgRef(2)); // 2:Take the second parameter
         Local<StringRef> relativePath(info->GetCallArgRef(3)); // 3:Take the second parameter
-        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(), nullptr, isAppModule,
+        module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName->ToString(vm_).c_str(), nullptr, isAppModule,
             errInfo, false, relativePath->ToString(vm_).c_str(), loadErrInfo);
     } else {
-        module = moduleManager->LoadNativeModule(moduleName->ToString(vm_).c_str(),
+        module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName->ToString(vm_).c_str(),
             nullptr, isAppModule, errInfo, false, "", loadErrInfo);
     }
     return 0;
@@ -951,7 +951,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
     // if the module is fully loaded (code 1)
     // or has failed to load (code -1).
     if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
-        moduleName, module, exports, errInfo, &loadErrInfo) != 0) {
+        moduleName, module, exports, errInfo, loadErrInfo) != 0) {
         return scope.Escape(exports);
     }
     // process loaded module
@@ -1017,7 +1017,7 @@ Local<JSValueRef> ArkNativeEngine::RequireNapiForCtxEnv(JsiRuntimeCallInfo *info
     // if the module is fully loaded (code 1)
     // or has failed to load (code -1).
     if (arkNativeEngine->CheckAndGetModule(info, moduleManager, isAppModule,
-        moduleName, module, exports, errInfo, &loadErrInfo) != 0) {
+        moduleName, module, exports, errInfo, loadErrInfo) != 0) {
         return scope.Escape(exports);
     }
     // process loaded module

@@ -491,7 +491,7 @@ private:
         NativeModule *&module,
         Local<JSValueRef> &exports,
         std::string &errInfo,
-        std::string *loadErrInfo = nullptr);
+        std::string &loadErrInfo);
 
     Local<JSValueRef> LoadNativeModule(
         NativeModuleManager* moduleManager,
