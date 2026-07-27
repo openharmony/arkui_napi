@@ -18,8 +18,9 @@
 #define FOUNDATION_ACE_NAPI_NATIVE_ENGINE_CJ_SUPPORT_H
 
 #include "js_native_api.h"
+#include "utils/macros.h"
 
-bool IsCJModule(const char* moduleName);
-napi_value LoadCJModule(napi_env env, const char* nameBuf);
+NAPI_HIDDEN bool IsCJModule(const char* moduleName);
+NAPI_HIDDEN napi_value LoadCJModule(napi_env env, const char* nameBuf);
 
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_CJ_SUPPORT_H */
