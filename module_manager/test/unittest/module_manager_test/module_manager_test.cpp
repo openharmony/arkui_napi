@@ -1931,52 +1931,6 @@ HWTEST_F(ModuleManagerTest, SetAppLibPath_WhenAppLibPathIsEmptyShouldNotCrash, T
 }
 
 /*
- * @tc.name: IsSafeRelativePath_PathValidationTest
- * @tc.desc: test NativeModuleManager::IsSafeRelativePath validates relativePath via whitelist (no leading slash,
- *           non-empty/non-"."/non-".." segments, alnum/_/./ chars only)
- * @tc.type: FUNC
- * @tc.require: #I76XTV
- */
-HWTEST_F(ModuleManagerTest, IsSafeRelativePath_PathValidationTest, TestSize.Level1)
-{
-    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest starts";
-
-    // AC-6.1: ".." as substring but not as full segment -> accept (eliminates original false positive)
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("my..pkg"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a..b/c"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example..foo"));
-
-    // AC-6.2: absolute path -> reject
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/etc/passwd"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("/module"));
-
-    // AC-6.3: segment is . / .. / empty -> reject
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/./b"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a/../b"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a//b"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("."));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath(".."));
-
-    // AC-6.4: non-whitelisted char -> reject
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a;b"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a$b"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("%2e"));
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a\\b")); // backslash
-    EXPECT_FALSE(NativeModuleManager::IsSafeRelativePath("a b"));  // space
-
-    // AC-6.5: legitimate relative path -> accept (backward compat)
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath(""));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module/sub"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("a.b.c"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("com.example.foo"));
-    EXPECT_TRUE(NativeModuleManager::IsSafeRelativePath("module_name"));
-
-    GTEST_LOG_(INFO) << "IsSafeRelativePath_PathValidationTest end";
-}
-
-/*
  * @tc.name: IsValidLibNameStrict_LibNameValidationTest
  * @tc.desc: test NativeModuleManager::IsValidLibNameStrict validates lib name via strict charset
  *           (alnum/_/-/. only, must end with .so, no "..." sequence, size < NAME_MAX)

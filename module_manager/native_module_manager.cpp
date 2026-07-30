@@ -860,9 +860,9 @@ NativeModule* NativeModuleManager::LoadNativeModuleWithErrorInfo(const char* mod
     }
 
     std::string relativePathStr(relativePath);
-    if (!IsSafeRelativePath(relativePathStr)) {
+    if (relativePathStr.find("..") != std::string::npos) {
         SetLoadErrInfo(loadErrInfo, "invalid relativePath");
-        MODULEMNG_HILOG_ERROR("invalid relativePath: rejected by whitelist");
+        MODULEMNG_HILOG_ERROR("invalid relativePath");
         return nullptr;
     }
 
@@ -1723,29 +1723,6 @@ bool NativeModuleManager::IsExistedPath(const char* pathKey) const
     MODULEMNG_HILOG_DEBUG("path:'%{public}s'", pathKey);
     std::lock_guard<std::mutex> guard(appLibPathMapMutex_);
     return pathKey && appLibPathMap_.find(pathKey) != appLibPathMap_.end();
-}
-
-bool NativeModuleManager::IsSafeRelativePath(const std::string& p)
-{
-    if (p.empty()) {
-        return true;
-    }
-    if (p.front() == '/') {
-        return false;
-    }
-    std::stringstream ss(p);
-    std::string seg;
-    while (std::getline(ss, seg, '/')) {
-        if (seg.empty() || seg == "." || seg == "..") {
-            return false;
-        }
-        for (char c : seg) {
-            if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '.' && c != '-') {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 bool NativeModuleManager::IsValidLibNameStrict(const std::string& libName)

@@ -167,7 +167,6 @@ private:
     bool CloseModuleLibrary(LIBHANDLE handle);
     void CreateLdNamespace(const std::string moduleName, const char* lib_ld_path, const bool& isSystemApp);
     bool IsExistedPath(const char* pathKey) const;
-    static bool IsSafeRelativePath(const std::string& p);
     static bool IsValidLibNameStrict(const std::string& libName);
     bool RemoveNativeModuleByCacheLocked(const std::string& moduleKey);
     bool RemoveNativeModuleLocked(const std::string& moduleKey);
