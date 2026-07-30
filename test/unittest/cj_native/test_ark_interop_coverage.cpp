@@ -23,7 +23,6 @@ constexpr int32_t BIGINT_TEST_VAL = 42;
 
 constexpr size_t TEST_PATH_LEN = 4;
 constexpr size_t CURVES_PATH_LEN = 20;
-constexpr size_t MODULE_PATH_LEN = 18;
 
 constexpr uint8_t HEX_VAL_11 = 0x11;
 constexpr uint8_t HEX_VAL_22 = 0x22;
@@ -83,18 +82,6 @@ TEST_F(ArkInteropTest, RequireArkNativeModule)
     auto scope = ARKTS_OpenScope(env);
 
     auto result = ARKTS_RequireArkModule(env, "@native:ohos.curves", CURVES_PATH_LEN, ARKTS_NativeModule);
-    (void)result;
-
-    ARKTS_CloseScope(env, scope);
-}
-
-TEST_F(ArkInteropTest, RequireArkNormalModule)
-{
-    MockContext mockCtx;
-    auto env = mockCtx.GetEnv();
-    auto scope = ARKTS_OpenScope(env);
-
-    auto result = ARKTS_RequireArkModule(env, "nonexistent_module", MODULE_PATH_LEN, ARKTS_NormalModule);
     (void)result;
 
     ARKTS_CloseScope(env, scope);

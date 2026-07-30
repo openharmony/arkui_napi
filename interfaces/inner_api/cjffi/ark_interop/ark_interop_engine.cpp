@@ -28,6 +28,7 @@
 #ifdef __OHOS__
 #include "uv_loop_handler.h"
 #endif
+#include "cj_envsetup.h"
 
 struct ARKTS_Engine_ {
     panda::EcmaVM* vm;
@@ -176,6 +177,18 @@ ARKTS_Engine ARKTS_CreateEngine()
         ARKTSInner_DisposeEngine(result);
         delete result;
         return nullptr;
+    }
+
+    auto runtime = OHOS::CJEnv::LoadInstance();
+    if (!runtime) {
+        ARKTSInner_DisposeEngine(result);
+        delete result;
+        return nullptr;
+    }
+
+    if (auto napiEnv = reinterpret_cast<ArkNativeEngine*>(runtime->getMainNAPIEnv())) {
+        auto mainVM = napiEnv->GetEcmaVm();
+        JSNApi::SynchronizVMInfo(vm, mainVM);
     }
 
     return result;
