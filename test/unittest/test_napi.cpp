@@ -18359,7 +18359,7 @@ HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize001, testing::ext::Te
     deathTest.AssertSignal(SIGABRT).AssertError("Pure virtual function called!");
     ASSERT_TRUE(deathTest.GetResult());
 }
-
+#ifdef NAPI_TARGET_ARM64
 HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize002, testing::ext::TestSize.Level1)
 {
     BasicDeathTest deathTest([] {
@@ -18388,7 +18388,7 @@ HWTEST_F(NapiBasicTest, NapiDeleteRefInInstanceDataFinalize002, testing::ext::Te
     });
     deathTest.AssertExit(0);
 }
-
+#endif
 /**
  * @tc.name: GlobalHandleCountTest001
  * @tc.desc: Test napi_get_global_handle_count with null env returns napi_invalid_arg.
