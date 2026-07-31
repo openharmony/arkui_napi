@@ -22,6 +22,8 @@
 #include <cstdlib>
 #include <vector>
 
+#include "ark_interop_scope.h"
+
 using namespace panda;
 using namespace panda::ecmascript;
 
@@ -39,7 +41,7 @@ ARKTS_Value ARKTS_CreateUtf8(ARKTS_Env env, const char* value, int32_t size)
     } else {
         result = StringRef::NewFromUtf8WithoutStringTable(vm, value, size);
     }
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }
 
 bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
@@ -52,7 +54,7 @@ bool ARKTS_IsString(ARKTS_Env env, ARKTS_Value value)
     if (v.IsHole() || !v.IsHeapObject()) {
         return false;
     }
-    v = *P_CAST(value.pointer, JSValueRef*);
+    v = ARKTS_Scope_::GetValueRef(value);
     return v.IsString(vm);
 }
 
@@ -63,7 +65,7 @@ int32_t ARKTS_GetValueUtf8Size(ARKTS_Env env, ARKTS_Value value)
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
-    auto v = BIT_CAST(value, Local<StringRef>);
+    Local<StringRef> v = ARKTS_Scope_::GetLocal(env, value);
     return v->Utf8Length(vm, true);
 }
 
@@ -74,7 +76,7 @@ int32_t ARKTS_GetValueUtf8(ARKTS_Env env, ARKTS_Value value, int32_t capacity, c
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
     ARKTS_ASSERT_I(capacity == 0 || buffer, "buffer is null when length not 0");
-    auto v = BIT_CAST(value, Local<StringRef>);
+    Local<StringRef> v = ARKTS_Scope_::GetLocal(env, value);
     return v->WriteUtf8(vm, buffer, capacity, true);
 }
 
@@ -84,7 +86,7 @@ const char* ARKTS_GetValueCString(ARKTS_Env env, ARKTS_Value value)
     auto vm = P_CAST(env, EcmaVM*);
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_I(ARKTS_IsString(env, value), "not a string");
-    auto v = BIT_CAST(value, Local<StringRef>);
+    Local<StringRef> v = ARKTS_Scope_::GetLocal(env, value);
     auto size = v->Utf8Length(vm, true);
     if (size <= 0) {
         return nullptr;
@@ -110,7 +112,7 @@ ARKTS_StringInfo ARKTS_GetStringInfo(ARKTS_Env env, ARKTS_Value value)
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT(ARKTS_IsString(env, value), "not a string", {});
 
-    auto string = BIT_CAST(value, Local<StringRef>);
+    Local<StringRef> string = ARKTS_Scope_::GetLocal(env, value);
 
     auto isCompressed = string->IsCompressed(vm);
     auto length = string->Length(vm);
@@ -126,7 +128,7 @@ void ARKTS_StringCopy(ARKTS_Env env, ARKTS_Value value, void* dst, uint32_t leng
     ARKTS_ASSERT_V(ARKTS_IsString(env, value), "not a string");
     ARKTS_ASSERT_V(dst, "dst is null");
 
-    auto string = BIT_CAST(value, Local<StringRef>);
+    Local<StringRef> string = ARKTS_Scope_::GetLocal(env, value);
     if (string->IsCompressed(vm)) {
         string->WriteLatin1(vm, reinterpret_cast<char*>(dst), length);
     } else {
@@ -155,5 +157,5 @@ ARKTS_Value ARKTS_CreateString(ARKTS_Env env, bool isCompressed, uint32_t length
             result = StringRef::NewFromUtf16WithoutStringTable(vm, reinterpret_cast<const char16_t *>(data), length);
         }
     }
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }

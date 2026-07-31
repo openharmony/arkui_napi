@@ -15,6 +15,7 @@
 
 #include "ark_interop_internal.h"
 #include "ark_interop_napi.h"
+#include "ark_interop_scope.h"
 
 using namespace panda;
 using namespace panda::ecmascript;
@@ -33,7 +34,7 @@ ARKTS_Value ARKTS_CreateSymbol(ARKTS_Env env, const char* description, int32_t l
         object = panda::StringRef::NewFromUtf8(vm, description, length);
     }
     auto symbol = panda::SymbolRef::New(vm, object);
-    return ARKTS_FromHandle(symbol);
+    return ARKTS_Scope_::NewValue(env, symbol);
 }
 
 bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
@@ -46,7 +47,7 @@ bool ARKTS_IsSymbol(ARKTS_Env env, ARKTS_Value value)
     }
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
-    auto handle = BIT_CAST(value, Local<JSValueRef>);
+    auto handle = ARKTS_Scope_::GetLocal(env, value);
     return handle->IsSymbol(vm);
 }
 
@@ -56,11 +57,10 @@ const char* ARKTS_GetSymbolDesc(ARKTS_Env env, ARKTS_Value value)
 
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope fastNativeScope(vm);
-    auto symbol = BIT_CAST(value.pointer, Local<SymbolRef>);
+    Local<SymbolRef> symbol = ARKTS_Scope_::GetLocal(env, value);
     auto desc = symbol->GetDescription(vm);
-    auto desc1 = BIT_CAST(desc, ARKTS_Value);
-    if (ARKTS_IsString(env, desc1)) {
-        return ARKTS_GetValueCString(env, BIT_CAST(desc, ARKTS_Value));
+    if (desc->IsString(vm)) {
+        return ARKTS_GetValueCString(env, ARKTS_Scope_::NewValue(env, desc));
     }
     return nullptr;
 }

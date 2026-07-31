@@ -107,6 +107,9 @@ ohos_shared_library("ark_interop") {
   if (use_clang_coverage) {
     defines += [ "CLANG_COVERAGE" ]
   }
+  if (use_hwasan == true) {
+    defines += [ "HW_ASAN" ]
+  }
 
   if (is_arkui_x) {
     deps += [

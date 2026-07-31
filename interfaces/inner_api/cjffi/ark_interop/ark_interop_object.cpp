@@ -16,6 +16,7 @@
 #include "ark_interop_napi.h"
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
+#include "ark_interop_scope.h"
 
 using namespace panda;
 using namespace panda::ecmascript;
@@ -31,8 +32,8 @@ ARKTS_INLINE bool ARKTSInner_IsJSKey(ARKTS_Env env, ARKTS_Value value)
     }
     auto vm = P_CAST(env, EcmaVM*);
     JsiFastNativeScope nativeScope(vm);
-    tag = *P_CAST(value.pointer, JSValueRef*);
-    return tag.IsString(vm) || tag.IsSymbol(vm);
+    auto local = ARKTS_Scope_::GetLocal(env, value);
+    return local->IsString(vm) || local->IsSymbol(vm);
 }
 
 ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
@@ -42,7 +43,7 @@ ARKTS_Value ARKTS_CreateObject(ARKTS_Env env)
     auto vm = P_CAST(env, EcmaVM*);
     auto result = ObjectRef::New(vm);
 
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }
 
 bool ARKTS_IsHeapObject(ARKTS_Value value)
@@ -62,8 +63,8 @@ bool ARKTS_IsObject(ARKTS_Env env, ARKTS_Value value)
     if (!v.IsHeapObject()) {
         return false;
     }
-    auto handle = BIT_CAST(value, Local<JSValueRef>);
-    return handle->IsObject(vm);
+    v = ARKTS_Scope_::GetValueRef(value);
+    return v.IsObject(vm);
 }
 
 bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
@@ -74,8 +75,8 @@ bool ARKTS_HasOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(jobj), "object is not heap object");
     ARKTS_ASSERT_F(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
     return object->Has(vm, key);
 }
 
@@ -86,10 +87,10 @@ ARKTS_Value ARKTS_EnumOwnProperties(ARKTS_Env env, ARKTS_Value jobj)
     panda::JsiFastNativeScope fastNativeScope(vm);
     ARKTS_ASSERT_U(ARKTS_IsHeapObject(jobj), "object is not heap object");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
     auto result = object->GetOwnEnumerablePropertyNames(vm);
 
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }
 
 void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_Value jvalue,
@@ -101,9 +102,9 @@ void ARKTS_DefineOwnProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, 
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
     ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
-    auto value = ARKTS_ToHandle<JSValueRef>(jvalue);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
+    auto value = ARKTS_Scope_::GetLocal(env, jvalue);
 
     PropertyAttribute attribute(value, attrs & N_WRITABLE, attrs & N_ENUMERABLE, attrs & N_CONFIGURABLE);
     object->DefineProperty(vm, key, attribute);
@@ -118,9 +119,9 @@ bool ARKTS_DefineOwnPropertyV2(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey
     ARKTS_ASSERT_F(ARKTS_IsHeapObject(jobj), "object is not heap object");
     ARKTS_ASSERT_F(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
-    auto value = ARKTS_ToHandle<JSValueRef>(jvalue);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
+    auto value = ARKTS_Scope_::GetLocal(env, jvalue);
 
     PropertyAttribute attribute(value, attrs & N_WRITABLE, attrs & N_ENUMERABLE, attrs & N_CONFIGURABLE);
     auto result = object->DefineProperty(vm, key, attribute);
@@ -143,11 +144,11 @@ void ARKTS_DefineAccessors(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, AR
     ARKTS_ASSERT_V(accessor.getter == undefined || ARKTS_IsCallable(env, accessor.getter), "getter not callable");
     ARKTS_ASSERT_V(accessor.getter != undefined || accessor.setter != undefined, "getter and setter is undefined");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
-    auto handledUndef = ARKTS_ToHandle<JSValueRef>(undefined);
-    auto handledGetter = accessor.getter != undefined ? BIT_CAST(accessor.getter, Local<JSValueRef>) : handledUndef;
-    auto handledSetter = accessor.setter != undefined ? BIT_CAST(accessor.setter, Local<JSValueRef>) : handledUndef;
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
+    auto handledUndef = ARKTS_Scope_::GetLocal(env, undefined);
+    auto handledGetter = accessor.getter != undefined ? ARKTS_Scope_::GetLocal(env, accessor.getter) : handledUndef;
+    auto handledSetter = accessor.setter != undefined ? ARKTS_Scope_::GetLocal(env, accessor.setter) : handledUndef;
 
     PropertyAttribute attribute(handledUndef,
         accessor.attrs & N_WRITABLE,
@@ -171,11 +172,11 @@ bool ARKTS_DefineAccessorsV2(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, 
     ARKTS_ASSERT_F(accessor.getter == undefined || ARKTS_IsCallable(env, accessor.getter), "getter not callable");
     ARKTS_ASSERT_F(accessor.getter != undefined || accessor.setter != undefined, "getter and setter is undefined");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
-    auto handledUndef = ARKTS_ToHandle<JSValueRef>(undefined);
-    auto handledGetter = accessor.getter != undefined ? BIT_CAST(accessor.getter, Local<JSValueRef>) : handledUndef;
-    auto handledSetter = accessor.setter != undefined ? BIT_CAST(accessor.setter, Local<JSValueRef>) : handledUndef;
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
+    auto handledUndef = ARKTS_Scope_::GetLocal(env, undefined);
+    auto handledGetter = accessor.getter != undefined ? ARKTS_Scope_::GetLocal(env, accessor.getter) : handledUndef;
+    auto handledSetter = accessor.setter != undefined ? ARKTS_Scope_::GetLocal(env, accessor.setter) : handledUndef;
 
     PropertyAttribute attribute(handledUndef,
         accessor.attrs & N_WRITABLE,
@@ -194,9 +195,9 @@ void ARKTS_SetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey, ARKTS_
     ARKTS_ASSERT_V(ARKTS_IsHeapObject(jobj), "object is not heap object");
     ARKTS_ASSERT_V(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
-    auto value = ARKTS_ToHandle<JSValueRef>(jvalue);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
+    auto value = ARKTS_Scope_::GetLocal(env, jvalue);
 
     object->Set(vm, key, value);
 }
@@ -209,9 +210,9 @@ ARKTS_Value ARKTS_GetProperty(ARKTS_Env env, ARKTS_Value jobj, ARKTS_Value jkey)
     ARKTS_ASSERT_U(ARKTS_IsHeapObject(jobj), "object is not heap object");
     ARKTS_ASSERT_U(ARKTSInner_IsJSKey(env, jkey), "key is not number、string or symbol");
 
-    auto object = BIT_CAST(jobj, Local<ObjectRef>);
-    auto key = ARKTS_ToHandle<JSValueRef>(jkey);
+    Local<ObjectRef> object = ARKTS_Scope_::GetLocal(env, jobj);
+    auto key = ARKTS_Scope_::GetLocal(env, jkey);
 
     auto result = object->Get(vm, key);
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }

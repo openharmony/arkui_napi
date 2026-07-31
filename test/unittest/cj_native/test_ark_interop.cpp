@@ -1211,6 +1211,31 @@ TEST_F(ArkInteropTest, CreateAsyncTaskWithNullEnv)
     EXPECT_TRUE(errCtx.HasAndClearNativeError());
 }
 
+TEST_F(ArkInteropTest, ToNapiValue)
+{
+    MockContext mockCtx;
+    auto engine = mockCtx.GetEngine();
+    auto env = reinterpret_cast<napi_env>(ARKTS_GetNAPIEnv(engine));
+    auto value = ARKTS_CreateUndefined();
+    auto napiValue = ARKTS_ToNapiValue(env, value);
+    bool isUndefined = false;
+    auto status = napi_is_undefined(env, napiValue, &isUndefined);
+    EXPECT_EQ(status, napi_ok);
+    EXPECT_TRUE(isUndefined);
+}
+
+TEST_F(ArkInteropTest, FromNapiValue)
+{
+    MockContext mockCtx;
+    auto engine = mockCtx.GetEngine();
+    auto env = reinterpret_cast<napi_env>(ARKTS_GetNAPIEnv(engine));
+    napi_value undefined = nullptr;
+    auto status = napi_get_undefined(env, &undefined);
+    EXPECT_EQ(status, napi_ok);
+    auto value = ARKTS_FromNapiValue(env, undefined);
+    EXPECT_TRUE(ARKTS_IsUndefined(value));
+}
+
 namespace panda {
 bool JSNApi::IsMixedDebugEnabled(const EcmaVM* vm)
 {

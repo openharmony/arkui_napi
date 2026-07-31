@@ -14,7 +14,7 @@
 */
 
 #include "ark_interop_napi.h"
-#include "ark_interop_external.h"
+#include "ark_interop_scope.h"
 #include "ark_interop_internal.h"
 #include "ark_interop_macro.h"
 #include "ark_interop_log.h"
@@ -25,7 +25,7 @@ ARKTS_Value ARKTS_CreateBigInt(ARKTS_Env env, int64_t value)
     
     auto vm = P_CAST(env, panda::EcmaVM*);
     auto result = panda::BigIntRef::New(vm, value);
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }
 
 static bool ReverseBytes(uint8_t dst[], size_t size)
@@ -75,7 +75,7 @@ ARKTS_Value ARKTS_CreateBigIntWithBytes(ARKTS_Env env, bool isNegative, int64_t 
     }
 
     auto result = panda::BigIntRef::CreateBigWords(vm, isNegative, totalCnt, u64v.data());
-    return ARKTS_FromHandle(result);
+    return ARKTS_Scope_::NewValue(env, result);
 }
 
 bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
@@ -88,7 +88,7 @@ bool ARKTS_IsBigInt(ARKTS_Env env, ARKTS_Value value)
     }
     auto vm = P_CAST(env, panda::EcmaVM*);
     panda::JsiFastNativeScope scope(vm);
-    tag = *P_CAST(value.pointer, panda::JSValueRef*);
+    tag = ARKTS_Scope_::GetValueRef(value);
 
     return tag.IsBigInt(vm);
 }
@@ -98,7 +98,7 @@ int64_t ARKTS_BigIntGetByteSize(ARKTS_Env env, ARKTS_Value value)
     ARKTS_ASSERT_I(ARKTS_IsBigInt(env, value), "value is not bigint");
     auto vm = P_CAST(env, panda::EcmaVM*);
     panda::JsiFastNativeScope scope(vm);
-    auto bigint = P_CAST(value.pointer, panda::BigIntRef*);
+    panda::Local<panda::BigIntRef> bigint = ARKTS_Scope_::GetLocal(env, value);
     return bigint->GetWordsArraySize(vm) * WORD_BYTES;
 }
 
@@ -110,7 +110,7 @@ void ARKTS_BigIntReadBytes(ARKTS_Env env, ARKTS_Value value, bool* isNegative, i
     ARKTS_ASSERT_V(ARKTS_IsBigInt(env, value), "value is not bigint");
     auto vm = P_CAST(env, panda::EcmaVM*);
     panda::JsiFastNativeScope scope(vm);
-    auto bigint = BIT_CAST(value, panda::Local<panda::BigIntRef>);
+    panda::Local<panda::BigIntRef> bigint = ARKTS_Scope_::GetLocal(env, value);
     auto u64cnt = bigint->GetWordsArraySize(vm);
     ARKTS_ASSERT_V(byteCount >= u64cnt * WORD_BYTES, "byteCount not enough");
     bigint->GetWordsArray(vm, isNegative, u64cnt, reinterpret_cast<uint64_t*>(bytes));
