@@ -2195,6 +2195,7 @@ HWTEST_F(NapiCriticalTest, NapiNonCriticalTest094, testing::ext::TestSize.Level1
     ASSERT_TRUE(deathTest.GetResult());
 }
 
+#ifdef NAPI_TARGET_ARM64
 HWTEST_F(NapiCriticalTest, NapiCreateRuntimeInCriticalScope, testing::ext::TestSize.Level1)
 {
     auto env = reinterpret_cast<napi_env>(engine_);
@@ -2202,3 +2203,4 @@ HWTEST_F(NapiCriticalTest, NapiCreateRuntimeInCriticalScope, testing::ext::TestS
     ASSERT_EQ(napi_create_runtime(env, &newEnv), napi_ok);
     ASSERT_EQ(napi_destroy_runtime(newEnv), napi_ok);
 }
+#endif
