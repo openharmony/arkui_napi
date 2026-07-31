@@ -173,6 +173,7 @@ public:
     void Delete();
 
     const EcmaVM* GetEcmaVm() const override;
+    __attribute__((noinline)) void GetEcmaVmFatal() const;
     const EcmaVM* GetEcmaVmCritical() const override;
     const ArkNativeEngine* GetParent() const override;
 
