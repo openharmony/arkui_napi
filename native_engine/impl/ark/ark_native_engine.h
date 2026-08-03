@@ -362,9 +362,6 @@ public:
     bool HasPendingException() override;
     void RegisterPermissionCheck(PermissionCheckCallback callback) override;
     bool ExecutePermissionCheck() override;
-    void RegisterTranslateBySourceMap(SourceMapCallback callback) override;
-    std::string ExecuteTranslateBySourceMap(const std::string& rawStack) override;
-        void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) override;
     panda::Local<panda::ObjectRef> GetModuleFromName(
         const std::string& moduleName, bool isAppModule, const std::string& id, const std::string& param,
         const std::string& instanceName, void** instance);
@@ -558,7 +555,6 @@ private:
     static PermissionCheckCallback permissionCheckCallback_;
     NapiUncaughtExceptionCallback napiUncaughtExceptionCallback_ { nullptr };
     NapiAllPromiseRejectCallback allPromiseRejectCallback_ {nullptr};
-    SourceMapCallback SourceMapCallback_ { nullptr };
     static bool napiProfilerParamReaded;
     bool isLimitedWorker_ = false;
     size_t pendingFinalizersPackNativeBindingSize_ {0};
