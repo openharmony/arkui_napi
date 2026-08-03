@@ -3218,29 +3218,6 @@ bool ArkNativeEngine::ExecutePermissionCheck()
     }
 }
 
-void ArkNativeEngine::RegisterTranslateBySourceMap(SourceMapCallback callback)
-{
-    if (SourceMapCallback_ == nullptr) {
-        SourceMapCallback_ = callback;
-    }
-    // regedit SourceMapCallback to ark_js_runtime
-    JSNApi::SetSourceMapCallback(vm_, callback);
-}
-
-void ArkNativeEngine::RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback)
-{
-    JSNApi::SetSourceMapTranslateCallback(vm_, callback);
-}
-
-std::string ArkNativeEngine::ExecuteTranslateBySourceMap(const std::string& rawStack)
-{
-    if (SourceMapCallback_ != nullptr) {
-        return SourceMapCallback_(rawStack);
-    } else {
-        return rawStack;
-    }
-}
-
 bool ArkNativeEngine::IsMixedDebugEnabled()
 {
     return JSNApi::IsMixedDebugEnabled(vm_);
@@ -3277,7 +3254,7 @@ bool DumpHybridStack(const EcmaVM* vm, std::string &stack, uint32_t ignore, int3
 
     for (auto &frame : frames) {
         if (frame.isJsFrame) {
-            DFXJSNApi::TranslateJSStackInfo(vm, frame.mapName, frame.line, frame.column, frame.packageName);
+            DFXJSNApi::SourceMapTranslateUrlPosition(frame.mapName, frame.line, frame.column, frame.packageName);
         }
     }
 

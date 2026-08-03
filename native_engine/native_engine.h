@@ -125,9 +125,6 @@ using DebuggerPostTask = std::function<void(std::function<void()>&&)>;
 using NapiUncaughtExceptionCallback = std::function<void(napi_value value)>;
 using PermissionCheckCallback = std::function<bool()>;
 using NapiConcurrentCallback = void (*)(napi_env env, napi_value result, bool success, void* data);
-using SourceMapCallback = std::function<std::string(const std::string& rawStack)>;
-using SourceMapTranslateCallback = std::function<bool(std::string& url, int& line, int& column,
-    std::string& packageName)>;
 using AppFreezeFilterCallback = std::function<bool(const int32_t pid, const bool needDecreaseQuota,
     std::string &eventConfig)>;
 using EcmaVM = panda::ecmascript::EcmaVM;
@@ -504,9 +501,6 @@ public:
     virtual void ThrowException(const char* msg);
     virtual void RegisterPermissionCheck(PermissionCheckCallback callback) = 0;
     virtual bool ExecutePermissionCheck() = 0;
-    virtual void RegisterTranslateBySourceMap(SourceMapCallback callback) = 0;
-    virtual std::string ExecuteTranslateBySourceMap(const std::string& rawStack) = 0;
-    virtual void RegisterSourceMapTranslateCallback(SourceMapTranslateCallback callback) = 0;
     virtual void SetPromiseRejectCallBackRef(NativeReference*) = 0;
     virtual void SetCheckCallbackRef(NativeReference*) = 0;
     virtual NapiUncaughtExceptionCallback GetNapiUncaughtExceptionCallback() = 0;

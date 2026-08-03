@@ -4331,7 +4331,7 @@ NAPI_EXTERN napi_status napi_get_stack_trace(napi_env env, std::string& stack)
     std::string rawStack;
 #if !defined(PREVIEW) && !defined(IOS_PLATFORM)
     DFXJSNApi::BuildJsStackTrace(vm, rawStack);
-    stack = engine->ExecuteTranslateBySourceMap(rawStack);
+    stack = DFXJSNApi::SourceMapTranslateBySourceMap(rawStack);
 #else
     HILOG_WARN("GetStacktrace env get stack failed");
 #endif
