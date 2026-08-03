@@ -25,6 +25,7 @@
 #include "native_engine/native_utils.h"
 #include "native_engine/worker_manager.h"
 #include "securec.h"
+#include <algorithm>
 
 #ifdef ENABLE_CONTAINER_SCOPE
 #include "native_engine/native_container_scope.h"
@@ -110,6 +111,50 @@ inline EscapableHandleScopeWrapper* NapiEscapableHandleScopeToEscapableHandleSco
 {
     return reinterpret_cast<EscapableHandleScopeWrapper*>(s);
 }
+
+__attribute__((noinline)) napi_status NapiSwitchContext(napi_env env)
+{
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto vm = const_cast<EcmaVM*>(engine->GetEcmaVm());
+    panda::Local<panda::JSValueRef> envContext = engine->GetContext();
+    if (!(envContext == panda::JSNApi::GetCurrentContext(vm))) {
+        napi_status status = engine->SwitchContext();
+        if (status != napi_ok) {
+            return napi_set_last_error(env, status);
+        }
+    }
+    return napi_ok;
+}
+
+__attribute__((noinline)) napi_status NapiConvertToObjectCold(
+    napi_env env, const EcmaVM* vm, panda::Local<panda::JSValueRef> nativeValue,
+    panda::Local<panda::ObjectRef>& outObj)
+{
+    bool isFunc = nativeValue->IsFunction(vm);
+    RETURN_STATUS_IF_FALSE(env, isFunc, napi_object_expected);
+    outObj = nativeValue->ToEcmaObjectWithoutSwitchState(vm);
+    return napi_ok;
+}
+
+#define SWITCH_CONTEXT_HOTPOT_OPT(env)                                              \
+    if (UNLIKELY(reinterpret_cast<NativeEngine*>((env))->IsMultiContextEnabled())) {  \
+        napi_status ctxStatus = NapiSwitchContext((env));                             \
+        if (ctxStatus != napi_ok) {                                                 \
+            return ctxStatus;                                                       \
+        }                                                                           \
+    }                                                                               \
+
+#define CHECK_AND_CONVERT_TO_OBJECT_HOTPOT_OPT(env, vm, nativeValue, obj)             \
+    bool isObj = (nativeValue)->IsObjectWithoutSwitchState((vm));                     \
+    Local<panda::ObjectRef> nativeObject;                                             \
+    if (LIKELY(isObj)) {                                                              \
+        (obj) = Local<panda::ObjectRef>((nativeValue));                               \
+    } else {                                                                          \
+        napi_status cvtStatus = NapiConvertToObjectCold((env), vm, nativeValue, obj); \
+        if (cvtStatus != napi_ok) {                                                   \
+            return cvtStatus;                                                         \
+        }                                                                             \
+    }                                                                                 \
 
 NAPI_EXTERN napi_status napi_get_last_error_info(napi_env env, const napi_extended_error_info** result)
 {
@@ -1550,6 +1595,14 @@ NAPI_EXTERN napi_status napi_instanceof(napi_env env, napi_value object, napi_va
 
 // Methods to work with napi_callbacks
 // Gets all callback info in a single call. (Ugly, but faster.)
+__attribute__((noinline)) static void FillCbData(panda::JsiRuntimeCallInfo* info, void** data)
+{
+    auto funcInfo = static_cast<NapiFunctionInfo*>(info->GetData());
+    if (funcInfo != nullptr) {
+        *data = funcInfo->data;
+    }
+}
+
 NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI environment handle
                                          napi_callback_info cbinfo, // [in] Opaque callback-info handle
                                          size_t* argc,         // [in-out] Specifies the size of the provided argv array
@@ -1562,42 +1615,39 @@ NAPI_EXTERN napi_status napi_get_cb_info(napi_env env,              // [in] NAPI
     CHECK_ARG(env, cbinfo);
 
     auto info = reinterpret_cast<panda::JsiRuntimeCallInfo*>(cbinfo);
-    if ((argc != nullptr) && (argv != nullptr)) {
+    size_t j = static_cast<size_t>(info->GetArgsNumber());
+
+    if (LIKELY((argc != nullptr) && (argv != nullptr))) {
+        size_t argcVal = *argc;
+        if (argcVal > 0) {
 #ifdef ENABLE_CONTAINER_SCOPE
-        auto *vm = info->GetVM();
+            auto *vm = info->GetVM();
 #endif
-        size_t i = 0;
-        if (*argc > 0) {
-            size_t j = static_cast<size_t>(info->GetArgsNumber());
-            for (; i < j && i < *argc; i++) {
-                panda::Local<panda::JSValueRef> value = info->GetCallArgRef(i);
+            size_t copyCount = std::min(j, argcVal);
+            for (size_t i = 0; i < copyCount; i++) {
+                panda::Local<panda::JSValueRef> value = info->GetCallArgRefUnchecked(i);
 #ifdef ENABLE_CONTAINER_SCOPE
                 FunctionSetContainerId(env, value);
 #endif
                 argv[i] = JsValueFromLocalValue(value);
             }
-        } else {
-            i = static_cast<size_t>(info->GetArgsNumber());
-        }
-        if (i < *argc) {
+        if (j < argcVal) {
             napi_value undefined = JsValueFromLocalValue(
-                panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
-            for (; i < *argc; i++) {
-                argv[i] = undefined;
+            panda::JSValueRef::Undefined(reinterpret_cast<NativeEngine*>(env)->GetEcmaVm()));
+            for (size_t i = j; i < argcVal; i++) {
+                    argv[i] = undefined;
+                }
             }
         }
+        *argc = j;
+    } else if (argc != nullptr) {
+        *argc = j;
     }
-    if (argc != nullptr) {
-        *argc = static_cast<size_t>(info->GetArgsNumber());
-    }
-    if (this_arg != nullptr) {
+    if (LIKELY(this_arg != nullptr)) {
         *this_arg = JsValueFromLocalValue(info->GetThisRef());
     }
-    if (data != nullptr) {
-        auto funcInfo = static_cast<NapiFunctionInfo*>(info->GetData());
-        if (funcInfo != nullptr) {
-            *data = funcInfo->data;
-        }
+    if (UNLIKELY(data != nullptr)) {
+        FillCbData(info, data);
     }
 
     return napi_clear_last_error(env);
@@ -2259,10 +2309,10 @@ NAPI_EXTERN napi_status napi_unwrap(napi_env env, napi_value js_object, void** r
     CHECK_ARG(env, result);
 
     auto nativeValue = LocalValueFromJsValue(js_object);
-    SWITCH_CONTEXT(env);
+    SWITCH_CONTEXT_HOTPOT_OPT(env);
     auto vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
     panda::JsiFastNativeScope fastNativeScope(vm);
-    CHECK_AND_CONVERT_TO_OBJECT(env, vm, nativeValue, nativeObject);
+    CHECK_AND_CONVERT_TO_OBJECT_HOTPOT_OPT(env, vm, nativeValue, nativeObject);
     Local<panda::StringRef> key = panda::StringRef::GetNapiWrapperString(vm);
     Local<panda::JSValueRef> val = nativeObject->Get(vm, key);
     *result = nullptr;
