@@ -366,6 +366,7 @@ if (!ark_standalone_build) {
     public_configs = [ ":ffi_bind_native_config" ]
 
     branch_protector_ret = "pac_ret"
+    branch_protector_frt = "bti"
 
     cflags_cc = [
       "-fdata-sections",
@@ -425,6 +426,7 @@ if (!ark_standalone_build) {
   ohos_shared_library("cj_bind_ffi") {
     public_configs = [ ":ffi_bind_ffi_public_config" ]
     branch_protector_ret = "pac_ret"
+    branch_protector_frt = "bti"
 
     cflags_cc = [
       "-fvisibility=hidden",
