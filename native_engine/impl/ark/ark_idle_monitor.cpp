@@ -468,6 +468,10 @@ void ArkIdleMonitor::NotifyChangeBackgroundState(bool inBackground)
     if (!started_ && inBackground) {
         HILOG_DEBUG("ArkIdleMonitor change to background but not started idle check");
     }
+    if (IsDeferfreeze() && inBackground) {
+        HILOG_WARN("ArkIdleMonitor switch to background,but in deferfreeze");
+        SetDeferfreeze(false);
+    }
 }
 
 double ArkIdleMonitor::GetCpuUsage() const
