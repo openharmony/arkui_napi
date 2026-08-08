@@ -300,6 +300,41 @@ HWTEST_F(NapiHybridTest, NapiRefGetValueTest001, testing::ext::TestSize.Level1)
 }
 
 /**
+ * @tc.name: NapiRefGetHeapObjectAddressTest
+ * @tc.desc: Test reading a heap-object address directly from a valid reference.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiRefGetHeapObjectAddressTest001, testing::ext::TestSize.Level1)
+{
+    napi_env env = (napi_env)engine_;
+    napi_value obj = nullptr;
+    ASSERT_CHECK_CALL(napi_create_object(env, &obj));
+
+    napi_ref ref = nullptr;
+    ASSERT_CHECK_CALL(napi_create_reference(env, obj, 1, &ref));
+
+    uintptr_t expected = 0;
+    ASSERT_EQ(napi_ref_get_value(ref, expected), napi_ok);
+    uintptr_t address = 0;
+    ASSERT_EQ(napi_ref_get_heap_object_address(ref, address), napi_ok);
+    ASSERT_EQ(address, expected);
+
+    ASSERT_CHECK_CALL(napi_delete_reference(env, ref));
+}
+
+/**
+ * @tc.name: NapiRefGetHeapObjectAddressTest
+ * @tc.desc: Test reading a heap-object address from a nullptr reference.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiHybridTest, NapiRefGetHeapObjectAddressTest002, testing::ext::TestSize.Level1)
+{
+    uintptr_t address = 1;
+    ASSERT_EQ(napi_ref_get_heap_object_address(nullptr, address), napi_invalid_arg);
+    ASSERT_EQ(address, 0UL);
+}
+
+/**
  * @tc.name: NapiSetIsHybridVMTest
  * @tc.desc: Test napi_set_is_hybrid_vm with nullptr env
  * @tc.type: FUNC
