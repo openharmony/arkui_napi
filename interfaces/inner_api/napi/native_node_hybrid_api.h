@@ -74,6 +74,9 @@ NAPI_EXTERN napi_status napi_unwrap_hybrid_s(napi_env env, napi_value js_object,
                                              void** result);
 NAPI_EXTERN napi_status napi_ref_get_vm(napi_ref ref, uintptr_t &result);
 NAPI_EXTERN napi_status napi_ref_get_value(napi_ref ref, uintptr_t &result);
+// Reads the referenced heap-object address without entering the VM or creating a local handle.
+// The caller must ensure that the owning runtime is suspended and that ref remains valid during the call.
+NAPI_EXTERN napi_status napi_ref_get_heap_object_address(napi_ref ref, uintptr_t& result);
 
 // XGC specific internal API
 #ifdef PANDA_JS_ETS_HYBRID_MODE

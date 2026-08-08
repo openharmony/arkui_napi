@@ -19,6 +19,7 @@
 #include "napi/native_node_api.h"
 #endif
 
+#include "ecmascript/js_tagged_value.h"
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ecmascript/napi/include/jsnapi_expo.h"
 #include "native_api_internal.h"
@@ -190,6 +191,30 @@ NAPI_EXTERN napi_status napi_ref_get_value(napi_ref ref, uintptr_t &result)
         return napi_invalid_arg;
     }
     result = *reinterpret_cast<panda::JSTaggedType *>(*LocalValueFromJsValue(value));
+    return napi_ok;
+}
+
+NAPI_EXTERN napi_status napi_ref_get_heap_object_address(napi_ref ref, uintptr_t& result)
+{
+    result = 0;
+    if (ref == nullptr) {
+        return napi_invalid_arg;
+    }
+
+    auto reference = reinterpret_cast<ArkNativeReference*>(ref);
+    uintptr_t slotAddress = reference->GetGlobalRefSlotAddress();
+    if (slotAddress == 0) {
+        return napi_object_expected;
+    }
+
+    panda::JSTaggedValue value(*reinterpret_cast<const panda::JSTaggedType*>(slotAddress));
+    if (!value.IsHeapObject()) {
+        return napi_object_expected;
+    }
+    if (value.IsWeakForHeapObject()) {
+        value.RemoveWeakTag();
+    }
+    result = value.GetRawData();
     return napi_ok;
 }
 
@@ -556,4 +581,3 @@ NAPI_EXTERN napi_status napi_is_worker_thread(napi_env env, bool* result)
     return GET_RETURN_STATUS(env);
 }
 #endif // PANDA_JS_ETS_HYBRID_MODE
-
