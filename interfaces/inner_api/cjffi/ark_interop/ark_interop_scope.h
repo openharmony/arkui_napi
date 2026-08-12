@@ -33,18 +33,22 @@ public:
     static ARKTS_Scope NewScope(ARKTS_Env env);
     static bool CloseScope(ARKTS_Scope target);
     static ARKTS_Value NormalPointer(void* pointer);
-    EXPORT static ARKTS_Value NewValue(ARKTS_Env env, panda::Local<panda::JSValueRef> ref);
-    EXPORT static panda::Local<panda::JSValueRef> GetLocal(ARKTS_Env env,
+    EXPORT __attribute__((no_sanitize("hwaddress"))) static ARKTS_Value NewValue(ARKTS_Env env,
+        panda::Local<panda::JSValueRef> ref);
+    EXPORT __attribute__((no_sanitize("hwaddress"))) static panda::Local<panda::JSValueRef> GetLocal(ARKTS_Env env,
         ARKTS_Value value);
-    static panda::JSValueRef GetValueRef(ARKTS_Value value);
+    static __attribute__((no_sanitize("hwaddress"))) panda::JSValueRef GetValueRef(ARKTS_Value value);
 
 private:
     struct ThreadScopes {
         ARKTS_Scope top {nullptr};
+        std::vector<ARKTS_Scope> toDispose {};
+        bool isDisposing {false};
         ~ThreadScopes();
     };
     static ThreadScopes& GetThreadScopes(ARKTS_Env env);
     static ThreadScopes* GetThreadOpt(ARKTS_Env env);
+    static void AddToDisposeQueue(ARKTS_Scope scope);
 
     ARKTS_Scope_(ARKTS_Env env, ARKTS_Scope_* parent);
 

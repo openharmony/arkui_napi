@@ -24,21 +24,28 @@
 
 #include "ark_interop_scope.h"
 
+#ifdef HW_ASAN
+constexpr bool USE_HWASAN = true;
+#else
+constexpr bool USE_HWASAN = false;
+#endif
+
 using namespace panda;
 using namespace panda::ecmascript;
 
-struct ARKTS_Global_ {
-    ARKTS_Global_(EcmaVM *vm, const Local<JSValueRef>& value): ref(vm, value), isDisposed(false) {}
+class GlobalManager;
 
-    ~ARKTS_Global_()
+constexpr size_t INVALID_ID = -1;
+
+struct ARKTS_Global_ {
+    ARKTS_Global_(EcmaVM *vm, const Local<JSValueRef>& value): ref(vm, value), isDisposed(false)
     {
-        if (!isDisposed) {
-            if (ref.IsWeak()) {
-                ref.ClearWeak();
-            }
-            ref.FreeGlobalHandleAddr();
-        }
+#ifdef HW_ASAN
+        env_ = reinterpret_cast<ARKTS_Env>(vm);
+#endif
     }
+
+    ~ARKTS_Global_();
 
     void SetWeak()
     {
@@ -74,7 +81,11 @@ struct ARKTS_Global_ {
         if (isDisposed) {
             return ARKTS_CreateUndefined();
         }
-        return ARKTS_Scope_::NormalPointer(BIT_CAST(const_cast<Global<JSValueRef>&>(ref), void*));
+        if constexpr (USE_HWASAN) {
+            return ARKTS_Scope_::NormalPointer(const_cast<ARKTS_Global_*>(this));
+        } else {
+            return ARKTS_Scope_::NormalPointer(BIT_CAST(const_cast<Global<JSValueRef>&>(ref), void*));
+        }
     }
 
     bool IsAlive() const
@@ -88,8 +99,67 @@ struct ARKTS_Global_ {
     }
 
 private:
+    friend class GlobalManager;
     Global<JSValueRef> ref;
     bool isDisposed;
+#ifdef HW_ASAN
+    ARKTS_Env env_;
+    size_t recordId_ {INVALID_ID};
+#endif
+};
+
+template <typename T>
+struct Slab {
+    size_t Append(T data)
+    {
+        if (lastEmpty != INVALID_ID) {
+            SlabItem& last = items_[lastEmpty];
+            last.data = data;
+            size_t result = lastEmpty;
+            lastEmpty = last.prev;
+            return result;
+        }
+        size_t result = items_.size();
+        items_.emplace_back(data);
+        return result;
+    }
+
+    std::optional<T> Remove(size_t id)
+    {
+        if (id >= items_.size()) {
+            return std::nullopt;
+        }
+        SlabItem& item = items_[id];
+        if (!item.data.has_value()) {
+            return std::nullopt;
+        }
+        item.prev = lastEmpty;
+        lastEmpty = id;
+        return std::move(item.data);
+    }
+
+    std::optional<T> Get(size_t id)
+    {
+        if (id >= items_.size()) {
+            return std::nullopt;
+        }
+        return items_[id].data;
+    }
+
+    void Clear()
+    {
+        items_.clear();
+        lastEmpty = INVALID_ID;
+    }
+private:
+    struct SlabItem {
+        std::optional<T> data;
+        size_t prev;
+
+        explicit SlabItem(T data): data(std::move(data)), prev(INVALID_ID) {}
+    };
+    std::vector<SlabItem> items_{};
+    size_t lastEmpty {INVALID_ID};
 };
 
 class GlobalManager {
@@ -98,6 +168,7 @@ public:
     static void AsyncDisposer(ARKTS_Env env, int64_t data);
     static void AddManager(ARKTS_Env env);
     static void RemoveManager(ARKTS_Env env);
+    static void RemoveRecord(ARKTS_Env env, size_t id);
     static double RecordGlobal(ARKTS_Env env, ARKTS_Global handle);
     static ARKTS_Global GetRecord(ARKTS_Env env, double value);
 
@@ -114,7 +185,9 @@ private:
     bool onSchedule_;
     std::mutex handleMutex_ {};
     std::vector<ARKTS_Global> handlesToDispose_ {};
-    std::vector<ARKTS_Global> records_;
+#ifdef HW_ASAN
+    Slab<ARKTS_Global> records_;
+#endif
 };
 
 std::unordered_map<ARKTS_Env, GlobalManager*> GlobalManager::managers_;
@@ -213,8 +286,7 @@ GlobalManager::~GlobalManager()
         std::lock_guard lock(handleMutex_);
         std::swap(toDispose, handlesToDispose_);
     }
-    for (auto global : toDispose) {
-        global->SetDisposed();
+    for (ARKTS_Global global : toDispose) {
         delete global;
     }
 }
@@ -278,11 +350,60 @@ constexpr uint64_t GLOBAL_MASK = 0x0000'FFFF'FFFF'FFFF;
 
 double GlobalManager::RecordGlobal(ARKTS_Env env, ARKTS_Global global)
 {
+#ifndef HW_ASAN
     auto value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(global)) & GLOBAL_MASK;
     value = value | GLOBAL_TAG;
     return value;
+#else
+    size_t recordId = global->recordId_;
+    if (recordId == INVALID_ID) {
+        GlobalManager* current = nullptr;
+        {
+            std::lock_guard lock(managersMutex_);
+            current = managers_[env];
+        }
+        if (!current) {
+            return NAN;
+        }
+        recordId = current->records_.Append(global);
+        global->recordId_ = recordId;
+    }
+
+    auto value = static_cast<uint64_t>(static_cast<uintptr_t>(recordId)) & GLOBAL_MASK;
+    value = value | GLOBAL_TAG;
+    return value;
+#endif
 }
 
+#ifdef HW_ASAN
+void GlobalManager::RemoveRecord(ARKTS_Env env, size_t id)
+{
+    GlobalManager* current = nullptr;
+    {
+        std::lock_guard lock(managersMutex_);
+        current = managers_[env];
+    }
+    if (!current) {
+        return;
+    }
+    current->records_.Remove(id);
+}
+#endif
+
+ARKTS_Global_::~ARKTS_Global_()
+{
+    if (!isDisposed) {
+        if (ref.IsWeak()) {
+            ref.ClearWeak();
+        }
+        ref.FreeGlobalHandleAddr();
+    }
+#ifdef HW_ASAN
+    if (recordId_ != INVALID_ID) {
+        GlobalManager::RemoveRecord(env_, recordId_);
+    }
+#endif
+}
 
 ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
 {
@@ -295,9 +416,23 @@ ARKTS_Value ARKTS_GlobalToValue(ARKTS_Env env, ARKTS_Global global)
 
 ARKTS_Global GlobalManager::GetRecord(ARKTS_Env env, double value)
 {
+#ifndef HW_ASAN
     auto iValue = static_cast<uint64_t>(value) & GLOBAL_MASK;
     uintptr_t addr = iValue;
     return reinterpret_cast<ARKTS_Global>(addr);
+#else
+    GlobalManager* current = nullptr;
+    {
+        std::lock_guard lock(managersMutex_);
+        current = managers_[env];
+    }
+    if (!current) {
+        return nullptr;
+    }
+    auto iValue = static_cast<size_t>(value) & GLOBAL_MASK;
+    std::optional<ARKTS_Global> result = current->records_.Get(iValue);
+    return result.value_or(nullptr);
+#endif
 }
 
 ARKTS_Global ARKTS_GlobalFromValue(ARKTS_Env env, ARKTS_Value value)
