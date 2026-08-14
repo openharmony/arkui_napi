@@ -1468,7 +1468,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidRelativePath, TestSi
 
 /*
  * @tc.name: LoadNativeModule_ErrInfo_InvalidPath
- * @tc.desc: test LoadNativeModule errInfo when path contains ".."
+ * @tc.desc: test LoadNativeModule errInfo when path contains "../"
  * @tc.type: FUNC
  */
 HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidPath, TestSize.Level1)
