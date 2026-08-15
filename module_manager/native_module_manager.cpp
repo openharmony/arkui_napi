@@ -865,6 +865,11 @@ NativeModule* NativeModuleManager::LoadNativeModuleWithErrorInfo(const char* mod
         MODULEMNG_HILOG_ERROR("invalid relativePath");
         return nullptr;
     }
+    if (path != nullptr && strstr(path, "../") != nullptr) {
+        SetLoadErrInfo(loadErrInfo, "invalid path");
+        MODULEMNG_HILOG_ERROR("invalid path");
+        return nullptr;
+    }
 
     MODULEMNG_HILOG_DEBUG("moduleName is %{public}s, path is %{public}s, relativePath is %{public}s",
         moduleName, path, relativePath);
