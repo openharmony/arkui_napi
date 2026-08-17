@@ -22,7 +22,7 @@
 #include "ark_interop_internal.h"
 #include "ark_interop_log.h"
 #include "ark_interop_napi.h"
-#include "ark_interop_external.h"
+#include "ark_interop_scope.h"
 #include "jsnapi.h"
 #include "native_engine/impl/ark/ark_native_engine.h"
 #ifdef __OHOS__
@@ -280,7 +280,7 @@ ARKTS_Value ARKTS_ImportFromEntry(ARKTS_Engine engine, const char* entryPoint, c
         return ARKTS_CreateUndefined();
     }
 
-    return ARKTS_FromHandle(value);
+    return ARKTS_Scope_::NewValue(reinterpret_cast<ARKTS_Env>(vm), value);
 }
 
 ARKTS_Value ARKTS_Require(

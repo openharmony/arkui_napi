@@ -20,6 +20,8 @@
 #include <unordered_map>
 #include <mutex>
 
+#include "ark_interop_scope.h"
+
 using namespace panda::ecmascript;
 
 #ifdef __OHOS__
@@ -255,6 +257,7 @@ bool ARKTSInner_InitLoop(napi_env env, ARKTS_Env vm, uv_loop_t* loop)
         }
         auto task = reinterpret_cast<CleanupTask*>(data);
         ARKTS_DisposeJSContext(task->env);
+        ARKTS_Scope_::DisposeEnv(task->env);
         ARKTS_DisposeEventHandler(task->env);
         ARKTS_RemoveGlobalManager(task->env);
         delete task;

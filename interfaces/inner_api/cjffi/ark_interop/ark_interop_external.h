@@ -18,6 +18,7 @@
 
 #include "ecmascript/napi/include/jsnapi.h"
 #include "ark_interop_napi.h"
+#include "native_engine/impl/ark/ark_native_engine.h"
 
 // below interface will be export, but not available for user
 
@@ -31,6 +32,8 @@ EXPORT panda::JSValueRef* ARKTS_LoadModule(ARKTS_Env env, const char* dllName);
 EXPORT panda::JSValueRef* ARKTS_LoadModuleByNapiEnv(void* env, const char* dllName);
 EXPORT void ARKTS_UpdateStackInfo(unsigned long long vmAddress, void *subStackInfo, unsigned int opKind);
 EXPORT void ARKTS_RegisterAddrGetter(void* (*callback)(ARKTS_Env, int64_t));
+EXPORT napi_value ARKTS_ToNapiValue(napi_env env, ARKTS_Value value);
+EXPORT ARKTS_Value ARKTS_FromNapiValue(napi_env env, napi_value value);
 
 DECL_END
 

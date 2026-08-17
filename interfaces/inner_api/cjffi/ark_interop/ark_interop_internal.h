@@ -64,29 +64,6 @@ void ARKTS_DisposeJSContext(ARKTS_Env env);
 void ARKTS_InitGlobalManager(ARKTS_Env env);
 void ARKTS_RemoveGlobalManager(ARKTS_Env env);
 
-template<typename T>
-ARKTS_INLINE panda::Local<T> ARKTS_ToHandle(ARKTS_Value& value)
-{
-    auto v = BIT_CAST(value, panda::JSValueRef);
-    ARKTS_Value addr;
-    if (v.IsHeapObject()) {
-        addr = value;
-    } else {
-        addr.pointer = &value;
-    }
-    return BIT_CAST(addr, panda::Local<T>);
-}
-
-ARKTS_INLINE panda::JSValueRef ARKTS_ToValue(ARKTS_Value value)
-{
-    auto v = BIT_CAST(value, panda::JSValueRef);
-    if (v.IsHeapObject()) {
-        return *BIT_CAST(value, panda::JSValueRef*);
-    } else {
-        return v;
-    }
-}
-
 ARKTS_INLINE bool operator==(ARKTS_Value lhs, ARKTS_Value rhs)
 {
     return lhs.value == rhs.value;
@@ -95,31 +72,6 @@ ARKTS_INLINE bool operator==(ARKTS_Value lhs, ARKTS_Value rhs)
 ARKTS_INLINE bool operator!=(ARKTS_Value lhs, ARKTS_Value rhs)
 {
     return lhs.value != rhs.value;
-}
-
-template<typename T>
-ARKTS_INLINE ARKTS_Value ARKTS_FromHandle(panda::Local<T>& value)
-{
-    if (value.IsNull()) {
-        return ARKTS_CreateUndefined();
-    } else if (value->IsHeapObject()) {
-        constexpr uint64_t addrMask = 0xFFFF'FFFF'FFFF;
-        auto addr = BIT_CAST(value, uint64_t) & addrMask;
-        return BIT_CAST(addr, ARKTS_Value);
-    } else {
-        return *BIT_CAST(value, ARKTS_Value*);
-    }
-}
-
-ARKTS_INLINE ARKTS_Result ARKTS_ToResult(panda::EcmaVM* vm, ARKTS_Value value)
-{
-    auto tag = BIT_CAST(value, panda::JSValueRef);
-    if (!tag.IsHeapObject()) {
-        auto local = panda::JSNApi::CreateLocal(vm, tag);
-        return BIT_CAST(local, ARKTS_Result);
-    } else {
-        return BIT_CAST(value, ARKTS_Result);
-    }
 }
 
 #define NATIVE_ERROR(msg) ARKTSInner_ReportNativeError("[%s]: %s", __FUNCTION__, msg)
