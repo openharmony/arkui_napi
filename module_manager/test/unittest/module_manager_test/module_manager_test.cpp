@@ -1503,7 +1503,7 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidModuleName, TestSize
     NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo,
         false, "", loadErrInfo);
     EXPECT_EQ(module, nullptr);
-    EXPECT_EQ(loadErrInfo, "invalid moduleName");
+    EXPECT_EQ(loadErrInfo, "invalid path");
 
     GTEST_LOG_(INFO) << "LoadNativeModule_ErrInfo_InvalidModuleName end";
 }
