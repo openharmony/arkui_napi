@@ -84,7 +84,10 @@ ohos_shared_library("ark_interop") {
     "../../../..:ace_napi",
   ]
 
-  external_deps = [ "ets_runtime:libark_jsruntime" ]
+  external_deps = [
+    "ets_runtime:libark_jsruntime",
+    "node:node_header_notice",
+  ]
 
   if (!ark_standalone_build) {
     external_deps += [ "hilog:libhilog" ]
