@@ -1488,6 +1488,27 @@ HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidPath, TestSize.Level
 }
 
 /*
+ * @tc.name: LoadNativeModule_ErrInfo_InvalidModuleName
+ * @tc.desc: test LoadNativeModule errInfo when moduleName contains "../"
+ * @tc.type: FUNC
+ */
+HWTEST_F(ModuleManagerTest, LoadNativeModule_ErrInfo_InvalidModuleName, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "LoadNativeModule_ErrInfo_InvalidModuleName starts";
+
+    const char* moduleName = "../testModule";
+    std::string errInfo = "";
+    std::string loadErrInfo = "";
+    NativeModuleManager* moduleManager = NativeModuleManager::GetInstance();
+    NativeModule* module = moduleManager->LoadNativeModuleWithErrorInfo(moduleName, nullptr, false, errInfo,
+        false, "", loadErrInfo);
+    EXPECT_EQ(module, nullptr);
+    EXPECT_EQ(loadErrInfo, "invalid moduleName");
+
+    GTEST_LOG_(INFO) << "LoadNativeModule_ErrInfo_InvalidModuleName end";
+}
+
+/*
  * @tc.name: LoadNativeModule_ErrInfo_RelativePathNotContainDotDot
  * @tc.desc: test LoadNativeModule errInfo when relativePath does not contain ".."
  * @tc.type: FUNC
