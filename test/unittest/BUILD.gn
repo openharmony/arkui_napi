@@ -122,6 +122,10 @@ test_ark_unittest("critical") {
   sources = [ "test_napi_critical.cpp" ]
 }
 
+test_ark_unittest("hook_list") {
+  sources = [ "test_ark_hook_list.cpp" ]
+}
+
 group("unittest") {
   testonly = true
   deps = [
@@ -129,6 +133,7 @@ group("unittest") {
     ":test_ark_unittest_critical",
     ":test_ark_unittest_errorcode",
     ":test_ark_unittest_hybrid",
+    ":test_ark_unittest_hook_list",
     ":test_ark_unittest_idle_monitor",
     ":test_ark_unittest_threadsafe",
     ":test_unittest_sendevent",
