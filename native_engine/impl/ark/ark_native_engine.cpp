@@ -287,7 +287,7 @@ static size_t NapiGetKeysAndAttrsFromProps(napi_env env, size_t propertyCount, c
 }
 
 static Local<panda::FunctionRef> NapiCreateClassFunction(napi_env env, std::string &className,
-                                                         NapiFunctionInfo* funcInfo, size_t propCount,
+                                                         NapiFunctionInfo*& funcInfo, size_t propCount,
                                                          const NapiPropertyDescriptor* properties)
 {
     const EcmaVM *vm = reinterpret_cast<NativeEngine*>(env)->GetEcmaVm();
@@ -319,6 +319,8 @@ static Local<panda::FunctionRef> NapiCreateClassFunction(napi_env env, std::stri
         } else {
             fn = panda::JSValueRef::Undefined(vm);
             napi_throw_error(env, nullptr, "malloc failed in napi_define_class");
+            delete funcInfo;
+            funcInfo = nullptr;
         }
 
         if (keys != nullptr) {
