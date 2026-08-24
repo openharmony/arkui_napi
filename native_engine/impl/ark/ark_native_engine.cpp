@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <cstdint>
+#include <sstream>
 
 #ifdef ENABLE_HITRACE
 #include <sys/prctl.h>
@@ -938,6 +939,9 @@ Local<JSValueRef> ArkNativeEngine::RequireNapi(JsiRuntimeCallInfo *info)
         return scope.Escape(exports);
     }
     Local<StringRef> moduleName(info->GetCallArgRef(0));
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    moduleName = StringRef::NewFromUtf8(ecmaVm, arkNativeEngine->GetHookModule(moduleName->ToString(ecmaVm)).c_str());
+#endif
 #if defined(PREVIEW)
     if (!enableFileOperation_ && (moduleName->ToString(ecmaVm) == "file.fs")) {
         return scope.Escape(JSValueRef::Undefined(ecmaVm));
@@ -1094,6 +1098,33 @@ Local<JSValueRef> ArkNativeEngine::RequireInternal(JsiRuntimeCallInfo *info)
         }
     }
     return scope.Escape(exports);
+}
+
+// SetHookList is invoked before any RequireNapi, so hookList_ is never
+// accessed concurrently and requires no synchronization.
+void ArkNativeEngine::SetHookList(const std::string& hookList)
+{
+    if (hookList.empty()) {
+        return;
+    }
+    HILOG_DEBUG("HookList is: %{public}s", hookList.c_str());
+    std::istringstream stream(hookList);
+    std::string token;
+    while (std::getline(stream, token, ';')) {
+        auto pos = token.find(':');
+        if (pos == std::string::npos) {
+            continue;
+        }
+        std::string key = token.substr(0, pos);
+        std::string value = token.substr(pos + 1);
+        hookList_[key] = value;
+    }
+}
+
+std::string ArkNativeEngine::GetHookModule(const std::string& preModule) const
+{
+    auto iter = hookList_.find(preModule);
+    return iter != hookList_.end() ? iter->second : preModule;
 }
 
 #ifdef ENABLE_HITRACE
