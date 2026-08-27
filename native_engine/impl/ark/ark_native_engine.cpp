@@ -134,6 +134,7 @@ int ArkNativeEngine::napiApiTraceEnabled {0};
 bool ArkNativeEngine::napiProfilerParamReaded {false};
 PermissionCheckCallback ArkNativeEngine::permissionCheckCallback_ {nullptr};
 std::atomic<NapiModuleValidateCallback> ArkNativeEngine::moduleValidateCallback_ {nullptr};
+std::map<std::string, std::string> ArkNativeEngine::hookList_;
 #if defined(PREVIEW)
 bool ArkNativeEngine::enableFileOperation_ {false};
 #endif
@@ -1100,8 +1101,8 @@ Local<JSValueRef> ArkNativeEngine::RequireInternal(JsiRuntimeCallInfo *info)
     return scope.Escape(exports);
 }
 
-// SetHookList is invoked before any RequireNapi, so hookList_ is never
-// accessed concurrently and requires no synchronization.
+// hookList_ is static so SetHookList takes effect globally; it is invoked
+// once before any GetHookModule, so no synchronization is required.
 void ArkNativeEngine::SetHookList(const std::string& hookList)
 {
     if (hookList.empty()) {
@@ -1121,7 +1122,7 @@ void ArkNativeEngine::SetHookList(const std::string& hookList)
     }
 }
 
-std::string ArkNativeEngine::GetHookModule(const std::string& preModule) const
+std::string ArkNativeEngine::GetHookModule(const std::string& preModule)
 {
     auto iter = hookList_.find(preModule);
     return iter != hookList_.end() ? iter->second : preModule;

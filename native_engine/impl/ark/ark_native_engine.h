@@ -474,10 +474,10 @@ public:
 #endif
 
     void SetTaskpoolShrinkCallback(TaskPoolShrinkCallback callback) override;
-    // SetHookList is invoked before any RequireNapi, so hookList_ is never
-    // accessed concurrently and requires no synchronization.
-    void SetHookList(const std::string& hookList);
-    std::string GetHookModule(const std::string& preModule) const;
+    // hookList_ is static so SetHookList takes effect globally; it is invoked
+    // once before any GetHookModule, so no synchronization is required.
+    static void SetHookList(const std::string& hookList);
+    static std::string GetHookModule(const std::string& preModule);
 private:
     // ArkNativeEngine constructor for multi-context
     ArkNativeEngine(NativeEngine* parent, EcmaVM* vm, const Local<JSValueRef>& context);
@@ -577,6 +577,6 @@ private:
     ArkNativeEngineState engineState_ { ArkNativeEngineState::RUNNING };
     AppStateNotifier interopAppState_ {};
     NativeReference *globalCheckCallbackRef_ { nullptr };
-    std::map<std::string, std::string> hookList_;
+    static std::map<std::string, std::string> hookList_;
 };
 #endif /* FOUNDATION_ACE_NAPI_NATIVE_ENGINE_IMPL_ARK_ARK_NATIVE_ENGINE_H */
