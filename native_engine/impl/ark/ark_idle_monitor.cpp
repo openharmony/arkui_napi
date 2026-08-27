@@ -232,7 +232,7 @@ void ArkIdleMonitor::IntervalMonitor()
             // applications that remain resident in memory, thereby preventing non-resident applications
             // from being inadvertently suspended during garbage collection.
             if (enableIdleProcessGCBackground_) {
-                TryTriggerCompressGCOfProcess();
+                TryTriggerCompressGCOfProcess(false);
             } else {
                 HILOG_INFO("ArkIdleMonitor: not enable background gc.");
             }
@@ -566,7 +566,7 @@ bool ArkIdleMonitor::SwitchBackgroundCheckGCTask(int64_t timestamp, int64_t idle
         triggerTaskStartTimestamp_ = nowTimestamp;
         CheckWorkerEnvQueue();
         SetSwitchToBackgroundTask(true);
-        TryTriggerCompressGCOfProcess();
+        TryTriggerCompressGCOfProcess(true);
         return true;
     } else {
         HILOG_INFO("ArkIdleMonitor skip BGGCTask, idlePer:%{public}.2f;cpuUsage:%{public}.2f"
@@ -856,7 +856,7 @@ void ArkIdleMonitor::TryTriggerWorkerLocalGC()
     }
 }
 
-void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
+void ArkIdleMonitor::TryTriggerCompressGCOfProcess(bool isSwitchToBackground)
 {
     NotifyNeedFreeze(false);
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -952,10 +952,15 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
 
 #if defined(ENABLE_EVENT_HANDLER)
     // try trigger shared gc
-    auto mainThreadSharedTask = [this]() {
-        HILOG_DEBUG("ArkIdleMonitor: try trigger shared cc");
+    TRIGGER_IDLE_GC_TYPE sharedGcType = isSwitchToBackground
+        ? TRIGGER_IDLE_GC_TYPE::SHARED_CC
+        : TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC;
+    auto mainThreadSharedTask = [this, sharedGcType]() {
+        const char* gcTypeStr =
+            (sharedGcType == TRIGGER_IDLE_GC_TYPE::SHARED_CC) ? "shared cc" : "shared full gc";
+        HILOG_DEBUG("ArkIdleMonitor: try trigger %{public}s", gcTypeStr);
         std::unique_lock<std::mutex> lock(waitGCFinishjedMutex_);
-        JSNApi::TriggerIdleGC(mainVM_, TRIGGER_IDLE_GC_TYPE::SHARED_CC);
+        JSNApi::TriggerIdleGC(mainVM_, sharedGcType);
         gcFinishCV_.notify_one();
     };
     if (CheckIfInBackgroundInCompressGC()) {
@@ -968,7 +973,9 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcess()
         HILOG_WARN("ArkIdleMonitor: app is not in idle or in background.");
     }
 #elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_GC_TYPE::SHARED_CC);
+    TryTriggerCompressGCOfProcessCrossPlatformGC(isSwitchToBackground
+        ? TRIGGER_IDLE_GC_TYPE::SHARED_CC
+        : TRIGGER_IDLE_GC_TYPE::SHARED_FULL_GC);
 #endif
 }
 
@@ -1015,7 +1022,7 @@ void ArkIdleMonitor::OnCrossPlatformBackgroundGCThreadStart(void* arg)
     monitor->triggerTaskStartTimestamp_ = nowTimestamp;
     monitor->CheckWorkerEnvQueue();
     monitor->SetSwitchToBackgroundTask(true);
-    monitor->TryTriggerCompressGCOfProcess();
+    monitor->TryTriggerCompressGCOfProcess(true);
     monitor->SetDuringBackgroundTask(false);
     HILOG_DEBUG("ArkIdleMonitor: cross-platform background GC thread finished");
 }
@@ -1086,7 +1093,8 @@ void ArkIdleMonitor::TryTriggerCompressGCOfProcessCrossPlatformGC(TRIGGER_IDLE_G
         delete async;
         return;
     }
-    const char* gcTypeStr = (type == TRIGGER_IDLE_GC_TYPE::FULL_GC) ? "local full gc" : "shared full gc";
+    const char* gcTypeStr = (type == TRIGGER_IDLE_GC_TYPE::FULL_GC) ? "local full gc"
+        : (type == TRIGGER_IDLE_GC_TYPE::SHARED_CC) ? "shared cc" : "shared full gc";
     HILOG_DEBUG("ArkIdleMonitor: try trigger %s start", gcTypeStr);
     uv_async_send(async);
 
