@@ -32,6 +32,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest001, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     EXPECT_EQ(engine->GetHookModule("moduleA"), "moduleA");
     EXPECT_EQ(engine->GetHookModule("moduleB"), "moduleB");
     EXPECT_EQ(engine->GetHookModule(""), "");
@@ -46,6 +47,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest002, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "moduleA");
     EXPECT_TRUE(engine->hookList_.empty());
@@ -60,6 +62,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest003, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:hookA");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
     EXPECT_EQ(engine->GetHookModule("moduleB"), "moduleB");
@@ -75,6 +78,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest004, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:hookA;moduleB:hookB;moduleC:hookC");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
     EXPECT_EQ(engine->GetHookModule("moduleB"), "hookB");
@@ -91,6 +95,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest005, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("noColonToken;moduleA:hookA;anotherToken");
     EXPECT_EQ(engine->GetHookModule("noColonToken"), "noColonToken");
     EXPECT_EQ(engine->GetHookModule("anotherToken"), "anotherToken");
@@ -108,6 +113,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest006, testing::ext::TestSize.Level0)
     {
         NativeEngineProxy engine;
         ASSERT_NE(*engine, nullptr);
+        engine->hookList_.clear();
         engine->SetHookList("moduleA:hookA;");
         EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
         EXPECT_EQ(engine->hookList_.size(), 1u);
@@ -115,6 +121,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest006, testing::ext::TestSize.Level0)
     {
         NativeEngineProxy engine;
         ASSERT_NE(*engine, nullptr);
+        engine->hookList_.clear();
         engine->SetHookList(";moduleA:hookA");
         EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
         EXPECT_EQ(engine->hookList_.size(), 1u);
@@ -122,6 +129,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest006, testing::ext::TestSize.Level0)
     {
         NativeEngineProxy engine;
         ASSERT_NE(*engine, nullptr);
+        engine->hookList_.clear();
         engine->SetHookList("moduleA:hookA;;moduleB:hookB");
         EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
         EXPECT_EQ(engine->GetHookModule("moduleB"), "hookB");
@@ -130,6 +138,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest006, testing::ext::TestSize.Level0)
     {
         NativeEngineProxy engine;
         ASSERT_NE(*engine, nullptr);
+        engine->hookList_.clear();
         engine->SetHookList(";");
         EXPECT_TRUE(engine->hookList_.empty());
         EXPECT_EQ(engine->GetHookModule("moduleA"), "moduleA");
@@ -145,6 +154,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest007, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:hookA;moduleA:hookB");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookB");
     EXPECT_EQ(engine->hookList_.size(), 1u);
@@ -159,6 +169,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest008, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:hookA:extra:part");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA:extra:part");
     EXPECT_EQ(engine->hookList_["moduleA"], "hookA:extra:part");
@@ -173,6 +184,7 @@ HWTEST_F(NativeEngineTest, ArkHookListTest009, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:;:hookA");
     ASSERT_EQ(engine->hookList_.size(), 2u);
     auto iterEmptyValue = engine->hookList_.find("moduleA");
@@ -187,13 +199,14 @@ HWTEST_F(NativeEngineTest, ArkHookListTest009, testing::ext::TestSize.Level0)
 
 /**
  * @tc.name: ArkHookListTest010
- * @tc.desc: Multiple SetHookList calls accumulate mappings on the same engine.
+ * @tc.desc: SetHookList updates an existing mapping on a later call (global state is shared).
  * @tc.type: FUNC
  */
 HWTEST_F(NativeEngineTest, ArkHookListTest010, testing::ext::TestSize.Level0)
 {
     NativeEngineProxy engine;
     ASSERT_NE(*engine, nullptr);
+    engine->hookList_.clear();
     engine->SetHookList("moduleA:hookA");
     engine->SetHookList("moduleB:hookB");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookA");
@@ -202,4 +215,22 @@ HWTEST_F(NativeEngineTest, ArkHookListTest010, testing::ext::TestSize.Level0)
     engine->SetHookList("moduleA:hookUpdated");
     EXPECT_EQ(engine->GetHookModule("moduleA"), "hookUpdated");
     EXPECT_EQ(engine->hookList_.size(), 2u);
+}
+
+/**
+ * @tc.name: ArkHookListTest011
+ * @tc.desc: SetHookList on one engine is visible to another engine instance (global replacement).
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeEngineTest, ArkHookListTest011, testing::ext::TestSize.Level0)
+{
+    NativeEngineProxy engineA;
+    ASSERT_NE(*engineA, nullptr);
+    engineA->hookList_.clear();
+    engineA->SetHookList("moduleA:hookA");
+    {
+        NativeEngineProxy engineB;
+        ASSERT_NE(*engineB, nullptr);
+        EXPECT_EQ(engineB->GetHookModule("moduleA"), "hookA");
+    }
 }
