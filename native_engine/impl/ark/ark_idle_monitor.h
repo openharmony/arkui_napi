@@ -301,7 +301,7 @@ private:
     void CheckShortIdleTask(int64_t timestamp, int idleTime);
     void PostSwitchBackgroundGCTask();
     void ReportDataToRSS(bool needFreeze);
-    void TryTriggerCompressGCOfProcess();
+    void TryTriggerCompressGCOfProcess(bool isSwitchToBackground);
     void TryTriggerWorkerLocalGC();
     enum class WorkerGCResult {
         READY,
