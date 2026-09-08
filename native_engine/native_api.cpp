@@ -4172,7 +4172,7 @@ NAPI_EXTERN napi_status napi_check_object_type_tag(napi_env env,
         if (object->IsBigInt(vm)) {
             int sign;
             size_t size = 2; // 2: Indicates that the number of elements is 2
-            NapiTypeTag tag;
+            NapiTypeTag tag{};
             Local<panda::BigIntRef> bigintObj = object->ToBigInt(vm);
             BigIntGetWordsArray(vm, bigintObj, &sign, &size, reinterpret_cast<uint64_t*>(&tag));
             if (sign == 0 && ((size == 1) || (size == 2))) { // 2: Indicates that the number of elements is 2
