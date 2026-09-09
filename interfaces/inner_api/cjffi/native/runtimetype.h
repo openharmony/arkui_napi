@@ -51,12 +51,12 @@ public:
         if (target == nullptr) {
             return false;
         }
-        
-        if (strcmp(this->GetTypeName(), target->GetTypeName())) {
+
+        if (strcmp(this->GetTypeName(), target->GetTypeName()) == 0) {
             return true;
         }
         for (auto parent : parents_) {
-            if (parent->IsType(target)) {
+            if (parent != nullptr && parent->IsType(target)) {
                 return true;
             }
         }

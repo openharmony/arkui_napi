@@ -26,9 +26,11 @@ public:
     static void RunLocalTest()
     {
         TestFfiManager();
+        TestIsType();
     }
 private:
     static void TestFfiManager();
+    static void TestIsType();
 };
 
 class RemoteDataSample : public OHOS::FFI::RemoteData {
@@ -45,6 +47,25 @@ class FfiContainRemoteData : public OHOS::FFI::FFIData {
 public:
     FfiContainRemoteData() = default;
     OHOS::sptr<RemoteDataSample> remoteData{};
+};
+
+// --- IsType / DynamicCast 类型安全测试专用类层次 ---
+class SampleBase : public OHOS::FFI::FFIData {
+    DECL_TYPE(SampleBase, OHOS::FFI::FFIData)
+public:
+    SampleBase() = default;
+};
+
+class SampleDerived : public SampleBase {
+    DECL_TYPE(SampleDerived, SampleBase)
+public:
+    SampleDerived() = default;
+};
+
+class SampleUnrelated : public OHOS::FFI::FFIData {
+    DECL_TYPE(SampleUnrelated, OHOS::FFI::FFIData)
+public:
+    SampleUnrelated() = default;
 };
 
 void FfiDataTest::TestFfiManager()
@@ -66,6 +87,47 @@ void FfiDataTest::TestFfiManager()
         EXPECT_TRUE(false);
     }
     mgr->RemoveFFIData(id);
+}
+
+void FfiDataTest::TestIsType()
+{
+    // 完全匹配：相同类型应是 true
+    auto base = FFIData::Create<SampleBase>();
+    EXPECT_TRUE(base);
+    EXPECT_TRUE(base->GetRuntimeType()->IsType(base->GetRuntimeType()));
+
+    // 子类 → 父类：派生对象应是基类类型（true）
+    auto derived = FFIData::Create<SampleDerived>();
+    EXPECT_TRUE(derived);
+    EXPECT_TRUE(derived->GetRuntimeType()->IsType(base->GetRuntimeType()));
+
+    // 父类 → 子类：基类对象不可能是派生类型（false）
+    EXPECT_FALSE(base->GetRuntimeType()->IsType(derived->GetRuntimeType()));
+
+    // 无关类型：应 false
+    auto unrelated = FFIData::Create<SampleUnrelated>();
+    EXPECT_TRUE(unrelated);
+    EXPECT_FALSE(base->GetRuntimeType()->IsType(unrelated->GetRuntimeType()));
+    EXPECT_FALSE(unrelated->GetRuntimeType()->IsType(base->GetRuntimeType()));
+
+    // DynamicCast 安全性：子类可转基类，基类不可转子类，无关不可互转
+    EXPECT_NE(derived->template DynamicCast<SampleBase>(), nullptr);
+    EXPECT_EQ(base->template DynamicCast<SampleDerived>(), nullptr);
+    EXPECT_EQ(base->template DynamicCast<SampleUnrelated>(), nullptr);
+    EXPECT_EQ(unrelated->template DynamicCast<SampleBase>(), nullptr);
+
+    // null target 应返回 false
+    EXPECT_FALSE(base->GetRuntimeType()->IsType(nullptr));
+
+    // 名字比较语义：同名即视为同一类型标识——这正是缺陷 B/C/D 要求 DECL_TYPE 名字唯一的原因
+    auto dup1 = OHOS::FFI::RuntimeType::Create("DupName");
+    auto dup2 = OHOS::FFI::RuntimeType::Create("DupName");
+    EXPECT_TRUE(dup1.IsType(&dup2));
+    EXPECT_TRUE(dup2.IsType(&dup1));
+
+    FFIData::Release(base->GetID());
+    FFIData::Release(derived->GetID());
+    FFIData::Release(unrelated->GetID());
 }
 
 TEST_F(FfiDataTest, Types)
