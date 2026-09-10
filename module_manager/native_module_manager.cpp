@@ -1429,6 +1429,12 @@ NativeModule* NativeModuleManager::FindNativeModuleByDisk(const char* moduleName
     const char* relativePath, bool internal, const bool isAppModule, std::string& errInfo,
     std::string& loadErrInfo, char nativeModulePath[][NAPI_PATH_MAX], NativeModule* cacheNativeModule)
 {
+    if (moduleName == nullptr) {
+        errInfo = "nullptr";
+        SetLoadErrInfo(loadErrInfo, "moduleName is nullptr");
+        MODULEMNG_HILOG_ERROR("%{public}s", errInfo.c_str());
+        return nullptr;
+    }
     std::unique_ptr<ApiAllowListChecker> apiAllowListChecker = nullptr;
     if (moduleLoadChecker_ && !moduleLoadChecker_->CheckModuleLoadable(moduleName, apiAllowListChecker, isAppModule)) {
         errInfo = "module " + std::string(moduleName) + " is in blocklist, loading prohibited";
