@@ -17149,6 +17149,7 @@ HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest002, testing::ext::TestSiz
     ASSERT_EQ(status, napi_ok);
 }
 
+#ifdef USE_OHOS_DFX
 HWTEST_F(NapiBasicTest, EnableLocalHandleDetectionTest003, testing::ext::TestSize.Level0)
 {
     ASSERT_NE(engine_, nullptr);
@@ -17181,6 +17182,7 @@ HWTEST_F(NapiBasicTest, NapiAsyncWorkCompleteTest001, testing::ext::TestSize.Lev
     ASSERT_CHECK_CALL(napi_queue_async_work(env, work));
     RUN_EVENT_LOOP(env);
 }
+#endif
 
 /**
  * @tc.name: NapiInstanceDataCbTest001
@@ -17208,6 +17210,7 @@ HWTEST_F(NapiBasicTest, NapiInstanceDataCbTest001, testing::ext::TestSize.Level0
     delete data;
 }
 
+#ifdef USE_OHOS_DFX
 /**
  * @tc.name: NapiThreadsafeCbTest001
  * @tc.desc: Test threadsafe function callback.
@@ -17244,6 +17247,7 @@ HWTEST_F(NapiBasicTest, NapiThreadsafeCbTest001, testing::ext::TestSize.Level0)
     ASSERT_TRUE(callbackData->completeCalled);
     delete callbackData;
 }
+#endif
 
 /**
 * @tc.name: NapiIsUndefinedTest001
