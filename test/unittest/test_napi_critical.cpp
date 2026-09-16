@@ -28,6 +28,7 @@
 // use macro instead of constexpr variable, due to need concat with other string
 #define TEST_NAPI_UNCLOSED_CRITICAL_LOG "napi cannot invoke under critical scope, id: "
 #define TEST_UNCLOSED_CRITICAL_CALLBACK_LOG "critical scope still open after user callback"
+constexpr std::string_view TEST_SKIP_LOG_PREFIX = "testcase skipped: ";
 
 static const napi_type_tag wrapTypeTag = {
     0xd1fde94f10374a13,
@@ -43,14 +44,6 @@ public:
         }
         runner_.Run(UV_RUN_NOWAIT);
     }
-    void SetUp() override
-    {
-        napi_open_critical_scope(reinterpret_cast<napi_env>(engine_), &scope_);
-    }
-    void TearDown() override
-    {
-        napi_close_critical_scope(reinterpret_cast<napi_env>(engine_), scope_);
-    }
 
 private:
 public:
@@ -60,8 +53,19 @@ public:
         ASSERT_TRUE(false);
     }
     UVLoopRunner runner_;
-    napi_critical_scope scope_ = nullptr;
 };
+
+/*
+ * Death-test assertion helper: accept either the expected output (typically a fatal log that aborts
+ * the child) or a skip marker reported by the child when an environmental precondition is unavailable.
+ * hilog output may land on either captured stream.
+ */
+static void AssertExpectedOrSkipped(const std::string& cout, const std::string& err, std::string_view expected)
+{
+    EXPECT_TRUE(cout.find(expected) != std::string::npos || err.find(expected) != std::string::npos ||
+                cout.find(TEST_SKIP_LOG_PREFIX) != std::string::npos ||
+                err.find(TEST_SKIP_LOG_PREFIX) != std::string::npos);
+}
 
 napi_value EmptyNapiCallback(napi_env env, napi_callback_info info)
 {
@@ -2195,10 +2199,191 @@ HWTEST_F(NapiCriticalTest, NapiNonCriticalTest094, testing::ext::TestSize.Level1
     ASSERT_TRUE(deathTest.GetResult());
 }
 
+/**
+ * @tc.name: AllowExecutionOnFreeze001
+ * @tc.desc: Test interface can be invoked while critical scope is open on freeze.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, AllowExecutionOnFreeze001, testing::ext::TestSize.Level1)
+{
+    auto env = reinterpret_cast<napi_env>(engine_);
+    auto vm = const_cast<EcmaVM*>(engine_->GetEcmaVmCritical());
+    NapiCriticalScope scope(env);
+    ASSERT_TRUE(engine_->HasCriticalScope());
+
+    if (!JSNApi::CheckAndSetAllowCrossThreadExecution(vm)) {
+        // Cross-thread execution cannot be enabled either because CMS GC is
+        // configured (this testcase is always skipped on such devices) or a
+        // GC is in progress right now, so the core path below is untested.
+        GTEST_SKIP() << "cross-thread execution not allowed";
+    }
+    // napi_get_undefined should invoke successfully while the critical scope
+    // opened above is still open, as long as cross-thread execution is allowed
+    napi_value undefined {};
+    EXPECT_EQ(napi_get_undefined(env, &undefined), napi_ok);
+    JSNApi::DisallowCrossThreadExecution(vm);
+}
+
+/**
+ * @tc.name: AllowExecutionOnFreeze002
+ * @tc.desc: Test napi function callback can pass the critical scope check while scope is open on freeze.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, AllowExecutionOnFreeze002, testing::ext::TestSize.Level1)
+{
+    auto env = reinterpret_cast<napi_env>(engine_);
+    auto vm = const_cast<EcmaVM*>(engine_->GetEcmaVmCritical());
+    napi_value func {};
+    ASSERT_EQ(napi_create_function(
+        env, "testFn", NAPI_AUTO_LENGTH, [](napi_env, napi_callback_info) -> napi_value { return nullptr; },
+        nullptr, &func), napi_ok);
+
+    NapiCriticalScope scope(env);
+    ASSERT_TRUE(engine_->HasCriticalScope());
+
+    if (!JSNApi::CheckAndSetAllowCrossThreadExecution(vm)) {
+        // Cross-thread execution cannot be enabled either because CMS GC is
+        // configured (this testcase is always skipped on such devices) or a
+        // GC is in progress right now, so the core path below is untested.
+        GTEST_SKIP() << "cross-thread execution not allowed";
+    }
+    // napi_call_function should invoke successfully while the critical scope opened
+    // above is still open, and the 'still open after callback returned' check in
+    // ArkNativeFunctionCallBack must be skipped when cross-thread execution is allowed
+    EXPECT_EQ(napi_call_function(env, nullptr, func, 0, nullptr, nullptr), napi_ok);
+    JSNApi::DisallowCrossThreadExecution(vm);
+}
+
+
+/**
+ * @tc.name: DenyExecutionOnFreeze001
+ * @tc.desc: Test leaked critical scope in tsfn callback still aborts when cross-thread execution is allowed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, DenyExecutionOnFreeze001, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy env;
+        UVLoopRunner runner(*env);
+        static napi_critical_scope scope {};
+        napi_value undefined {};
+        napi_get_undefined(env, &undefined);
+        napi_threadsafe_function tsfn {};
+        napi_create_threadsafe_function(
+            env, nullptr, nullptr, undefined, 0, 1, nullptr, nullptr, nullptr,
+            [](napi_env env, [[maybe_unused]] napi_value func,
+                [[maybe_unused]] void* context, [[maybe_unused]] void* data) {
+                auto vm = const_cast<EcmaVM *>(reinterpret_cast<NativeEngine *>(env)->GetEcmaVm());
+                if (!JSNApi::CheckAndSetAllowCrossThreadExecution(vm)) {
+                    // cannot enter the freeze state (CMS GC is configured or a GC is running):
+                    // report the skip so that the parent can tolerate this outcome
+                    std::cerr << TEST_SKIP_LOG_PREFIX << "cross-thread execution not allowed" << std::endl;
+                    return;
+                }
+                // process would receive abort signal after current callback
+                // even if cross thread execution is allowed
+                napi_open_critical_scope(env, &scope);
+            },
+            &tsfn);
+        napi_call_threadsafe_function(tsfn, nullptr, napi_tsfn_blocking);
+        runner.Run(UV_RUN_ONCE);
+        napi_release_threadsafe_function(tsfn, napi_tsfn_release);
+        runner.Run(UV_RUN_ONCE);
+        napi_close_critical_scope(env, scope);
+        JSNApi::DisallowCrossThreadExecution(const_cast<EcmaVM *>(env->GetEcmaVm()));
+    }, [](const std::string& cout, const std::string& err) {
+        AssertExpectedOrSkipped(cout, err, TEST_UNCLOSED_CRITICAL_CALLBACK_LOG);
+    });
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
+/**
+ * @tc.name: DenyExecutionOnFreeze002
+ * @tc.desc: Test leaked critical scope in tsfn priority task still aborts when cross-thread execution is allowed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, DenyExecutionOnFreeze002, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy env;
+        UVLoopRunner runner(*env);
+        auto eventRunner = OHOS::AppExecFwk::EventRunner::Create(false);
+        auto eventHandler = std::make_shared<OHOS::AppExecFwk::EventHandler>(eventRunner);
+
+        static napi_critical_scope scope {};
+        napi_threadsafe_function tsfn {};
+        auto callback = [](napi_env env, [[maybe_unused]] napi_value func,
+            [[maybe_unused]] void* context, [[maybe_unused]] void* data) {
+            auto vm = const_cast<EcmaVM *>(reinterpret_cast<NativeEngine *>(env)->GetEcmaVm());
+            // stop the event runner first so that the child always leaves Run(), even on the skip path
+            OHOS::AppExecFwk::EventRunner::Current()->Stop();
+            if (!JSNApi::CheckAndSetAllowCrossThreadExecution(vm)) {
+                std::cerr << TEST_SKIP_LOG_PREFIX << "cross-thread execution not allowed" << std::endl;
+                return;
+            }
+            // process would receive abort signal after current callback
+            // even if cross thread execution is allowed
+            napi_open_critical_scope(env, &scope);
+        };
+        eventHandler->PostTask([&env, &tsfn, &callback] {
+            napi_value undefined {};
+            napi_get_undefined(env, &undefined);
+            napi_create_threadsafe_function(env, nullptr, nullptr, undefined, 0, 1, nullptr, nullptr, nullptr,
+                callback, &tsfn);
+            napi_call_threadsafe_function_with_priority(tsfn, nullptr, napi_priority_immediate, false);
+        });
+        eventRunner->Run();
+        napi_release_threadsafe_function(tsfn, napi_tsfn_release);
+        runner.Run(UV_RUN_ONCE);
+        napi_close_critical_scope(env, scope);
+        JSNApi::DisallowCrossThreadExecution(const_cast<EcmaVM *>(env->GetEcmaVm()));
+    }, [](const std::string& cout, const std::string& err) {
+        AssertExpectedOrSkipped(cout, err, TEST_UNCLOSED_CRITICAL_CALLBACK_LOG);
+    });
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
+/**
+ * @tc.name: DenyExecutionOnFreeze003
+ * @tc.desc: Leaked critical scope in async work complete callback still aborts when cross-thread execution is allowed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiCriticalTest, DenyExecutionOnFreeze003, testing::ext::TestSize.Level1)
+{
+    BasicDeathTest deathTest([] {
+        NativeEngineProxy env;
+        UVLoopRunner runner(*env);
+        napi_value name {};
+        napi_create_string_utf8(env, "taskName", NAPI_AUTO_LENGTH, &name);
+        napi_async_work work {};
+        static napi_critical_scope scope {};
+        napi_create_async_work(
+            env, nullptr, name, []([[maybe_unused]] napi_env env, [[maybe_unused]] void* data) {},
+            [](napi_env env, [[maybe_unused]] napi_status status, [[maybe_unused]] void* data) {
+                auto vm = const_cast<EcmaVM *>(reinterpret_cast<NativeEngine *>(env)->GetEcmaVm());
+                if (!JSNApi::CheckAndSetAllowCrossThreadExecution(vm)) {
+                    std::cerr << TEST_SKIP_LOG_PREFIX << "cross-thread execution not allowed" << std::endl;
+                    return;
+                }
+                // process would receive abort signal after current callback
+                // even if cross thread execution is allowed
+                napi_open_critical_scope(env, &scope);
+            },
+            nullptr, &work);
+        NativeAsyncWork::AsyncAfterWorkCallback(&reinterpret_cast<NativeAsyncWork*>(work)->work_, 0);
+        napi_close_critical_scope(env, scope);
+        JSNApi::DisallowCrossThreadExecution(const_cast<EcmaVM *>(env->GetEcmaVm()));
+    }, [](const std::string& cout, const std::string& err) {
+        AssertExpectedOrSkipped(cout, err, "[AsyncAfterWorkCallback] " TEST_UNCLOSED_CRITICAL_CALLBACK_LOG);
+    });
+    ASSERT_TRUE(deathTest.GetResult());
+}
+
 #ifdef NAPI_TARGET_ARM64
 HWTEST_F(NapiCriticalTest, NapiCreateRuntimeInCriticalScope, testing::ext::TestSize.Level1)
 {
     auto env = reinterpret_cast<napi_env>(engine_);
+    NapiCriticalScope scope(env);
     napi_env newEnv {};
     ASSERT_EQ(napi_create_runtime(env, &newEnv), napi_ok);
     ASSERT_EQ(napi_destroy_runtime(newEnv), napi_ok);

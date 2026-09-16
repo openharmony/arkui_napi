@@ -210,7 +210,7 @@ public:
     virtual const EcmaVM* GetEcmaVm() const = 0;
     virtual const EcmaVM* GetEcmaVmCritical() const = 0;
     virtual const NativeEngine* GetParent() const = 0;
-    
+
     virtual bool NapiNewTypedArray(NativeTypedArrayType typedArrayType,
                                    panda::Local<panda::ArrayBufferRef> arrayBuf, size_t byte_offset,
                                    size_t length, napi_value* result) = 0;
@@ -593,6 +593,7 @@ public:
     {
         crossThreadCheck_ = panda::JSNApi::IsMultiThreadCheckEnabled(GetEcmaVm());
     }
+    bool IsCrossThreadExecutionAllowed() const;
     virtual bool IsContainerScopeEnabled() const = 0;
 
     bool IsInDestructor() const

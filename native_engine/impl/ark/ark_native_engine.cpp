@@ -767,6 +767,13 @@ Local<JSValueRef> ArkNativeEngine::GetContext() const
 
 __attribute__((noinline)) void ArkNativeEngine::GetEcmaVmFatal() const
 {
+    // If cross-thread execution is allowed, it usually means a freeze dump is
+    // in progress: the main thread is still holding the critical scope while
+    // another thread enters the VM through this env. Skip the FATAL check and
+    // let the call proceed so that the freeze report can be generated.
+    if (IsCrossThreadExecutionAllowed()) {
+        return;
+    }
     HILOG_FATAL("napi cannot invoke under critical scope, id: %{public}" PRIu64, GetId());
 }
 
@@ -1329,7 +1336,7 @@ panda::JSValueRef ArkNativeFunctionCallBack(JsiRuntimeCallInfo *runtimeInfo)
         }
     }
 
-    if (engine->HasCriticalScope()) {
+    if (engine->HasCriticalScope() && !engine->IsCrossThreadExecutionAllowed()) {
         Local<panda::FunctionRef> fn = runtimeInfo->GetFunctionRef();
         auto name = fn->GetName(vm)->ToString(vm);
         HILOG_FATAL("critical scope still open after user callback '%{public}s' (ID: %{public}" PRIuPTR ") returned",

@@ -470,4 +470,44 @@ private:
     napi_async_work work_ { nullptr };
 };
 
+template <typename T>
+using OpenScope = napi_status (*)(napi_env env, T* result);
+template <typename T>
+using CloseScope = napi_status (*)(napi_env env, T result);
+
+template <typename T, OpenScope<T> OpenFn, CloseScope<T> CloseFn>
+class NapiScope {
+public:
+    NapiScope(napi_env env) : env_(env)
+    {
+        if (OpenFn(env, &scope_) != napi_ok) {
+            scope_ = nullptr;
+        }
+    }
+    // disallow copy and move construct
+    NapiScope(const NapiScope&) = delete;
+    NapiScope& operator=(const NapiScope&) = delete;
+    NapiScope(NapiScope&&) = delete;
+    NapiScope& operator=(NapiScope&&) = delete;
+
+    ~NapiScope()
+    {
+        Close();
+    }
+    void Close()
+    {
+        if (scope_ == nullptr) {
+            return;
+        }
+        CloseFn(env_, scope_);
+        scope_ = nullptr;
+    }
+
+private:
+    napi_env env_{};
+    T scope_{};
+};
+
+using NapiCriticalScope = NapiScope<napi_critical_scope, napi_open_critical_scope, napi_close_critical_scope>;
+
 #endif /* FOUNDATION_ACE_NAPI_TEST_UNITTEST_TEST_H */
