@@ -97,8 +97,10 @@ void NativeCallbackScopeManager::Close(NativeCallbackScope* scope)
 {
     if (scope != nullptr) {
         delete scope;
+        if (asyncCallbackScopeDepth_ > 0) {
+            asyncCallbackScopeDepth_--;
+        }
     }
-    asyncCallbackScopeDepth_--;
 }
 
 size_t NativeCallbackScopeManager::IncrementOpenCallbackScopes()
