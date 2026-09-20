@@ -16,6 +16,8 @@
         *;
     local:
         # libc++ 
+        _init;
+        _fini;
         _ZNSt3__h13basic_filebufIcNS_11char_traitsIcEEE*;
         _ZTVNSt3__h13basic_filebufIcNS_11char_traitsIcEEEE*;
         _ZNSt3__h14basic_ofstreamIcNS_11char_traitsIcEEE*;
