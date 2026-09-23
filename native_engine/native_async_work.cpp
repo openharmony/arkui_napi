@@ -279,6 +279,9 @@ void NativeAsyncWork::AsyncAfterWorkCallback(uv_work_t* req, int status)
     auto complete = that->complete_;
     auto description = that->GetTraceDescription();
     NativeEngine::ExecuteCallback(__FUNCTION__, that->complete_, engine, nstatus, that->data_);
+    // the after-work callback is dispatched on the host thread's uv loop and never interrupts a
+    // method already executing there, so while the host thread holds the critical scope open
+    // (freeze dump) this check is unreachable: no freeze exemption is needed.
     if (engine->HasCriticalScope()) {
         HILOG_FATAL("critical scope still open after user callback (ID: %{public}" PRIuPTR
                     ") returned, task description: %{public}s",

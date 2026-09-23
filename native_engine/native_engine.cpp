@@ -765,7 +765,7 @@ napi_status NativeEngine::RemoveCleanupFinalizer(CleanupFinalizerCallBack fun, v
 
     const char *failedReason = cleanupHook == instanceFinalizer_.end() ?
         "unregistered data" : "callback not equals to the last";
-    
+
     HILOG_ERROR("Failed, %{public}s, may cause memleak or exception.", failedReason);
 
     return napi_generic_failure;
@@ -795,7 +795,7 @@ void NativeEngine::RunInstanceFinalizer()
             if (instanceFinalizer_.find(data) == instanceFinalizer_.end()) {
                 continue;
             }
-            
+
             CleanupFinalizerCallBack fun = cb.second.first;
             if (fun != nullptr) {
                 fun(data);
@@ -1244,6 +1244,11 @@ napi_status NativeEngine::StopEventLoop()
     uv_stop(loop_);
     HILOG_DEBUG("uv loop is stopped");
     return napi_status::napi_ok;
+}
+
+NAPI_HIDDEN bool NativeEngine::IsCrossThreadExecutionAllowed() const
+{
+    return panda::JSNApi::IsCrossThreadExecutionAllowed(const_cast<EcmaVM *>(GetEcmaVmCritical()));
 }
 
 void NativeEngine::ThrowException(const char* msg)
