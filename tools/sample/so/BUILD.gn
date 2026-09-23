@@ -1,0 +1,110 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("../test_list.gni")
+
+foreach(test, so_test_list) {
+    _host_checkapi_target_ = "../..:checkapi"
+    _root_out_dir_ = get_label_info(_host_checkapi_target_, "root_out_dir")
+
+    _host_test_target_ = "test:${test}"
+    _test_json_path_ = "test/${test}.json"
+    _result_path_ = "${_root_out_dir_}/checkapi/so/${test}/result.json"
+
+    action("run_${test}") {
+        deps = [
+            _host_checkapi_target_,
+            _host_test_target_
+        ]
+
+        inputs = [ _test_json_path_ ]
+
+        # run_check.py <checkapi> <root_out_dir> <kit> <so module name> <legal json> <result json>
+        args = [
+            rebase_path("${_root_out_dir_}/arkui/napi/checkapi"),
+            rebase_path("${_root_out_dir_}"),
+            test,
+            "@ohos.${test}",
+            rebase_path(_test_json_path_),
+            rebase_path(_result_path_),
+        ]
+
+        script = "../../run_check.py"
+
+        outputs = [ _result_path_ ]
+    }
+}
+
+# Pollution regression: poison (module with a throwing getter) runs before test in one pass;
+# a leaked pending exception would fail test's requireNapi lookup and the action exits non-zero.
+action("run_poison") {
+    _host_checkapi_target_ = "../..:checkapi"
+    _root_out_dir_ = get_label_info(_host_checkapi_target_, "root_out_dir")
+    _result_path_ = "${_root_out_dir_}/checkapi/so/poison/result.json"
+
+    deps = [
+        _host_checkapi_target_,
+        "test:test",
+        "poison:poison",
+    ]
+
+    inputs = [ "poison/poison.json" ]
+
+    args = [
+        rebase_path("${_root_out_dir_}/arkui/napi/checkapi"),
+        rebase_path("${_root_out_dir_}"),
+        "poison",
+        "@ohos.poison,@ohos.test",
+        rebase_path("poison/poison.json"),
+        rebase_path(_result_path_),
+    ]
+
+    script = "../../run_check.py"
+
+    outputs = [ _result_path_ ]
+}
+
+# scan-dir regression: multi-level .so layout, whitelist-dir-driven mapping, and the
+# deprecated bucket (depdemo must land in DeprecatedModules, never IllegalApis; the driver
+# script asserts the result structure and exit code).
+action("run_scandir") {
+    _host_checkapi_target_ = "../..:checkapi"
+    _root_out_dir_ = get_label_info(_host_checkapi_target_, "root_out_dir")
+    _result_path_ = "${_root_out_dir_}/checkapi/so/scandir/result.json"
+
+    deps = [
+        _host_checkapi_target_,
+        "scandir:scandirdemo",
+        "scandir:hmsdemo",
+        "scandir:depdemo",
+    ]
+
+    inputs = [
+        "scandir/scandir.json",
+        "scandir/scandir_deprecated.json",
+    ]
+
+    args = [
+        rebase_path("${_root_out_dir_}/arkui/napi/checkapi"),
+        rebase_path("${_root_out_dir_}"),
+        "scandir",
+        "@ohos.app.ability.scandirdemo,@hms.core.ar.hmsdemo,@ohos.ability.depdemo",
+        rebase_path("scandir/scandir.json"),
+        rebase_path(_result_path_),
+        rebase_path("scandir/scandir_deprecated.json"),
+    ]
+
+  script = "../../run_scan_check.py"
+
+  outputs = [ _result_path_ ]
+}

@@ -29,6 +29,7 @@
         "deps": {
             "components": [
                 "c_utils",
+                "cJSON",
                 "ets_runtime",
                 "eventhandler",
                 "faultloggerd",

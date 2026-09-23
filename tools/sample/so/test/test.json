@@ -1,0 +1,72 @@
+[
+    {
+        "apiText": "A",
+        "apiType": "class",
+        "kit": "test"
+    },
+    {
+        "apiText": "foo",
+        "apiType": "method",
+        "className": "A",
+        "kit": "test"
+    },
+    {
+        "apiText": "bar",
+        "apiType": "method",
+        "kit": "test"
+    },
+    {
+        "apiText": "enum Mode",
+        "apiType": "enum_class",
+        "kit": "test"
+    },
+    {
+        "apiText": "READ = 1 << 0",
+        "apiType": "enum_instance",
+        "className": "Mode",
+        "kit": "test"
+    },
+    {
+        "apiText": "WRITE = 1 << 1",
+        "apiType": "enum_instance",
+        "className": "Mode",
+        "kit": "test"
+    },
+    {
+        "apiText": "interface Sub extends Base, Aux",
+        "apiType": "interface",
+        "kit": "test"
+    },
+    {
+        "apiText": "inherited",
+        "apiType": "method",
+        "className": "Aux",
+        "kit": "test"
+    },
+    {
+        "apiText": "export function exportedFoo(x: number): void",
+        "apiType": "method",
+        "kit": "test"
+    },
+    {
+        "apiText": "optionalCallback?(data: string): void",
+        "apiType": "method",
+        "kit": "test"
+    },
+    {
+        "apiText": "interface Sub2 extends ns.Qualified",
+        "apiType": "interface",
+        "kit": "test"
+    },
+    {
+        "apiText": "qualifiedMember",
+        "apiType": "method",
+        "className": "Qualified",
+        "kit": "test"
+    },
+    {
+        "apiText": "const TEST_CONST = 42",
+        "apiType": "field",
+        "kit": "test"
+    }
+]
