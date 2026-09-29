@@ -1,0 +1,9 @@
+[
+    {
+        "apiText": "oldApi",
+        "apiType": "method",
+        "className": "unnamed",
+        "kit": "API10LessDeprecatedModules",
+        "file": "api/@ohos.ability.depdemo.d.ts"
+    }
+]

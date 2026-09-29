@@ -1,0 +1,94 @@
+[
+    {
+        "apiText": "safe",
+        "apiType": "field",
+        "kit": "poison"
+    },
+    {
+        "apiText": "after",
+        "apiType": "field",
+        "kit": "poison"
+    },
+    {
+        "apiText": "trapThrow",
+        "apiType": "field",
+        "className": "unnamed",
+        "kit": "poison"
+    },
+    {
+        "apiText": "trapFunc",
+        "apiType": "field",
+        "className": "unnamed",
+        "kit": "poison"
+    },
+    {
+        "apiText": "A",
+        "apiType": "class",
+        "kit": "poison"
+    },
+    {
+        "apiText": "foo",
+        "apiType": "method",
+        "className": "A",
+        "kit": "poison"
+    },
+    {
+        "apiText": "bar",
+        "apiType": "method",
+        "kit": "poison"
+    },
+    {
+        "apiText": "enum Mode",
+        "apiType": "enum_class",
+        "kit": "poison"
+    },
+    {
+        "apiText": "READ = 1 << 0",
+        "apiType": "enum_instance",
+        "className": "Mode",
+        "kit": "poison"
+    },
+    {
+        "apiText": "WRITE = 1 << 1",
+        "apiType": "enum_instance",
+        "className": "Mode",
+        "kit": "poison"
+    },
+    {
+        "apiText": "interface Sub extends Base, Aux",
+        "apiType": "interface",
+        "kit": "poison"
+    },
+    {
+        "apiText": "inherited",
+        "apiType": "method",
+        "className": "Aux",
+        "kit": "poison"
+    },
+    {
+        "apiText": "export function exportedFoo(x: number): void",
+        "apiType": "method",
+        "kit": "poison"
+    },
+    {
+        "apiText": "optionalCallback?(data: string): void",
+        "apiType": "method",
+        "kit": "poison"
+    },
+    {
+        "apiText": "interface Sub2 extends ns.Qualified",
+        "apiType": "interface",
+        "kit": "poison"
+    },
+    {
+        "apiText": "qualifiedMember",
+        "apiType": "method",
+        "className": "Qualified",
+        "kit": "poison"
+    },
+    {
+        "apiText": "const TEST_CONST = 42",
+        "apiType": "field",
+        "kit": "poison"
+    }
+]

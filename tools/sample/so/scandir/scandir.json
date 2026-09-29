@@ -1,0 +1,30 @@
+[
+    {
+        "apiText": "ping",
+        "apiType": "method",
+        "kit": "scandir",
+        "file": "api/@ohos.app.ability.scandirdemo.d.ts",
+        "className": "unnamed"
+    },
+    {
+        "apiText": "level",
+        "apiType": "field",
+        "kit": "scandir",
+        "file": "api/@ohos.app.ability.scandirdemo.d.ts",
+        "className": "unnamed"
+    },
+    {
+        "apiText": "start",
+        "apiType": "method",
+        "kit": "scandir",
+        "file": "api/@hms.core.ar.hmsdemo.d.ts",
+        "className": "unnamed"
+    },
+    {
+        "apiText": "version",
+        "apiType": "field",
+        "kit": "scandir",
+        "file": "api/@hms.core.ar.hmsdemo.d.ts",
+        "className": "unnamed"
+    }
+]
