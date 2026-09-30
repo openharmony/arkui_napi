@@ -164,12 +164,12 @@ private:
 
 class GlobalManager {
 public:
-    static void Dispose(ARKTS_Env env, ARKTS_Global handle);
-    static void AsyncDisposer(ARKTS_Env env, int64_t data);
+    static void Dispose(ARKTS_Env env, ARKTS_Global global);
+    static void AsyncDisposer(ARKTS_Env env, int64_t);
     static void AddManager(ARKTS_Env env);
     static void RemoveManager(ARKTS_Env env);
     static void RemoveRecord(ARKTS_Env env, size_t id);
-    static double RecordGlobal(ARKTS_Env env, ARKTS_Global handle);
+    static double RecordGlobal(ARKTS_Env env, ARKTS_Global global);
     static ARKTS_Global GetRecord(ARKTS_Env env, double value);
 
     explicit GlobalManager(ARKTS_Env env);
